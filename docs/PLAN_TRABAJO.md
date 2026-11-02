@@ -123,7 +123,7 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - Hecho: reproducir archivos locales con Media3, progreso, pausa, saltos de 15 segundos y velocidad de 0.75x a 2x.
 - Hecho en código: ejecutar Media3 en un MediaSessionService con controles del sistema y notificación para continuar en segundo plano y con pantalla bloqueada; falta validarlo en dispositivo, incluida la solicitud de permiso de notificaciones.
 - Hecho en código: guardar la posición local por archivo y restaurarla al abrirlo; falta validarlo en Android Studio y en dispositivo.
-- Hecho en código: alojar TTS en un MediaSessionService con notificación, controles del sistema, progreso EPUB guardado mientras suena y WakeLock durante la narración. Falta probarlo en Android 13+ y con la pantalla bloqueada.
+- Hecho en código: alojar TTS en un MediaSessionService con notificación, controles del sistema, progreso EPUB guardado cada pocos segundos, temporizador activo aunque el lector se cierre y WakeLock mientras suena. Falta probarlo en Android 13+ y con la pantalla bloqueada.
 
 **Se considera lista cuando**
 - Los audiolibros locales continúan al cambiar de app y con pantalla bloqueada, con controles de sesión multimedia del sistema.
