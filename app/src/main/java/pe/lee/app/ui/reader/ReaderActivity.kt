@@ -739,12 +739,14 @@ private fun EpubReaderScreen(
                         }.apply()
                     },
                     onTimerChange = {
-                        ttsTimerMinutes = when (ttsTimerMinutes) {
+                        val nextTimer = when (ttsTimerMinutes) {
                             0 -> 15
                             15 -> 30
                             30 -> 60
                             else -> 0
                         }
+                        ttsTimerMinutes = nextTimer
+                        ttsServiceBinder?.setSleepTimer(nextTimer)
                     },
                     onStop = { stopTts() },
                     modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 112.dp)
