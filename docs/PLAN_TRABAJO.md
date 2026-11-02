@@ -95,8 +95,9 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 **Trabajo**
 - [x] Guardar, listar, abrir y eliminar marcadores EPUB locales desde el lector; persistir locators en Room.
 - [x] Añadir entidad/DAO de anotaciones y migración Room 1→2 conservando la biblioteca.
+- [x] Crear, editar, abrir y eliminar notas locales ancladas al locator actual del EPUB.
 - Seleccionar texto desde EPUB y PDF cuando el motor lo permita.
-- Añadir resaltados con colores y notas editables.
+- Añadir resaltados de texto con colores.
 - Guardar anclas estables por locator/página, relacionarlas con libro y perfil, y permitir edición y eliminación.
 - Crear una vista de notas con filtros por libro, capítulo y color.
 - Exportar notas y citas a TXT/Markdown; definir límites de cita al compartir.
