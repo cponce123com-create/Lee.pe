@@ -30,6 +30,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Search
 import pe.lee.app.ui.reader.PdfReaderActivity
@@ -38,14 +40,19 @@ import pe.lee.app.ui.audio.AudioPlayerActivity
 import pe.lee.app.data.local.BookDao
 import pe.lee.app.data.local.BookEntity
 import pe.lee.app.data.local.LeeDatabase
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
@@ -89,6 +96,7 @@ fun LibraryScreen() {
     val coroutineScope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("Todos") }
+    var pendingRemoval by remember { mutableStateOf<LocalBook?>(null) }
 
     LaunchedEffect(context, dao) {
         migrateLegacyLibrary(context, dao)
@@ -98,13 +106,19 @@ fun LibraryScreen() {
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         if (uri != null) {
-            try {
+            val permissionPersisted = runCatching {
                 context.contentResolver.takePersistableUriPermission(
                     uri,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
-            } catch (_: SecurityException) {
-                // Some document providers do not offer persistable grants.
+            }.isSuccess
+            if (!permissionPersisted) {
+                Toast.makeText(
+                    context,
+                    "Este proveedor no permite conservar el acceso al archivo. Elige otro proveedor o guarda una copia en el dispositivo.",
+                    Toast.LENGTH_LONG
+                ).show()
+                return@rememberLauncherForActivityResult
             }
 
             val fileName = queryDisplayName(context, uri)
@@ -114,6 +128,10 @@ fun LibraryScreen() {
             }
             val format = formatFromFileName(fileName) ?: return@rememberLauncherForActivityResult
             coroutineScope.launch {
+                if (dao.findByUri(uri.toString()) != null) {
+                    Toast.makeText(context, "Este archivo ya está en tu biblioteca", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
                 runCatching {
                     dao.insert(
                         BookEntity(
@@ -130,6 +148,28 @@ fun LibraryScreen() {
                 }
             }
         }
+    }
+
+    pendingRemoval?.let { book ->
+        AlertDialog(
+            onDismissRequest = { pendingRemoval = null },
+            title = { Text("Quitar de la biblioteca") },
+            text = { Text("Se quitará “${book.title}” de Lee.pe. El archivo original no se eliminará del dispositivo.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            dao.deleteByUri(book.uri.toString())
+                            pendingRemoval = null
+                            Toast.makeText(context, "Libro quitado de la biblioteca", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                ) { Text("Quitar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingRemoval = null }) { Text("Cancelar") }
+            }
+        )
     }
 
     val filters = listOf("Todos", "EPUB", "PDF", "Audio")
@@ -283,7 +323,8 @@ fun LibraryScreen() {
                         BookCard(
                             book = book,
                             modifier = Modifier.weight(1f),
-                            onOpen = { openBook(context, book) }
+                            onOpen = { openBook(context, book) },
+                            onRemove = { pendingRemoval = book }
                         )
                     }
                     if (rowBooks.size == 1) Spacer(Modifier.weight(1f))
@@ -351,7 +392,13 @@ private fun EmptyLibraryCard(hasBooks: Boolean, onImport: () -> Unit) {
 }
 
 @Composable
-private fun BookCard(book: LocalBook, modifier: Modifier = Modifier, onOpen: () -> Unit) {
+private fun BookCard(
+    book: LocalBook,
+    modifier: Modifier = Modifier,
+    onOpen: () -> Unit,
+    onRemove: () -> Unit
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
     val (icon, colors) = when (book.format) {
         "PDF" -> Icons.Default.PictureAsPdf to listOf(Color(0xFF5C2A70), Color(0xFF1F4C70))
         "Audio" -> Icons.Default.Headphones to listOf(Color(0xFF145D67), Color(0xFF26396F))
@@ -372,6 +419,24 @@ private fun BookCard(book: LocalBook, modifier: Modifier = Modifier, onOpen: () 
                 contentAlignment = Alignment.Center
             ) {
                 Icon(icon, contentDescription = book.format, tint = Color.White, modifier = Modifier.size(42.dp))
+                Box(modifier = Modifier.align(Alignment.TopEnd)) {
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Opciones del libro", tint = Color.White)
+                    }
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Quitar de la biblioteca") },
+                            leadingIcon = { Icon(Icons.Default.DeleteOutline, contentDescription = null) },
+                            onClick = {
+                                menuExpanded = false
+                                onRemove()
+                            }
+                        )
+                    }
+                }
                 Text(
                     book.format,
                     modifier = Modifier
@@ -440,25 +505,55 @@ private suspend fun migrateLegacyLibrary(context: Context, dao: BookDao) {
     val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     if (preferences.getBoolean(KEY_LEGACY_MIGRATED, false)) return
 
-    val books = withContext(Dispatchers.IO) {
-        preferences.getStringSet(KEY_DOCUMENT_URIS, emptySet())
-            .orEmpty()
-            .mapNotNull { rawUri ->
-                val uri = runCatching { Uri.parse(rawUri) }.getOrNull() ?: return@mapNotNull null
-                val fileName = queryDisplayName(context, uri)
-                val format = formatFromFileName(fileName) ?: return@mapNotNull null
-                BookEntity(
-                    uri = uri.toString(),
-                    title = fileName.substringBeforeLast('.', fileName),
-                    format = format,
-                    importedAt = System.currentTimeMillis()
-                )
+    val legacyUris = preferences.getStringSet(KEY_DOCUMENT_URIS, emptySet()).orEmpty().toSet()
+    if (legacyUris.isEmpty()) {
+        preferences.edit()
+            .putBoolean(KEY_LEGACY_MIGRATED, true)
+            .remove(KEY_DOCUMENT_URIS)
+            .apply()
+        return
+    }
+
+    val (books, pendingUris) = withContext(Dispatchers.IO) {
+        val books = mutableListOf<BookEntity>()
+        val pendingUris = mutableSetOf<String>()
+        val persistedReadUris = context.contentResolver.persistedUriPermissions
+            .filter { it.isReadPermission }
+            .map { it.uri.toString() }
+            .toSet()
+
+        legacyUris.forEach { rawUri ->
+            val uri = runCatching { Uri.parse(rawUri) }.getOrNull()
+            if (uri == null || rawUri !in persistedReadUris) {
+                pendingUris += rawUri
+                return@forEach
             }
+
+            val fileName = runCatching { queryDisplayName(context, uri) }.getOrNull()
+            val format = fileName?.let(::formatFromFileName)
+            if (fileName == null || format == null) {
+                pendingUris += rawUri
+                return@forEach
+            }
+
+            books += BookEntity(
+                uri = uri.toString(),
+                title = fileName.substringBeforeLast('.', fileName),
+                format = format,
+                importedAt = System.currentTimeMillis()
+            )
+        }
+        books to pendingUris
     }
 
     dao.insertAll(books)
-    preferences.edit()
-        .putBoolean(KEY_LEGACY_MIGRATED, true)
-        .remove(KEY_DOCUMENT_URIS)
-        .apply()
+
+    val editor = preferences.edit()
+    if (pendingUris.isEmpty()) {
+        editor.putBoolean(KEY_LEGACY_MIGRATED, true)
+            .remove(KEY_DOCUMENT_URIS)
+    } else {
+        editor.putStringSet(KEY_DOCUMENT_URIS, pendingUris)
+    }
+    editor.apply()
 }
