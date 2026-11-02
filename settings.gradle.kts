@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "LumenReader"
+rootProject.name = "Lee.pe"
 include(":app")
