@@ -1,5 +1,6 @@
 package pe.lee.app.ui.reader
 
+import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
@@ -27,7 +28,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
@@ -51,9 +51,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.commitNow
-import androidx.lifecycle.lifecycleScope
 import androidx.core.view.WindowCompat
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -165,7 +165,7 @@ private fun EpubReaderScreen(
             val opened = openPublication()
             publication = opened
 
-            val preferences = context.getSharedPreferences(PREFS_NAME, FragmentActivity.MODE_PRIVATE)
+            val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val locatorJson = preferences.getString(ReaderActivity.locatorPreferenceKey(uri), null)
             val initialLocator = locatorJson?.let {
                 runCatching { Locator.fromJSON(JSONObject(it)) }.getOrNull()
