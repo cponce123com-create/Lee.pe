@@ -12,7 +12,7 @@ import pe.lee.app.data.local.LocalBackupMergeReport
 import pe.lee.app.data.local.LocalBackupSnapshot
 import pe.lee.app.data.local.ReadingAnnotationEntity
 import pe.lee.app.data.local.ReadingSessionEntity
-import pe.lee.app.data.local.findBackupMatch
+import pe.lee.app.data.local.LocalBackupMatcher
 import pe.lee.app.ui.audio.AudioProgressStore
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -110,11 +110,12 @@ internal object LocalLibraryBackup {
         }
         val archive = parse(buffer.toString(Charsets.UTF_8.name()))
         val current = LeeDatabase.get(context).localBackupDao().allBooks()
+        val matcher = LocalBackupMatcher(current)
         val used = HashSet<String>()
         var exact = 0
         var byTitle = 0
         archive.snapshot.books.forEach { book ->
-            val match = findBackupMatch(book, current)
+            val match = matcher.find(book)
             if (match != null && used.add(match.uri)) {
                 if (match.uri == book.uri) exact++ else byTitle++
             }
@@ -254,8 +255,38 @@ internal object LocalLibraryBackup {
             val settings = root.optJSONObject("settings")
             for (uri in uniqueUris) {
                 val o = settings?.optJSONObject(uri) ?: continue
-                // Reject unknown oversized or malformed settings via the 16MB archive cap;
-                // only the explicit whitelisted keys are ever applied to preferences.
+                fun validText(key: String, maxLength: Int) {
+                    if (!o.has(key) || o.isNull(key)) return
+                    val value = o.get(key)
+                    if (value !is String || value.length > maxLength) {
+                        throw IOException("Preferencia $key no válida.")
+                    }
+                }
+                fun validFloat(key: String, low: Double, high: Double) {
+                    if (!o.has(key) || o.isNull(key)) return
+                    val value = o.get(key)
+                    if (value !is Number || !value.toDouble().isFinite() ||
+                        value.toDouble() !in low..high) {
+                        throw IOException("Preferencia $key no válida.")
+                    }
+                }
+                fun validBoolean(key: String) {
+                    if (o.has(key) && !o.isNull(key) && o.get(key) !is Boolean) {
+                        throw IOException("Preferencia $key no válida.")
+                    }
+                }
+                validText("epub-preferences:", 32000)
+                validText("tts-voice:", 512)
+                validFloat("reader-brightness:", -1.0, 1.0)
+                validFloat("tts-speed:", 0.5, 2.0)
+                validBoolean("keep-screen-on:")
+                validBoolean("pdf-continuous:")
+                if (o.has("audioPositionMs") && !o.isNull("audioPositionMs")) {
+                    val value = o.get("audioPositionMs")
+                    if (value !is Number || value.toLong() !in 0L..315_360_000_000L) {
+                        throw IOException("Posición de audio no válida.")
+                    }
+                }
                 extras[uri] = o
             }
             val goal = if (root.has("dailyGoalMinutes") && !root.isNull("dailyGoalMinutes")) {
