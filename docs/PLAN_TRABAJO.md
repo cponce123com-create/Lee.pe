@@ -54,13 +54,13 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Integrar Readium y abrir EPUB compatibles en una vista de página completa.
 - [x] Guardar/restaurar el locator Readium por URI de documento en Room, conservar compatibilidad con preferencias anteriores y saltar por porcentaje.
 - [x] Integrar navegación por gesto y tabla de contenidos con salto a capítulo.
-- - [x] Alternar modo inmersivo tocando el contenido o el botón para ocultar controles.
+- [x] Alternar modo inmersivo tocando el contenido o el botón para ocultar controles.
 - [ ] Configurar desplazamiento vertical y mantener pantalla activa.
 - [x] Navegar por gesto, tabla de contenidos y porcentaje.
 - [x] Añadir tabla de contenidos navegable.
 - [ ] Añadir control para ir a una ubicación exacta dentro del EPUB.
-- Guardar y restaurar la ubicación Readium junto al progreso.
-- - [x] Añadir apariencia EPUB con temas claro, sepia, oscuro y OLED, tamaño y familia de letra; guardar los ajustes por libro.
+- [x] Guardar y restaurar la ubicación Readium junto al progreso.
+- [x] Añadir apariencia EPUB con temas claro, sepia, oscuro y OLED, tamaño y familia de letra; guardar los ajustes por libro.
 - [ ] Añadir interlineado, márgenes, alineación, brillo y opciones avanzadas.
 - Añadir orientación, mantener pantalla activa y zona de toque ajustable.
 
