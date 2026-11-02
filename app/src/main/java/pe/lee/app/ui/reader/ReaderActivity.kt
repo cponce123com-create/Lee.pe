@@ -1,5 +1,7 @@
 package pe.lee.app.ui.reader
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
@@ -269,14 +271,15 @@ private fun EpubReaderScreen(
             val selectionActionCallback = object : BaseActionModeCallback() {
                 override fun onCreateActionMode(mode: ActionMode, menu: Menu): Boolean {
                     menu.add(Menu.NONE, MENU_HIGHLIGHT, Menu.NONE, "Resaltar")
+                    menu.add(Menu.NONE, MENU_COPY_SELECTION, Menu.NONE, "Copiar")
                     return true
                 }
 
                 override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
-                    if (item.itemId != MENU_HIGHLIGHT) return false
+                    if (item.itemId != MENU_HIGHLIGHT && item.itemId != MENU_COPY_SELECTION) return false
                     coroutineScope.launch {
                         val selectedLocator = navigator?.currentSelection()?.locator
-                        if (selectedLocator != null) {
+                        if (item.itemId == MENU_HIGHLIGHT && selectedLocator != null) {
                             val now = System.currentTimeMillis()
                             annotationDao.upsert(
                                 ReadingAnnotationEntity(
@@ -289,6 +292,11 @@ private fun EpubReaderScreen(
                                     createdAt = now
                                 )
                             )
+                        } else if (item.itemId == MENU_COPY_SELECTION) {
+                            selectedLocator?.text?.highlight?.let { selectedText ->
+                                val clipboard = context.getSystemService(ClipboardManager::class.java)
+                                clipboard?.setPrimaryClip(ClipData.newPlainText("Texto seleccionado", selectedText))
+                            }
                         }
                         mode.finish()
                     }
@@ -570,7 +578,12 @@ private fun ReaderChrome(
                             ) {
                                 Text(
                                     annotation.noteText?.takeIf { it.isNotBlank() }
-                                        ?: "Marcador · ${java.text.DateFormat.getDateTimeInstance().format(java.util.Date(annotation.createdAt))}",
+                                        ?: annotation.selectedText?.takeIf { it.isNotBlank() }
+                                        ?: if (annotation.kind == "HIGHLIGHT") {
+                                            "Resaltado · ${java.text.DateFormat.getDateTimeInstance().format(java.util.Date(annotation.createdAt))}"
+                                        } else {
+                                            "Marcador · ${java.text.DateFormat.getDateTimeInstance().format(java.util.Date(annotation.createdAt))}"
+                                        },
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis
                                 )
@@ -1024,6 +1037,7 @@ private fun selectedReaderTheme(preferences: EpubPreferences): String = when {
 private const val PREFS_NAME = "lee_pe_library"
 private const val NAVIGATOR_TAG = "lee_pe_epub_navigator"
 private const val MENU_HIGHLIGHT = 1
+private const val MENU_COPY_SELECTION = 2
 private const val ANNOTATION_DECORATION_GROUP = "lee_pe_annotations"
 private const val DEFAULT_HIGHLIGHT_COLOR = 0xFFFFD54F.toInt()
 
