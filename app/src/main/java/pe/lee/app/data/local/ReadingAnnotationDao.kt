@@ -17,6 +17,9 @@ interface ReadingAnnotationDao {
     @Query("UPDATE reading_annotations SET noteText = :noteText, updatedAt = :updatedAt WHERE id = :id")
     suspend fun updateNote(id: String, noteText: String?, updatedAt: Long)
 
+    @Query("UPDATE reading_annotations SET colorArgb = :colorArgb, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun updateColor(id: String, colorArgb: Int, updatedAt: Long)
+
     @Query("DELETE FROM reading_annotations WHERE id = :id")
     suspend fun deleteById(id: String)
 }
