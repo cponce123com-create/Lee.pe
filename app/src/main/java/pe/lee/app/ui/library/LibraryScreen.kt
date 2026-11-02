@@ -103,6 +103,11 @@ fun LibraryScreen() {
     val books = remember(storedBooks) {
         storedBooks.map { LocalBook(Uri.parse(it.uri), it.title, it.format, it.isFavorite, it.importedAt, it.lastOpenedAt, it.readProgress, it.collectionId) }
     }
+    val collections = remember(books) {
+        books.mapNotNull { it.collectionId?.trim()?.takeIf { name -> name.isNotBlank() } }
+            .distinctBy { it.lowercase() }
+            .sortedBy { it.lowercase() }
+    }
     val coroutineScope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("Todos") }
@@ -303,11 +308,6 @@ fun LibraryScreen() {
     }
 
     val filters = listOf("Todos", "En curso", "Terminados", "Favoritos", "EPUB", "PDF", "Audio")
-    val collections = remember(books) {
-        books.mapNotNull { it.collectionId?.trim()?.takeIf { name -> name.isNotBlank() } }
-            .distinctBy { it.lowercase() }
-            .sortedBy { it.lowercase() }
-    }
     val visibleBooks = books.filter { book ->
         val matchesQuery = book.title.contains(query, ignoreCase = true)
         val matchesFilter = when (selectedFilter) {
