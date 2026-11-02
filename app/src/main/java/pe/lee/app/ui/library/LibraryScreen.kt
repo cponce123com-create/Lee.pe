@@ -205,7 +205,12 @@ fun LibraryScreen() {
         AlertDialog(
             onDismissRequest = { pendingRemoval = null },
             title = { Text("Quitar de la biblioteca") },
-            text = { Text("Se quitará “${book.title}” de Lee.pe. El archivo original no se eliminará del dispositivo.") },
+            text = {
+                Text(
+                    "Se quitará “${book.title}” de Lee.pe y se borrarán sus marcadores, notas y " +
+                        "resaltados guardados. El archivo original no se eliminará del dispositivo."
+                )
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
