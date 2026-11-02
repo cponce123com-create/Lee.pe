@@ -50,6 +50,8 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -95,6 +97,7 @@ import pe.lee.app.data.local.LeeDatabase
 import pe.lee.app.data.local.ReadingAnnotationEntity
 import org.readium.navigator.media.tts.AndroidTtsNavigator
 import org.readium.navigator.media.tts.AndroidTtsNavigatorFactory
+import org.readium.navigator.media.tts.android.AndroidTtsEngine
 import org.readium.navigator.media.tts.TtsNavigator
 import org.readium.navigator.media.tts.android.AndroidTtsPreferences
 import org.readium.r2.navigator.Decoration
@@ -224,6 +227,11 @@ private fun EpubReaderScreen(
             context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 .getFloat(ttsSpeedPreferenceKey(uri), 1f).coerceIn(0.5f, 2f)
         )
+    }
+    var ttsVoices by remember(uri) { mutableStateOf<List<AndroidTtsEngine.Voice>>(emptyList()) }
+    var ttsSelectedVoiceId by remember(uri) {
+        mutableStateOf(context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getString(ttsVoicePreferenceKey(uri), null))
     }
     var ttsTimerMinutes by remember(uri) { mutableIntStateOf(0) }
     var progress by remember { mutableFloatStateOf(0f) }
@@ -485,6 +493,26 @@ private fun EpubReaderScreen(
                 ttsError = "No se pudo preparar la narración: ${failure.message ?: "error de voz"}"
                 return@launch
             }
+            val localVoices = speech.voices
+                .filterNot { it.requiresNetwork }
+                .sortedWith(compareBy({ it.language.toString() }, { it.id.value }))
+            ttsVoices = localVoices
+            val savedVoice = ttsSelectedVoiceId?.let { id ->
+                localVoices.firstOrNull { it.id.value == id }
+            }
+            if (ttsSelectedVoiceId != null && savedVoice == null) {
+                ttsSelectedVoiceId = null
+                context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+                    .remove(ttsVoicePreferenceKey(uri)).apply()
+            }
+            if (savedVoice != null) {
+                speech.submitPreferences(
+                    AndroidTtsPreferences(
+                        speed = ttsSpeed.toDouble(),
+                        voices = mapOf(savedVoice.language to savedVoice.id)
+                    )
+                )
+            }
             ttsError = null
             ttsNavigator = speech
             speech.play()
@@ -631,14 +659,36 @@ private fun EpubReaderScreen(
                     sentence = ttsSentence,
                     isPlaying = ttsIsPlaying,
                     speed = ttsSpeed,
+                    voices = ttsVoices,
+                    selectedVoiceId = ttsSelectedVoiceId,
                     timerMinutes = ttsTimerMinutes,
                     error = ttsError,
                     onTogglePlayback = { startOrToggleTts() },
                     onSpeedChange = { speed ->
                         ttsSpeed = speed
-                        ttsNavigator?.submitPreferences(AndroidTtsPreferences(speed = speed.toDouble()))
+                        val selectedVoice = ttsVoices.firstOrNull { it.id.value == ttsSelectedVoiceId }
+                        ttsNavigator?.submitPreferences(
+                            AndroidTtsPreferences(
+                                speed = speed.toDouble(),
+                                voices = selectedVoice?.let { mapOf(it.language to it.id) }
+                                    ?: if (ttsSelectedVoiceId == null) null else emptyMap()
+                            )
+                        )
                         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
                             .putFloat(ttsSpeedPreferenceKey(uri), speed).apply()
+                    },
+                    onVoiceChange = { voice ->
+                        ttsSelectedVoiceId = voice?.id?.value
+                        ttsNavigator?.submitPreferences(
+                            AndroidTtsPreferences(
+                                speed = ttsSpeed.toDouble(),
+                                voices = voice?.let { mapOf(it.language to it.id) } ?: emptyMap()
+                            )
+                        )
+                        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().apply {
+                            if (voice == null) remove(ttsVoicePreferenceKey(uri))
+                            else putString(ttsVoicePreferenceKey(uri), voice.id.value)
+                        }.apply()
                     },
                     onTimerChange = {
                         ttsTimerMinutes = when (ttsTimerMinutes) {
@@ -664,20 +714,26 @@ private fun EpubReaderScreen(
     }
 }
 
+@OptIn(ExperimentalReadiumApi::class)
 @Composable
 private fun TtsControls(
     sentence: String,
     isPlaying: Boolean,
     speed: Float,
+    voices: List<AndroidTtsEngine.Voice>,
+    selectedVoiceId: String?,
     timerMinutes: Int,
     error: String?,
     onTogglePlayback: () -> Unit,
     onSpeedChange: (Float) -> Unit,
+    onVoiceChange: (AndroidTtsEngine.Voice?) -> Unit,
     onTimerChange: () -> Unit,
     onStop: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val speeds = listOf(0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
+    var voiceMenuExpanded by remember { mutableStateOf(false) }
+    val selectedVoice = voices.firstOrNull { it.id.value == selectedVoiceId }
     Surface(
         modifier = modifier.fillMaxWidth().padding(horizontal = 12.dp),
         color = Color(0xF20A1423),
@@ -704,6 +760,40 @@ private fun TtsControls(
                     val index = speeds.indexOf(speed).coerceAtLeast(0)
                     onSpeedChange(speeds[(index + 1) % speeds.size])
                 }) { Text("${speed}x") }
+                Box {
+                    TextButton(onClick = { voiceMenuExpanded = true }) {
+                        Text(selectedVoice?.language?.toString() ?: "Voz")
+                    }
+                    DropdownMenu(
+                        expanded = voiceMenuExpanded,
+                        onDismissRequest = { voiceMenuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Automática") },
+                            onClick = {
+                                onVoiceChange(null)
+                                voiceMenuExpanded = false
+                            }
+                        )
+                        if (voices.isEmpty()) {
+                            DropdownMenuItem(
+                                text = { Text("No hay voces locales instaladas") },
+                                enabled = false,
+                                onClick = {}
+                            )
+                        } else {
+                            voices.forEach { voice ->
+                                DropdownMenuItem(
+                                    text = { Text("${voice.language} · ${voice.id.value}") },
+                                    onClick = {
+                                        onVoiceChange(voice)
+                                        voiceMenuExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
                 TextButton(onClick = onTimerChange) {
                     Icon(Icons.Default.Timer, contentDescription = null)
                     Text(if (timerMinutes == 0) "Temporizador" else "${timerMinutes} min")
@@ -1285,6 +1375,7 @@ private const val MENU_COPY_SELECTION = 2
 private const val ANNOTATION_DECORATION_GROUP = "lee_pe_annotations"
 private const val TTS_DECORATION_GROUP = "lee_pe_tts"
 private fun ttsSpeedPreferenceKey(uri: Uri): String = "tts-speed:$uri"
+private fun ttsVoicePreferenceKey(uri: Uri): String = "tts-voice:$uri"
 private const val DEFAULT_HIGHLIGHT_COLOR = 0xFFFFD54F.toInt()
 
 private data class TocEntry(
