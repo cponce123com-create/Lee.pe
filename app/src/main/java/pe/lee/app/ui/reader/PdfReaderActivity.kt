@@ -51,6 +51,8 @@ import androidx.compose.material.icons.filled.RotateRight
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material.icons.filled.ZoomOut
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Button
@@ -278,6 +280,9 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
     var rendering by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var showPageDialog by remember { mutableStateOf(false) }
+    // Leave PDF controls available by default; hide them on demand to maximize
+    // the page area. The floating restore button is reachable in either layout.
+    var readerControlsVisible by remember(uri) { mutableStateOf(true) }
     var showPdfSearch by remember { mutableStateOf(false) }
     var pdfSearchQuery by remember(uri) { mutableStateOf("") }
     var pdfSearchResults by remember(uri) { mutableStateOf<List<PdfSearchResult>>(emptyList()) }
@@ -521,7 +526,7 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
         val availableWidth = with(density) { maxWidth.roundToPx() - 32.dp.roundToPx() }
 
         Column(modifier = Modifier.fillMaxSize()) {
-            Surface(color = Color(0xFF0A1423)) {
+            if (readerControlsVisible) Surface(color = Color(0xFF0A1423)) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -552,6 +557,9 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
                     }
                     IconButton(onClick = { showAnnotations = true }, enabled = !loading && pageCount > 0) {
                         Icon(Icons.Default.Bookmark, contentDescription = "Marcadores y notas PDF", tint = Color.White)
+                    }
+                    IconButton(onClick = { readerControlsVisible = false }, enabled = !loading) {
+                        Icon(Icons.Default.VisibilityOff, contentDescription = "Ocultar controles del PDF", tint = Color.White)
                     }
                 }
             }
@@ -606,6 +614,9 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
                             contentDescription = "Página ${pageIndex + 1}, rotación ${rotationDegrees} grados",
                             modifier = imageModifier
                                 .clipToBounds()
+                                .clickable(enabled = !selectionMode) {
+                                    readerControlsVisible = !readerControlsVisible
+                                }
                                 .pointerInput(pageIndex, rotationDegrees, selectionMode, zoomScale) {
                                     if (selectionMode) {
                                         awaitEachGesture {
@@ -777,7 +788,7 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
                 }
             }
 
-            Surface(
+            if (readerControlsVisible) Surface(
                 color = Color(0xFF0A1423),
                 shape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
             ) {
@@ -894,6 +905,24 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
                             Icon(Icons.Default.ChevronRight, contentDescription = "Página siguiente", tint = Color.White)
                         }
                     }
+                }
+            }
+        }
+
+        if (!readerControlsVisible) {
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(12.dp),
+                color = Color(0xE60A1423),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                IconButton(onClick = { readerControlsVisible = true }) {
+                    Icon(
+                        Icons.Default.Visibility,
+                        contentDescription = "Mostrar controles del PDF",
+                        tint = Color.White
+                    )
                 }
             }
         }
