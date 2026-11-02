@@ -112,7 +112,7 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Seleccionar palabra o rango arrastrando en vista de página a zoom normal, en API 35+; guardar y mostrar la selección como resaltado.
 - Guardar anclas estables por locator/página, relacionarlas con libro y perfil, y permitir edición y eliminación.
 - Crear una vista de notas con filtros por libro, capítulo y color.
-- Exportar notas y citas a TXT/Markdown; definir límites de cita al compartir.
+- [x] Exportar anotaciones, citas seleccionadas, notas y ubicaciones a un archivo Markdown mediante el selector SAF; el archivo del libro nunca se incluye.
 
 **Se considera lista cuando**
 - Las anotaciones reaparecen tras cerrar la app y tras modificar preferencias de lectura.
