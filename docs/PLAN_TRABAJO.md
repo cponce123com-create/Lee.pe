@@ -4,7 +4,7 @@
 
 Crear un lector nativo Android que permita importar EPUB, PDF y audiolibros desde el teléfono; leer en una vista amplia de página completa; retomar exactamente donde se dejó; y usar las funciones principales sin conexión. La estética tomará como referencia la interfaz futurista de Lee.pe, con controles discretos durante la lectura y herramientas accesibles al tocar la página.
 
-El repositorio actual es una base inicial: Compose y la biblioteca prototipo ya existen, pero los archivos todavía no se renderizan. Este plan marca el orden de implementación y las condiciones para considerar completa cada etapa.
+Estado actual: biblioteca local prototipo con importación SAF, lector EPUB con Readium e índice, y visor PDF offline con navegación por página y restauración de posición. Este plan marca lo que falta y las condiciones para cerrar cada etapa.
 
 ## Principios de producto
 
@@ -69,14 +69,16 @@ El repositorio actual es una base inicial: Compose y la biblioteca prototipo ya 
 ### Fase 3 — PDF
 
 **Trabajo**
-- Integrar un motor PDF compatible con Android y licencias adecuadas.
+- [x] Integrar un motor PDF nativo compatible con Android y licencias adecuadas (`PdfRenderer`).
+- [x] Mostrar página completa y recuperar la última página.
 - Mostrar una página completa por defecto; ofrecer desplazamiento continuo y ajuste de ancho.
-- Ir a número de página, ampliar, reducir, rotar y recuperar la última página.
+- [x] Ir a número de página y recuperar la última página.
+- [ ] Ampliar, reducir, rotar y ofrecer desplazamiento continuo.
 - Añadir búsqueda y selección de texto cuando el PDF incluya texto seleccionable.
 - Identificar PDF escaneados y explicar que necesitan OCR para buscar o narrar.
 
 **Se considera lista cuando**
-- Abre PDFs locales sin conexión y la navegación por número de página coincide con el documento.
+- [x] Abre PDFs locales sin conexión y permite navegar por número de página.
 - El zoom y el desplazamiento funcionan en documentos largos sin cargar todo el archivo en memoria.
 - La app distingue búsqueda disponible de documentos escaneados sin OCR.
 
@@ -155,7 +157,7 @@ El repositorio actual es una base inicial: Compose y la biblioteca prototipo ya 
 2. Biblioteca persistente e importación local.
 3. Lector EPUB con página completa y restauración de posición.
 4. Navegación, búsqueda, ajustes y marcadores básicos.
-5. PDF con salto de página exacto.
+5. Visor PDF con salto de página exacto.
 6. TTS y reproducción de audiolibros.
 7. Anotaciones, accesibilidad, estadísticas y sincronización opcional.
 
