@@ -98,7 +98,8 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Crear, editar, abrir y eliminar notas locales ancladas al locator actual del EPUB.
 - [x] Seleccionar texto EPUB y ofrecer acciones para copiarlo o crear un resaltado.
 - [x] Guardar resaltados EPUB amarillos con locator y texto seleccionado en Room; volver a mostrarlos al abrir el libro.
-- Añadir selección/anotaciones en PDF y paleta de colores para los resaltados EPUB.
+- [x] Cambiar el color de un resaltado EPUB entre amarillo, azul, verde y rosa; guardar el cambio localmente.
+- Añadir selección y anotaciones en PDF.
 - Guardar anclas estables por locator/página, relacionarlas con libro y perfil, y permitir edición y eliminación.
 - Crear una vista de notas con filtros por libro, capítulo y color.
 - Exportar notas y citas a TXT/Markdown; definir límites de cita al compartir.
