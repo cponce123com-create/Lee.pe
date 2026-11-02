@@ -309,7 +309,7 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    IconButton(onClick = { showAnnotations = true }) {
+                    IconButton(onClick = { showAnnotations = true }, enabled = !loading && pageCount > 0) {
                         Icon(Icons.Default.Bookmark, contentDescription = "Marcadores y notas PDF", tint = Color.White)
                     }
                 }
