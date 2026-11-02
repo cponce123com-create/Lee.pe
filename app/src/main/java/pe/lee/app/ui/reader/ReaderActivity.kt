@@ -63,6 +63,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import pe.lee.app.data.local.LeeDatabase
 import org.readium.r2.navigator.epub.EpubNavigatorFactory
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.EpubPreferences
@@ -157,6 +158,7 @@ private fun EpubReaderScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val bookDao = remember(context) { LeeDatabase.get(context).bookDao() }
     val activity = context as? FragmentActivity ?: return
     val containerId = remember { View.generateViewId() }
     val coroutineScope = rememberCoroutineScope()
@@ -172,12 +174,27 @@ private fun EpubReaderScreen(
             val opened = openPublication()
             publication = opened
 
+            val savedBook = bookDao.findByUri(uri.toString())
             val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val locatorJson = preferences.getString(ReaderActivity.locatorPreferenceKey(uri), null)
+            val legacyLocatorJson = preferences.getString(ReaderActivity.locatorPreferenceKey(uri), null)
+            val locatorJson = savedBook?.epubLocator ?: legacyLocatorJson
             val initialLocator = locatorJson?.let {
                 runCatching { Locator.fromJSON(JSONObject(it)) }.getOrNull()
             }
-            progress = (initialLocator?.locations?.totalProgression ?: 0.0).toFloat()
+            progress = (
+                initialLocator?.locations?.totalProgression
+                    ?: savedBook?.readProgress?.toDouble()
+                    ?: 0.0
+                ).toFloat().coerceIn(0f, 1f)
+
+            if (savedBook?.epubLocator.isNullOrBlank() && legacyLocatorJson != null && initialLocator != null) {
+                bookDao.saveEpubProgress(
+                    uri = uri.toString(),
+                    locatorJson = legacyLocatorJson,
+                    progress = progress,
+                    openedAt = System.currentTimeMillis()
+                )
+            }
 
             val factory = EpubNavigatorFactory(opened)
             activity.supportFragmentManager.fragmentFactory = factory.createFragmentFactory(
@@ -204,10 +221,17 @@ private fun EpubReaderScreen(
         reader.currentLocator.collect { locator ->
             val totalProgression = locator.locations.totalProgression
             if (totalProgression != null) progress = totalProgression.toFloat().coerceIn(0f, 1f)
-            context.getSharedPreferences(PREFS_NAME, FragmentActivity.MODE_PRIVATE)
+            val locatorJson = locator.toJSON().toString()
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 .edit()
-                .putString(ReaderActivity.locatorPreferenceKey(uri), locator.toJSON().toString())
+                .putString(ReaderActivity.locatorPreferenceKey(uri), locatorJson)
                 .apply()
+            bookDao.saveEpubProgress(
+                uri = uri.toString(),
+                locatorJson = locatorJson,
+                progress = totalProgression?.toFloat() ?: progress,
+                openedAt = System.currentTimeMillis()
+            )
         }
     }
 
