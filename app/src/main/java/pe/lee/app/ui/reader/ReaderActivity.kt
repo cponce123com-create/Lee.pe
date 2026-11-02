@@ -145,6 +145,7 @@ import java.io.IOException
 import java.util.UUID
 
 class ReaderActivity : FragmentActivity() {
+    private var readingSessionRecorder: ReadingSessionRecorder? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         if (savedInstanceState != null) {
@@ -165,6 +166,10 @@ class ReaderActivity : FragmentActivity() {
             return
         }
 
+        readingSessionRecorder = ReadingSessionRecorder(
+            bookUri = uri.toString(),
+            dao = LeeDatabase.get(this).readingSessionDao()
+        )
         val offlineCopyUri = intent.getStringExtra(OfflineBookStore.EXTRA_COPY_URI)?.let(Uri::parse)
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "Lee.pe"
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -179,6 +184,16 @@ class ReaderActivity : FragmentActivity() {
                 )
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        readingSessionRecorder?.onResume()
+    }
+
+    override fun onPause() {
+        readingSessionRecorder?.onPause()
+        super.onPause()
     }
 
     private suspend fun openPublication(uri: Uri, offlineCopyUri: Uri?): Publication = withContext(Dispatchers.IO) {
