@@ -119,13 +119,14 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 **Trabajo**
 - Añadir narración EPUB con TextToSpeech y soporte de voces Android instaladas.
 - Sincronizar voz con párrafo o fragmento, permitir pausar, reanudar, velocidad, temporizador y elegir desde dónde escuchar.
-- Reproducir archivos de audiolibro mediante Media3.
-- Implementar servicio de reproducción en segundo plano, notificación y controles de pantalla bloqueada, audífonos y Bluetooth.
-- Guardar posición de audio y restaurarla.
+- Hecho: reproducir archivos locales con Media3, progreso, pausa, saltos de 15 segundos y velocidad de 0.75x a 2x.
+- Pendiente: implementar servicio de reproducción en segundo plano, notificación y controles de pantalla bloqueada, audífonos y Bluetooth.
+- Pendiente: guardar posición de audio y restaurarla.
 
 **Se considera lista cuando**
 - TTS y audiolibros funcionan con la pantalla bloqueada y siguen tras cambiar de app.
 - El usuario puede pausar/reanudar, cambiar velocidad y usar temporizador.
+- Los audiolibros locales ya permiten pausar/reanudar, cambiar velocidad, buscar en la pista y saltar 15 segundos; esta entrega todavía no cubre segundo plano ni restauración de posición.
 - Reanudar la lectura por voz no altera inesperadamente la posición visual.
 
 ### Fase 6 — Acabado de lectura, accesibilidad y datos locales
