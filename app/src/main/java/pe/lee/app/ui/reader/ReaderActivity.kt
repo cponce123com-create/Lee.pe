@@ -175,6 +175,7 @@ private fun EpubReaderScreen(
             publication = opened
 
             val savedBook = bookDao.findByUri(uri.toString())
+            bookDao.markOpened(uri.toString(), System.currentTimeMillis())
             val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val legacyLocatorJson = preferences.getString(ReaderActivity.locatorPreferenceKey(uri), null)
             val locatorJson = savedBook?.epubLocator ?: legacyLocatorJson
