@@ -105,6 +105,7 @@ import pe.lee.app.data.local.OfflineBookStore
 import pe.lee.app.data.local.ReadingAnnotationEntity
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
@@ -266,6 +267,7 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
     var pdfSearchResults by remember(uri) { mutableStateOf<List<PdfSearchResult>>(emptyList()) }
     var pdfSearchMessage by remember(uri) { mutableStateOf<String?>(null) }
     var searchingPdf by remember { mutableStateOf(false) }
+    var pdfSearchJob by remember { mutableStateOf<Job?>(null) }
     var showAnnotations by remember { mutableStateOf(false) }
     var showNoteEditor by remember { mutableStateOf(false) }
     var selectionMode by remember { mutableStateOf(false) }
@@ -416,7 +418,7 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
         val current = handle ?: return
         pdfSearchResults = emptyList()
         pdfSearchMessage = "Buscando en el documento…"
-        coroutineScope.launch {
+        pdfSearchJob = coroutineScope.launch {
             searchingPdf = true
             try {
                 val matches = mutableListOf<PdfSearchResult>()
@@ -481,6 +483,7 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
                     ?: "No se pudo buscar en el PDF."
             } finally {
                 searchingPdf = false
+                pdfSearchJob = null
             }
         }
     }
@@ -870,7 +873,10 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
         }
 
         if (showPdfSearch) {
-            ModalBottomSheet(onDismissRequest = { showPdfSearch = false }) {
+            ModalBottomSheet(onDismissRequest = {
+                pdfSearchJob?.cancel()
+                showPdfSearch = false
+            }) {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp)
                 ) {
@@ -907,7 +913,8 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                                Text("Buscando página por página…")
+                                Text("Buscando página por página…", modifier = Modifier.weight(1f))
+                                TextButton(onClick = { pdfSearchJob?.cancel() }) { Text("Cancelar") }
                             }
                         }
                         pdfSearchMessage?.let { message ->
