@@ -52,6 +52,7 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
@@ -97,6 +98,8 @@ import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.commitNow
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
@@ -292,12 +295,33 @@ private fun EpubReaderScreen(
         mutableStateOf(context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getBoolean(ReaderActivity.keepScreenOnPreferenceKey(uri), false))
     }
-    var chromeVisible by remember { mutableStateOf(true) }
+    // Open directly on the page, without overlaying the book with toolbars.
+    // A tap on the EPUB restores the controls when needed.
+    var chromeVisible by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     DisposableEffect(Unit) {
         onDispose { ttsServiceBinding?.unbind() }
+    }
+
+    // In immersion mode the book occupies the entire screen. System bars return
+    // automatically whenever the reader controls are visible or this screen is closed.
+    DisposableEffect(activity) {
+        onDispose {
+            WindowInsetsControllerCompat(activity.window, activity.window.decorView)
+                .show(WindowInsetsCompat.Type.systemBars())
+        }
+    }
+    LaunchedEffect(activity, chromeVisible, loading, errorMessage) {
+        val bars = WindowInsetsControllerCompat(activity.window, activity.window.decorView)
+        if (chromeVisible || loading || errorMessage != null) {
+            bars.show(WindowInsetsCompat.Type.systemBars())
+        } else {
+            bars.systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            bars.hide(WindowInsetsCompat.Type.systemBars())
+        }
     }
 
     DisposableEffect(activity, uri) {
@@ -947,6 +971,7 @@ private fun ReaderChrome(
     onProgressChange: (Float) -> Unit
 ) {
     var showContents by remember { mutableStateOf(false) }
+    var showActionsMenu by remember { mutableStateOf(false) }
     var showAnnotations by remember { mutableStateOf(false) }
     var showNoteEditor by remember { mutableStateOf(false) }
     var editingAnnotation by remember { mutableStateOf<ReadingAnnotationEntity?>(null) }
@@ -1336,6 +1361,8 @@ private fun ReaderChrome(
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
+        // Compact toolbar: the original seven actions could not fit on narrow phones.
+        // Keep frequent actions visible and put everything else in an accessible menu.
         Surface(
             color = Color(0xD90A1423),
             shape = RoundedCornerShape(18.dp)
@@ -1365,20 +1392,44 @@ private fun ReaderChrome(
                         tint = if (ttsIsActive) Color(0xFF56D7FF) else Color.White
                     )
                 }
-                IconButton(onClick = { showSearch = true }) {
-                    Icon(Icons.Default.Search, contentDescription = "Buscar en el libro", tint = Color.White)
-                }
-                IconButton(onClick = { showAnnotations = true }) {
-                    Icon(Icons.Default.Bookmark, contentDescription = "Marcadores", tint = Color.White)
-                }
-                IconButton(onClick = { showAppearance = true }) {
-                    Icon(Icons.Default.TextFields, contentDescription = "Apariencia de lectura", tint = Color.White)
-                }
-                IconButton(onClick = { showContents = true }) {
-                    Icon(Icons.Default.FormatListBulleted, contentDescription = "Índice del libro", tint = Color.White)
-                }
-                IconButton(onClick = onToggleChrome) {
-                    Icon(Icons.Default.VisibilityOff, contentDescription = "Ocultar controles", tint = Color.White)
+                Box {
+                    IconButton(onClick = { showActionsMenu = true }) {
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = "Más opciones de lectura",
+                            tint = Color.White
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showActionsMenu,
+                        onDismissRequest = { showActionsMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Buscar en el libro") },
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                            onClick = { showActionsMenu = false; showSearch = true }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Marcadores y notas") },
+                            leadingIcon = { Icon(Icons.Default.Bookmark, contentDescription = null) },
+                            onClick = { showActionsMenu = false; showAnnotations = true }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Apariencia de lectura") },
+                            leadingIcon = { Icon(Icons.Default.TextFields, contentDescription = null) },
+                            onClick = { showActionsMenu = false; showAppearance = true }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Índice del libro") },
+                            leadingIcon = { Icon(Icons.Default.FormatListBulleted, contentDescription = null) },
+                            onClick = { showActionsMenu = false; showContents = true }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Ocultar controles") },
+                            leadingIcon = { Icon(Icons.Default.VisibilityOff, contentDescription = null) },
+                            onClick = { showActionsMenu = false; onToggleChrome() }
+                        )
+                    }
                 }
             }
         }
