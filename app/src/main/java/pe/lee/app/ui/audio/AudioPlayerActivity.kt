@@ -1,8 +1,14 @@
 package pe.lee.app.ui.audio
 
+import android.Manifest
+import android.content.ComponentName
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -25,17 +31,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
-import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
+import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import pe.lee.app.ui.theme.LeePeTheme
 
 class AudioPlayerActivity : ComponentActivity() {
-    private var player: ExoPlayer? = null
+    private var controllerFuture: ListenableFuture<MediaController>? = null
+    private val controllerState = mutableStateOf<MediaController?>(null)
+    private val connectionError = mutableStateOf<String?>(null)
+    private val notificationPermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,22 +59,63 @@ class AudioPlayerActivity : ComponentActivity() {
             finish()
             return
         }
-        val exoPlayer = ExoPlayer.Builder(this).build()
-        player = exoPlayer
-        exoPlayer.setMediaItem(MediaItem.fromUri(uri))
-        exoPlayer.prepare()
-        exoPlayer.playWhenReady = true
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "Audiolibro"
         setContent {
             LeePeTheme {
-                AudioPlayerScreen(title, exoPlayer) { finish() }
+                AudioPlayerScreen(
+                    title = title,
+                    controller = controllerState.value,
+                    error = connectionError.value,
+                    onClose = { finish() }
+                )
             }
+        }
+        requestNotificationPermissionIfNeeded()
+
+        val token = SessionToken(this, ComponentName(this, AudioPlaybackService::class.java))
+        val future = MediaController.Builder(this, token).buildAsync()
+        controllerFuture = future
+        future.addListener({
+            try {
+                val controller = future.get()
+                controllerState.value = controller
+                val mediaId = uri.toString()
+                if (controller.currentMediaItem?.mediaId != mediaId) {
+                    val item = MediaItem.Builder()
+                        .setMediaId(mediaId)
+                        .setUri(uri)
+                        .setMediaMetadata(
+                            MediaMetadata.Builder()
+                                .setTitle(title)
+                                .setArtist("Lee.pe")
+                                .build()
+                        )
+                        .build()
+                    controller.setMediaItem(item, AudioProgressStore.get(this, mediaId))
+                    controller.prepare()
+                    controller.play()
+                } else if (!controller.isPlaying) {
+                    controller.play()
+                }
+            } catch (_: Exception) {
+                connectionError.value = "No se pudo iniciar el reproductor. Vuelve a abrir el audiolibro."
+            }
+        }, mainExecutor)
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (
+            Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 
     override fun onDestroy() {
-        player?.release()
-        player = null
+        controllerFuture?.let { MediaController.releaseFuture(it) }
+        controllerFuture = null
+        controllerState.value = null
         super.onDestroy()
     }
 
@@ -69,32 +125,37 @@ class AudioPlayerActivity : ComponentActivity() {
 }
 
 @Composable
-private fun AudioPlayerScreen(title: String, player: ExoPlayer, onClose: () -> Unit) {
-    var playing by remember { mutableStateOf(player.isPlaying) }
-    var duration by remember { mutableLongStateOf(0L) }
-    var position by remember { mutableLongStateOf(0L) }
-    var speed by remember { mutableStateOf(1f) }
-    var error by remember { mutableStateOf<String?>(null) }
+private fun AudioPlayerScreen(
+    title: String,
+    controller: MediaController?,
+    error: String?,
+    onClose: () -> Unit
+) {
+    var playing by remember(controller) { mutableStateOf(controller?.isPlaying ?: false) }
+    var duration by remember(controller) { mutableLongStateOf(0L) }
+    var position by remember(controller) { mutableLongStateOf(0L) }
+    var speed by remember(controller) { mutableStateOf(controller?.playbackParameters?.speed ?: 1f) }
+    var playerError by remember(controller) { mutableStateOf<String?>(null) }
     val speeds = listOf(0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
 
-    DisposableEffect(player) {
+    DisposableEffect(controller) {
         val listener = object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) { playing = isPlaying }
             override fun onPlaybackStateChanged(playbackState: Int) {
-                duration = player.duration.takeIf { it > 0L } ?: 0L
+                duration = controller?.duration?.takeIf { it > 0L } ?: 0L
             }
             override fun onPlayerError(playbackException: PlaybackException) {
-                error = "No se pudo reproducir este archivo. Comprueba que no esté dañado o protegido."
+                playerError = "No se pudo reproducir este archivo. Comprueba que no esté dañado o protegido."
             }
         }
-        player.addListener(listener)
-        onDispose { player.removeListener(listener) }
+        controller?.addListener(listener)
+        onDispose { controller?.removeListener(listener) }
     }
 
-    LaunchedEffect(player) {
+    LaunchedEffect(controller) {
         while (isActive) {
-            position = player.currentPosition.coerceAtLeast(0L)
-            duration = player.duration.takeIf { it > 0L } ?: 0L
+            position = controller?.currentPosition?.coerceAtLeast(0L) ?: 0L
+            duration = controller?.duration?.takeIf { it > 0L } ?: 0L
             delay(500)
         }
     }
@@ -126,27 +187,37 @@ private fun AudioPlayerScreen(title: String, player: ExoPlayer, onClose: () -> U
                 Spacer(Modifier.height(28.dp))
                 Text(title, fontSize = 23.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                 Text("Audiolibro local · disponible sin conexión", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
-                error?.let { Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 16.dp)) }
+                if (controller == null && error == null) {
+                    Text("Conectando el reproductor…", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 12.dp))
+                }
+                (playerError ?: error)?.let {
+                    Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 16.dp))
+                }
             }
 
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Slider(
                     value = position.coerceAtMost(duration).toFloat(),
                     onValueChange = { position = it.toLong() },
-                    onValueChangeFinished = { player.seekTo(position.coerceIn(0L, duration.coerceAtLeast(0L))) },
+                    onValueChangeFinished = {
+                        controller?.seekTo(position.coerceIn(0L, duration.coerceAtLeast(0L)))
+                    },
                     valueRange = 0f..duration.coerceAtLeast(1L).toFloat(),
-                    enabled = duration > 0L
+                    enabled = controller != null && duration > 0L
                 )
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(formatTime(position), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                     Text("-${formatTime((duration - position).coerceAtLeast(0L))}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { player.seekTo((player.currentPosition - 15_000L).coerceAtLeast(0L)) }) {
+                    IconButton(enabled = controller != null, onClick = {
+                        controller?.seekTo((controller.currentPosition - 15_000L).coerceAtLeast(0L))
+                    }) {
                         Icon(Icons.Default.Replay10, contentDescription = "Retroceder 15 segundos", modifier = Modifier.size(32.dp))
                     }
                     IconButton(
-                        onClick = { if (player.isPlaying) player.pause() else player.play() },
+                        enabled = controller != null,
+                        onClick = { if (controller?.isPlaying == true) controller.pause() else controller?.play() },
                         modifier = Modifier.padding(horizontal = 22.dp).size(76.dp).clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primary)
                     ) {
@@ -157,18 +228,19 @@ private fun AudioPlayerScreen(title: String, player: ExoPlayer, onClose: () -> U
                             modifier = Modifier.size(40.dp)
                         )
                     }
-                    IconButton(onClick = {
-                        player.seekTo((player.currentPosition + 15_000L).coerceAtMost(duration.coerceAtLeast(0L)))
+                    IconButton(enabled = controller != null, onClick = {
+                        val target = (controller?.currentPosition ?: 0L) + 15_000L
+                        controller?.seekTo(if (duration > 0L) target.coerceAtMost(duration) else target)
                     }) {
                         Icon(Icons.Default.Forward10, contentDescription = "Avanzar 15 segundos", modifier = Modifier.size(32.dp))
                     }
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                     Text("Velocidad", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    TextButton(onClick = {
+                    TextButton(enabled = controller != null, onClick = {
                         val index = speeds.indexOf(speed).coerceAtLeast(0)
                         speed = speeds[(index + 1) % speeds.size]
-                        player.playbackParameters = PlaybackParameters(speed)
+                        controller?.playbackParameters = PlaybackParameters(speed)
                     }) {
                         Text("${speed}x", fontWeight = FontWeight.Bold)
                     }
