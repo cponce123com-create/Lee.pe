@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.ui.platform.LocalDensity
 import androidx.activity.ComponentActivity
+import pe.lee.app.data.local.LeeDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
@@ -102,6 +103,7 @@ private data class PdfHandle(
 @Composable
 private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
     val context = LocalContext.current
+    val bookDao = remember(context) { LeeDatabase.get(context).bookDao() }
     var handle by remember { mutableStateOf<PdfHandle?>(null) }
     var pageCount by remember { mutableIntStateOf(0) }
     var pageIndex by remember { mutableIntStateOf(0) }
@@ -121,7 +123,14 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
             handle = opened
             pageCount = opened.renderer.pageCount
             val prefs = context.getSharedPreferences(PDF_PREFS_NAME, Context.MODE_PRIVATE)
-            val restoredPage = prefs.getInt("pdf-page:$uri", 0).coerceIn(0, (pageCount - 1).coerceAtLeast(0))
+            val savedBook = bookDao.findByUri(uri.toString())
+            val legacyPageKey = "pdf-page:$uri"
+            val savedPage = if (prefs.contains(legacyPageKey)) {
+                prefs.getInt(legacyPageKey, 0)
+            } else {
+                savedBook?.pdfPageIndex ?: 0
+            }
+            val restoredPage = savedPage.coerceIn(0, (pageCount - 1).coerceAtLeast(0))
             pageIndex = restoredPage
             sliderPage = restoredPage.toFloat()
             loading = false
@@ -167,6 +176,13 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                 .edit()
                 .putInt("pdf-page:$uri", pageIndex)
                 .apply()
+            val progress = if (pageCount <= 1) 0f else pageIndex.toFloat() / (pageCount - 1)
+            bookDao.savePdfProgress(
+                uri = uri.toString(),
+                pageIndex = pageIndex,
+                progress = progress,
+                openedAt = System.currentTimeMillis()
+            )
         } catch (error: Exception) {
             errorMessage = error.message ?: "No se pudo renderizar esta página."
         } finally {
