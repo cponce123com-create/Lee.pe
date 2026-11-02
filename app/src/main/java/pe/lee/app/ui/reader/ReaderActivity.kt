@@ -50,6 +50,7 @@ import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
@@ -129,6 +130,8 @@ import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.services.locateProgression
+import org.readium.r2.shared.publication.services.search.SearchService
+import org.readium.r2.shared.publication.services.search.search
 import org.readium.r2.shared.util.AbsoluteUrl
 import org.readium.r2.shared.util.asset.AssetRetriever
 import org.readium.r2.shared.util.getOrElse
@@ -728,7 +731,9 @@ private fun EpubReaderScreen(
                 onPrevious = { navigator?.goBackward(animated = true) },
                 onNext = { navigator?.goForward(animated = true) },
                 contents = publication?.let { flattenContents(it.tableOfContents) }.orEmpty(),
+                searchPublication = publication,
                 onSelectContent = { link -> navigator?.go(link, animated = true) },
+                onSelectSearchResult = { locator -> navigator?.go(locator, animated = true) },
                 onSeek = {
                     coroutineScope.launch {
                         publication?.locateProgression(it.toDouble())?.let { locator ->
@@ -894,7 +899,7 @@ private fun TtsControls(
 }
 
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalReadiumApi::class)
 private fun ReaderChrome(
     title: String,
     ttsIsActive: Boolean,
@@ -916,10 +921,12 @@ private fun ReaderChrome(
     onPreferencesChange: (EpubPreferences) -> Unit,
     onToggleChrome: () -> Unit,
     contents: List<TocEntry>,
+    searchPublication: Publication?,
     onBack: () -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onSelectContent: (Link) -> Unit,
+    onSelectSearchResult: (Locator) -> Unit,
     onSeek: (Float) -> Unit,
     onProgressChange: (Float) -> Unit
 ) {
@@ -930,9 +937,144 @@ private fun ReaderChrome(
     var noteDraft by remember { mutableStateOf("") }
     var showAppearance by remember { mutableStateOf(false) }
     var showGoTo by remember { mutableStateOf(false) }
+    var showSearch by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    var searchResults by remember { mutableStateOf<List<Locator>>(emptyList()) }
+    var searching by remember { mutableStateOf(false) }
+    var searchError by remember { mutableStateOf<String?>(null) }
+    var searchLimitReached by remember { mutableStateOf(false) }
+    val searchScope = rememberCoroutineScope()
     var targetPercent by remember { mutableStateOf("") }
     val targetProgress = targetPercent.replace(',', '.').toFloatOrNull()
         ?.takeIf { it in 0f..100f }
+
+    if (showSearch) {
+        ModalBottomSheet(onDismissRequest = { showSearch = false }) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text("Buscar en el EPUB", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier.weight(1f),
+                        label = { Text("Palabra o frase") },
+                        singleLine = true
+                    )
+                    IconButton(
+                        enabled = searchQuery.isNotBlank() && !searching,
+                        onClick = {
+                            val query = searchQuery.trim()
+                            val targetPublication = searchPublication
+                            if (query.isNotBlank() && targetPublication != null) {
+                                searching = true
+                                searchError = null
+                                searchResults = emptyList()
+                                searchLimitReached = false
+                                searchScope.launch {
+                                    try {
+                                        val result = withContext(Dispatchers.IO) {
+                                            val iterator = targetPublication.search(
+                                                query,
+                                                SearchService.Options(
+                                                    caseSensitive = false,
+                                                    diacriticSensitive = false
+                                                )
+                                            ) ?: throw IOException("Este EPUB no permite búsquedas.")
+                                            val locators = mutableListOf<Locator>()
+                                            var pagesRead = 0
+                                            var limitReached = false
+                                            try {
+                                                while (locators.size < 100 && pagesRead < 20) {
+                                                    val page = iterator.next().getOrElse { error ->
+                                                        throw IOException(error.message)
+                                                    } ?: break
+                                                    pagesRead++
+                                                    locators += page.locators.take(100 - locators.size)
+                                                }
+                                                limitReached = locators.size >= 100 ||
+                                                    (iterator.resultCount?.let { it > locators.size } == true)
+                                            } finally {
+                                                iterator.close()
+                                            }
+                                            locators to limitReached
+                                        }
+                                        searchResults = result.first
+                                        searchLimitReached = result.second
+                                    } catch (cancelled: CancellationException) {
+                                        throw cancelled
+                                    } catch (error: Exception) {
+                                        searchError = error.message ?: "No se pudo buscar en este EPUB."
+                                    } finally {
+                                        searching = false
+                                    }
+                                }
+                            } else if (targetPublication == null) {
+                                searchError = "El libro todavía se está preparando."
+                            }
+                        }
+                    ) {
+                        Icon(Icons.Default.Search, contentDescription = "Buscar")
+                    }
+                }
+                if (searching) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        Text("Buscando en el libro…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                searchError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                if (!searching && searchResults.isNotEmpty()) {
+                    Text(
+                        if (searchLimitReached) "Mostrando hasta 100 coincidencias" else "${searchResults.size} coincidencias",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 13.sp
+                    )
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        items(searchResults) { locator ->
+                            val excerpt = locator.text.highlight.ifBlank { "Coincidencia en el texto" }
+                            val percent = locator.locations.totalProgression
+                                ?.let { "${(it.coerceIn(0.0, 1.0) * 100).toInt()}%" }
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        showSearch = false
+                                        onSelectSearchResult(locator)
+                                    },
+                                color = MaterialTheme.colorScheme.surface,
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(excerpt, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                                    percent?.let {
+                                        Text(it, color = MaterialTheme.colorScheme.secondary, fontSize = 12.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if (!searching && searchError == null && searchQuery.isNotBlank()) {
+                    Text("Escribe la búsqueda y toca la lupa.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else if (!searching && searchResults.isEmpty() && searchError == null && searchQuery.isBlank()) {
+                    Text("Busca una palabra o frase en el contenido del libro.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+        }
+    }
 
     if (showAnnotations) {
         ModalBottomSheet(onDismissRequest = { showAnnotations = false }) {
@@ -1194,6 +1336,9 @@ private fun ReaderChrome(
                         contentDescription = if (ttsIsActive && ttsIsPlaying) "Pausar narración" else "Leer en voz alta",
                         tint = if (ttsIsActive) Color(0xFF56D7FF) else Color.White
                     )
+                }
+                IconButton(onClick = { showSearch = true }) {
+                    Icon(Icons.Default.Search, contentDescription = "Buscar en el libro", tint = Color.White)
                 }
                 IconButton(onClick = { showAnnotations = true }) {
                     Icon(Icons.Default.Bookmark, contentDescription = "Marcadores", tint = Color.White)
