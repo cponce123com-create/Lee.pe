@@ -1,5 +1,6 @@
 package pe.lee.app.ui.reader
 
+import android.app.Application
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -40,6 +41,11 @@ import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.TextFields
+import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -61,6 +67,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -86,6 +93,10 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import pe.lee.app.data.local.LeeDatabase
 import pe.lee.app.data.local.ReadingAnnotationEntity
+import org.readium.navigator.media.tts.AndroidTtsNavigator
+import org.readium.navigator.media.tts.AndroidTtsNavigatorFactory
+import org.readium.navigator.media.tts.TtsNavigator
+import org.readium.navigator.media.tts.android.AndroidTtsPreferences
 import org.readium.r2.navigator.Decoration
 import org.readium.r2.navigator.epub.EpubNavigatorFactory
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
@@ -204,6 +215,17 @@ private fun EpubReaderScreen(
 
     var publication by remember { mutableStateOf<Publication?>(null) }
     var navigator by remember { mutableStateOf<EpubNavigatorFragment?>(null) }
+    var ttsNavigator by remember(uri) { mutableStateOf<AndroidTtsNavigator?>(null) }
+    var ttsIsPlaying by remember { mutableStateOf(false) }
+    var ttsSentence by remember { mutableStateOf("") }
+    var ttsError by remember { mutableStateOf<String?>(null) }
+    var ttsSpeed by remember(uri) {
+        mutableFloatStateOf(
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .getFloat(ttsSpeedPreferenceKey(uri), 1f).coerceIn(0.5f, 2f)
+        )
+    }
+    var ttsTimerMinutes by remember(uri) { mutableIntStateOf(0) }
     var progress by remember { mutableFloatStateOf(0f) }
     var epubPreferences by remember { mutableStateOf(EpubPreferences()) }
     var readerBrightness by remember(uri) {
@@ -217,6 +239,10 @@ private fun EpubReaderScreen(
     var chromeVisible by remember { mutableStateOf(true) }
     var loading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    DisposableEffect(uri) {
+        onDispose { ttsNavigator?.close() }
+    }
 
     DisposableEffect(activity, uri) {
         val originalBrightness = activity.window.attributes.screenBrightness
@@ -356,6 +382,48 @@ private fun EpubReaderScreen(
         reader.applyDecorations(highlights, ANNOTATION_DECORATION_GROUP)
     }
 
+    LaunchedEffect(ttsNavigator, navigator) {
+        val speech = ttsNavigator ?: return@LaunchedEffect
+        val reader = navigator ?: return@LaunchedEffect
+        speech.location.collect { location ->
+            ttsSentence = location.utterance
+            reader.applyDecorations(
+                listOf(
+                    Decoration(
+                        id = "tts-current-utterance",
+                        locator = location.utteranceLocator,
+                        style = Decoration.Style.Highlight(tint = 0xFF56D7FF.toInt())
+                    )
+                ),
+                TTS_DECORATION_GROUP
+            )
+            reader.go(location.utteranceLocator, animated = false)
+        }
+    }
+
+    LaunchedEffect(ttsNavigator) {
+        val speech = ttsNavigator ?: return@LaunchedEffect
+        speech.playback.collect { playback ->
+            ttsIsPlaying = playback.playWhenReady
+            if (playback.state is TtsNavigator.State.Ended) ttsIsPlaying = false
+            if (playback.state is TtsNavigator.State.Failure) {
+                ttsError = "No se pudo iniciar la voz. Comprueba que haya una voz de Android instalada para el idioma del libro."
+            }
+        }
+    }
+
+    LaunchedEffect(ttsNavigator, ttsTimerMinutes) {
+        val speech = ttsNavigator ?: return@LaunchedEffect
+        val minutes = ttsTimerMinutes
+        if (minutes <= 0) return@LaunchedEffect
+        kotlinx.coroutines.delay(minutes * 60_000L)
+        if (ttsNavigator === speech) {
+            speech.pause()
+            ttsIsPlaying = false
+            ttsTimerMinutes = 0
+        }
+    }
+
     LaunchedEffect(navigator) {
         val reader = navigator ?: return@LaunchedEffect
         reader.currentLocator.collect { locator ->
@@ -372,6 +440,54 @@ private fun EpubReaderScreen(
                 progress = totalProgression?.toFloat() ?: progress,
                 openedAt = System.currentTimeMillis()
             )
+        }
+    }
+
+    fun stopTts() {
+        ttsNavigator?.close()
+        ttsNavigator = null
+        ttsIsPlaying = false
+        ttsSentence = ""
+        ttsTimerMinutes = 0
+        coroutineScope.launch {
+            navigator?.applyDecorations(emptyList(), TTS_DECORATION_GROUP)
+        }
+    }
+
+    fun startOrToggleTts() {
+        val current = ttsNavigator
+        if (current != null) {
+            if (ttsIsPlaying) current.pause() else current.play()
+            return
+        }
+        coroutineScope.launch {
+            val activePublication = publication
+            if (activePublication == null) {
+                ttsError = "El EPUB todavía se está preparando."
+                return@launch
+            }
+            val factory = AndroidTtsNavigatorFactory(
+                context.applicationContext as Application,
+                activePublication
+            )
+            if (factory == null) {
+                ttsError = "Este EPUB no permite narración por voz."
+                return@launch
+            }
+            val speech = factory.createNavigator(
+                listener = object : AndroidTtsNavigator.Listener {
+                    override fun onStopRequested() { stopTts() }
+                },
+                initialLocator = (navigator as? VisualNavigator)?.firstVisibleElementLocator()
+                    ?: navigator?.currentLocator?.value,
+                initialPreferences = AndroidTtsPreferences(speed = ttsSpeed.toDouble())
+            ).getOrElse { failure ->
+                ttsError = "No se pudo preparar la narración: ${failure.message ?: "error de voz"}"
+                return@launch
+            }
+            ttsError = null
+            ttsNavigator = speech
+            speech.play()
         }
     }
 
@@ -413,6 +529,9 @@ private fun EpubReaderScreen(
         if (!loading && errorMessage == null) {
             if (chromeVisible) ReaderChrome(
                 title = title,
+                ttsIsActive = ttsNavigator != null,
+                ttsIsPlaying = ttsIsPlaying,
+                onToggleTts = { startOrToggleTts() },
                 progress = progress,
                 annotations = annotations,
                 onAddBookmark = {
@@ -506,13 +625,102 @@ private fun EpubReaderScreen(
                 },
                 onProgressChange = { progress = it }
             )
+
+            if (ttsNavigator != null) {
+                TtsControls(
+                    sentence = ttsSentence,
+                    isPlaying = ttsIsPlaying,
+                    speed = ttsSpeed,
+                    timerMinutes = ttsTimerMinutes,
+                    error = ttsError,
+                    onTogglePlayback = { startOrToggleTts() },
+                    onSpeedChange = { speed ->
+                        ttsSpeed = speed
+                        ttsNavigator?.submitPreferences(AndroidTtsPreferences(speed = speed.toDouble()))
+                        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+                            .putFloat(ttsSpeedPreferenceKey(uri), speed).apply()
+                    },
+                    onTimerChange = {
+                        ttsTimerMinutes = when (ttsTimerMinutes) {
+                            0 -> 15
+                            15 -> 30
+                            30 -> 60
+                            else -> 0
+                        }
+                    },
+                    onStop = { stopTts() },
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 112.dp)
+                )
+            } else if (ttsError != null) {
+                Surface(
+                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 88.dp, start = 16.dp, end = 16.dp),
+                    color = Color(0xEE24152A),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Text(ttsError.orEmpty(), color = Color.White, modifier = Modifier.padding(14.dp))
+                }
+            }
         }
     }
 }
 
 @Composable
+private fun TtsControls(
+    sentence: String,
+    isPlaying: Boolean,
+    speed: Float,
+    timerMinutes: Int,
+    error: String?,
+    onTogglePlayback: () -> Unit,
+    onSpeedChange: (Float) -> Unit,
+    onTimerChange: () -> Unit,
+    onStop: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val speeds = listOf(0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
+    Surface(
+        modifier = modifier.fillMaxWidth().padding(horizontal = 12.dp),
+        color = Color(0xF20A1423),
+        shape = RoundedCornerShape(18.dp)
+    ) {
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
+            Text(
+                sentence.ifBlank { "Narración del libro" },
+                color = Color.White,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                fontSize = 13.sp
+            )
+            error?.let { Text(it, color = Color(0xFFFFB4AB), fontSize = 12.sp) }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                IconButton(onClick = onTogglePlayback) {
+                    Icon(
+                        if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = if (isPlaying) "Pausar voz" else "Continuar voz",
+                        tint = Color.White
+                    )
+                }
+                TextButton(onClick = {
+                    val index = speeds.indexOf(speed).coerceAtLeast(0)
+                    onSpeedChange(speeds[(index + 1) % speeds.size])
+                }) { Text("${speed}x") }
+                TextButton(onClick = onTimerChange) {
+                    Icon(Icons.Default.Timer, contentDescription = null)
+                    Text(if (timerMinutes == 0) "Temporizador" else "${timerMinutes} min")
+                }
+                IconButton(onClick = onStop) {
+                    Icon(Icons.Default.Stop, contentDescription = "Detener narración", tint = Color.White)
+                }
+            }
+        }
+    }
+}
+
 private fun ReaderChrome(
     title: String,
+    ttsIsActive: Boolean,
+    ttsIsPlaying: Boolean,
+    onToggleTts: () -> Unit,
     progress: Float,
     annotations: List<ReadingAnnotationEntity>,
     onAddBookmark: () -> Unit,
@@ -801,6 +1009,13 @@ private fun ReaderChrome(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                IconButton(onClick = onToggleTts) {
+                    Icon(
+                        Icons.Default.VolumeUp,
+                        contentDescription = if (ttsIsActive && ttsIsPlaying) "Pausar narración" else "Leer en voz alta",
+                        tint = if (ttsIsActive) Color(0xFF56D7FF) else Color.White
+                    )
+                }
                 IconButton(onClick = { showAnnotations = true }) {
                     Icon(Icons.Default.Bookmark, contentDescription = "Marcadores", tint = Color.White)
                 }
@@ -1068,6 +1283,8 @@ private const val NAVIGATOR_TAG = "lee_pe_epub_navigator"
 private const val MENU_HIGHLIGHT = 1
 private const val MENU_COPY_SELECTION = 2
 private const val ANNOTATION_DECORATION_GROUP = "lee_pe_annotations"
+private const val TTS_DECORATION_GROUP = "lee_pe_tts"
+private fun ttsSpeedPreferenceKey(uri: Uri): String = "tts-speed:$uri"
 private const val DEFAULT_HIGHLIGHT_COLOR = 0xFFFFD54F.toInt()
 
 private data class TocEntry(
