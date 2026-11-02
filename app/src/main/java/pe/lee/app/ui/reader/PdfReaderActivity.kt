@@ -124,6 +124,7 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
             pageCount = opened.renderer.pageCount
             val prefs = context.getSharedPreferences(PDF_PREFS_NAME, Context.MODE_PRIVATE)
             val savedBook = bookDao.findByUri(uri.toString())
+            bookDao.markOpened(uri.toString(), System.currentTimeMillis())
             val legacyPageKey = "pdf-page:$uri"
             val savedPage = if (prefs.contains(legacyPageKey)) {
                 prefs.getInt(legacyPageKey, 0)
