@@ -1,38 +1,38 @@
 # Lee.pe para Android
 
-**Lee.pe** será un lector nativo de libros para Android, diseñado para leer en una página completa, escuchar contenido y continuar sin conexión.
+**Lee.pe** es una aplicación nativa Android para leer y escuchar libros desde el teléfono, con lectura local y sin conexión como objetivo principal.
 
-## Objetivo
+## Estado del desarrollo
 
-Construir una biblioteca personal que importe libros del dispositivo y ofrezca una experiencia de lectura amplia, cómoda y configurable. La app funcionará localmente primero; la sincronización con Escribiendo será opcional y posterior.
+La biblioteca importa EPUB, PDF y archivos de audiolibro desde el selector del sistema y conserva sus URI locales. Los EPUB ya se abren con el navegador de Readium en una vista de página completa. El avance se puede mover con la barra de progreso y la posición estructural del EPUB se guarda para reanudar la lectura.
+
+PDF y audiolibros aparecen en la biblioteca, pero sus visores todavía no están implementados. La biblioteca usa actualmente preferencias locales como almacenamiento inicial; la migración a Room está planificada antes de ampliar las funciones de biblioteca y anotaciones.
+
+Consulta el [plan de trabajo](docs/PLAN_TRABAJO.md) para el orden de los siguientes módulos y sus criterios de salida.
 
 ## Tecnologías
 
 - Kotlin y Jetpack Compose para la app Android.
-- Readium Kotlin Toolkit para navegación de publicaciones EPUB.
-- Android Storage Access Framework para importar archivos sin acceso general al almacenamiento.
-- Room para la biblioteca, progreso, notas y marcadores estructurados.
-- Android TextToSpeech para narración y Media3 para audiolibros.
-- Render y Neon solo para API y sincronización opcional; Cloudinary para portadas u otros recursos, nunca para subir libros automáticamente.
-
-## Estado actual
-
-El repositorio contiene la configuración inicial de Android, un tema visual oscuro y una biblioteca prototipo que importa archivos y guarda sus URI localmente. Todavía no abre ni renderiza EPUB, PDF o audio. La implementación se organizará según el [Plan de trabajo](docs/PLAN_TRABAJO.md).
+- Readium Kotlin Toolkit para EPUB y navegación por locators.
+- Android Storage Access Framework para importar archivos con permisos limitados.
+- Room previsto para biblioteca, progreso, marcadores y anotaciones estructuradas.
+- Android TextToSpeech para narración y Media3 para audiolibros, en fases posteriores.
+- Render y Neon solo para API y sincronización opcional; Cloudinary para portadas si hace falta. Los libros no se subirán automáticamente.
 
 ## Abrir el proyecto
 
 1. Clona este repositorio.
-2. Ábrelo en una versión reciente de Android Studio compatible con Android Gradle Plugin 9.3.
+2. Ábrelo en Android Studio compatible con Android Gradle Plugin 9.3.
 3. Instala Android SDK Platform 37 y sincroniza Gradle.
 4. Ejecuta la configuración `app` en un emulador o dispositivo Android.
 
 ## Principios
 
-- La lectura y la biblioteca deben seguir disponibles sin internet.
-- No se carga el contenido de los libros al servidor.
-- La ubicación de lectura se guarda como una referencia estructural además del porcentaje, para que sobreviva a cambios de tamaño de letra.
-- Las pantallas solo mostrarán funciones que ya estén implementadas.
-- La app Lee.pe y la sección Lector de Escribiendo serán productos conectados por una API; no serán dos lectores independientes con formatos de datos incompatibles.
+- La lectura local no depende de internet.
+- La posición EPUB se conserva con un locator estructural además del porcentaje.
+- La sincronización será opcional y no enviará el archivo original por defecto.
+- Las pantallas solo mostrarán funciones implementadas.
+- Lee.pe y la sección Lector de Escribiendo se conectarán mediante una API después de estabilizar la experiencia local.
 
 ## Licencias
 
