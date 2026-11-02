@@ -91,7 +91,8 @@ private data class LocalBook(
     val isFavorite: Boolean,
     val importedAt: Long,
     val lastOpenedAt: Long?,
-    val readProgress: Float
+    val readProgress: Float,
+    val collectionId: String?
 )
 
 @Composable
@@ -100,11 +101,15 @@ fun LibraryScreen() {
     val dao = remember(context) { LeeDatabase.get(context).bookDao() }
     val storedBooks by dao.observeAll().collectAsState(initial = emptyList())
     val books = remember(storedBooks) {
-        storedBooks.map { LocalBook(Uri.parse(it.uri), it.title, it.format, it.isFavorite, it.importedAt, it.lastOpenedAt, it.readProgress) }
+        storedBooks.map { LocalBook(Uri.parse(it.uri), it.title, it.format, it.isFavorite, it.importedAt, it.lastOpenedAt, it.readProgress, it.collectionId) }
     }
     val coroutineScope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("Todos") }
+    var selectedCollection by remember { mutableStateOf<String?>(null) }
+    var collectionMenuExpanded by remember { mutableStateOf(false) }
+    var organizingBook by remember { mutableStateOf<LocalBook?>(null) }
+    var collectionDraft by remember { mutableStateOf("") }
     var pendingRemoval by remember { mutableStateOf<LocalBook?>(null) }
     var editingBook by remember { mutableStateOf<LocalBook?>(null) }
     var titleDraft by remember { mutableStateOf("") }
@@ -185,6 +190,83 @@ fun LibraryScreen() {
         )
     }
 
+    organizingBook?.let { book ->
+        AlertDialog(
+            onDismissRequest = { organizingBook = null },
+            title = { Text("Colección del libro") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        book.title,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (collections.isNotEmpty()) {
+                        Text("Mover a una colección", fontWeight = FontWeight.SemiBold)
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            collections.forEach { collection ->
+                                FilterChip(
+                                    selected = book.collectionId == collection,
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            dao.updateCollection(book.uri.toString(), collection)
+                                            organizingBook = null
+                                        }
+                                    },
+                                    label = { Text(collection) }
+                                )
+                            }
+                        }
+                    }
+                    OutlinedTextField(
+                        value = collectionDraft,
+                        onValueChange = { collectionDraft = it },
+                        label = { Text("Crear o usar colección") },
+                        placeholder = { Text("Ej. Fantasía, Por leer") },
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = collectionDraft.isNotBlank(),
+                    onClick = {
+                        val name = collectionDraft.trim()
+                        coroutineScope.launch {
+                            runCatching { dao.updateCollection(book.uri.toString(), name) }
+                                .onSuccess {
+                                    organizingBook = null
+                                    Toast.makeText(context, "Libro organizado en “$name”", Toast.LENGTH_SHORT).show()
+                                }
+                                .onFailure {
+                                    Toast.makeText(context, "No se pudo guardar la colección", Toast.LENGTH_LONG).show()
+                                }
+                        }
+                    }
+                ) { Text("Guardar") }
+            },
+            dismissButton = {
+                Row {
+                    if (book.collectionId != null) {
+                        TextButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    dao.updateCollection(book.uri.toString(), null)
+                                    organizingBook = null
+                                }
+                            }
+                        ) { Text("Quitar") }
+                    }
+                    TextButton(onClick = { organizingBook = null }) { Text("Cancelar") }
+                }
+            }
+        )
+    }
+
     editingBook?.let { book ->
         AlertDialog(
             onDismissRequest = { editingBook = null },
@@ -221,6 +303,11 @@ fun LibraryScreen() {
     }
 
     val filters = listOf("Todos", "En curso", "Terminados", "Favoritos", "EPUB", "PDF", "Audio")
+    val collections = remember(books) {
+        books.mapNotNull { it.collectionId?.trim()?.takeIf { name -> name.isNotBlank() } }
+            .distinctBy { it.lowercase() }
+            .sortedBy { it.lowercase() }
+    }
     val visibleBooks = books.filter { book ->
         val matchesQuery = book.title.contains(query, ignoreCase = true)
         val matchesFilter = when (selectedFilter) {
@@ -232,7 +319,8 @@ fun LibraryScreen() {
             "Audio" -> book.format == "Audio"
             else -> true
         }
-        matchesQuery && matchesFilter
+        val matchesCollection = selectedCollection == null || book.collectionId == selectedCollection
+        matchesQuery && matchesFilter && matchesCollection
     }
     val continueBooks = books
         .filter { it.format != "Audio" && it.readProgress > 0f && it.readProgress < 1f }
@@ -368,6 +456,40 @@ fun LibraryScreen() {
             }
         }
 
+        if (collections.isNotEmpty()) {
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Colección", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                    Box {
+                        TextButton(onClick = { collectionMenuExpanded = true }) {
+                            Text(selectedCollection ?: "Todas")
+                        }
+                        DropdownMenu(
+                            expanded = collectionMenuExpanded,
+                            onDismissRequest = { collectionMenuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Todas las colecciones") },
+                                onClick = {
+                                    selectedCollection = null
+                                    collectionMenuExpanded = false
+                                }
+                            )
+                            collections.forEach { collection ->
+                                DropdownMenuItem(
+                                    text = { Text(collection) },
+                                    onClick = {
+                                        selectedCollection = collection
+                                        collectionMenuExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -447,6 +569,10 @@ fun LibraryScreen() {
                             onEditTitle = {
                                 editingBook = book
                                 titleDraft = book.title
+                            },
+                            onOrganize = {
+                                organizingBook = book
+                                collectionDraft = book.collectionId.orEmpty()
                             }
                         )
                     }
@@ -630,7 +756,8 @@ private fun BookCard(
     onOpen: () -> Unit,
     onRemove: () -> Unit,
     onToggleFavorite: () -> Unit,
-    onEditTitle: () -> Unit
+    onEditTitle: () -> Unit,
+    onOrganize: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     val (icon, colors) = when (book.format) {
@@ -674,6 +801,13 @@ private fun BookCard(
                             onClick = {
                                 menuExpanded = false
                                 onToggleFavorite()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Organizar en colección") },
+                            onClick = {
+                                menuExpanded = false
+                                onOrganize()
                             }
                         )
                         DropdownMenuItem(
