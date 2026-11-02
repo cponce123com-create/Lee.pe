@@ -152,7 +152,8 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Delegar temporizador TTS únicamente al servicio multimedia, con estado de expiración observable.
 - [ ] Comprobar en dispositivos que restauración EPUB, modo PDF e interfaz de temporizador funcionan correctamente.
 - Mejorar portadas, estados vacíos, errores, carga y recuperación tras cierre inesperado.
-- [ ] Crear respaldo **manual y voluntario**, local, exportable y restaurable de biblioteca, preferencias, progreso y anotaciones. La copia automática del sistema está deshabilitada por privacidad; desinstalar la app actualmente puede borrar datos locales.
+- [x] Implementar respaldo **manual y voluntario**, local, exportable y restaurable de metadatos de biblioteca, ajustes, progreso, estadísticas y anotaciones. No contiene archivos originales: los libros deben reimportarse antes de restaurar; ver [respaldo local](RESPALDO_LOCAL.md).
+- [ ] Validar respaldo y restauración en teléfonos reales, incluyendo reins­talación, coincidencias de título, JSON dañado y archivos grandes. El respaldo no está cifrado.
 
 **Se considera lista cuando**
 - Las funciones principales son accesibles sin depender solo del color o de gestos.
