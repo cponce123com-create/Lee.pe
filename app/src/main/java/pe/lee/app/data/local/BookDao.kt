@@ -37,6 +37,9 @@ interface BookDao {
     """)
     suspend fun savePdfProgress(uri: String, pageIndex: Int, progress: Float, openedAt: Long)
 
+    @Query("UPDATE library_books SET isFavorite = :isFavorite WHERE uri = :uri")
+    suspend fun updateFavorite(uri: String, isFavorite: Boolean)
+
     @Query("DELETE FROM library_books WHERE uri = :uri")
     suspend fun deleteByUri(uri: String)
 }
