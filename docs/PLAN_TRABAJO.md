@@ -187,7 +187,8 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Comprobar el espacio disponible antes y durante la copia temporal.
 - [x] Dar al enlace TTS un ciclo explícito de desconexión al detener la voz o salir del lector.
 - [x] Ejecutar el build Android en pull requests e instalar explícitamente Android SDK Platform 36, alineado con compileSdk/targetSdk 36.
-- [ ] Confirmar compilación y lint tras el cambio; el entorno local de auditoría no pudo descargar Gradle.
+- [x] Confirmar `assembleDebug` en CI del pull request #1 (run 24).
+- [ ] Ejecutar lint y pruebas; el entorno local no pudo descargar Gradle y el repositorio no tiene suites de prueba.
 - [ ] Validar PDF, notificaciones y reproducción TTS en Android 13+, Android 15/16 y dispositivos Samsung/Xiaomi.
 
 Las casillas marcadas indican cambios en el código; la validación en dispositivos reales sigue pendiente.
