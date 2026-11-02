@@ -33,7 +33,9 @@ El repositorio actual es una base inicial: Compose y la biblioteca prototipo ya 
 ### Fase 1 — Biblioteca local e importación
 
 **Trabajo**
-- Reemplazar el prototipo de preferencias por Room: libro, URI persistente, formato, metadatos, portada, fecha de importación y estado de lectura.
+- [x] Importar EPUB, PDF y audio desde el selector del sistema sin acceso general al almacenamiento.
+- [x] Conservar URI de documentos y filtrar por formato en la biblioteca local prototipo.
+- [ ] Reemplazar el prototipo de preferencias por Room: libro, URI persistente, formato, metadatos, portada, fecha de importación y estado de lectura.
 - Importar con el selector del sistema: EPUB, PDF y formatos de audio definidos para el MVP.
 - Leer título, autor y portada cuando el formato los proporcione; permitir corregir metadatos.
 - Añadir búsqueda, filtros, orden, recientes, favoritos, colecciones y quitar de biblioteca.
@@ -48,7 +50,9 @@ El repositorio actual es una base inicial: Compose y la biblioteca prototipo ya 
 ### Fase 2 — Lector EPUB
 
 **Trabajo**
-- Integrar Readium para abrir EPUB refluibles y fijos compatibles.
+- [x] Integrar Readium y abrir EPUB compatibles en una vista de página completa.
+- [x] Guardar/restaurar el locator Readium por URI de documento y saltar por porcentaje.
+- [ ] Integrar navegación precisa por índice y capítulo, además de la navegación por gesto.
 - Crear la pantalla de lectura inmersiva: página completa, barras superior e inferior ocultables y modo de desplazamiento configurable.
 - Navegar por gesto, capítulo, tabla de contenidos, porcentaje y ubicación.
 - Añadir selector de capítulo y control para ir a una posición exacta.
