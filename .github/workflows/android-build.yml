@@ -9,6 +9,14 @@ on:
       - "*.gradle.kts"
       - "gradle.properties"
       - ".github/workflows/android-build.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "gradle/**"
+      - "*.gradle.kts"
+      - "gradle.properties"
+      - ".github/workflows/android-build.yml"
   workflow_dispatch:
 
 permissions:
@@ -34,8 +42,8 @@ jobs:
         with:
           packages: ""
 
-      - name: Install Android SDK Platform 36
-        run: sdkmanager --install "platforms;android-36"
+      - name: Install Android SDK Platform 37
+        run: sdkmanager --install "platforms;android-37"
 
       - name: Build APK
         run: ./gradlew --no-daemon assembleDebug
