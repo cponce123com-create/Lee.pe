@@ -83,7 +83,7 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Ofrecer desplazamiento continuo entre páginas con renderizado diferido de las páginas visibles.
 - [x] Guardar y administrar marcadores y notas vinculadas al número de página del PDF.
 - [x] En API 35+, seleccionar una palabra tocándola para copiarla, crear una nota o resaltarla; restaurar el resaltado al volver a la página.
-- Añadir búsqueda PDF y selección por arrastre para el rango de texto.
+- Añadir búsqueda PDF en documentos que contengan texto seleccionable.
 - Identificar PDF escaneados y explicar que necesitan OCR para buscar o narrar.
 
 **Se considera lista cuando**
@@ -104,7 +104,7 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Añadir notas y marcadores PDF anclados al número de página, con edición, eliminación y navegación de retorno.
 - [x] Selección de palabra PDF por toque en API 35+ y acción para copiarla o crear una nota.
 - [x] Guardar y mostrar resaltados PDF con locator geométrico y cuatro colores.
-- Añadir selección por arrastre para rangos de texto PDF.
+- [x] Seleccionar palabra o rango arrastrando en vista de página a zoom normal, en API 35+; guardar y mostrar la selección como resaltado.
 - Guardar anclas estables por locator/página, relacionarlas con libro y perfil, y permitir edición y eliminación.
 - Crear una vista de notas con filtros por libro, capítulo y color.
 - Exportar notas y citas a TXT/Markdown; definir límites de cita al compartir.
