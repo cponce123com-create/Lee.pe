@@ -43,7 +43,8 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Detectar URI duplicadas y mostrar un aviso cuando el archivo ya está agregado.
 - [x] Exigir permiso persistente antes de guardar una URI y conservar en la migración las referencias antiguas que no se puedan recuperar.
 - [x] Añadir favoritos y orden por título, última lectura o fecha de importación.
-- Añadir colecciones, edición de metadatos, portadas y recuperación asistida de URI revocadas.
+- [x] Editar el título que muestra Lee.pe sin cambiar el archivo original.
+- Añadir colecciones, edición de autor y portada, y recuperación asistida de URI revocadas.
 - Conservar el comportamiento sin conexión y no pedir acceso general a archivos.
 
 **Se considera lista cuando**
