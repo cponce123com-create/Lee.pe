@@ -4,7 +4,7 @@
 
 Crear un lector nativo Android que permita importar EPUB, PDF y audiolibros desde el teléfono; leer en una vista amplia de página completa; retomar exactamente donde se dejó; y usar las funciones principales sin conexión. La estética tomará como referencia la interfaz futurista de Lee.pe, con controles discretos durante la lectura y herramientas accesibles al tocar la página.
 
-Estado actual: biblioteca local con Room e importación SAF (incluida migración de la lista anterior), lector EPUB con Readium e índice, y visor PDF offline con navegación por página. Ambos lectores guardan el avance en Room y conservan las preferencias como respaldo de posiciones anteriores; falta validar la integración en Android Studio.
+Estado actual: biblioteca local con Room e importación SAF (incluida migración de la lista anterior), lector EPUB con Readium, índice, controles de apariencia y navegación paginada o por desplazamiento, y visor PDF offline con navegación por página. El avance se guarda en Room; apariencia y brillo EPUB se conservan por libro. Falta validar la integración en Android Studio.
 
 ## Principios de producto
 
@@ -55,14 +55,15 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Guardar/restaurar el locator Readium por URI de documento en Room, conservar compatibilidad con preferencias anteriores y saltar por porcentaje.
 - [x] Integrar navegación por gesto y tabla de contenidos con salto a capítulo.
 - [x] Alternar modo inmersivo tocando el contenido o el botón para ocultar controles.
-- [ ] Configurar desplazamiento vertical y mantener pantalla activa.
+- [x] Configurar lectura paginada o con desplazamiento vertical.
+- [ ] Mantener la pantalla activa durante la lectura.
 - [x] Navegar por gesto, tabla de contenidos y porcentaje.
 - [x] Añadir tabla de contenidos navegable.
 - [ ] Añadir control para ir a una ubicación exacta dentro del EPUB.
 - [x] Guardar y restaurar la ubicación Readium junto al progreso.
 - [x] Añadir apariencia EPUB con temas claro, sepia, oscuro y OLED, tamaño y familia de letra; guardar los ajustes por libro.
-- [ ] Añadir interlineado, márgenes, alineación, brillo y opciones avanzadas.
-- Añadir orientación, mantener pantalla activa y zona de toque ajustable.
+- [x] Añadir interlineado, márgenes laterales, alineación, brillo del lector y preferencia de paginación; guardar ajustes por libro.
+- Añadir orientación y zona de toque ajustable.
 
 **Se considera lista cuando**
 - Se abre un EPUB local sin conexión, avanza y retrocede, y permite saltar desde el índice.
