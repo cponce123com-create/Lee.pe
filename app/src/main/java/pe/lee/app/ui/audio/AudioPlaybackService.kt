@@ -3,6 +3,7 @@ package pe.lee.app.ui.audio
 import android.app.PendingIntent
 import android.content.Intent
 import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
@@ -24,7 +25,7 @@ class AudioPlaybackService : MediaSessionService() {
     override fun onCreate() {
         super.onCreate()
 
-        val exoPlayer = ExoPlayer.Builder(this).build()
+        val exoPlayer = ExoPlayer.Builder(this).setWakeMode(C.WAKE_MODE_LOCAL).build()
         exoPlayer.setAudioAttributes(AudioAttributes.DEFAULT, true)
         player = exoPlayer
         exoPlayer.addListener(object : Player.Listener {
