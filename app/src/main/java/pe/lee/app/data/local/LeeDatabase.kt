@@ -6,7 +6,7 @@ import androidx.room3.Room
 import androidx.room3.RoomDatabase
 import androidx.room3.migration.Migration
 import androidx.sqlite.SQLiteConnection
-import androidx.sqlite.async.executeSQL
+import androidx.sqlite.executeSQL
 
 @Database(
     entities = [BookEntity::class, ReadingAnnotationEntity::class],
