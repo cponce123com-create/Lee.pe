@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import org.readium.navigator.media.common.Media3Adapter
 import org.readium.navigator.media.tts.AndroidTtsNavigator
+import org.readium.navigator.media.tts.TtsNavigator
 import org.readium.r2.shared.ExperimentalReadiumApi
 import pe.lee.app.data.local.LeeDatabase
 import pe.lee.app.ui.reader.ReaderActivity
@@ -80,7 +81,10 @@ class TtsPlaybackService : MediaSessionService() {
             }
             activeSession.scope.launch {
                 navigator.playback.collect { playback ->
-                    updateWakeLock(playback.playWhenReady)
+                    val shouldHoldWakeLock = playback.playWhenReady &&
+                        playback.state !is TtsNavigator.State.Ended &&
+                        playback.state !is TtsNavigator.State.Failure
+                    updateWakeLock(shouldHoldWakeLock)
                 }
             }
         }
