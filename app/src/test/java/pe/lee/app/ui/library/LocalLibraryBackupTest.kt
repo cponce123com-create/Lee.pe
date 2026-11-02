@@ -26,7 +26,7 @@ class LocalLibraryBackupTest {
     fun validBookRestoresProgressMetadata() {
         val archive = LocalLibraryBackup.parse(root(books = "[$book]"))
         assertEquals(1, archive.snapshot.books.size)
-        assertEquals(0.5f, archive.snapshot.books.single().readProgress)
+        assertEquals(0.5f, archive.snapshot.books.single().readProgress, 0.00001f)
     }
 
     @Test
