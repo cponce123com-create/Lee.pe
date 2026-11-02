@@ -40,6 +40,9 @@ interface BookDao {
     @Query("UPDATE library_books SET isFavorite = :isFavorite WHERE uri = :uri")
     suspend fun updateFavorite(uri: String, isFavorite: Boolean)
 
+    @Query("UPDATE library_books SET title = :title WHERE uri = :uri")
+    suspend fun updateTitle(uri: String, title: String)
+
     @Query("DELETE FROM library_books WHERE uri = :uri")
     suspend fun deleteByUri(uri: String)
 }
