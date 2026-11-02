@@ -100,7 +100,7 @@ class AudioPlayerActivity : ComponentActivity() {
             } catch (_: Exception) {
                 connectionError.value = "No se pudo iniciar el reproductor. Vuelve a abrir el audiolibro."
             }
-        }, mainExecutor)
+        }, ContextCompat.getMainExecutor(this))
     }
 
     private fun requestNotificationPermissionIfNeeded() {
