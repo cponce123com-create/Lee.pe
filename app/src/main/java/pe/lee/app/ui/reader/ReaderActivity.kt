@@ -28,11 +28,14 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.FormatListBulleted
+import androidx.compose.material.icons.filled.TextFields
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
@@ -67,6 +70,13 @@ import pe.lee.app.data.local.LeeDatabase
 import org.readium.r2.navigator.epub.EpubNavigatorFactory
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.EpubPreferences
+import org.readium.r2.navigator.epub.EpubPreferencesSerializer
+import org.readium.r2.navigator.input.InputListener
+import org.readium.r2.navigator.input.TapEvent
+import org.readium.r2.navigator.preferences.Color as ReadiumColor
+import org.readium.r2.navigator.preferences.FontFamily as ReadiumFontFamily
+import org.readium.r2.navigator.preferences.Theme as ReadiumTheme
+import org.readium.r2.navigator.util.DirectionalNavigationAdapter
 import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
@@ -146,6 +156,7 @@ class ReaderActivity : FragmentActivity() {
         private const val KEY_DOCUMENT_URIS = "document_uris"
 
         fun locatorPreferenceKey(uri: Uri): String = "locator:$uri"
+        fun preferencesPreferenceKey(uri: Uri): String = "epub-preferences:$uri"
     }
 }
 
@@ -166,6 +177,8 @@ private fun EpubReaderScreen(
     var publication by remember { mutableStateOf<Publication?>(null) }
     var navigator by remember { mutableStateOf<EpubNavigatorFragment?>(null) }
     var progress by remember { mutableFloatStateOf(0f) }
+    var epubPreferences by remember { mutableStateOf(EpubPreferences()) }
+    var chromeVisible by remember { mutableStateOf(true) }
     var loading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -182,6 +195,10 @@ private fun EpubReaderScreen(
             val initialLocator = locatorJson?.let {
                 runCatching { Locator.fromJSON(JSONObject(it)) }.getOrNull()
             }
+            val preferencesJson = preferences.getString(ReaderActivity.preferencesPreferenceKey(uri), null)
+            epubPreferences = preferencesJson?.let { json ->
+                runCatching { EpubPreferencesSerializer().deserialize(json) }.getOrNull()
+            } ?: EpubPreferences()
             progress = (
                 initialLocator?.locations?.totalProgression
                     ?: savedBook?.readProgress?.toDouble()
@@ -200,15 +217,25 @@ private fun EpubReaderScreen(
             val factory = EpubNavigatorFactory(opened)
             activity.supportFragmentManager.fragmentFactory = factory.createFragmentFactory(
                 initialLocator = initialLocator,
-                initialPreferences = EpubPreferences()
+                initialPreferences = epubPreferences
             )
             activity.supportFragmentManager.commitNow {
                 setReorderingAllowed(true)
                 replace(containerId, EpubNavigatorFragment::class.java, Bundle(), NAVIGATOR_TAG)
             }
-            navigator = activity.supportFragmentManager
+            val epubNavigator = activity.supportFragmentManager
                 .findFragmentByTag(NAVIGATOR_TAG) as? EpubNavigatorFragment
                 ?: error("No se pudo crear el lector EPUB.")
+            epubNavigator.addInputListener(
+                DirectionalNavigationAdapter(epubNavigator, animatedTransition = true)
+            )
+            epubNavigator.addInputListener(object : InputListener {
+                override fun onTap(event: TapEvent): Boolean {
+                    chromeVisible = !chromeVisible
+                    return true
+                }
+            })
+            navigator = epubNavigator
 
             loading = false
         } catch (error: Exception) {
@@ -272,9 +299,24 @@ private fun EpubReaderScreen(
         }
 
         if (!loading && errorMessage == null) {
-            ReaderChrome(
+            if (chromeVisible) ReaderChrome(
                 title = title,
                 progress = progress,
+                preferences = epubPreferences,
+                onPreferencesChange = { updated ->
+                    epubPreferences = updated
+                    navigator?.submitPreferences(updated)
+                    val serialized = runCatching {
+                        EpubPreferencesSerializer().serialize(updated)
+                    }.getOrNull()
+                    if (serialized != null) {
+                        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                            .edit()
+                            .putString(ReaderActivity.preferencesPreferenceKey(uri), serialized)
+                            .apply()
+                    }
+                },
+                onToggleChrome = { chromeVisible = false },
                 onBack = onBack,
                 onPrevious = { navigator?.goBackward(animated = true) },
                 onNext = { navigator?.goForward(animated = true) },
@@ -297,6 +339,9 @@ private fun EpubReaderScreen(
 private fun ReaderChrome(
     title: String,
     progress: Float,
+    preferences: EpubPreferences,
+    onPreferencesChange: (EpubPreferences) -> Unit,
+    onToggleChrome: () -> Unit,
     contents: List<TocEntry>,
     onBack: () -> Unit,
     onPrevious: () -> Unit,
@@ -306,6 +351,16 @@ private fun ReaderChrome(
     onProgressChange: (Float) -> Unit
 ) {
     var showContents by remember { mutableStateOf(false) }
+    var showAppearance by remember { mutableStateOf(false) }
+
+    if (showAppearance) {
+        ModalBottomSheet(onDismissRequest = { showAppearance = false }) {
+            EpubAppearanceSheet(
+                preferences = preferences,
+                onPreferencesChange = onPreferencesChange
+            )
+        }
+    }
 
     if (showContents) {
         ModalBottomSheet(onDismissRequest = { showContents = false }) {
@@ -378,8 +433,14 @@ private fun ReaderChrome(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                IconButton(onClick = { showAppearance = true }) {
+                    Icon(Icons.Default.TextFields, contentDescription = "Apariencia de lectura", tint = Color.White)
+                }
                 IconButton(onClick = { showContents = true }) {
                     Icon(Icons.Default.FormatListBulleted, contentDescription = "Índice del libro", tint = Color.White)
+                }
+                IconButton(onClick = onToggleChrome) {
+                    Icon(Icons.Default.VisibilityOff, contentDescription = "Ocultar controles", tint = Color.White)
                 }
             }
         }
@@ -419,6 +480,90 @@ private fun ReaderChrome(
             }
         }
     }
+}
+
+@Composable
+private fun EpubAppearanceSheet(
+    preferences: EpubPreferences,
+    onPreferencesChange: (EpubPreferences) -> Unit
+) {
+    var fontSize by remember(preferences.fontSize) {
+        mutableFloatStateOf((preferences.fontSize ?: 1.0).toFloat().coerceIn(0.75f, 1.75f))
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 22.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        Text("Apariencia de lectura", fontSize = 21.sp, fontWeight = FontWeight.Bold)
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Tema", fontWeight = FontWeight.SemiBold)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf("Claro", "Sepia", "Oscuro", "OLED").forEach { label ->
+                    FilterChip(
+                        selected = selectedReaderTheme(preferences) == label,
+                        onClick = {
+                            val updated = when (label) {
+                                "Sepia" -> preferences.copy(theme = ReadiumTheme.SEPIA, backgroundColor = null, textColor = null)
+                                "Oscuro" -> preferences.copy(theme = ReadiumTheme.DARK, backgroundColor = null, textColor = null)
+                                "OLED" -> preferences.copy(
+                                    theme = ReadiumTheme.DARK,
+                                    backgroundColor = ReadiumColor(0xFF000000.toInt()),
+                                    textColor = ReadiumColor(0xFFFFFFFF.toInt())
+                                )
+                                else -> preferences.copy(theme = ReadiumTheme.LIGHT, backgroundColor = null, textColor = null)
+                            }
+                            onPreferencesChange(updated)
+                        },
+                        label = { Text(label) }
+                    )
+                }
+            }
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("Tamaño de letra · ${(fontSize * 100).toInt()}%", fontWeight = FontWeight.SemiBold)
+            Slider(
+                value = fontSize,
+                onValueChange = { fontSize = it },
+                onValueChangeFinished = {
+                    onPreferencesChange(preferences.copy(fontSize = fontSize.toDouble()))
+                },
+                valueRange = 0.75f..1.75f
+            )
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Tipografía", fontWeight = FontWeight.SemiBold)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf(
+                    "Original" to null,
+                    "Serif" to ReadiumFontFamily.SERIF,
+                    "Sans" to ReadiumFontFamily.SANS_SERIF,
+                    "Dislexia" to ReadiumFontFamily.OPEN_DYSLEXIC
+                ).forEach { (label, family) ->
+                    FilterChip(
+                        selected = preferences.fontFamily?.name == family?.name,
+                        onClick = { onPreferencesChange(preferences.copy(fontFamily = family)) },
+                        label = { Text(label) }
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+    }
+}
+
+private fun selectedReaderTheme(preferences: EpubPreferences): String = when {
+    preferences.theme == ReadiumTheme.DARK &&
+        preferences.backgroundColor?.int == 0xFF000000.toInt() -> "OLED"
+    preferences.theme == ReadiumTheme.SEPIA -> "Sepia"
+    preferences.theme == ReadiumTheme.DARK -> "Oscuro"
+    else -> "Claro"
 }
 
 private const val PREFS_NAME = "lee_pe_library"
