@@ -20,7 +20,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -439,7 +440,18 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                                 .clipToBounds()
                                 .pointerInput(pageIndex, rotationDegrees, selectionMode, zoomScale) {
                                     if (selectionMode) {
-                                        detectTapGestures(onTap = { tap ->
+                                        awaitEachGesture {
+                                            val down = awaitFirstDown(requireUnconsumed = false)
+                                            down.consume()
+                                            var end = down.position
+                                            var pressed = true
+                                            while (pressed) {
+                                                val event = awaitPointerEvent()
+                                                val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                                                end = change.position
+                                                pressed = change.pressed
+                                                change.consume()
+                                            }
                                             val current = handle
                                             val pageBitmap = bitmap
                                             if (Build.VERSION.SDK_INT >= 35 &&
@@ -456,24 +468,38 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                                                 val displayedHeight = pageBitmap.height * fit
                                                 val left = (size.width - displayedWidth) / 2f
                                                 val top = (size.height - displayedHeight) / 2f
-                                                if (tap.x in left..(left + displayedWidth) &&
-                                                    tap.y in top..(top + displayedHeight)
-                                                ) {
-                                                    val xRatio = ((tap.x - left) / displayedWidth).coerceIn(0f, 1f)
-                                                    val yRatio = ((tap.y - top) / displayedHeight).coerceIn(0f, 1f)
+                                                fun pageRatio(position: Offset): Offset? {
+                                                    if (position.x !in left..(left + displayedWidth) ||
+                                                        position.y !in top..(top + displayedHeight)
+                                                    ) return null
+                                                    return Offset(
+                                                        ((position.x - left) / displayedWidth).coerceIn(0f, 1f),
+                                                        ((position.y - top) / displayedHeight).coerceIn(0f, 1f)
+                                                    )
+                                                }
+                                                val startRatio = pageRatio(down.position)
+                                                val endRatio = pageRatio(end)
+                                                if (startRatio != null && endRatio != null) {
                                                     coroutineScope.launch {
                                                         val text = runCatching {
                                                             renderMutex.withLock {
                                                                 withContext(Dispatchers.IO) {
                                                                     val page = current.renderer.openPage(pageIndex)
                                                                     try {
-                                                                        val point = Point(
-                                                                            (xRatio * page.width).roundToInt().coerceIn(0, page.width - 1),
-                                                                            (yRatio * page.height).roundToInt().coerceIn(0, page.height - 1)
+                                                                        val start = SelectionBoundary(
+                                                                            Point(
+                                                                                (startRatio.x * page.width).roundToInt().coerceIn(0, page.width - 1),
+                                                                                (startRatio.y * page.height).roundToInt().coerceIn(0, page.height - 1)
+                                                                            )
                                                                         )
-                                                                        val boundary = SelectionBoundary(point)
-                                                                        page.selectContent(boundary, boundary)?.let { selection ->
-                                                                            val text = selection.selectedTextContents
+                                                                        val stop = SelectionBoundary(
+                                                                            Point(
+                                                                                (endRatio.x * page.width).roundToInt().coerceIn(0, page.width - 1),
+                                                                                (endRatio.y * page.height).roundToInt().coerceIn(0, page.height - 1)
+                                                                            )
+                                                                        )
+                                                                        page.selectContent(start, stop)?.let { selection ->
+                                                                            val selectedText = selection.selectedTextContents
                                                                                 .joinToString(separator = "") { it.text }
                                                                                 .trim()
                                                                             val rects = selection.selectedTextContents
@@ -486,7 +512,7 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                                                                                         bottom = (bounds.bottom / page.height).coerceIn(0f, 1f)
                                                                                     )
                                                                                 }
-                                                                            if (text.isNotEmpty()) PdfSelectedText(text, rects) else null
+                                                                            if (selectedText.isNotEmpty()) PdfSelectedText(selectedText, rects) else null
                                                                         }
                                                                     } finally {
                                                                         page.close()
@@ -502,14 +528,14 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                                                         } else {
                                                             Toast.makeText(
                                                                 context,
-                                                                "No se detectó texto seleccionable en este punto.",
+                                                                "No se detectó texto en el rango elegido; puede ser un PDF escaneado.",
                                                                 Toast.LENGTH_SHORT
                                                             ).show()
                                                         }
                                                     }
                                                 }
                                             }
-                                        })
+                                        }
                                     } else {
                                         detectTransformGestures { _, pan, zoomChange, _ ->
                                             val nextScale = (zoomScale * zoomChange).coerceIn(1f, 3f)
@@ -607,7 +633,7 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                                     rotationDegrees = 0
                                     panOffset = Offset.Zero
                                 }) {
-                                    Text(if (selectionMode) "Toca texto" else "Seleccionar")
+                                    Text(if (selectionMode) "Toca o arrastra" else "Seleccionar")
                                 }
                             }
                         }
