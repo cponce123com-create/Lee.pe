@@ -6,7 +6,7 @@
 
 La biblioteca importa EPUB, PDF y archivos de audiolibro desde el selector del sistema y conserva sus URI locales. Los EPUB ya se abren con Readium, con índice, avance guardado y acceso para saltar a un porcentaje escrito por el usuario. El menú de apariencia ofrece temas claro, sepia, oscuro y OLED; tamaño y tipografía; interlineado, márgenes, alineación, paginación o desplazamiento; brillo por libro con opción de usar el brillo del sistema y un control para mantener la pantalla encendida. Al tocar el texto se ocultan o recuperan los controles.
 
-Los PDF locales ya abren en un visor sin conexión con navegación por página, salto a página, restauración de la última página y zoom por gesto o controles, desplazamiento de la página ampliada y rotación en incrementos de 90° y desplazamiento continuo con renderizado bajo demanda. El reproductor de audiolibros sigue pendiente. La biblioteca ahora guarda sus libros en Room y migra automáticamente las URI que ya estaban en las preferencias locales. El avance EPUB (locator y porcentaje) y la página PDF se guardan también en Room; las preferencias siguen como respaldo de compatibilidad para posiciones creadas antes de esta migración. Esta integración queda pendiente de sincronizar y validar en Android Studio. Los ajustes avanzados de EPUB dependen de la API experimental de preferencias de Readium.
+Los PDF locales ya abren en un visor sin conexión con navegación por página, salto a página, restauración de la última página y zoom por gesto o controles, desplazamiento de la página ampliada y rotación en incrementos de 90° y desplazamiento continuo con renderizado bajo demanda. En EPUB ya se pueden guardar, abrir y eliminar marcadores locales; se persisten en Room mediante una migración que conserva los datos de biblioteca existentes. El esquema también deja preparada la entidad para notas y resaltados, cuya selección y edición todavía están pendientes. El reproductor de audiolibros sigue pendiente. La biblioteca guarda sus libros en Room y migra automáticamente las URI que ya estaban en preferencias locales. El avance EPUB (locator y porcentaje) y la página PDF se guardan también en Room; las preferencias siguen como respaldo de compatibilidad para posiciones previas. Esta integración queda pendiente de sincronizar y validar en Android Studio. Los ajustes avanzados de EPUB dependen de la API experimental de preferencias de Readium.
 
 Consulta el [plan de trabajo](docs/PLAN_TRABAJO.md) para el orden de los siguientes módulos y sus criterios de salida.
 
@@ -15,7 +15,7 @@ Consulta el [plan de trabajo](docs/PLAN_TRABAJO.md) para el orden de los siguien
 - Kotlin y Jetpack Compose para la app Android.
 - Readium Kotlin Toolkit para EPUB y navegación por locators.
 - Android Storage Access Framework para importar archivos con permisos limitados.
-- Room para biblioteca local y campos de progreso; marcadores y anotaciones estructuradas se conectarán en fases posteriores.
+- Room para biblioteca, progreso y marcadores EPUB locales; notas y resaltados quedan por implementar.
 - Android TextToSpeech para narración y Media3 para audiolibros, en fases posteriores.
 - Render y Neon solo para API y sincronización opcional; Cloudinary para portadas si hace falta. Los libros no se subirán automáticamente.
 
