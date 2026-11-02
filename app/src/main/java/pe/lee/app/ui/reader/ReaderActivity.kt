@@ -7,7 +7,10 @@ import android.view.View
 import android.widget.FrameLayout
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,14 +27,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -61,6 +67,7 @@ import org.readium.r2.navigator.epub.EpubNavigatorFactory
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.EpubPreferences
 import org.readium.r2.shared.ExperimentalReadiumApi
+import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.services.locateProgression
@@ -246,6 +253,8 @@ private fun EpubReaderScreen(
                 onBack = onBack,
                 onPrevious = { navigator?.goBackward(animated = true) },
                 onNext = { navigator?.goForward(animated = true) },
+                contents = publication?.let { flattenContents(it.tableOfContents) }.orEmpty(),
+                onSelectContent = { link -> navigator?.go(link, animated = true) },
                 onSeek = {
                     coroutineScope.launch {
                         publication?.locateProgression(it.toDouble())?.let { locator ->
@@ -263,12 +272,57 @@ private fun EpubReaderScreen(
 private fun ReaderChrome(
     title: String,
     progress: Float,
+    contents: List<TocEntry>,
     onBack: () -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
+    onSelectContent: (Link) -> Unit,
     onSeek: (Float) -> Unit,
     onProgressChange: (Float) -> Unit
 ) {
+    var showContents by remember { mutableStateOf(false) }
+
+    if (showContents) {
+        ModalBottomSheet(onDismissRequest = { showContents = false }) {
+            Text(
+                "Contenido del libro",
+                modifier = Modifier.padding(horizontal = 22.dp, vertical = 8.dp),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+            if (contents.isEmpty()) {
+                Text(
+                    "Este EPUB no incluye una tabla de contenidos.",
+                    modifier = Modifier.padding(horizontal = 22.dp, vertical = 20.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                    items(contents) { entry ->
+                        Text(
+                            text = entry.title,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onSelectContent(entry.link)
+                                    showContents = false
+                                }
+                                .padding(
+                                    start = (22 + entry.depth * 16).dp,
+                                    end = 20.dp,
+                                    top = 13.dp,
+                                    bottom = 13.dp
+                                ),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -299,8 +353,9 @@ private fun ReaderChrome(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Text("EPUB", color = Color(0xFF75DFFF), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.size(12.dp))
+                IconButton(onClick = { showContents = true }) {
+                    Icon(Icons.Default.FormatListBulleted, contentDescription = "Índice del libro", tint = Color.White)
+                }
             }
         }
 
@@ -343,3 +398,17 @@ private fun ReaderChrome(
 
 private const val PREFS_NAME = "lee_pe_library"
 private const val NAVIGATOR_TAG = "lee_pe_epub_navigator"
+
+private data class TocEntry(
+    val title: String,
+    val link: Link,
+    val depth: Int
+)
+
+private fun flattenContents(links: List<Link>, depth: Int = 0): List<TocEntry> =
+    buildList {
+        links.forEach { link ->
+            add(TocEntry(link.title?.takeIf { it.isNotBlank() } ?: link.href.toString(), link, depth))
+            addAll(flattenContents(link.children, depth + 1))
+        }
+    }
