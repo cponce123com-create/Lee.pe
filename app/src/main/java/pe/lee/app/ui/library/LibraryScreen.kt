@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.MenuBook
@@ -82,7 +83,10 @@ private const val KEY_LEGACY_MIGRATED = "room_library_migrated"
 private data class LocalBook(
     val uri: Uri,
     val title: String,
-    val format: String
+    val format: String,
+    val isFavorite: Boolean,
+    val importedAt: Long,
+    val lastOpenedAt: Long?
 )
 
 @Composable
@@ -91,12 +95,14 @@ fun LibraryScreen() {
     val dao = remember(context) { LeeDatabase.get(context).bookDao() }
     val storedBooks by dao.observeAll().collectAsState(initial = emptyList())
     val books = remember(storedBooks) {
-        storedBooks.map { LocalBook(Uri.parse(it.uri), it.title, it.format) }
+        storedBooks.map { LocalBook(Uri.parse(it.uri), it.title, it.format, it.isFavorite, it.importedAt, it.lastOpenedAt) }
     }
     val coroutineScope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("Todos") }
     var pendingRemoval by remember { mutableStateOf<LocalBook?>(null) }
+    var sortMenuExpanded by remember { mutableStateOf(false) }
+    var sortMode by remember { mutableStateOf("Título A–Z") }
 
     LaunchedEffect(context, dao) {
         migrateLegacyLibrary(context, dao)
@@ -172,16 +178,22 @@ fun LibraryScreen() {
         )
     }
 
-    val filters = listOf("Todos", "EPUB", "PDF", "Audio")
+    val filters = listOf("Todos", "Favoritos", "EPUB", "PDF", "Audio")
     val visibleBooks = books.filter { book ->
         val matchesQuery = book.title.contains(query, ignoreCase = true)
         val matchesFilter = when (selectedFilter) {
+            "Favoritos" -> book.isFavorite
             "EPUB" -> book.format == "EPUB"
             "PDF" -> book.format == "PDF"
             "Audio" -> book.format == "Audio"
             else -> true
         }
         matchesQuery && matchesFilter
+    }
+    val orderedBooks = when (sortMode) {
+        "Última lectura" -> visibleBooks.sortedByDescending { it.lastOpenedAt ?: 0L }
+        "Fecha de importación" -> visibleBooks.sortedByDescending { it.importedAt }
+        else -> visibleBooks.sortedBy { it.title.lowercase() }
     }
 
     LazyColumn(
@@ -284,6 +296,33 @@ fun LibraryScreen() {
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Box {
+                    TextButton(onClick = { sortMenuExpanded = true }) {
+                        Text("Orden: $sortMode")
+                    }
+                    DropdownMenu(
+                        expanded = sortMenuExpanded,
+                        onDismissRequest = { sortMenuExpanded = false }
+                    ) {
+                        listOf("Título A–Z", "Última lectura", "Fecha de importación").forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option) },
+                                onClick = {
+                                    sortMode = option
+                                    sortMenuExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -314,7 +353,7 @@ fun LibraryScreen() {
                 )
             }
         } else {
-            items(visibleBooks.chunked(2)) { rowBooks ->
+            items(orderedBooks.chunked(2)) { rowBooks ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -324,7 +363,12 @@ fun LibraryScreen() {
                             book = book,
                             modifier = Modifier.weight(1f),
                             onOpen = { openBook(context, book) },
-                            onRemove = { pendingRemoval = book }
+                            onRemove = { pendingRemoval = book },
+                            onToggleFavorite = {
+                                coroutineScope.launch {
+                                    dao.updateFavorite(book.uri.toString(), !book.isFavorite)
+                                }
+                            }
                         )
                     }
                     if (rowBooks.size == 1) Spacer(Modifier.weight(1f))
@@ -396,7 +440,8 @@ private fun BookCard(
     book: LocalBook,
     modifier: Modifier = Modifier,
     onOpen: () -> Unit,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
+    onToggleFavorite: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     val (icon, colors) = when (book.format) {
@@ -419,6 +464,14 @@ private fun BookCard(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(icon, contentDescription = book.format, tint = Color.White, modifier = Modifier.size(42.dp))
+                if (book.isFavorite) {
+                    Icon(
+                        Icons.Default.Bookmark,
+                        contentDescription = "Favorito",
+                        tint = Color(0xFFFFD54F),
+                        modifier = Modifier.align(Alignment.TopStart).padding(10.dp)
+                    )
+                }
                 Box(modifier = Modifier.align(Alignment.TopEnd)) {
                     IconButton(onClick = { menuExpanded = true }) {
                         Icon(Icons.Default.MoreVert, contentDescription = "Opciones del libro", tint = Color.White)
@@ -427,6 +480,13 @@ private fun BookCard(
                         expanded = menuExpanded,
                         onDismissRequest = { menuExpanded = false }
                     ) {
+                        DropdownMenuItem(
+                            text = { Text(if (book.isFavorite) "Quitar de favoritos" else "Agregar a favoritos") },
+                            onClick = {
+                                menuExpanded = false
+                                onToggleFavorite()
+                            }
+                        )
                         DropdownMenuItem(
                             text = { Text("Quitar de la biblioteca") },
                             leadingIcon = { Icon(Icons.Default.DeleteOutline, contentDescription = null) },
