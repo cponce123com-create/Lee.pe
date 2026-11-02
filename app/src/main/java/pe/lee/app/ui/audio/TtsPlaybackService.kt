@@ -72,14 +72,19 @@ class TtsPlaybackService : MediaSessionService() {
             sessionState.value = activeSession
 
             activeSession.scope.launch {
+                var lastSavedAt = 0L
                 navigator.currentLocator.collect { locator ->
-                    val progression = locator.locations.totalProgression?.toFloat() ?: 0f
-                    LeeDatabase.get(this@TtsPlaybackService).bookDao().saveEpubProgress(
-                        uri = bookUri,
-                        locatorJson = locator.toJSON().toString(),
-                        progress = progression,
-                        openedAt = System.currentTimeMillis()
-                    )
+                    val now = System.currentTimeMillis()
+                    if (now - lastSavedAt >= 3_000L) {
+                        val progression = locator.locations.totalProgression?.toFloat() ?: 0f
+                        LeeDatabase.get(this@TtsPlaybackService).bookDao().saveEpubProgress(
+                            uri = bookUri,
+                            locatorJson = locator.toJSON().toString(),
+                            progress = progression,
+                            openedAt = now
+                        )
+                        lastSavedAt = now
+                    }
                 }
             }
             activeSession.scope.launch {
