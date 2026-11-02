@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -50,6 +51,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -87,7 +89,8 @@ private data class LocalBook(
     val format: String,
     val isFavorite: Boolean,
     val importedAt: Long,
-    val lastOpenedAt: Long?
+    val lastOpenedAt: Long?,
+    val readProgress: Float
 )
 
 @Composable
@@ -96,7 +99,7 @@ fun LibraryScreen() {
     val dao = remember(context) { LeeDatabase.get(context).bookDao() }
     val storedBooks by dao.observeAll().collectAsState(initial = emptyList())
     val books = remember(storedBooks) {
-        storedBooks.map { LocalBook(Uri.parse(it.uri), it.title, it.format, it.isFavorite, it.importedAt, it.lastOpenedAt) }
+        storedBooks.map { LocalBook(Uri.parse(it.uri), it.title, it.format, it.isFavorite, it.importedAt, it.lastOpenedAt, it.readProgress) }
     }
     val coroutineScope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
@@ -216,10 +219,11 @@ fun LibraryScreen() {
         )
     }
 
-    val filters = listOf("Todos", "Favoritos", "EPUB", "PDF", "Audio")
+    val filters = listOf("Todos", "En curso", "Favoritos", "EPUB", "PDF", "Audio")
     val visibleBooks = books.filter { book ->
         val matchesQuery = book.title.contains(query, ignoreCase = true)
         val matchesFilter = when (selectedFilter) {
+            "En curso" -> book.format != "Audio" && book.readProgress > 0f && book.readProgress < 1f
             "Favoritos" -> book.isFavorite
             "EPUB" -> book.format == "EPUB"
             "PDF" -> book.format == "PDF"
@@ -228,6 +232,10 @@ fun LibraryScreen() {
         }
         matchesQuery && matchesFilter
     }
+    val continueBooks = books
+        .filter { it.format != "Audio" && it.readProgress > 0f && it.readProgress < 1f }
+        .sortedByDescending { it.lastOpenedAt ?: 0L }
+        .take(8)
     val orderedBooks = when (sortMode) {
         "Última lectura" -> visibleBooks.sortedByDescending { it.lastOpenedAt ?: 0L }
         "Fecha de importación" -> visibleBooks.sortedByDescending { it.importedAt }
@@ -319,9 +327,35 @@ fun LibraryScreen() {
             }
         }
 
+        if (continueBooks.isNotEmpty()) {
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Retomar lectura", fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                "Sigue justo donde lo dejaste",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 13.sp
+                            )
+                        }
+                        Text("${continueBooks.size}", color = MaterialTheme.colorScheme.secondary)
+                    }
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(continueBooks, key = { it.uri.toString() }) { book ->
+                            ContinueReadingCard(book = book, onOpen = { openBook(context, book) })
+                        }
+                    }
+                }
+            }
+        }
+
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                filters.forEach { filter ->
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(filters) { filter ->
                     FilterChip(
                         selected = selectedFilter == filter,
                         onClick = { selectedFilter = filter },
@@ -424,6 +458,65 @@ fun LibraryScreen() {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(bottom = 24.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ContinueReadingCard(book: LocalBook, onOpen: () -> Unit) {
+    val progress = book.readProgress.coerceIn(0f, 1f)
+    Card(
+        modifier = Modifier
+            .width(232.dp)
+            .clickable(onClick = onOpen),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .background(
+                            Brush.linearGradient(listOf(Color(0xFF8547F5), Color(0xFF16A8D8))),
+                            RoundedCornerShape(12.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        if (book.format == "PDF") Icons.Default.PictureAsPdf else Icons.Default.MenuBook,
+                        contentDescription = book.format,
+                        tint = Color.White
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    "${(progress * 100).toInt()}% leído",
+                    color = MaterialTheme.colorScheme.secondary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+            Text(
+                book.title,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                minLines = 2
+            )
+            LinearProgressIndicator(
+                progress = progress,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                "Continuar leyendo  →",
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium
             )
         }
     }
