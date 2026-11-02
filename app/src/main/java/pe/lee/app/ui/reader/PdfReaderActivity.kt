@@ -126,6 +126,8 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
     val renderMutex = remember { Mutex() }
     val density = LocalDensity.current
 
+    LaunchedEffect(pageIndex) { panOffset = Offset.Zero }
+
     LaunchedEffect(uri) {
         try {
             val opened = openPdf(context, uri)
