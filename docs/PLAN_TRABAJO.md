@@ -117,18 +117,19 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 ### Fase 5 — Lectura por voz y audiolibros
 
 **Trabajo**
-- Añadir narración EPUB con TextToSpeech y soporte de voces Android instaladas.
-- Sincronizar voz con párrafo o fragmento, permitir pausar, reanudar, velocidad, temporizador y elegir desde dónde escuchar.
+- Hecho en código: narración EPUB mediante Readium y el motor Android TTS; inicia desde el elemento visible del lector.
+- Hecho en código: sincronizar voz y lector con resaltado del fragmento hablado y avance de página; pausar/reanudar, velocidad de 0.75x a 2x y temporizador de 15, 30 o 60 minutos.
+- Pendiente: selector manual de voces y controles TTS desde la notificación/pantalla bloqueada.
 - Hecho: reproducir archivos locales con Media3, progreso, pausa, saltos de 15 segundos y velocidad de 0.75x a 2x.
 - Hecho en código: ejecutar Media3 en un MediaSessionService con controles del sistema y notificación para continuar en segundo plano y con pantalla bloqueada; falta validarlo en dispositivo, incluida la solicitud de permiso de notificaciones.
 - Hecho en código: guardar la posición local por archivo y restaurarla al abrirlo; falta validarlo en Android Studio y en dispositivo.
-- Pendiente: añadir narración EPUB con TextToSpeech, selección de voz y temporizador de apagado.
+- Pendiente: selector manual de voz y reproducción TTS en segundo plano con notificación y pantalla bloqueada; validar el flujo completo en Android Studio y dispositivo.
 
 **Se considera lista cuando**
 - Los audiolibros locales continúan al cambiar de app y con pantalla bloqueada, con controles de sesión multimedia del sistema.
-- El usuario puede pausar/reanudar, buscar en la pista, saltar 15 segundos y cambiar velocidad.
 - La posición de cada archivo se restaura desde el almacenamiento local.
-- TTS y temporizador quedan pendientes; reanudar la lectura por voz debe conservar la posición visual cuando se implemente.
+- TTS comienza desde el elemento visible, resalta el fragmento hablado y actualiza la posición del EPUB; pausa, velocidad y temporizador funcionan desde el lector.
+- El selector manual de voz y la continuidad TTS con la pantalla bloqueada se validan e implementan antes de cerrar la fase.
 
 ### Fase 6 — Acabado de lectura, accesibilidad y datos locales
 
