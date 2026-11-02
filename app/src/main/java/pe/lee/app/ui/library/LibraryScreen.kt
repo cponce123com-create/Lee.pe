@@ -12,6 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -247,14 +248,14 @@ fun LibraryScreen() {
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp)
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 24.dp),
+                    .padding(top = 18.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
@@ -294,7 +295,7 @@ fun LibraryScreen() {
 
         item {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Tu biblioteca", fontSize = 29.sp, fontWeight = FontWeight.Bold)
+                Text("Tu biblioteca", fontSize = 25.sp, fontWeight = FontWeight.Bold)
                 Text(
                     "Tus historias, disponibles en el dispositivo.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -344,7 +345,7 @@ fun LibraryScreen() {
                     }
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         items(continueBooks, key = { it.uri.toString() }) { book ->
-                            ContinueReadingCard(book = book, onOpen = { openBook(context, book) })
+                            ContinueReadingCard(book = book, wide = continueBooks.size == 1, onOpen = { openBook(context, book) })
                         }
                     }
                 }
@@ -352,11 +353,12 @@ fun LibraryScreen() {
         }
 
         item {
-            LazyRow(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                items(filters) { filter ->
+                filters.forEach { filter ->
                     FilterChip(
                         selected = selectedFilter == filter,
                         onClick = { selectedFilter = filter },
@@ -465,23 +467,22 @@ fun LibraryScreen() {
 }
 
 @Composable
-private fun ContinueReadingCard(book: LocalBook, onOpen: () -> Unit) {
+private fun ContinueReadingCard(book: LocalBook, wide: Boolean, onOpen: () -> Unit) {
     val progress = book.readProgress.coerceIn(0f, 1f)
+    val cardWidth = if (wide) Modifier.fillMaxWidth() else Modifier.width(232.dp)
     Card(
-        modifier = Modifier
-            .width(232.dp)
-            .clickable(onClick = onOpen),
+        modifier = cardWidth.clickable(onClick = onOpen),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        if (wide) {
+            Row(
+                modifier = Modifier.padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Box(
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(width = 56.dp, height = 76.dp)
                         .background(
                             Brush.linearGradient(listOf(Color(0xFF8547F5), Color(0xFF16A8D8))),
                             RoundedCornerShape(12.dp)
@@ -491,34 +492,85 @@ private fun ContinueReadingCard(book: LocalBook, onOpen: () -> Unit) {
                     Icon(
                         if (book.format == "PDF") Icons.Default.PictureAsPdf else Icons.Default.MenuBook,
                         contentDescription = book.format,
-                        tint = Color.White
+                        tint = Color.White,
+                        modifier = Modifier.size(30.dp)
                     )
                 }
-                Spacer(Modifier.width(10.dp))
+                Spacer(Modifier.width(14.dp))
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        "${(progress * 100).toInt()}% leído",
+                        color = MaterialTheme.colorScheme.secondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        book.title,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    LinearProgressIndicator(
+                        progress = progress,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        "Continuar leyendo  →",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(
+                                Brush.linearGradient(listOf(Color(0xFF8547F5), Color(0xFF16A8D8))),
+                                RoundedCornerShape(11.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            if (book.format == "PDF") Icons.Default.PictureAsPdf else Icons.Default.MenuBook,
+                            contentDescription = book.format,
+                            tint = Color.White
+                        )
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        "${(progress * 100).toInt()}% leído",
+                        color = MaterialTheme.colorScheme.secondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
                 Text(
-                    "${(progress * 100).toInt()}% leído",
-                    color = MaterialTheme.colorScheme.secondary,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold
+                    book.title,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                LinearProgressIndicator(
+                    progress = progress,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    "Continuar  →",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
-            Text(
-                book.title,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                minLines = 2
-            )
-            LinearProgressIndicator(
-                progress = progress,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Text(
-                "Continuar leyendo  →",
-                color = MaterialTheme.colorScheme.primary,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium
-            )
         }
     }
 }
