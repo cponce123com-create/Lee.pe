@@ -24,9 +24,8 @@ class AudioPlaybackService : MediaSessionService() {
     override fun onCreate() {
         super.onCreate()
 
-        val exoPlayer = ExoPlayer.Builder(this)
-            .setAudioAttributes(AudioAttributes.DEFAULT, true)
-            .build()
+        val exoPlayer = ExoPlayer.Builder(this).build()
+        exoPlayer.setAudioAttributes(AudioAttributes.DEFAULT, true)
         player = exoPlayer
         exoPlayer.addListener(object : Player.Listener {
             override fun onEvents(player: Player, events: Player.Events) {
