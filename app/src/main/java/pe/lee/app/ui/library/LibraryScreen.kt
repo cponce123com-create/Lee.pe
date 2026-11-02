@@ -78,6 +78,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -620,16 +621,18 @@ fun LibraryScreen() {
                                 if (savingBookUri != key) {
                                     savingBookUri = key
                                     coroutineScope.launch {
-                                        runCatching {
+                                        try {
                                             val displayName = withContext(Dispatchers.IO) { queryDisplayName(context, book.uri) }
                                             OfflineBookStore.saveCopy(context, book.uri, displayName)
-                                        }.onSuccess {
                                             offlineRevision++
                                             Toast.makeText(context, "Copia guardada para usar sin conexión", Toast.LENGTH_SHORT).show()
-                                        }.onFailure { error ->
+                                        } catch (cancelled: CancellationException) {
+                                            throw cancelled
+                                        } catch (error: Exception) {
                                             Toast.makeText(context, error.message ?: "No se pudo guardar la copia", Toast.LENGTH_LONG).show()
+                                        } finally {
+                                            savingBookUri = null
                                         }
-                                        savingBookUri = null
                                     }
                                 }
                             },
