@@ -30,6 +30,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.MenuBook
@@ -115,6 +116,7 @@ fun LibraryScreen() {
     var collectionMenuExpanded by remember { mutableStateOf(false) }
     var organizingBook by remember { mutableStateOf<LocalBook?>(null) }
     var collectionDraft by remember { mutableStateOf("") }
+    var showLibraryStats by remember { mutableStateOf(false) }
     var pendingRemoval by remember { mutableStateOf<LocalBook?>(null) }
     var editingBook by remember { mutableStateOf<LocalBook?>(null) }
     var titleDraft by remember { mutableStateOf("") }
@@ -171,6 +173,32 @@ fun LibraryScreen() {
                 }
             }
         }
+    }
+
+    if (showLibraryStats) {
+        val readingCount = books.count { it.format != "Audio" && it.readProgress > 0f && it.readProgress < 1f }
+        val completedCount = books.count { it.format != "Audio" && it.readProgress >= 1f }
+        val favoriteCount = books.count { it.isFavorite }
+        AlertDialog(
+            onDismissRequest = { showLibraryStats = false },
+            title = { Text("Estadísticas de biblioteca") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    LibraryStatisticRow("Libros en total", books.size)
+                    LibraryStatisticRow("En curso", readingCount)
+                    LibraryStatisticRow("Terminados", completedCount)
+                    LibraryStatisticRow("Favoritos", favoriteCount)
+                    Text(
+                        "Resumen calculado en este dispositivo. El tiempo y las rachas de lectura se añadirán después.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 12.sp
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showLibraryStats = false }) { Text("Cerrar") }
+            }
+        )
     }
 
     pendingRemoval?.let { book ->
@@ -373,11 +401,13 @@ fun LibraryScreen() {
                         fontSize = 12.sp
                     )
                 }
-                Icon(
-                    imageVector = Icons.Default.MenuBook,
-                    contentDescription = "Biblioteca local",
-                    tint = MaterialTheme.colorScheme.secondary
-                )
+                IconButton(onClick = { showLibraryStats = true }) {
+                    Icon(
+                        imageVector = Icons.Default.BarChart,
+                        contentDescription = "Estadísticas de la biblioteca",
+                        tint = MaterialTheme.colorScheme.secondary
+                    )
+                }
             }
         }
 
@@ -698,6 +728,18 @@ private fun ContinueReadingCard(book: LocalBook, wide: Boolean, onOpen: () -> Un
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun LibraryStatisticRow(label: String, value: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value.toString(), fontWeight = FontWeight.SemiBold)
     }
 }
 
