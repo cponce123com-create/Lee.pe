@@ -613,6 +613,7 @@ fun LibraryScreen() {
                     rowBooks.forEach { book ->
                         BookCard(
                             book = book,
+                            savingBookUri = savingBookUri,
                             modifier = Modifier.weight(1f),
                             onOpen = { openBook(context, book) },
                             onRemove = { pendingRemoval = book },
@@ -846,6 +847,7 @@ private fun EmptyLibraryCard(hasBooks: Boolean, onImport: () -> Unit) {
 @Composable
 private fun BookCard(
     book: LocalBook,
+    savingBookUri: String?,
     modifier: Modifier = Modifier,
     onOpen: () -> Unit,
     onRemove: () -> Unit,
