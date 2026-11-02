@@ -52,7 +52,9 @@ object OfflineBookStore {
                             coroutineContext.ensureActive()
                             val count = source.read(buffer)
                             if (count < 0) break
-                            if (copiedBytes + count > availableBytes) {
+                            if (copiedBytes + count > availableBytes ||
+                                StatFs(directory.absolutePath).availableBytes < count.toLong()
+                            ) {
                                 throw IOException("No hay espacio suficiente para guardar la copia sin conexión.")
                             }
                             output.write(buffer, 0, count)
