@@ -42,6 +42,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -76,6 +77,7 @@ import org.readium.r2.navigator.input.TapEvent
 import org.readium.r2.navigator.preferences.Color as ReadiumColor
 import org.readium.r2.navigator.preferences.FontFamily as ReadiumFontFamily
 import org.readium.r2.navigator.preferences.Theme as ReadiumTheme
+import org.readium.r2.navigator.preferences.TextAlign as ReadiumTextAlign
 import org.readium.r2.navigator.util.DirectionalNavigationAdapter
 import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.publication.Link
@@ -157,6 +159,7 @@ class ReaderActivity : FragmentActivity() {
 
         fun locatorPreferenceKey(uri: Uri): String = "locator:$uri"
         fun preferencesPreferenceKey(uri: Uri): String = "epub-preferences:$uri"
+        fun brightnessPreferenceKey(uri: Uri): String = "reader-brightness:$uri"
     }
 }
 
@@ -178,9 +181,22 @@ private fun EpubReaderScreen(
     var navigator by remember { mutableStateOf<EpubNavigatorFragment?>(null) }
     var progress by remember { mutableFloatStateOf(0f) }
     var epubPreferences by remember { mutableStateOf(EpubPreferences()) }
+    var readerBrightness by remember(uri) {
+        mutableFloatStateOf(context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getFloat(ReaderActivity.brightnessPreferenceKey(uri), -1f))
+    }
     var chromeVisible by remember { mutableStateOf(true) }
     var loading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    DisposableEffect(activity, uri) {
+        val originalBrightness = activity.window.attributes.screenBrightness
+        onDispose { activity.window.attributes = activity.window.attributes.apply { screenBrightness = originalBrightness } }
+    }
+
+    LaunchedEffect(readerBrightness) {
+        activity.window.attributes = activity.window.attributes.apply { screenBrightness = readerBrightness }
+    }
 
     LaunchedEffect(uri, containerId) {
         try {
@@ -303,6 +319,12 @@ private fun EpubReaderScreen(
                 title = title,
                 progress = progress,
                 preferences = epubPreferences,
+                brightness = readerBrightness,
+                onBrightnessChange = { brightness ->
+                    readerBrightness = brightness
+                    context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+                        .putFloat(ReaderActivity.brightnessPreferenceKey(uri), brightness).apply()
+                },
                 onPreferencesChange = { updated ->
                     epubPreferences = updated
                     navigator?.submitPreferences(updated)
@@ -340,6 +362,8 @@ private fun ReaderChrome(
     title: String,
     progress: Float,
     preferences: EpubPreferences,
+    brightness: Float,
+    onBrightnessChange: (Float) -> Unit,
     onPreferencesChange: (EpubPreferences) -> Unit,
     onToggleChrome: () -> Unit,
     contents: List<TocEntry>,
@@ -357,6 +381,8 @@ private fun ReaderChrome(
         ModalBottomSheet(onDismissRequest = { showAppearance = false }) {
             EpubAppearanceSheet(
                 preferences = preferences,
+                brightness = brightness,
+                onBrightnessChange = onBrightnessChange,
                 onPreferencesChange = onPreferencesChange
             )
         }
@@ -485,10 +511,18 @@ private fun ReaderChrome(
 @Composable
 private fun EpubAppearanceSheet(
     preferences: EpubPreferences,
+    brightness: Float,
+    onBrightnessChange: (Float) -> Unit,
     onPreferencesChange: (EpubPreferences) -> Unit
 ) {
     var fontSize by remember(preferences.fontSize) {
         mutableFloatStateOf((preferences.fontSize ?: 1.0).toFloat().coerceIn(0.75f, 1.75f))
+    }
+    var lineHeight by remember(preferences.lineHeight) {
+        mutableFloatStateOf((preferences.lineHeight ?: 1.2).toFloat().coerceIn(1f, 2f))
+    }
+    var pageMargins by remember(preferences.pageMargins) {
+        mutableFloatStateOf((preferences.pageMargins ?: 1.0).toFloat().coerceIn(0.5f, 2f))
     }
 
     Column(
@@ -533,6 +567,103 @@ private fun EpubAppearanceSheet(
                     onPreferencesChange(preferences.copy(fontSize = fontSize.toDouble()))
                 },
                 valueRange = 0.75f..1.75f
+            )
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Estilo del texto", fontWeight = FontWeight.SemiBold)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FilterChip(
+                    selected = preferences.publisherStyles != false,
+                    onClick = { onPreferencesChange(preferences.copy(publisherStyles = true)) },
+                    label = { Text("Estilo del libro") }
+                )
+                FilterChip(
+                    selected = preferences.publisherStyles == false,
+                    onClick = { onPreferencesChange(preferences.copy(publisherStyles = false)) },
+                    label = { Text("Ajustes Lee.pe") }
+                )
+            }
+            Text(
+                "Interlineado y alineación necesitan los ajustes Lee.pe para reemplazar el formato definido por el EPUB.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 12.sp
+            )
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("Interlineado · \ ${(lineHeight * 100).toInt()}%", fontWeight = FontWeight.SemiBold)
+            Slider(
+                value = lineHeight,
+                onValueChange = { lineHeight = it },
+                onValueChangeFinished = {
+                    onPreferencesChange(preferences.copy(lineHeight = lineHeight.toDouble(), publisherStyles = false))
+                },
+                valueRange = 1f..2f,
+                steps = 9
+            )
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("Márgenes laterales · \ ${(pageMargins * 100).toInt()}%", fontWeight = FontWeight.SemiBold)
+            Slider(
+                value = pageMargins,
+                onValueChange = { pageMargins = it },
+                onValueChangeFinished = {
+                    onPreferencesChange(preferences.copy(pageMargins = pageMargins.toDouble()))
+                },
+                valueRange = 0.5f..2f,
+                steps = 14
+            )
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Alineación", fontWeight = FontWeight.SemiBold)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf(
+                    "Inicio" to ReadiumTextAlign.START,
+                    "Justificada" to ReadiumTextAlign.JUSTIFY,
+                    "Centro" to ReadiumTextAlign.CENTER
+                ).forEach { (label, alignment) ->
+                    FilterChip(
+                        selected = (preferences.textAlign ?: ReadiumTextAlign.START) == alignment,
+                        onClick = {
+                            onPreferencesChange(preferences.copy(textAlign = alignment, publisherStyles = false))
+                        },
+                        label = { Text(label) }
+                    )
+                }
+            }
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Navegación", fontWeight = FontWeight.SemiBold)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FilterChip(
+                    selected = preferences.scroll != true,
+                    onClick = { onPreferencesChange(preferences.copy(scroll = false)) },
+                    label = { Text("Por páginas") }
+                )
+                FilterChip(
+                    selected = preferences.scroll == true,
+                    onClick = { onPreferencesChange(preferences.copy(scroll = true)) },
+                    label = { Text("Desplazamiento") }
+                )
+            }
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("Brillo de pantalla", fontWeight = FontWeight.SemiBold)
+            FilterChip(
+                selected = brightness < 0f,
+                onClick = { onBrightnessChange(-1f) },
+                label = { Text("Usar brillo del sistema") }
+            )
+            Slider(
+                value = if (brightness < 0f) 0.7f else brightness.coerceIn(0.15f, 1f),
+                onValueChange = onBrightnessChange,
+                valueRange = 0.15f..1f,
+                enabled = brightness >= 0f
             )
         }
 
