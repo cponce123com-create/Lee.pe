@@ -23,7 +23,7 @@ Consulta el [plan de trabajo](docs/PLAN_TRABAJO.md) para el orden de los siguien
 
 1. Clona este repositorio.
 2. Ábrelo en Android Studio compatible con Android Gradle Plugin 9.3.
-3. Instala Android SDK Platform 37 y sincroniza Gradle.
+3. Instala Android SDK Platform 36 y sincroniza Gradle.
 4. Ejecuta la configuración `app` en un emulador o dispositivo Android.
 
 ## Principios
