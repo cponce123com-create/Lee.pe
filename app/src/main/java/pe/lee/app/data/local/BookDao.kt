@@ -23,6 +23,20 @@ interface BookDao {
     @Query("UPDATE library_books SET lastOpenedAt = :openedAt WHERE uri = :uri")
     suspend fun markOpened(uri: String, openedAt: Long)
 
+    @Query("""
+        UPDATE library_books
+        SET epubLocator = :locatorJson, readProgress = :progress, lastOpenedAt = :openedAt
+        WHERE uri = :uri
+    """)
+    suspend fun saveEpubProgress(uri: String, locatorJson: String, progress: Float, openedAt: Long)
+
+    @Query("""
+        UPDATE library_books
+        SET pdfPageIndex = :pageIndex, readProgress = :progress, lastOpenedAt = :openedAt
+        WHERE uri = :uri
+    """)
+    suspend fun savePdfProgress(uri: String, pageIndex: Int, progress: Float, openedAt: Long)
+
     @Query("DELETE FROM library_books WHERE uri = :uri")
     suspend fun deleteByUri(uri: String)
 }
