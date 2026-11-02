@@ -4,7 +4,7 @@
 
 Crear un lector nativo Android que permita importar EPUB, PDF y audiolibros desde el teléfono; leer en una vista amplia de página completa; retomar exactamente donde se dejó; y usar las funciones principales sin conexión. La estética tomará como referencia la interfaz futurista de Lee.pe, con controles discretos durante la lectura y herramientas accesibles al tocar la página.
 
-Estado actual: biblioteca local con Room e importación SAF (incluida migración de la lista anterior), lector EPUB con Readium, índice, controles de apariencia, opción de mantener pantalla activa y navegación paginada o por desplazamiento, y visor PDF offline con navegación por página, zoom por gesto y controles de ampliación. El avance se guarda en Room; apariencia y brillo EPUB se conservan por libro. Falta validar la integración en Android Studio.
+Estado actual: biblioteca local con Room e importación SAF (incluida migración de la lista anterior), lector EPUB con Readium, índice, controles de apariencia, opción de mantener pantalla activa y navegación paginada o por desplazamiento, y visor PDF offline con navegación por página, zoom, rotación y modo de desplazamiento continuo. El avance se guarda en Room; apariencia y brillo EPUB se conservan por libro. Falta validar la integración en Android Studio.
 
 ## Principios de producto
 
@@ -80,14 +80,14 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Ir a número de página y recuperar la última página.
 - [x] Ampliar y reducir el PDF con gestos y controles; desplazar la página ampliada y restablecer el zoom.
 - [x] Rotar la página PDF en incrementos de 90°.
-- [ ] Ofrecer desplazamiento continuo entre páginas.
+- [x] Ofrecer desplazamiento continuo entre páginas con renderizado diferido de las páginas visibles.
 - Añadir búsqueda y selección de texto cuando el PDF incluya texto seleccionable.
 - Identificar PDF escaneados y explicar que necesitan OCR para buscar o narrar.
 
 **Se considera lista cuando**
 - [x] Abre PDFs locales sin conexión y permite navegar por número de página.
 - [x] El zoom opera sobre la página actual, sin cargar el documento completo en memoria.
-- El desplazamiento continuo funciona en documentos largos sin cargar todas las páginas en memoria.
+- [x] El desplazamiento continuo renderiza páginas visibles bajo demanda, sin cargar el documento completo.
 - La app distingue búsqueda disponible de documentos escaneados sin OCR.
 
 ### Fase 4 — Marcadores, subrayado y notas
