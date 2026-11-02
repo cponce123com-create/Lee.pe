@@ -119,11 +119,11 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 **Trabajo**
 - Hecho en código: narración EPUB mediante Readium y el motor Android TTS; inicia desde el elemento visible del lector.
 - Hecho en código: sincronizar voz y lector con resaltado del fragmento hablado y avance de página; pausar/reanudar, velocidad de 0.75x a 2x y temporizador de 15, 30 o 60 minutos.
-- Pendiente: selector manual de voces y controles TTS desde la notificación/pantalla bloqueada.
+- Hecho en código: elegir una voz Android local instalada, guardar la preferencia por libro y ajustar la velocidad.
 - Hecho: reproducir archivos locales con Media3, progreso, pausa, saltos de 15 segundos y velocidad de 0.75x a 2x.
 - Hecho en código: ejecutar Media3 en un MediaSessionService con controles del sistema y notificación para continuar en segundo plano y con pantalla bloqueada; falta validarlo en dispositivo, incluida la solicitud de permiso de notificaciones.
 - Hecho en código: guardar la posición local por archivo y restaurarla al abrirlo; falta validarlo en Android Studio y en dispositivo.
-- Pendiente: selector manual de voz y reproducción TTS en segundo plano con notificación y pantalla bloqueada; validar el flujo completo en Android Studio y dispositivo.
+- Pendiente: controles TTS desde la notificación/pantalla bloqueada; validar la narración, el temporizador y el selector en Android Studio y dispositivo.
 
 **Se considera lista cuando**
 - Los audiolibros locales continúan al cambiar de app y con pantalla bloqueada, con controles de sesión multimedia del sistema.
