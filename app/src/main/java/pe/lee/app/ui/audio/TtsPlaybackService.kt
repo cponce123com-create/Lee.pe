@@ -29,6 +29,7 @@ import pe.lee.app.data.local.LeeDatabase
 import pe.lee.app.ui.reader.ReaderActivity
 
 @OptIn(ExperimentalReadiumApi::class)
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class TtsPlaybackService : MediaSessionService() {
     class Session(
         val navigator: AndroidTtsNavigator,
