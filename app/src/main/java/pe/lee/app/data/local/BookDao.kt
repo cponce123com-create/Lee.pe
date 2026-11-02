@@ -43,6 +43,9 @@ interface BookDao {
     @Query("UPDATE library_books SET title = :title WHERE uri = :uri")
     suspend fun updateTitle(uri: String, title: String)
 
+    @Query("UPDATE library_books SET collectionId = :collectionId WHERE uri = :uri")
+    suspend fun updateCollection(uri: String, collectionId: String?)
+
     @Query("DELETE FROM library_books WHERE uri = :uri")
     suspend fun deleteByUri(uri: String)
 }
