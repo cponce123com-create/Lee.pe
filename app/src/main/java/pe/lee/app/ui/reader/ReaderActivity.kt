@@ -33,6 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ChevronLeft
@@ -447,6 +448,11 @@ private fun EpubReaderScreen(
                         }
                     }
                 },
+                onChangeHighlightColor = { annotation, color ->
+                    coroutineScope.launch {
+                        annotationDao.updateColor(annotation.id, color, System.currentTimeMillis())
+                    }
+                },
                 onUpdateAnnotation = { annotation, note ->
                     coroutineScope.launch {
                         annotationDao.updateNote(annotation.id, note, System.currentTimeMillis())
@@ -512,6 +518,7 @@ private fun ReaderChrome(
     onAddBookmark: () -> Unit,
     onAddNote: (String) -> Unit,
     onUpdateAnnotation: (ReadingAnnotationEntity, String) -> Unit,
+    onChangeHighlightColor: (ReadingAnnotationEntity, Int) -> Unit,
     onSelectAnnotation: (ReadingAnnotationEntity) -> Unit,
     onDeleteAnnotation: (ReadingAnnotationEntity) -> Unit,
     preferences: EpubPreferences,
@@ -587,6 +594,28 @@ private fun ReaderChrome(
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis
                                 )
+                                if (annotation.kind == "HIGHLIGHT") {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        listOf(
+                                            "Amarillo" to 0xFFFFD54F.toInt(),
+                                            "Azul" to 0xFF64B5F6.toInt(),
+                                            "Verde" to 0xFF81C784.toInt(),
+                                            "Rosa" to 0xFFF48FB1.toInt()
+                                        ).forEach { (label, color) ->
+                                            IconButton(
+                                                onClick = { onChangeHighlightColor(annotation, color) },
+                                                modifier = Modifier.size(34.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Circle,
+                                                    contentDescription = "Resaltado $label",
+                                                    tint = Color(color),
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                                 Text(
                                     when (annotation.kind) {
                                         "NOTE" -> "Nota · abrir posición"
