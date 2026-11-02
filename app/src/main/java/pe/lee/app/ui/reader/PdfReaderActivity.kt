@@ -3,9 +3,11 @@ package pe.lee.app.ui.reader
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import org.json.JSONArray
 import org.json.JSONObject
 import android.graphics.Bitmap
 import android.graphics.Point
+import android.graphics.RectF
 import android.graphics.pdf.PdfRenderer
 import android.graphics.pdf.models.selection.SelectionBoundary
 import android.net.Uri
@@ -14,6 +16,7 @@ import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.widget.Toast
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -76,6 +79,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.drawRect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -112,6 +117,62 @@ private const val PDF_PREFS_NAME = "lee_pe_library"
 
 private fun pdfPageLocator(pageIndex: Int): String =
     JSONObject().put("format", "pdf-page").put("pageIndex", pageIndex).toString()
+
+private data class PdfNormalizedRect(
+    val left: Float,
+    val top: Float,
+    val right: Float,
+    val bottom: Float
+)
+
+private data class PdfSelectedText(val text: String, val rects: List<PdfNormalizedRect>)
+
+private data class PdfHighlightOverlay(
+    val rect: PdfNormalizedRect,
+    val colorArgb: Int
+)
+
+private fun pdfTextLocator(pageIndex: Int, rects: List<PdfNormalizedRect>): String =
+    JSONObject().apply {
+        put("format", "pdf-text")
+        put("pageIndex", pageIndex)
+        put("rects", JSONArray().apply {
+            rects.forEach { rect ->
+                put(JSONObject()
+                    .put("left", rect.left)
+                    .put("top", rect.top)
+                    .put("right", rect.right)
+                    .put("bottom", rect.bottom))
+            }
+        })
+    }.toString()
+
+private fun pdfHighlightOverlays(
+    annotations: List<ReadingAnnotationEntity>,
+    pageIndex: Int
+): List<PdfHighlightOverlay> = annotations
+    .filter { it.kind == "HIGHLIGHT" }
+    .flatMap { annotation ->
+        runCatching {
+            val json = JSONObject(annotation.locatorJson)
+            if (json.optInt("pageIndex", -1) != pageIndex) return@runCatching emptyList()
+            val storedRects = json.optJSONArray("rects") ?: return@runCatching emptyList()
+            (0 until storedRects.length()).mapNotNull { index ->
+                val rect = storedRects.optJSONObject(index) ?: return@mapNotNull null
+                PdfHighlightOverlay(
+                    rect = PdfNormalizedRect(
+                        left = rect.optDouble("left").toFloat().coerceIn(0f, 1f),
+                        top = rect.optDouble("top").toFloat().coerceIn(0f, 1f),
+                        right = rect.optDouble("right").toFloat().coerceIn(0f, 1f),
+                        bottom = rect.optDouble("bottom").toFloat().coerceIn(0f, 1f)
+                    ),
+                    colorArgb = annotation.colorArgb ?: DEFAULT_PDF_HIGHLIGHT_COLOR
+                )
+            }
+        }.getOrDefault(emptyList())
+    }
+
+private const val DEFAULT_PDF_HIGHLIGHT_COLOR = 0xFFFFD54F.toInt()
 
 class PdfReaderActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -167,6 +228,7 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
     var selectionMode by remember { mutableStateOf(false) }
     var selectedPdfText by remember { mutableStateOf<String?>(null) }
     var selectedPdfPage by remember { mutableIntStateOf(0) }
+    var selectedPdfRects by remember { mutableStateOf<List<PdfNormalizedRect>>(emptyList()) }
     var showSelectionDialog by remember { mutableStateOf(false) }
     var quoteForNote by remember { mutableStateOf<String?>(null) }
     var editingNote by remember { mutableStateOf<ReadingAnnotationEntity?>(null) }
@@ -176,6 +238,7 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val density = LocalDensity.current
+    val pageHighlights = remember(annotations, pageIndex) { pdfHighlightOverlays(annotations, pageIndex) }
 
     LaunchedEffect(pageIndex) { panOffset = Offset.Zero }
 
@@ -407,9 +470,22 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                                                                             (yRatio * page.height).roundToInt().coerceIn(0, page.height - 1)
                                                                         )
                                                                         val boundary = SelectionBoundary(point)
-                                                                        page.selectContent(boundary, boundary)
-                                                                            ?.selectedTextContents
-                                                                            ?.joinToString(separator = "") { it.text }
+                                                                        page.selectContent(boundary, boundary)?.let { selection ->
+                                                                            val text = selection.selectedTextContents
+                                                                                .joinToString(separator = "") { it.text }
+                                                                                .trim()
+                                                                            val rects = selection.selectedTextContents
+                                                                                .flatMap { it.bounds }
+                                                                                .map { bounds ->
+                                                                                    PdfNormalizedRect(
+                                                                                        left = (bounds.left / page.width).coerceIn(0f, 1f),
+                                                                                        top = (bounds.top / page.height).coerceIn(0f, 1f),
+                                                                                        right = (bounds.right / page.width).coerceIn(0f, 1f),
+                                                                                        bottom = (bounds.bottom / page.height).coerceIn(0f, 1f)
+                                                                                    )
+                                                                                }
+                                                                            if (text.isNotEmpty()) PdfSelectedText(text, rects) else null
+                                                                        }
                                                                     } finally {
                                                                         page.close()
                                                                     }
@@ -417,7 +493,8 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                                                             }
                                                         }.getOrNull()?.trim()?.takeIf { it.isNotEmpty() }
                                                         if (text != null) {
-                                                            selectedPdfText = text
+                                                            selectedPdfText = text.text
+                                                            selectedPdfRects = text.rects
                                                             selectedPdfPage = pageIndex
                                                             showSelectionDialog = true
                                                         } else {
@@ -457,6 +534,42 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                                 },
                             contentScale = ContentScale.Fit
                         )
+                        if (pageHighlights.isNotEmpty()) {
+                            Canvas(
+                                modifier = imageModifier
+                                    .clipToBounds()
+                                    .graphicsLayer {
+                                        rotationZ = rotationDegrees.toFloat()
+                                        scaleX = zoomScale
+                                        scaleY = zoomScale
+                                        translationX = panOffset.x
+                                        translationY = panOffset.y
+                                    }
+                            ) {
+                                val fit = min(
+                                    size.width / pageBitmap.width,
+                                    size.height / pageBitmap.height
+                                )
+                                val displayedWidth = pageBitmap.width * fit
+                                val displayedHeight = pageBitmap.height * fit
+                                val left = (size.width - displayedWidth) / 2f
+                                val top = (size.height - displayedHeight) / 2f
+                                pageHighlights.forEach { highlight ->
+                                    val rect = highlight.rect
+                                    drawRect(
+                                        color = Color(highlight.colorArgb).copy(alpha = 0.40f),
+                                        topLeft = androidx.compose.ui.geometry.Offset(
+                                            left + rect.left * displayedWidth,
+                                            top + rect.top * displayedHeight
+                                        ),
+                                        size = Size(
+                                            (rect.right - rect.left) * displayedWidth,
+                                            (rect.bottom - rect.top) * displayedHeight
+                                        )
+                                    )
+                                }
+                            }
+                        }
                     }
                     if (loading || rendering) {
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
@@ -722,25 +835,45 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                 title = { Text("Texto seleccionado · página ${selectedPdfPage + 1}") },
                 text = { Text(selectedPdfText.orEmpty()) },
                 confirmButton = {
-                    TextButton(onClick = {
-                        selectedPdfText?.let { selected ->
-                            val clipboard = context.getSystemService(ClipboardManager::class.java)
-                            clipboard?.setPrimaryClip(ClipData.newPlainText("Texto PDF", selected))
-                        }
-                        showSelectionDialog = false
-                    }) { Text("Copiar") }
-                },
-                dismissButton = {
                     Row {
+                        TextButton(onClick = {
+                            selectedPdfText?.let { selected ->
+                                val clipboard = context.getSystemService(ClipboardManager::class.java)
+                                clipboard?.setPrimaryClip(ClipData.newPlainText("Texto PDF", selected))
+                            }
+                            showSelectionDialog = false
+                        }) { Text("Copiar") }
+                        TextButton(
+                            enabled = selectedPdfRects.isNotEmpty(),
+                            onClick = {
+                                val now = System.currentTimeMillis()
+                                coroutineScope.launch {
+                                    annotationDao.upsert(
+                                        ReadingAnnotationEntity(
+                                            id = UUID.randomUUID().toString(),
+                                            bookUri = uri.toString(),
+                                            kind = "HIGHLIGHT",
+                                            locatorJson = pdfTextLocator(selectedPdfPage, selectedPdfRects),
+                                            selectedText = selectedPdfText,
+                                            colorArgb = DEFAULT_PDF_HIGHLIGHT_COLOR,
+                                            createdAt = now
+                                        )
+                                    )
+                                }
+                                showSelectionDialog = false
+                            }
+                        ) { Text("Resaltar") }
                         TextButton(onClick = {
                             quoteForNote = selectedPdfText
                             noteDraft = ""
                             editingNote = null
                             showSelectionDialog = false
                             showNoteEditor = true
-                        }) { Text("Crear nota") }
-                        TextButton(onClick = { showSelectionDialog = false }) { Text("Cerrar") }
+                        }) { Text("Nota") }
                     }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showSelectionDialog = false }) { Text("Cerrar") }
                 }
             )
         }
