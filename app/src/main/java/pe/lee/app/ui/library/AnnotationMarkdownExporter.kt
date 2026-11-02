@@ -82,7 +82,7 @@ internal object AnnotationMarkdownExporter {
         }.getOrNull()
 }
 
-private fun annotationExportFileName(title: String): String {
+internal fun annotationExportFileName(title: String): String {
     val safeTitle = title.trim()
         .replace(Regex("[^A-Za-z0-9._-]+"), "_")
         .trim('_', '.', '-')
