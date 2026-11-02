@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.RotateRight
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material.icons.filled.ZoomOut
 import androidx.compose.material3.AlertDialog
@@ -117,6 +118,7 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
     var sliderPage by remember { mutableFloatStateOf(0f) }
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
     var zoomScale by remember(uri) { mutableFloatStateOf(1f) }
+    var rotationDegrees by remember(uri) { mutableIntStateOf(0) }
     var panOffset by remember(uri) { mutableStateOf(Offset.Zero) }
     var loading by remember { mutableStateOf(true) }
     var rendering by remember { mutableStateOf(false) }
@@ -245,21 +247,22 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                 }
             }
 
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                bitmap?.let { pageBitmap ->
-                    Image(
-                        bitmap = pageBitmap.asImageBitmap(),
-                        contentDescription = "Página ${pageIndex + 1}",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clipToBounds()
-                            .pointerInput(pageIndex) {
+                            .graphicsLayer {
+                                scaleX = zoomScale
+                                scaleY = zoomScale
+                                translationX = panOffset.x
+                                translationY = panOffset.y
+                            },
+                        contentScale = ContentScale.Fit
+                    )
+                }
+                if (loading || rendering) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
+                }
+                if (pageCount == 0 && !loading && errorMessage == null) {
+                    Text("Este PDF no contiene páginas.", color = Color.White)
+                }
+            }
                                 detectTransformGestures { _, pan, zoomChange, _ ->
                                     val nextScale = (zoomScale * zoomChange).coerceIn(1f, 3f)
                                     zoomScale = nextScale
@@ -338,6 +341,18 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                             enabled = zoomScale < 3f
                         ) {
                             Icon(Icons.Default.ZoomIn, contentDescription = "Ampliar zoom", tint = Color.White)
+                        }
+                        IconButton(
+                            onClick = {
+                                rotationDegrees = (rotationDegrees + 90) % 360
+                                panOffset = Offset.Zero
+                            }
+                        ) {
+                            Icon(
+                                Icons.Default.RotateRight,
+                                contentDescription = "Rotar página",
+                                tint = Color.White
+                            )
                         }
                     }
 
