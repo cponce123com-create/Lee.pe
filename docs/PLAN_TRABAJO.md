@@ -82,7 +82,8 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Rotar la página PDF en incrementos de 90°.
 - [x] Ofrecer desplazamiento continuo entre páginas con renderizado diferido de las páginas visibles.
 - [x] Guardar y administrar marcadores y notas vinculadas al número de página del PDF.
-- Añadir búsqueda y selección de texto cuando el PDF incluya texto seleccionable.
+- [x] En API 35+, seleccionar una palabra tocándola para copiarla o crear una nota vinculada a la página.
+- Añadir búsqueda PDF y selección por arrastre para el rango de texto.
 - Identificar PDF escaneados y explicar que necesitan OCR para buscar o narrar.
 
 **Se considera lista cuando**
@@ -101,7 +102,8 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Guardar resaltados EPUB amarillos con locator y texto seleccionado en Room; volver a mostrarlos al abrir el libro.
 - [x] Cambiar el color de un resaltado EPUB entre amarillo, azul, verde y rosa; guardar el cambio localmente.
 - [x] Añadir notas y marcadores PDF anclados al número de página, con edición, eliminación y navegación de retorno.
-- Añadir selección de texto y resaltados visuales PDF cuando el motor lo permita.
+- [x] Selección de palabra PDF por toque en API 35+ y nota asociada al texto.
+- Añadir selección por arrastre y resaltado visual persistente para PDF.
 - Guardar anclas estables por locator/página, relacionarlas con libro y perfil, y permitir edición y eliminación.
 - Crear una vista de notas con filtros por libro, capítulo y color.
 - Exportar notas y citas a TXT/Markdown; definir límites de cita al compartir.
