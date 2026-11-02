@@ -595,7 +595,7 @@ private fun EpubAppearanceSheet(
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Interlineado · \ ${(lineHeight * 100).toInt()}%", fontWeight = FontWeight.SemiBold)
+            Text("Interlineado · ${(lineHeight * 100).toInt()}%", fontWeight = FontWeight.SemiBold)
             Slider(
                 value = lineHeight,
                 onValueChange = { lineHeight = it },
@@ -608,7 +608,7 @@ private fun EpubAppearanceSheet(
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Márgenes laterales · \ ${(pageMargins * 100).toInt()}%", fontWeight = FontWeight.SemiBold)
+            Text("Márgenes laterales · ${(pageMargins * 100).toInt()}%", fontWeight = FontWeight.SemiBold)
             Slider(
                 value = pageMargins,
                 onValueChange = { pageMargins = it },
