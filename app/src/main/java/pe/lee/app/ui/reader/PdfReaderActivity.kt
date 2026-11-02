@@ -70,7 +70,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -78,6 +77,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.platform.LocalDensity
 import androidx.activity.ComponentActivity
 import pe.lee.app.data.local.LeeDatabase
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
@@ -261,7 +261,6 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
             .background(Color(0xFF07111F))
     ) {
         val availableWidth = with(density) { maxWidth.roundToPx() - 32.dp.roundToPx() }
-        val availableHeight = with(density) { maxHeight.roundToPx() - 210.dp.roundToPx() }
 
         Column(modifier = Modifier.fillMaxSize()) {
             Surface(color = Color(0xFF0A1423)) {
@@ -536,11 +535,13 @@ private fun PdfContinuousPage(
     targetWidthPx: Int
 ) {
     var bitmap by remember(renderer, pageIndex, targetWidthPx) { mutableStateOf<Bitmap?>(null) }
+    var renderFailed by remember(renderer, pageIndex, targetWidthPx) { mutableStateOf(false) }
 
     LaunchedEffect(renderer, pageIndex, targetWidthPx) {
         val currentRenderer = renderer ?: return@LaunchedEffect
-        bitmap = runCatching {
-            renderMutex.withLock {
+        renderFailed = false
+        try {
+            bitmap = renderMutex.withLock {
                 withContext(Dispatchers.IO) {
                     val page = currentRenderer.openPage(pageIndex)
                     try {
@@ -560,7 +561,11 @@ private fun PdfContinuousPage(
                     }
                 }
             }
-        }.getOrNull()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            renderFailed = true
+        }
     }
 
     DisposableEffect(bitmap) {
@@ -578,7 +583,11 @@ private fun PdfContinuousPage(
         modifier = Modifier.fillMaxWidth().height(220.dp),
         contentAlignment = Alignment.Center
     ) {
-        CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
+        if (renderFailed) {
+            Text("No se pudo renderizar la página ${pageIndex + 1}.", color = Color.White)
+        } else {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
+        }
     }
 }
 
