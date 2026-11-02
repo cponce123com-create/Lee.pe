@@ -16,7 +16,7 @@ Consulta el [plan de trabajo](docs/PLAN_TRABAJO.md) para el orden de los siguien
 - Readium Kotlin Toolkit para EPUB y navegación por locators.
 - Android Storage Access Framework para importar archivos con permisos limitados.
 - Room para biblioteca, progreso, marcadores/notas EPUB y anotaciones por página PDF, incluidos resaltados persistentes.
-- Media3 para reproducción local y en segundo plano de audiolibros; Android TextToSpeech y temporizador siguen pendientes.
+- Media3 para audiolibros locales en segundo plano y Readium/Android TTS para narración EPUB; ambas rutas están implementadas en código y requieren validación en dispositivos.
 - Render y Neon solo para API y sincronización opcional; Cloudinary para portadas si hace falta. Los libros no se subirán automáticamente.
 
 ## Abrir el proyecto
