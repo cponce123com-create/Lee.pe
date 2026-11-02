@@ -41,6 +41,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -162,6 +163,7 @@ class ReaderActivity : FragmentActivity() {
         fun locatorPreferenceKey(uri: Uri): String = "locator:$uri"
         fun preferencesPreferenceKey(uri: Uri): String = "epub-preferences:$uri"
         fun brightnessPreferenceKey(uri: Uri): String = "reader-brightness:$uri"
+        fun keepScreenOnPreferenceKey(uri: Uri): String = "keep-screen-on:$uri"
     }
 }
 
@@ -187,13 +189,27 @@ private fun EpubReaderScreen(
         mutableFloatStateOf(context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getFloat(ReaderActivity.brightnessPreferenceKey(uri), -1f))
     }
+    var keepScreenOn by remember(uri) {
+        mutableStateOf(context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getBoolean(ReaderActivity.keepScreenOnPreferenceKey(uri), false))
+    }
     var chromeVisible by remember { mutableStateOf(true) }
     var loading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     DisposableEffect(activity, uri) {
         val originalBrightness = activity.window.attributes.screenBrightness
-        onDispose { activity.window.attributes = activity.window.attributes.apply { screenBrightness = originalBrightness } }
+        val originallyKeptAwake = activity.window.attributes.flags and android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON != 0
+        onDispose {
+            activity.window.attributes = activity.window.attributes.apply { screenBrightness = originalBrightness }
+            if (originallyKeptAwake) activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            else activity.window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+
+    LaunchedEffect(keepScreenOn) {
+        if (keepScreenOn) activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        else activity.window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     LaunchedEffect(readerBrightness) {
@@ -322,6 +338,12 @@ private fun EpubReaderScreen(
                 progress = progress,
                 preferences = epubPreferences,
                 brightness = readerBrightness,
+                keepScreenOn = keepScreenOn,
+                onKeepScreenOnChange = { enabled ->
+                    keepScreenOn = enabled
+                    context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+                        .putBoolean(ReaderActivity.keepScreenOnPreferenceKey(uri), enabled).apply()
+                },
                 onBrightnessChange = { brightness ->
                     readerBrightness = brightness
                     context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
@@ -365,6 +387,8 @@ private fun ReaderChrome(
     progress: Float,
     preferences: EpubPreferences,
     brightness: Float,
+    keepScreenOn: Boolean,
+    onKeepScreenOnChange: (Boolean) -> Unit,
     onBrightnessChange: (Float) -> Unit,
     onPreferencesChange: (EpubPreferences) -> Unit,
     onToggleChrome: () -> Unit,
@@ -384,6 +408,8 @@ private fun ReaderChrome(
             EpubAppearanceSheet(
                 preferences = preferences,
                 brightness = brightness,
+                keepScreenOn = keepScreenOn,
+                onKeepScreenOnChange = onKeepScreenOnChange,
                 onBrightnessChange = onBrightnessChange,
                 onPreferencesChange = onPreferencesChange
             )
@@ -514,6 +540,8 @@ private fun ReaderChrome(
 private fun EpubAppearanceSheet(
     preferences: EpubPreferences,
     brightness: Float,
+    keepScreenOn: Boolean,
+    onKeepScreenOnChange: (Boolean) -> Unit,
     onBrightnessChange: (Float) -> Unit,
     onPreferencesChange: (EpubPreferences) -> Unit
 ) {
@@ -652,6 +680,17 @@ private fun EpubAppearanceSheet(
                     onClick = { onPreferencesChange(preferences.copy(scroll = true)) },
                     label = { Text("Desplazamiento") }
                 )
+            }
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Durante la lectura", fontWeight = FontWeight.SemiBold)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Mantener pantalla encendida")
+                    Text("Evita que se apague mientras lees.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(checked = keepScreenOn, onCheckedChange = onKeepScreenOnChange)
             }
         }
 
