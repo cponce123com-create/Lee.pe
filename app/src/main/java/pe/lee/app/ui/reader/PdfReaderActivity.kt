@@ -491,7 +491,7 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                                                                     }
                                                                 }
                                                             }
-                                                        }.getOrNull()?.trim()?.takeIf { it.isNotEmpty() }
+                                                        }.getOrNull()?.takeIf { it.text.isNotEmpty() }
                                                         if (text != null) {
                                                             selectedPdfText = text.text
                                                             selectedPdfRects = text.rects
@@ -734,7 +734,7 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                 }
                 if (annotations.isEmpty()) {
                     Text(
-                        "Todavía no guardaste notas ni marcadores para este PDF.",
+                        "Todavía no guardaste notas, marcadores ni resaltados para este PDF.",
                         modifier = Modifier.padding(horizontal = 22.dp, vertical = 20.dp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -756,7 +756,12 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                                 ) {
                                     Text(
                                         annotation.noteText?.takeIf { it.isNotBlank() }
-                                            ?: if (annotation.kind == "NOTE") "Nota" else "Página marcada",
+                                            ?: annotation.selectedText?.takeIf { it.isNotBlank() }
+                                            ?: when (annotation.kind) {
+                                                "NOTE" -> "Nota"
+                                                "HIGHLIGHT" -> "Texto resaltado"
+                                                else -> "Página marcada"
+                                            },
                                         maxLines = 2,
                                         overflow = TextOverflow.Ellipsis
                                     )
