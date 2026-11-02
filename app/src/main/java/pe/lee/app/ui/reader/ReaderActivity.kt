@@ -27,6 +27,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.FormatListBulleted
@@ -47,6 +49,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -75,6 +78,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import pe.lee.app.data.local.LeeDatabase
+import pe.lee.app.data.local.ReadingAnnotationEntity
 import org.readium.r2.navigator.epub.EpubNavigatorFactory
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.EpubPreferences
@@ -100,6 +104,7 @@ import org.readium.r2.streamer.PublicationOpener
 import org.readium.r2.streamer.parser.DefaultPublicationParser
 import pe.lee.app.ui.theme.LeePeTheme
 import java.io.IOException
+import java.util.UUID
 
 class ReaderActivity : FragmentActivity() {
 
@@ -180,7 +185,10 @@ private fun EpubReaderScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val bookDao = remember(context) { LeeDatabase.get(context).bookDao() }
+    val database = remember(context) { LeeDatabase.get(context) }
+    val bookDao = remember(database) { database.bookDao() }
+    val annotationDao = remember(database) { database.readingAnnotationDao() }
+    val annotations by annotationDao.observeByBook(uri.toString()).collectAsState(initial = emptyList())
     val activity = context as? FragmentActivity ?: return
     val containerId = remember { View.generateViewId() }
     val coroutineScope = rememberCoroutineScope()
@@ -340,6 +348,30 @@ private fun EpubReaderScreen(
             if (chromeVisible) ReaderChrome(
                 title = title,
                 progress = progress,
+                annotations = annotations,
+                onAddBookmark = {
+                    navigator?.currentLocator?.value?.let { locator ->
+                        val now = System.currentTimeMillis()
+                        coroutineScope.launch {
+                            annotationDao.upsert(
+                                ReadingAnnotationEntity(
+                                    id = UUID.randomUUID().toString(),
+                                    bookUri = uri.toString(),
+                                    kind = "BOOKMARK",
+                                    locatorJson = locator.toJSON().toString(),
+                                    createdAt = now
+                                )
+                            )
+                        }
+                    }
+                },
+                onSelectAnnotation = { annotation ->
+                    runCatching { Locator.fromJSON(JSONObject(annotation.locatorJson)) }
+                        .getOrNull()?.let { navigator?.go(it) }
+                },
+                onDeleteAnnotation = { annotation ->
+                    coroutineScope.launch { annotationDao.deleteById(annotation.id) }
+                },
                 preferences = epubPreferences,
                 brightness = readerBrightness,
                 keepScreenOn = keepScreenOn,
@@ -389,6 +421,10 @@ private fun EpubReaderScreen(
 private fun ReaderChrome(
     title: String,
     progress: Float,
+    annotations: List<ReadingAnnotationEntity>,
+    onAddBookmark: () -> Unit,
+    onSelectAnnotation: (ReadingAnnotationEntity) -> Unit,
+    onDeleteAnnotation: (ReadingAnnotationEntity) -> Unit,
     preferences: EpubPreferences,
     brightness: Float,
     keepScreenOn: Boolean,
@@ -405,11 +441,63 @@ private fun ReaderChrome(
     onProgressChange: (Float) -> Unit
 ) {
     var showContents by remember { mutableStateOf(false) }
+    var showAnnotations by remember { mutableStateOf(false) }
     var showAppearance by remember { mutableStateOf(false) }
     var showGoTo by remember { mutableStateOf(false) }
     var targetPercent by remember { mutableStateOf("") }
     val targetProgress = targetPercent.replace(',', '.').toFloatOrNull()
         ?.takeIf { it in 0f..100f }
+
+    if (showAnnotations) {
+        ModalBottomSheet(onDismissRequest = { showAnnotations = false }) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Marcadores", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                TextButton(onClick = onAddBookmark) { Text("Guardar posición") }
+            }
+            if (annotations.isEmpty()) {
+                Text(
+                    "Todavía no guardaste marcadores en este libro.",
+                    modifier = Modifier.padding(horizontal = 22.dp, vertical = 20.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                    items(annotations, key = { it.id }) { annotation ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(
+                                modifier = Modifier.weight(1f).clickable {
+                                    onSelectAnnotation(annotation)
+                                    showAnnotations = false
+                                }.padding(vertical = 12.dp, horizontal = 8.dp)
+                            ) {
+                                Text(
+                                    annotation.noteText?.takeIf { it.isNotBlank() } ?: "Marcador · ${java.text.DateFormat.getDateTimeInstance().format(java.util.Date(annotation.createdAt))}",
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    "Abrir esta posición",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 12.sp
+                                )
+                            }
+                            IconButton(onClick = { onDeleteAnnotation(annotation) }) {
+                                Icon(Icons.Default.DeleteOutline, contentDescription = "Eliminar marcador")
+                            }
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+        }
+    }
 
     if (showAppearance) {
         ModalBottomSheet(onDismissRequest = { showAppearance = false }) {
@@ -536,6 +624,9 @@ private fun ReaderChrome(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                IconButton(onClick = { showAnnotations = true }) {
+                    Icon(Icons.Default.Bookmark, contentDescription = "Marcadores", tint = Color.White)
+                }
                 IconButton(onClick = { showAppearance = true }) {
                     Icon(Icons.Default.TextFields, contentDescription = "Apariencia de lectura", tint = Color.White)
                 }
