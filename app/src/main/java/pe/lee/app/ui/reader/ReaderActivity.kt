@@ -29,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.FormatListBulleted
@@ -365,6 +366,28 @@ private fun EpubReaderScreen(
                         }
                     }
                 },
+                onAddNote = { note ->
+                    navigator?.currentLocator?.value?.let { locator ->
+                        val now = System.currentTimeMillis()
+                        coroutineScope.launch {
+                            annotationDao.upsert(
+                                ReadingAnnotationEntity(
+                                    id = UUID.randomUUID().toString(),
+                                    bookUri = uri.toString(),
+                                    kind = "NOTE",
+                                    locatorJson = locator.toJSON().toString(),
+                                    noteText = note,
+                                    createdAt = now
+                                )
+                            )
+                        }
+                    }
+                },
+                onUpdateAnnotation = { annotation, note ->
+                    coroutineScope.launch {
+                        annotationDao.updateNote(annotation.id, note, System.currentTimeMillis())
+                    }
+                },
                 onSelectAnnotation = { annotation ->
                     runCatching { Locator.fromJSON(JSONObject(annotation.locatorJson)) }
                         .getOrNull()?.let { navigator?.go(it) }
@@ -423,6 +446,8 @@ private fun ReaderChrome(
     progress: Float,
     annotations: List<ReadingAnnotationEntity>,
     onAddBookmark: () -> Unit,
+    onAddNote: (String) -> Unit,
+    onUpdateAnnotation: (ReadingAnnotationEntity, String) -> Unit,
     onSelectAnnotation: (ReadingAnnotationEntity) -> Unit,
     onDeleteAnnotation: (ReadingAnnotationEntity) -> Unit,
     preferences: EpubPreferences,
@@ -442,6 +467,9 @@ private fun ReaderChrome(
 ) {
     var showContents by remember { mutableStateOf(false) }
     var showAnnotations by remember { mutableStateOf(false) }
+    var showNoteEditor by remember { mutableStateOf(false) }
+    var editingAnnotation by remember { mutableStateOf<ReadingAnnotationEntity?>(null) }
+    var noteDraft by remember { mutableStateOf("") }
     var showAppearance by remember { mutableStateOf(false) }
     var showGoTo by remember { mutableStateOf(false) }
     var targetPercent by remember { mutableStateOf("") }
@@ -455,8 +483,15 @@ private fun ReaderChrome(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Marcadores", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                TextButton(onClick = onAddBookmark) { Text("Guardar posición") }
+                Text("Marcadores y notas", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Row {
+                    TextButton(onClick = {
+                        editingAnnotation = null
+                        noteDraft = ""
+                        showNoteEditor = true
+                    }) { Text("Añadir nota") }
+                    TextButton(onClick = onAddBookmark) { Text("Guardar") }
+                }
             }
             if (annotations.isEmpty()) {
                 Text(
@@ -478,15 +513,25 @@ private fun ReaderChrome(
                                 }.padding(vertical = 12.dp, horizontal = 8.dp)
                             ) {
                                 Text(
-                                    annotation.noteText?.takeIf { it.isNotBlank() } ?: "Marcador · ${java.text.DateFormat.getDateTimeInstance().format(java.util.Date(annotation.createdAt))}",
+                                    annotation.noteText?.takeIf { it.isNotBlank() }
+                                        ?: "Marcador · ${java.text.DateFormat.getDateTimeInstance().format(java.util.Date(annotation.createdAt))}",
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
-                                    "Abrir esta posición",
+                                    if (annotation.kind == "NOTE") "Nota · abrir posición" else "Abrir esta posición",
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 12.sp
                                 )
+                            }
+                            if (annotation.kind == "NOTE") {
+                                IconButton(onClick = {
+                                    editingAnnotation = annotation
+                                    noteDraft = annotation.noteText.orEmpty()
+                                    showNoteEditor = true
+                                }) {
+                                    Icon(Icons.Default.Edit, contentDescription = "Editar nota")
+                                }
                             }
                             IconButton(onClick = { onDeleteAnnotation(annotation) }) {
                                 Icon(Icons.Default.DeleteOutline, contentDescription = "Eliminar marcador")
@@ -497,6 +542,36 @@ private fun ReaderChrome(
             }
             Spacer(Modifier.height(14.dp))
         }
+    }
+
+    if (showNoteEditor) {
+        AlertDialog(
+            onDismissRequest = { showNoteEditor = false },
+            title = { Text(if (editingAnnotation == null) "Nueva nota" else "Editar nota") },
+            text = {
+                OutlinedTextField(
+                    value = noteDraft,
+                    onValueChange = { noteDraft = it },
+                    label = { Text("Nota para esta posición") },
+                    minLines = 3,
+                    maxLines = 6
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = noteDraft.isNotBlank(),
+                    onClick = {
+                        val existing = editingAnnotation
+                        if (existing == null) onAddNote(noteDraft.trim())
+                        else onUpdateAnnotation(existing, noteDraft.trim())
+                        showNoteEditor = false
+                    }
+                ) { Text("Guardar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showNoteEditor = false }) { Text("Cancelar") }
+            }
+        )
     }
 
     if (showAppearance) {
