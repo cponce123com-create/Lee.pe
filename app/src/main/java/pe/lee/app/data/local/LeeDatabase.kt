@@ -17,6 +17,7 @@ abstract class LeeDatabase : RoomDatabase() {
     abstract fun bookDao(): BookDao
     abstract fun readingAnnotationDao(): ReadingAnnotationDao
     abstract fun readingSessionDao(): ReadingSessionDao
+    abstract fun localBackupDao(): LocalBackupDao
 
     companion object {
         private val MIGRATION_1_2 = object : Migration(1, 2) {

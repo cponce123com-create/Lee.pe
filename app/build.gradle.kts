@@ -48,5 +48,6 @@ dependencies {
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.session)
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 }

@@ -177,6 +177,10 @@ fun LibraryScreen() {
     var sortMenuExpanded by remember { mutableStateOf(false) }
     var sortMode by remember { mutableStateOf("Título A–Z") }
     var pendingMarkdown by remember { mutableStateOf<String?>(null) }
+    var libraryMenuExpanded by remember { mutableStateOf(false) }
+    var showBackupOptions by remember { mutableStateOf(false) }
+    var backupPreview by remember { mutableStateOf<LocalBackupPreview?>(null) }
+    var backupBusy by remember { mutableStateOf(false) }
 
     LaunchedEffect(context, dao) {
         migrateLegacyLibrary(context, dao)
@@ -201,6 +205,40 @@ fun LibraryScreen() {
                 } catch (error: Exception) {
                     Toast.makeText(context, error.message ?: "No se pudo exportar las anotaciones", Toast.LENGTH_LONG).show()
                 }
+            }
+        }
+    }
+
+    val backupExportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { destination ->
+        if (destination != null) coroutineScope.launch {
+            backupBusy = true
+            try {
+                LocalLibraryBackup.save(context, destination)
+                Toast.makeText(context, "Respaldo local exportado correctamente", Toast.LENGTH_LONG).show()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (e: Exception) {
+                Toast.makeText(context, e.message ?: "No se pudo exportar el respaldo", Toast.LENGTH_LONG).show()
+            } finally {
+                backupBusy = false
+            }
+        }
+    }
+    val backupImportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { picked ->
+        if (picked != null) coroutineScope.launch {
+            backupBusy = true
+            try {
+                backupPreview = LocalLibraryBackup.preview(context, picked)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (e: Exception) {
+                Toast.makeText(context, e.message ?: "Respaldo no válido", Toast.LENGTH_LONG).show()
+            } finally {
+                backupBusy = false
             }
         }
     }
@@ -251,6 +289,98 @@ fun LibraryScreen() {
                 }
             }
         }
+    }
+
+    if (showBackupOptions) {
+        AlertDialog(
+            onDismissRequest = { if (!backupBusy) showBackupOptions = false },
+            title = { Text("Respaldo local de Lee.pe") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("Exporta o recupera tu biblioteca, ubicaciones, notas, marcadores y estadísticas.")
+                    Text(
+                        "Los archivos EPUB, PDF y audio no se incluyen. En otro teléfono primero " +
+                            "importa los libros y después recupera los datos. Las coincidencias " +
+                            "por título pueden variar entre ediciones.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        "El respaldo JSON contiene notas y datos de lectura sin cifrar. " +
+                            "Guárdalo en un lugar privado. Nunca se envía a Lee.pe.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(enabled = !backupBusy, onClick = {
+                    showBackupOptions = false
+                    backupExportLauncher.launch("Lee.pe-respaldo-${readingDayKey(System.currentTimeMillis())}.json")
+                }) { Text("Exportar") }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(enabled = !backupBusy, onClick = {
+                        showBackupOptions = false
+                        backupImportLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream"))
+                    }) { Text("Restaurar") }
+                    TextButton(onClick = { showBackupOptions = false }) { Text("Cancelar") }
+                }
+            }
+        )
+    }
+
+    backupPreview?.let { selected ->
+        AlertDialog(
+            onDismissRequest = { if (!backupBusy) backupPreview = null },
+            title = { Text("Confirmar restauración") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Libros del respaldo: ${selected.archive.snapshot.books.size}")
+                    Text("Coincidencias exactas: ${selected.exactMatches}")
+                    Text("Por título y formato: ${selected.titleMatches}")
+                    Text("Sin un libro local correspondiente: ${selected.unavailable}")
+                    Text("Notas del respaldo: ${selected.archive.snapshot.annotations.size}")
+                    Text(
+                        "Solo se incorporarán datos de libros que ya estén en tu biblioteca. " +
+                            "No se borrarán libros ni se sobrescribirán anotaciones existentes. " +
+                            "Comprueba que las coincidencias por título sean la misma edición. " +
+                            "Podrás volver a restaurar el archivo después de importar libros faltantes.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !backupBusy && selected.exactMatches + selected.titleMatches > 0,
+                    onClick = {
+                        backupBusy = true
+                        coroutineScope.launch {
+                            try {
+                                val report = LocalLibraryBackup.restore(context, selected)
+                                Toast.makeText(
+                                    context,
+                                    "Recuperados ${report.linkedBooks} libros, ${report.addedAnnotations} anotaciones. " +
+                                        "Pendientes: ${report.skippedBooks}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                backupPreview = null
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (e: Exception) {
+                                Toast.makeText(context, e.message ?: "No se pudo restaurar el respaldo", Toast.LENGTH_LONG).show()
+                            } finally {
+                                backupBusy = false
+                            }
+                        }
+                    }
+                ) { Text(if (backupBusy) "Restaurando…" else "Restaurar datos") }
+            },
+            dismissButton = {
+                TextButton(enabled = !backupBusy, onClick = { backupPreview = null }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 
     if (showLibraryStats) {
@@ -567,6 +697,27 @@ fun LibraryScreen() {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp
                     )
+                }
+                Box {
+                    IconButton(onClick = { libraryMenuExpanded = true }, enabled = !backupBusy) {
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = "Opciones de biblioteca",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = libraryMenuExpanded,
+                        onDismissRequest = { libraryMenuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Respaldo y restauración local") },
+                            onClick = {
+                                libraryMenuExpanded = false
+                                showBackupOptions = true
+                            }
+                        )
+                    }
                 }
                 IconButton(onClick = { showLibraryStats = true }) {
                     Icon(
