@@ -6,7 +6,7 @@ import androidx.room3.Room
 import androidx.room3.RoomDatabase
 import androidx.room3.migration.Migration
 import androidx.sqlite.SQLiteConnection
-import androidx.sqlite.executeSQL
+import androidx.sqlite.execSQL
 
 @Database(
     entities = [BookEntity::class, ReadingAnnotationEntity::class],
@@ -20,7 +20,7 @@ abstract class LeeDatabase : RoomDatabase() {
     companion object {
         private val MIGRATION_1_2 = object : Migration(1, 2) {
             override suspend fun migrate(connection: SQLiteConnection) {
-                connection.executeSQL(
+                connection.execSQL(
                     """
                     CREATE TABLE IF NOT EXISTS `reading_annotations` (
                         `id` TEXT NOT NULL,
@@ -36,7 +36,7 @@ abstract class LeeDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
-                connection.executeSQL(
+                connection.execSQL(
                     "CREATE INDEX IF NOT EXISTS `index_reading_annotations_bookUri_createdAt` " +
                         "ON `reading_annotations` (`bookUri`, `createdAt`)"
                 )
