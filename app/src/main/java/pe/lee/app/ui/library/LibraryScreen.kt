@@ -34,6 +34,9 @@ import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Search
 import pe.lee.app.ui.reader.PdfReaderActivity
 import pe.lee.app.ui.reader.ReaderActivity
+import pe.lee.app.data.local.BookDao
+import pe.lee.app.data.local.BookEntity
+import pe.lee.app.data.local.LeeDatabase
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -43,10 +46,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,10 +62,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val PREFS_NAME = "lee_pe_library"
 private val SUPPORTED_AUDIO_EXTENSIONS = setOf("mp3", "m4a", "m4b", "aac", "ogg", "wav", "flac")
 private const val KEY_DOCUMENT_URIS = "document_uris"
+private const val KEY_LEGACY_MIGRATED = "room_library_migrated"
 
 private data class LocalBook(
     val uri: Uri,
@@ -71,15 +80,18 @@ private data class LocalBook(
 @Composable
 fun LibraryScreen() {
     val context = LocalContext.current
-    var books by remember { mutableStateOf(emptyList<LocalBook>()) }
+    val dao = remember(context) { LeeDatabase.get(context).bookDao() }
+    val storedBooks by dao.observeAll().collectAsState(initial = emptyList())
+    val books = remember(storedBooks) {
+        storedBooks.map { LocalBook(Uri.parse(it.uri), it.title, it.format) }
+    }
+    val coroutineScope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("Todos") }
 
-    fun reloadLibrary() {
-        books = loadBooks(context)
+    LaunchedEffect(context, dao) {
+        migrateLegacyLibrary(context, dao)
     }
-
-    LaunchedEffect(Unit) { reloadLibrary() }
 
     val documentPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -99,14 +111,23 @@ fun LibraryScreen() {
                 Toast.makeText(context, "Formato no compatible todavía", Toast.LENGTH_LONG).show()
                 return@rememberLauncherForActivityResult
             }
-            val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val savedUris = preferences.getStringSet(KEY_DOCUMENT_URIS, emptySet())
-                .orEmpty()
-                .toMutableSet()
-            savedUris.add(uri.toString())
-            preferences.edit().putStringSet(KEY_DOCUMENT_URIS, savedUris).apply()
-            reloadLibrary()
-            Toast.makeText(context, "Añadido a tu biblioteca local", Toast.LENGTH_SHORT).show()
+            val format = formatFromFileName(fileName) ?: return@rememberLauncherForActivityResult
+            coroutineScope.launch {
+                runCatching {
+                    dao.insert(
+                        BookEntity(
+                            uri = uri.toString(),
+                            title = fileName.substringBeforeLast('.', fileName),
+                            format = format,
+                            importedAt = System.currentTimeMillis()
+                        )
+                    )
+                }.onSuccess {
+                    Toast.makeText(context, "Añadido a tu biblioteca local", Toast.LENGTH_SHORT).show()
+                }.onFailure {
+                    Toast.makeText(context, "No se pudo guardar el archivo en la biblioteca", Toast.LENGTH_LONG).show()
+                }
+            }
         }
     }
 
@@ -410,15 +431,29 @@ private fun openBook(context: Context, book: LocalBook) {
     )
 }
 
-private fun loadBooks(context: Context): List<LocalBook> {
+private suspend fun migrateLegacyLibrary(context: Context, dao: BookDao) {
     val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    return preferences.getStringSet(KEY_DOCUMENT_URIS, emptySet())
-        .orEmpty()
-        .mapNotNull { rawUri ->
-            val uri = runCatching { Uri.parse(rawUri) }.getOrNull() ?: return@mapNotNull null
-            val fileName = queryDisplayName(context, uri)
-            val format = formatFromFileName(fileName) ?: return@mapNotNull null
-            LocalBook(uri = uri, title = fileName.substringBeforeLast('.', fileName), format = format)
-        }
-        .sortedBy { it.title.lowercase() }
+    if (preferences.getBoolean(KEY_LEGACY_MIGRATED, false)) return
+
+    val books = withContext(Dispatchers.IO) {
+        preferences.getStringSet(KEY_DOCUMENT_URIS, emptySet())
+            .orEmpty()
+            .mapNotNull { rawUri ->
+                val uri = runCatching { Uri.parse(rawUri) }.getOrNull() ?: return@mapNotNull null
+                val fileName = queryDisplayName(context, uri)
+                val format = formatFromFileName(fileName) ?: return@mapNotNull null
+                BookEntity(
+                    uri = uri.toString(),
+                    title = fileName.substringBeforeLast('.', fileName),
+                    format = format,
+                    importedAt = System.currentTimeMillis()
+                )
+            }
+    }
+
+    dao.insertAll(books)
+    preferences.edit()
+        .putBoolean(KEY_LEGACY_MIGRATED, true)
+        .remove(KEY_DOCUMENT_URIS)
+        .apply()
 }
