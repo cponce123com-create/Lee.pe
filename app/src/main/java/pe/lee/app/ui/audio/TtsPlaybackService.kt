@@ -15,8 +15,10 @@ import androidx.media3.session.MediaSessionService
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,6 +41,7 @@ class TtsPlaybackService : MediaSessionService() {
         val title: String
     ) {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        var sleepTimerJob: Job? = null
     }
 
     inner class ReaderBinder : Binder() {
@@ -89,9 +92,21 @@ class TtsPlaybackService : MediaSessionService() {
             }
         }
 
+        fun setSleepTimer(minutes: Int) {
+            val activeSession = sessionState.value ?: return
+            activeSession.sleepTimerJob?.cancel()
+            activeSession.sleepTimerJob = if (minutes > 0) {
+                activeSession.scope.launch {
+                    delay(minutes * 60_000L)
+                    if (sessionState.value === activeSession) activeSession.navigator.pause()
+                }
+            } else null
+        }
+
         fun closeSession() {
             val activeSession = sessionState.value ?: return
             sessionState.value = null
+            activeSession.sleepTimerJob?.cancel()
             activeSession.scope.cancel()
             activeSession.mediaSession.release()
             activeSession.navigator.close()
