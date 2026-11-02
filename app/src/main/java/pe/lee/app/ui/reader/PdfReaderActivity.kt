@@ -48,6 +48,7 @@ import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.RotateRight
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material.icons.filled.ZoomOut
 import androidx.compose.material3.AlertDialog
@@ -134,6 +135,8 @@ private data class PdfNormalizedRect(
 
 private data class PdfSelectedText(val text: String, val rects: List<PdfNormalizedRect>)
 
+private data class PdfSearchResult(val pageIndex: Int, val text: String, val rects: List<PdfNormalizedRect>)
+
 private data class PdfHighlightOverlay(
     val rect: PdfNormalizedRect,
     val colorArgb: Int
@@ -180,6 +183,7 @@ private fun pdfHighlightOverlays(
     }
 
 private const val DEFAULT_PDF_HIGHLIGHT_COLOR = 0xFFFFD54F.toInt()
+private const val PDF_SEARCH_HIGHLIGHT_COLOR = 0xFF42A5F5.toInt()
 private const val MAX_PDF_BITMAP_PIXELS = 4_194_304L
 
 private data class PdfBitmapSize(val width: Int, val height: Int)
@@ -257,6 +261,11 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
     var rendering by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var showPageDialog by remember { mutableStateOf(false) }
+    var showPdfSearch by remember { mutableStateOf(false) }
+    var pdfSearchQuery by remember(uri) { mutableStateOf("") }
+    var pdfSearchResults by remember(uri) { mutableStateOf<List<PdfSearchResult>>(emptyList()) }
+    var pdfSearchMessage by remember(uri) { mutableStateOf<String?>(null) }
+    var searchingPdf by remember { mutableStateOf(false) }
     var showAnnotations by remember { mutableStateOf(false) }
     var showNoteEditor by remember { mutableStateOf(false) }
     var selectionMode by remember { mutableStateOf(false) }
@@ -273,6 +282,12 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
     val coroutineScope = rememberCoroutineScope()
     val density = LocalDensity.current
     val pageHighlights = remember(annotations, pageIndex) { pdfHighlightOverlays(annotations, pageIndex) }
+    val pageSearchHighlights = remember(pdfSearchResults, pageIndex) {
+        pdfSearchResults.asSequence().filter { it.pageIndex == pageIndex }
+            .flatMap { it.rects.asSequence() }
+            .map { rect -> PdfHighlightOverlay(rect, PDF_SEARCH_HIGHLIGHT_COLOR) }
+            .toList()
+    }
 
     LaunchedEffect(pageIndex) { panOffset = Offset.Zero }
 
@@ -386,6 +401,90 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
         }
     }
 
+    fun searchPdf(query: String) {
+        val term = query.trim()
+        if (term.isEmpty()) {
+            pdfSearchResults = emptyList()
+            pdfSearchMessage = "Escribe una palabra o frase para buscar."
+            return
+        }
+        if (Build.VERSION.SDK_INT < 35) {
+            pdfSearchResults = emptyList()
+            pdfSearchMessage = "La búsqueda de PDF requiere Android 15 (API 35) o posterior."
+            return
+        }
+        val current = handle ?: return
+        pdfSearchResults = emptyList()
+        pdfSearchMessage = "Buscando en el documento…"
+        coroutineScope.launch {
+            searchingPdf = true
+            try {
+                val matches = mutableListOf<PdfSearchResult>()
+                var hasSelectableText = false
+                for (searchPageIndex in 0 until pageCount) {
+                    coroutineContext.ensureActive()
+                    val pageResult = renderMutex.withLock {
+                        withContext(Dispatchers.IO) {
+                            val page = current.renderer.openPage(searchPageIndex)
+                            try {
+                                val textContents = page.getTextContents()
+                                val pageMatches = mutableListOf<PdfSearchResult>()
+                                for (textContent in textContents) {
+                                    val blockText = textContent.text
+                                    if (blockText.isNotBlank()) hasSelectableText = true
+                                    val matchIndex = blockText.indexOf(term, ignoreCase = true)
+                                    if (matchIndex < 0) continue
+
+                                    val snippetStart = (matchIndex - 45).coerceAtLeast(0)
+                                    val snippetEnd = (matchIndex + term.length + 75).coerceAtMost(blockText.length)
+                                    val snippet = buildString {
+                                        if (snippetStart > 0) append('…')
+                                        append(blockText.substring(snippetStart, snippetEnd).trim())
+                                        if (snippetEnd < blockText.length) append('…')
+                                    }
+                                    val rects = textContent.bounds.mapNotNull { bounds ->
+                                        if (page.width <= 0 || page.height <= 0) return@mapNotNull null
+                                        PdfNormalizedRect(
+                                            left = (bounds.left / page.width).coerceIn(0f, 1f),
+                                            top = (bounds.top / page.height).coerceIn(0f, 1f),
+                                            right = (bounds.right / page.width).coerceIn(0f, 1f),
+                                            bottom = (bounds.bottom / page.height).coerceIn(0f, 1f)
+                                        )
+                                    }
+                                    pageMatches += PdfSearchResult(searchPageIndex, snippet, rects)
+                                    if (matches.size + pageMatches.size >= 100) break
+                                }
+                                textContents.any { it.text.isNotBlank() } to pageMatches
+                            } finally {
+                                page.close()
+                            }
+                        }
+                    }
+                    if (pageResult.first) hasSelectableText = true
+                    matches += pageResult.second
+                    if (matches.size >= 100) break
+                }
+                pdfSearchResults = matches.take(100)
+                pdfSearchMessage = when {
+                    matches.isNotEmpty() && matches.size >= 100 ->
+                        "Se muestran las primeras 100 coincidencias."
+                    matches.isNotEmpty() ->
+                        "${matches.size} coincidencia(s)."
+                    !hasSelectableText ->
+                        "No se detectó texto seleccionable. Este PDF podría estar escaneado y requerir OCR."
+                    else -> "No se encontraron coincidencias."
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                pdfSearchMessage = error.message?.let { "No se pudo buscar en el PDF: $it" }
+                    ?: "No se pudo buscar en el PDF."
+            } finally {
+                searchingPdf = false
+            }
+        }
+    }
+
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
@@ -420,6 +519,9 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    IconButton(onClick = { showPdfSearch = true }, enabled = !loading && pageCount > 0) {
+                        Icon(Icons.Default.Search, contentDescription = "Buscar en el PDF", tint = Color.White)
+                    }
                     IconButton(onClick = { showAnnotations = true }, enabled = !loading && pageCount > 0) {
                         Icon(Icons.Default.Bookmark, contentDescription = "Marcadores y notas PDF", tint = Color.White)
                     }
@@ -448,7 +550,10 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
                                 renderMutex = renderMutex,
                                 pageIndex = pageNumber,
                                 targetWidthPx = availableWidth.coerceAtLeast(1).coerceAtMost(1600),
-                                highlights = pdfHighlightOverlays(annotations, pageNumber)
+                                highlights = pdfHighlightOverlays(annotations, pageNumber) +
+                                    pdfSearchResults.filter { it.pageIndex == pageNumber }
+                                        .flatMap { result -> result.rects }
+                                        .map { rect -> PdfHighlightOverlay(rect, PDF_SEARCH_HIGHLIGHT_COLOR) }
                             )
                         }
                     }
@@ -596,7 +701,8 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
                                 },
                             contentScale = ContentScale.Fit
                         )
-                        if (pageHighlights.isNotEmpty()) {
+                        val currentPageOverlays = pageHighlights + pageSearchHighlights
+                        if (currentPageOverlays.isNotEmpty()) {
                             Canvas(
                                 modifier = imageModifier
                                     .clipToBounds()
@@ -616,7 +722,7 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
                                 val displayedHeight = pageBitmap.height * fit
                                 val left = (size.width - displayedWidth) / 2f
                                 val top = (size.height - displayedHeight) / 2f
-                                pageHighlights.forEach { highlight ->
+                                currentPageOverlays.forEach { highlight ->
                                     val rect = highlight.rect
                                     drawRect(
                                         color = Color(highlight.colorArgb).copy(alpha = 0.40f),
@@ -757,6 +863,79 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
                         }
                         IconButton(onClick = { moveToPage(pageIndex + 1) }, enabled = pageIndex < pageCount - 1) {
                             Icon(Icons.Default.ChevronRight, contentDescription = "Página siguiente", tint = Color.White)
+                        }
+                    }
+                }
+            }
+        }
+
+        if (showPdfSearch) {
+            ModalBottomSheet(onDismissRequest = { showPdfSearch = false }) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp)
+                ) {
+                    Text("Buscar en el PDF", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    if (Build.VERSION.SDK_INT < 35) {
+                        Text(
+                            "La búsqueda de PDF requiere Android 15 (API 35) o posterior.",
+                            modifier = Modifier.padding(top = 12.dp, bottom = 16.dp),
+                            color = Color(0xFFD3DCEC)
+                        )
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedTextField(
+                                value = pdfSearchQuery,
+                                onValueChange = { pdfSearchQuery = it },
+                                modifier = Modifier.weight(1f),
+                                label = { Text("Palabra o frase") },
+                                singleLine = true
+                            )
+                            IconButton(
+                                onClick = { searchPdf(pdfSearchQuery) },
+                                enabled = !searchingPdf && pdfSearchQuery.isNotBlank()
+                            ) {
+                                Icon(Icons.Default.Search, contentDescription = "Iniciar búsqueda")
+                            }
+                        }
+                        if (searchingPdf) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                                Text("Buscando página por página…")
+                            }
+                        }
+                        pdfSearchMessage?.let { message ->
+                            Text(
+                                message,
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                                color = Color(0xFFD3DCEC)
+                            )
+                        }
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth().height(320.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(pdfSearchResults) { result ->
+                                Column(
+                                    modifier = Modifier.fillMaxWidth().clickable {
+                                        moveToPage(result.pageIndex)
+                                        showPdfSearch = false
+                                    }.padding(vertical = 8.dp)
+                                ) {
+                                    Text(
+                                        "Página ${result.pageIndex + 1}",
+                                        color = Color(0xFF75DFFF),
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Text(result.text, color = Color.White)
+                                }
+                            }
                         }
                     }
                 }
