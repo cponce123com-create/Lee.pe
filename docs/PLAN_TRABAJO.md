@@ -120,8 +120,8 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - Añadir narración EPUB con TextToSpeech y soporte de voces Android instaladas.
 - Sincronizar voz con párrafo o fragmento, permitir pausar, reanudar, velocidad, temporizador y elegir desde dónde escuchar.
 - Hecho: reproducir archivos locales con Media3, progreso, pausa, saltos de 15 segundos y velocidad de 0.75x a 2x.
-- Hecho: ejecutar Media3 en un MediaSessionService con controles del sistema y notificación para continuar en segundo plano y con pantalla bloqueada.
-- Hecho: guardar la posición local por archivo y restaurarla al abrirlo.
+- Hecho en código: ejecutar Media3 en un MediaSessionService con controles del sistema y notificación para continuar en segundo plano y con pantalla bloqueada; falta validarlo en dispositivo, incluida la solicitud de permiso de notificaciones.
+- Hecho en código: guardar la posición local por archivo y restaurarla al abrirlo; falta validarlo en Android Studio y en dispositivo.
 - Pendiente: añadir narración EPUB con TextToSpeech, selección de voz y temporizador de apagado.
 
 **Se considera lista cuando**
