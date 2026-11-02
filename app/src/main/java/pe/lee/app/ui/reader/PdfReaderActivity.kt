@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -594,7 +595,7 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                     OutlinedTextField(
                         value = noteDraft,
                         onValueChange = { noteDraft = it },
-                        label = { Text("Nota para la página ${pageIndex + 1}") },
+                        label = { Text("Nota vinculada a la página actual") },
                         minLines = 3,
                         maxLines = 6
                     )
