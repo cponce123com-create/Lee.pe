@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "pe.lee.lumenreader"
+    namespace = "pe.lee.app"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "pe.lee.lumenreader"
+        applicationId = "pe.lee.app"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
