@@ -44,7 +44,8 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Exigir permiso persistente antes de guardar una URI y conservar en la migración las referencias antiguas que no se puedan recuperar.
 - [x] Añadir favoritos y orden por título, última lectura o fecha de importación.
 - [x] Editar el título que muestra Lee.pe sin cambiar el archivo original.
-- Añadir colecciones, edición de autor y portada, y recuperación asistida de URI revocadas.
+- [x] Crear colecciones locales, asignar o mover libros y filtrar la biblioteca por colección.
+- Añadir lectura y edición de autor/portada, y recuperación asistida de URI revocadas.
 - Conservar el comportamiento sin conexión y no pedir acceso general a archivos.
 
 **Se considera lista cuando**
@@ -140,7 +141,8 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 ### Fase 6 — Acabado de lectura, accesibilidad y datos locales
 
 **Trabajo**
-- Agregar estadísticas locales, tiempo de lectura, rachas y objetivos configurables.
+- [x] Mostrar resumen local de biblioteca: libros, lecturas en curso, terminados y favoritos.
+- Registrar tiempo de lectura, velocidad, rachas y objetivos configurables.
 - Añadir diccionario/traducción como función separada, con explicación sobre si requiere conexión.
 - Revisar TalkBack, contraste, tamaño de objetivos táctiles, escalado de letra y modo horizontal.
 - Mejorar portadas, estados vacíos, errores, carga y recuperación tras cierre inesperado.
