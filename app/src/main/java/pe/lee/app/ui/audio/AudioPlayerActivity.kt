@@ -43,6 +43,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import pe.lee.app.ui.theme.LeePeTheme
+import pe.lee.app.data.local.OfflineBookStore
 
 class AudioPlayerActivity : ComponentActivity() {
     private var controllerFuture: ListenableFuture<MediaController>? = null
@@ -59,6 +60,7 @@ class AudioPlayerActivity : ComponentActivity() {
             finish()
             return
         }
+        val playbackUri = intent.getStringExtra(OfflineBookStore.EXTRA_COPY_URI)?.let(Uri::parse) ?: uri
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "Audiolibro"
         setContent {
             LeePeTheme {
@@ -83,7 +85,7 @@ class AudioPlayerActivity : ComponentActivity() {
                 if (controller.currentMediaItem?.mediaId != mediaId) {
                     val item = MediaItem.Builder()
                         .setMediaId(mediaId)
-                        .setUri(uri)
+                        .setUri(playbackUri)
                         .setMediaMetadata(
                             MediaMetadata.Builder()
                                 .setTitle(title)
