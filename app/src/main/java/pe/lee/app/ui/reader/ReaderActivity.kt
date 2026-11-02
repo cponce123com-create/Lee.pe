@@ -151,17 +151,11 @@ class ReaderActivity : FragmentActivity() {
     private var readingSessionRecorder: ReadingSessionRecorder? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        if (savedInstanceState != null) {
-            supportFragmentManager.fragmentFactory = EpubNavigatorFragment.createDummyFactory()
-        }
-        super.onCreate(savedInstanceState)
-
-        // Readium restores its navigator as a Fragment. When Android recreates this activity after
-        // killing the process, the in-memory Publication is gone, so return to the library safely.
-        if (savedInstanceState != null) {
-            finish()
-            return
-        }
+        // The Readium navigator owns a Publication held in memory. Restoring the old
+        // Fragment after rotation/process death would restore it without that Publication.
+        // Recreate a clean navigator instead; its persisted locator and per-book settings
+        // are restored from Room / preferences in EpubReaderScreen.
+        super.onCreate(null)
 
         val uri = intent.data
         if (uri == null) {
@@ -510,16 +504,12 @@ private fun EpubReaderScreen(
         }
     }
 
-    LaunchedEffect(ttsNavigator, ttsTimerMinutes) {
-        val speech = ttsNavigator ?: return@LaunchedEffect
-        val minutes = ttsTimerMinutes
-        if (minutes <= 0) return@LaunchedEffect
-        kotlinx.coroutines.delay(minutes * 60_000L)
-        if (ttsNavigator === speech) {
-            speech.pause()
-            ttsIsPlaying = false
-            ttsTimerMinutes = 0
-        }
+    // The media service owns the sleep timer: a second Compose timer would be
+    // cancelled whenever the screen is recreated and might pause a different session.
+    LaunchedEffect(ttsServiceBinding, ttsNavigator) {
+        val current = ttsServiceBinding?.binder?.currentSession ?: return@LaunchedEffect
+        if (current.bookUri != uri.toString()) return@LaunchedEffect
+        current.sleepTimerMinutes.collect { minutes -> ttsTimerMinutes = minutes }
     }
 
     LaunchedEffect(navigator) {
