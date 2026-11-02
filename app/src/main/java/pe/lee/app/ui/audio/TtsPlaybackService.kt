@@ -12,6 +12,7 @@ import android.os.PowerManager
 import androidx.core.app.ServiceCompat
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -125,6 +126,20 @@ class TtsPlaybackService : MediaSessionService() {
         }
     }
 
+    class ServiceBinding internal constructor(
+        val binder: TtsPlaybackService.ReaderBinder,
+        private val application: Application,
+        private val connection: ServiceConnection
+    ) {
+        private var isBound = true
+
+        fun unbind() {
+            if (!isBound) return
+            isBound = false
+            runCatching { application.unbindService(connection) }
+        }
+    }
+
     private val binder by lazy { ReaderBinder() }
     private var wakeLock: PowerManager.WakeLock? = null
 
@@ -170,7 +185,7 @@ class TtsPlaybackService : MediaSessionService() {
             application.startService(serviceIntent(application))
         }
 
-        suspend fun bind(application: Application): ReaderBinder {
+        suspend fun bind(application: Application): ServiceBinding {
             start(application)
             val result = CompletableDeferred<ReaderBinder>()
             val connection = object : ServiceConnection {
@@ -188,7 +203,15 @@ class TtsPlaybackService : MediaSessionService() {
             if (!application.bindService(intent, connection, Context.BIND_AUTO_CREATE)) {
                 throw IllegalStateException("No se pudo iniciar el servicio de voz.")
             }
-            return result.await()
+            return try {
+                ServiceBinding(result.await(), application, connection)
+            } catch (cancelled: CancellationException) {
+                runCatching { application.unbindService(connection) }
+                throw cancelled
+            } catch (error: Exception) {
+                runCatching { application.unbindService(connection) }
+                throw error
+            }
         }
     }
 }

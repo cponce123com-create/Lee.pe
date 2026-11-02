@@ -180,6 +180,19 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - El lector puede usarse en modo avión, y los fallos de archivos inválidos se explican con claridad.
 - La política de privacidad coincide con el comportamiento real de la app.
 
+## Endurecimiento tras auditoría técnica — 2 de noviembre de 2026
+
+- [x] Limitar a 4.194.304 píxeles cada bitmap PDF, también en desplazamiento continuo.
+- [x] Hacer única la copia temporal PDF, cancelar su copia si se abandona la carga y eliminarla si falla.
+- [x] Comprobar el espacio disponible antes y durante la copia temporal.
+- [x] Dar al enlace TTS un ciclo explícito de desconexión al detener la voz o salir del lector.
+- [x] Ejecutar el build Android en pull requests e instalar explícitamente Android SDK Platform 36, alineado con compileSdk/targetSdk 36.
+- [x] Confirmar `assembleDebug` en CI del pull request #1 (run 24).
+- [ ] Ejecutar lint y pruebas; el entorno local no pudo descargar Gradle y el repositorio no tiene suites de prueba.
+- [ ] Validar PDF, notificaciones y reproducción TTS en Android 13+, Android 15/16 y dispositivos Samsung/Xiaomi.
+
+Las casillas marcadas indican cambios en el código; la validación en dispositivos reales sigue pendiente.
+
 ## Orden recomendado del MVP
 
 1. Identidad y compilación del proyecto.

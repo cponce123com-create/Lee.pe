@@ -14,6 +14,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
+import android.os.StatFs
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
@@ -102,6 +103,7 @@ import pe.lee.app.data.local.LeeDatabase
 import pe.lee.app.data.local.ReadingAnnotationEntity
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -112,7 +114,9 @@ import androidx.compose.runtime.snapshotFlow
 import java.io.File
 import java.io.IOException
 import java.util.UUID
+import kotlin.coroutines.coroutineContext
 import kotlin.math.min
+import kotlin.math.sqrt
 import kotlin.math.roundToInt
 
 private const val PDF_PREFS_NAME = "lee_pe_library"
@@ -175,6 +179,31 @@ private fun pdfHighlightOverlays(
     }
 
 private const val DEFAULT_PDF_HIGHLIGHT_COLOR = 0xFFFFD54F.toInt()
+private const val MAX_PDF_BITMAP_PIXELS = 4_194_304L
+
+private data class PdfBitmapSize(val width: Int, val height: Int)
+
+private fun pdfBitmapSize(
+    pageWidth: Int,
+    pageHeight: Int,
+    maxWidthPx: Int,
+    maxHeightPx: Int? = null
+): PdfBitmapSize {
+    require(pageWidth > 0 && pageHeight > 0) { "El PDF contiene una página sin dimensiones válidas." }
+    val sourcePixels = pageWidth.toLong() * pageHeight.toLong()
+    val memoryScale = sqrt(MAX_PDF_BITMAP_PIXELS.toDouble() / sourcePixels).toFloat()
+    val widthScale = maxWidthPx.coerceAtLeast(1).toFloat() / pageWidth
+    val heightScale = maxHeightPx?.let { it.coerceAtLeast(1).toFloat() / pageHeight }
+        ?: Float.POSITIVE_INFINITY
+    val scale = minOf(widthScale, heightScale, 2f, memoryScale)
+
+    var width = (pageWidth * scale).roundToInt().coerceAtLeast(1)
+    var height = (pageHeight * scale).roundToInt().coerceAtLeast(1)
+    while (width.toLong() * height.toLong() > MAX_PDF_BITMAP_PIXELS) {
+        if (width >= height && width > 1) width-- else if (height > 1) height--
+    }
+    return PdfBitmapSize(width, height)
+}
 
 class PdfReaderActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -263,6 +292,8 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
             pageIndex = restoredPage
             sliderPage = restoredPage.toFloat()
             loading = false
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (error: Exception) {
             errorMessage = error.message ?: "No se pudo abrir el PDF."
             loading = false
@@ -292,10 +323,8 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                     val page = current.renderer.openPage(pageIndex)
                     try {
                         val maxWidthPx = with(density) { 900.dp.roundToPx() }
-                        val scale = min(maxWidthPx.toFloat() / page.width, 2.0f)
-                        val targetWidth = (page.width * scale).roundToInt().coerceAtLeast(1)
-                        val targetHeight = (page.height * scale).roundToInt().coerceAtLeast(1)
-                        Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888).also {
+                        val size = pdfBitmapSize(page.width, page.height, maxWidthPx)
+                        Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888).also {
                             it.eraseColor(android.graphics.Color.WHITE)
                             page.render(it, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                         }
@@ -316,6 +345,8 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                 progress = progress,
                 openedAt = System.currentTimeMillis()
             )
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (error: Exception) {
             errorMessage = error.message ?: "No se pudo renderizar esta página."
         } finally {
@@ -1010,14 +1041,13 @@ private fun PdfContinuousPage(
                 withContext(Dispatchers.IO) {
                     val page = currentRenderer.openPage(pageIndex)
                     try {
-                        val widthLimit = targetWidthPx.coerceAtLeast(1)
-                        val scale = min(
-                            min(widthLimit.toFloat() / page.width, 2f),
-                            2200f / page.height
+                        val size = pdfBitmapSize(
+                            page.width,
+                            page.height,
+                            maxWidthPx = targetWidthPx,
+                            maxHeightPx = 2200
                         )
-                        val targetWidth = (page.width * scale).roundToInt().coerceAtLeast(1)
-                        val targetHeight = (page.height * scale).roundToInt().coerceAtLeast(1)
-                        Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888).also {
+                        Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888).also {
                             it.eraseColor(android.graphics.Color.WHITE)
                             page.render(it, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                         }
@@ -1079,20 +1109,46 @@ private fun PdfContinuousPage(
 private suspend fun openPdf(context: Context, uri: Uri): PdfHandle = withContext(Dispatchers.IO) {
     val descriptor = context.contentResolver.openFileDescriptor(uri, "r")
         ?: throw IOException("El proveedor de archivos no pudo abrir el PDF.")
+    val sourceSizeBytes = runCatching { descriptor.statSize }.getOrDefault(-1L)
 
     try {
         PdfHandle(PdfRenderer(descriptor), null)
     } catch (error: IllegalArgumentException) {
         runCatching { descriptor.close() }
-        val copy = File(context.cacheDir, "lee-pe-${uri.toString().hashCode()}.pdf")
+        val copy = File.createTempFile("lee-pe-", ".pdf", context.cacheDir)
         try {
+            val availableBytes = StatFs(context.cacheDir.path).availableBytes
+            if (sourceSizeBytes > 0L && sourceSizeBytes > availableBytes) {
+                throw IOException("No hay espacio suficiente para preparar este PDF.")
+            }
             context.contentResolver.openInputStream(uri)?.use { input ->
-                copy.outputStream().use { output -> input.copyTo(output) }
+                copy.outputStream().use { output ->
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    var copiedBytes = 0L
+                    while (true) {
+                        coroutineContext.ensureActive()
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        if (copiedBytes + count > availableBytes) {
+                            throw IOException("No hay espacio suficiente para preparar este PDF.")
+                        }
+                        output.write(buffer, 0, count)
+                        copiedBytes += count
+                    }
+                }
             } ?: throw IOException("No se pudo leer el archivo seleccionado.")
-            PdfHandle(
-                PdfRenderer(ParcelFileDescriptor.open(copy, ParcelFileDescriptor.MODE_READ_ONLY)),
-                copy
-            )
+            coroutineContext.ensureActive()
+            val copyDescriptor = ParcelFileDescriptor.open(copy, ParcelFileDescriptor.MODE_READ_ONLY)
+            val copyRenderer = try {
+                PdfRenderer(copyDescriptor)
+            } catch (copyError: Exception) {
+                runCatching { copyDescriptor.close() }
+                throw copyError
+            }
+            PdfHandle(copyRenderer, copy)
+        } catch (cancelled: CancellationException) {
+            copy.delete()
+            throw cancelled
         } catch (copyError: Exception) {
             copy.delete()
             throw IOException("El PDF requiere un archivo local accesible: ${copyError.message ?: error.message}")

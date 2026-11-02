@@ -95,6 +95,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.commitNow
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -231,7 +232,7 @@ private fun EpubReaderScreen(
     var publication by remember { mutableStateOf<Publication?>(null) }
     var navigator by remember { mutableStateOf<EpubNavigatorFragment?>(null) }
     var ttsNavigator by remember(uri) { mutableStateOf<AndroidTtsNavigator?>(null) }
-    var ttsServiceBinder by remember { mutableStateOf<TtsPlaybackService.ReaderBinder?>(null) }
+    var ttsServiceBinding by remember { mutableStateOf<TtsPlaybackService.ServiceBinding?>(null) }
     var ttsIsPlaying by remember { mutableStateOf(false) }
     var ttsSentence by remember { mutableStateOf("") }
     var ttsError by remember { mutableStateOf<String?>(null) }
@@ -260,6 +261,10 @@ private fun EpubReaderScreen(
     var chromeVisible by remember { mutableStateOf(true) }
     var loading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    DisposableEffect(Unit) {
+        onDispose { ttsServiceBinding?.unbind() }
+    }
 
     DisposableEffect(activity, uri) {
         val originalBrightness = activity.window.attributes.screenBrightness
@@ -374,6 +379,8 @@ private fun EpubReaderScreen(
             navigator = epubNavigator
 
             loading = false
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (error: Exception) {
             errorMessage = error.message ?: "No se pudo abrir este EPUB."
             loading = false
@@ -418,8 +425,8 @@ private fun EpubReaderScreen(
         }
     }
 
-    LaunchedEffect(ttsServiceBinder) {
-        val binder = ttsServiceBinder ?: return@LaunchedEffect
+    LaunchedEffect(ttsServiceBinding) {
+        val binder = ttsServiceBinding?.binder ?: return@LaunchedEffect
         binder.session.collect { session ->
             if (session?.bookUri == uri.toString()) {
                 ttsNavigator = session.navigator
@@ -477,9 +484,14 @@ private fun EpubReaderScreen(
     }
 
     fun stopTts() {
-        val binder = ttsServiceBinder
-        if (binder != null) binder.stop() else ttsNavigator?.close()
-        ttsServiceBinder = null
+        val binding = ttsServiceBinding
+        if (binding != null) {
+            binding.binder.stop()
+            binding.unbind()
+        } else {
+            ttsNavigator?.close()
+        }
+        ttsServiceBinding = null
         ttsNavigator = null
         ttsIsPlaying = false
         ttsSentence = ""
@@ -503,13 +515,15 @@ private fun EpubReaderScreen(
         }
         coroutineScope.launch {
             val app = context.applicationContext as Application
-            val binder = try {
-                TtsPlaybackService.bind(app)
+            val binding = ttsServiceBinding ?: try {
+                TtsPlaybackService.bind(app).also { ttsServiceBinding = it }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (_: Exception) {
                 ttsError = "No se pudo iniciar la voz en segundo plano."
                 return@launch
             }
-            ttsServiceBinder = binder
+            val binder = binding.binder
             val existing = binder.currentSession
             if (existing?.bookUri == uri.toString()) {
                 ttsNavigator = existing.navigator
@@ -533,7 +547,13 @@ private fun EpubReaderScreen(
             }
             val speech = factory.createNavigator(
                 listener = object : TtsNavigator.Listener {
-                    override fun onStopRequested() { binder.stop() }
+                    override fun onStopRequested() {
+                        coroutineScope.launch {
+                            binder.stop()
+                            binding.unbind()
+                            if (ttsServiceBinding === binding) ttsServiceBinding = null
+                        }
+                    }
                 },
                 initialLocator = (navigator as? VisualNavigator)?.firstVisibleElementLocator()
                     ?: navigator?.currentLocator?.value,
@@ -748,7 +768,7 @@ private fun EpubReaderScreen(
                             else -> 0
                         }
                         ttsTimerMinutes = nextTimer
-                        ttsServiceBinder?.setSleepTimer(nextTimer)
+                        ttsServiceBinding?.binder?.setSleepTimer(nextTimer)
                     },
                     onStop = { stopTts() },
                     modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 112.dp)
