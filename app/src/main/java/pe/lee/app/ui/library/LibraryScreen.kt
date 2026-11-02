@@ -79,6 +79,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CancellationException
+import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -103,7 +104,9 @@ private data class LocalBook(
 @Composable
 fun LibraryScreen() {
     val context = LocalContext.current
-    val dao = remember(context) { LeeDatabase.get(context).bookDao() }
+    val database = remember(context) { LeeDatabase.get(context) }
+    val dao = remember(database) { database.bookDao() }
+    val annotationDao = remember(database) { database.readingAnnotationDao() }
     val storedBooks by dao.observeAll().collectAsState(initial = emptyList())
     var offlineCopyUris by remember { mutableStateOf<Map<String, Uri>>(emptyMap()) }
     var offlineRevision by remember { mutableIntStateOf(0) }
@@ -139,9 +142,33 @@ fun LibraryScreen() {
     var titleDraft by remember { mutableStateOf("") }
     var sortMenuExpanded by remember { mutableStateOf(false) }
     var sortMode by remember { mutableStateOf("Título A–Z") }
+    var pendingMarkdown by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(context, dao) {
         migrateLegacyLibrary(context, dao)
+    }
+
+    val exportAnnotationsLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/plain")
+    ) { uri ->
+        val markdown = pendingMarkdown
+        pendingMarkdown = null
+        if (uri != null && markdown != null) {
+            coroutineScope.launch {
+                try {
+                    withContext(Dispatchers.IO) {
+                        val output = context.contentResolver.openOutputStream(uri, "wt")
+                            ?: throw IOException("No se pudo crear el archivo de exportación.")
+                        output.bufferedWriter(Charsets.UTF_8).use { it.write(markdown) }
+                    }
+                    Toast.makeText(context, "Anotaciones exportadas en Markdown", Toast.LENGTH_SHORT).show()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    Toast.makeText(context, error.message ?: "No se pudo exportar las anotaciones", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
     }
 
     val documentPicker = rememberLauncherForActivityResult(
@@ -644,6 +671,27 @@ fun LibraryScreen() {
                                     Toast.makeText(context, "Copia sin conexión eliminada", Toast.LENGTH_SHORT).show()
                                 }
                             },
+                            onExportAnnotations = {
+                                coroutineScope.launch {
+                                    try {
+                                        val annotations = annotationDao.getByBook(book.uri.toString())
+                                        if (annotations.isEmpty()) {
+                                            Toast.makeText(context, "Este libro todavía no tiene anotaciones", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            pendingMarkdown = AnnotationMarkdownExporter.toMarkdown(
+                                                bookTitle = book.title,
+                                                format = book.format,
+                                                annotations = annotations
+                                            )
+                                            exportAnnotationsLauncher.launch(annotationExportFileName(book.title))
+                                        }
+                                    } catch (cancelled: CancellationException) {
+                                        throw cancelled
+                                    } catch (error: Exception) {
+                                        Toast.makeText(context, error.message ?: "No se pudieron leer las anotaciones", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            },
                             onToggleFavorite = {
                                 coroutineScope.launch {
                                     dao.updateFavorite(book.uri.toString(), !book.isFavorite)
@@ -853,6 +901,7 @@ private fun BookCard(
     onRemove: () -> Unit,
     onSaveOfflineCopy: () -> Unit,
     onRemoveOfflineCopy: () -> Unit,
+    onExportAnnotations: () -> Unit,
     onToggleFavorite: () -> Unit,
     onEditTitle: () -> Unit,
     onOrganize: () -> Unit
@@ -909,6 +958,13 @@ private fun BookCard(
                             onClick = {
                                 menuExpanded = false
                                 if (book.offlineCopyUri != null) onRemoveOfflineCopy() else onSaveOfflineCopy()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Exportar anotaciones a Markdown") },
+                            onClick = {
+                                menuExpanded = false
+                                onExportAnnotations()
                             }
                         )
                         DropdownMenuItem(
