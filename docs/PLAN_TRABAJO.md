@@ -219,3 +219,12 @@ Antes de implementar cada etapa, revisar la documentación del motor y probar la
 - [x] Eliminar la copia local al quitar el libro de la biblioteca; el archivo original del proveedor permanece intacto.
 - Las copias se guardan en el directorio privado excluido de la copia automática de Android; se eliminan al desinstalar Lee.pe. No se envían a servicios en la nube.
 - [ ] Validar en un teléfono con EPUB, PDF y audio de distintos proveedores SAF, incluida falta de espacio, URI revocada, cancelación y reapertura sin conexión.
+
+
+## Búsqueda dentro de EPUB — noviembre de 2026
+
+- [x] Buscar palabras o frases en el contenido EPUB con el servicio de búsqueda de Readium.
+- [x] Mostrar coincidencias en una lista paginada internamente, limitar la vista a 100 resultados y cerrar el iterador para liberar recursos.
+- [x] Saltar desde una coincidencia a su ubicación dentro del lector.
+- La búsqueda en PDF se mantiene pendiente; la disponibilidad depende de la extracción de texto del documento y no aplica a PDF escaneados sin OCR.
+- [ ] Validar coincidencias, acentos, EPUB largos, modo offline y salto al resultado en un teléfono Android.
