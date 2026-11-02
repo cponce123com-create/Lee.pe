@@ -485,7 +485,7 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                                     rotationDegrees = 0
                                     panOffset = Offset.Zero
                                 }) {
-                                    Text(if (selectionMode) "Cancelar" else "Seleccionar")
+                                    Text(if (selectionMode) "Toca texto" else "Seleccionar")
                                 }
                             }
                         }
@@ -493,6 +493,7 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                             checked = continuousScroll,
                             onCheckedChange = { enabled ->
                                 continuousScroll = enabled
+                                if (enabled) selectionMode = false
                                 context.getSharedPreferences(PDF_PREFS_NAME, Context.MODE_PRIVATE)
                                     .edit().putBoolean("pdf-continuous:$uri", enabled).apply()
                             }
