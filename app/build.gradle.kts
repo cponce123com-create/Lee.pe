@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "pe.lee.app"
-    compileSdk = 37
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "pe.lee.app"
