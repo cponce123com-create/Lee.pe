@@ -47,5 +47,6 @@ dependencies {
     implementation(libs.readium.navigator.media.tts)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.session)
+    testImplementation("junit:junit:4.13.2")
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 }
