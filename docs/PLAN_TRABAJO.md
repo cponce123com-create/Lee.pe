@@ -59,7 +59,8 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Integrar Readium y abrir EPUB compatibles en una vista de página completa.
 - [x] Guardar/restaurar el locator Readium por URI de documento en Room, conservar compatibilidad con preferencias anteriores y saltar por porcentaje.
 - [x] Integrar navegación por gesto y tabla de contenidos con salto a capítulo.
-- [x] Alternar modo inmersivo tocando el contenido o el botón para ocultar controles.
+- [x] Abrir el EPUB directamente en modo inmersivo y alternar los controles tocando la página; mostrar/ocultar las barras del sistema con los controles.
+- [x] Compactar la barra superior para teléfonos pequeños y mover búsqueda, anotaciones, apariencia e índice a un menú accesible.
 - [x] Configurar lectura paginada o con desplazamiento vertical.
 - [x] Mantener la pantalla activa durante la lectura, con preferencia por libro.
 - [x] Navegar por gesto, tabla de contenidos y porcentaje.
@@ -157,7 +158,8 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 ### Fase 7 — Sincronización opcional con Escribiendo
 
 **Trabajo**
-- Definir contrato de API y autenticación antes de conectar servicios.
+- [x] Documentar el contrato propuesto y las reglas de privacidad en [arquitectura offline-first](ARQUITECTURA_OFFLINE_FIRST.md); el backend y la autenticación aún no están implementados.
+- Definir e implementar contrato de API y autenticación antes de conectar servicios.
 - Sincronizar metadatos de biblioteca, posición, preferencias y anotaciones seleccionadas; evitar subir el archivo original por defecto.
 - Crear cola local de cambios, reintentos con límites, resolución de conflictos y modo solo local.
 - Usar Render y Neon únicamente para API y datos compactos; Cloudinary para portadas si realmente hace falta.
