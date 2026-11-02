@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Search
+import pe.lee.app.ui.reader.PdfReaderActivity
 import pe.lee.app.ui.reader.ReaderActivity
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -396,14 +397,16 @@ private fun formatFromFileName(fileName: String): String? {
 }
 
 private fun openBook(context: Context, book: LocalBook) {
-    if (book.format != "EPUB") {
-        Toast.makeText(context, "El visor ${book.format} se incorporará en la siguiente etapa", Toast.LENGTH_SHORT).show()
+    if (book.format == "Audio") {
+        Toast.makeText(context, "El reproductor de audiolibros sigue en desarrollo", Toast.LENGTH_SHORT).show()
         return
     }
+    val activity = if (book.format == "PDF") PdfReaderActivity::class.java else ReaderActivity::class.java
+    val titleExtra = if (book.format == "PDF") PdfReaderActivity.EXTRA_TITLE else ReaderActivity.EXTRA_TITLE
     context.startActivity(
-        Intent(context, ReaderActivity::class.java)
+        Intent(context, activity)
             .setData(book.uri)
-            .putExtra(ReaderActivity.EXTRA_TITLE, book.title)
+            .putExtra(titleExtra, book.title)
     )
 }
 
