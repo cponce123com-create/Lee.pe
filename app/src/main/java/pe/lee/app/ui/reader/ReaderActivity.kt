@@ -1,10 +1,13 @@
 package pe.lee.app.ui.reader
 
+import android.Manifest
 import android.app.Application
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.net.Uri
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.ActionMode
 import android.view.Menu
@@ -12,6 +15,8 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.FrameLayout
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -87,6 +92,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.commitNow
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
@@ -95,6 +101,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import pe.lee.app.data.local.LeeDatabase
 import pe.lee.app.data.local.ReadingAnnotationEntity
+import pe.lee.app.ui.audio.TtsPlaybackService
 import org.readium.navigator.media.tts.AndroidTtsNavigator
 import org.readium.navigator.media.tts.AndroidTtsNavigatorFactory
 import org.readium.navigator.media.tts.android.AndroidTtsEngine
@@ -215,10 +222,14 @@ private fun EpubReaderScreen(
     val activity = context as? FragmentActivity ?: return
     val containerId = remember { View.generateViewId() }
     val coroutineScope = rememberCoroutineScope()
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
 
     var publication by remember { mutableStateOf<Publication?>(null) }
     var navigator by remember { mutableStateOf<EpubNavigatorFragment?>(null) }
     var ttsNavigator by remember(uri) { mutableStateOf<AndroidTtsNavigator?>(null) }
+    var ttsServiceBinder by remember { mutableStateOf<TtsPlaybackService.ReaderBinder?>(null) }
     var ttsIsPlaying by remember { mutableStateOf(false) }
     var ttsSentence by remember { mutableStateOf("") }
     var ttsError by remember { mutableStateOf<String?>(null) }
@@ -247,10 +258,6 @@ private fun EpubReaderScreen(
     var chromeVisible by remember { mutableStateOf(true) }
     var loading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-
-    DisposableEffect(uri) {
-        onDispose { ttsNavigator?.close() }
-    }
 
     DisposableEffect(activity, uri) {
         val originalBrightness = activity.window.attributes.screenBrightness
@@ -409,6 +416,22 @@ private fun EpubReaderScreen(
         }
     }
 
+    LaunchedEffect(ttsServiceBinder) {
+        val binder = ttsServiceBinder ?: return@LaunchedEffect
+        binder.session.collect { session ->
+            if (session?.bookUri == uri.toString()) {
+                ttsNavigator = session.navigator
+                ttsVoices = session.navigator.voices.filterNot { it.requiresNetwork }
+                    .sortedWith(compareBy({ it.language.toString() }, { it.id.value }))
+                ttsIsPlaying = session.navigator.playback.value.playWhenReady
+            } else {
+                ttsNavigator = null
+                ttsIsPlaying = false
+                ttsSentence = ""
+            }
+        }
+    }
+
     LaunchedEffect(ttsNavigator) {
         val speech = ttsNavigator ?: return@LaunchedEffect
         speech.playback.collect { playback ->
@@ -452,7 +475,9 @@ private fun EpubReaderScreen(
     }
 
     fun stopTts() {
-        ttsNavigator?.close()
+        val binder = ttsServiceBinder
+        if (binder != null) binder.stop() else ttsNavigator?.close()
+        ttsServiceBinder = null
         ttsNavigator = null
         ttsIsPlaying = false
         ttsSentence = ""
@@ -468,7 +493,29 @@ private fun EpubReaderScreen(
             if (ttsIsPlaying) current.pause() else current.play()
             return
         }
+        if (
+            Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
         coroutineScope.launch {
+            val app = context.applicationContext as Application
+            val binder = try {
+                TtsPlaybackService.bind(app)
+            } catch (_: Exception) {
+                ttsError = "No se pudo iniciar la voz en segundo plano."
+                return@launch
+            }
+            ttsServiceBinder = binder
+            val existing = binder.currentSession
+            if (existing?.bookUri == uri.toString()) {
+                ttsNavigator = existing.navigator
+                ttsVoices = existing.navigator.voices.filterNot { it.requiresNetwork }
+                    .sortedWith(compareBy({ it.language.toString() }, { it.id.value }))
+                if (!existing.navigator.playback.value.playWhenReady) existing.navigator.play()
+                return@launch
+            }
             val activePublication = publication
             if (activePublication == null) {
                 ttsError = "El EPUB todavía se está preparando."
@@ -484,7 +531,7 @@ private fun EpubReaderScreen(
             }
             val speech = factory.createNavigator(
                 listener = object : AndroidTtsNavigator.Listener {
-                    override fun onStopRequested() { stopTts() }
+                    override fun onStopRequested() { binder.stop() }
                 },
                 initialLocator = (navigator as? VisualNavigator)?.firstVisibleElementLocator()
                     ?: navigator?.currentLocator?.value,
@@ -513,6 +560,7 @@ private fun EpubReaderScreen(
                     )
                 )
             }
+            binder.openSession(speech, uri.toString(), title)
             ttsError = null
             ttsNavigator = speech
             speech.play()
