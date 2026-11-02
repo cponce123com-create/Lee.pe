@@ -123,12 +123,14 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - Hecho: reproducir archivos locales con Media3, progreso, pausa, saltos de 15 segundos y velocidad de 0.75x a 2x.
 - Hecho en código: ejecutar Media3 en un MediaSessionService con controles del sistema y notificación para continuar en segundo plano y con pantalla bloqueada; falta validarlo en dispositivo, incluida la solicitud de permiso de notificaciones.
 - Hecho en código: guardar la posición local por archivo y restaurarla al abrirlo; falta validarlo en Android Studio y en dispositivo.
-- Pendiente: controles TTS desde la notificación/pantalla bloqueada; validar la narración, el temporizador y el selector en Android Studio y dispositivo.
+- Hecho en código: alojar TTS en un MediaSessionService con notificación, controles del sistema, progreso EPUB guardado mientras suena y WakeLock durante la narración. Falta probarlo en Android 13+ y con la pantalla bloqueada.
 
 **Se considera lista cuando**
 - Los audiolibros locales continúan al cambiar de app y con pantalla bloqueada, con controles de sesión multimedia del sistema.
 - La posición de cada archivo se restaura desde el almacenamiento local.
-- TTS comienza desde el elemento visible, resalta el fragmento hablado y actualiza la posición del EPUB; pausa, velocidad y temporizador funcionan desde el lector.
+- TTS comienza desde el elemento visible, resalta el fragmento hablado y actualiza la posición del EPUB; pausa, velocidad, selección de voz local y temporizador funcionan desde el lector.
+- TTS continúa con la pantalla bloqueada y responde a los controles multimedia del sistema.
+- Validar compilación, permisos, voz y reproducción en dispositivo antes de cerrar la fase.
 - El selector manual de voz y la continuidad TTS con la pantalla bloqueada se validan e implementan antes de cerrar la fase.
 
 ### Fase 6 — Acabado de lectura, accesibilidad y datos locales
