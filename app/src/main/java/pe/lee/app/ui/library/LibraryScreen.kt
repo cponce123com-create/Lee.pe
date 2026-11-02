@@ -98,6 +98,7 @@ private const val MAX_DAILY_GOAL_MINUTES = 240
 private val SUPPORTED_AUDIO_EXTENSIONS = setOf("mp3", "m4a", "m4b", "aac", "ogg", "wav", "flac")
 private const val KEY_DOCUMENT_URIS = "document_uris"
 private const val KEY_LEGACY_MIGRATED = "room_library_migrated"
+
 private fun readingDayKey(timestampMillis: Long): String =
     SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(timestampMillis))
 
@@ -118,6 +119,7 @@ private fun calculateReadingStreak(dayKeys: List<String>, nowMillis: Long): Int 
 
 private fun formatReadingDuration(seconds: Long): String {
     val totalMinutes = seconds / 60
+    if (seconds <= 0L) return "0 min"
     if (totalMinutes == 0L) return "Menos de 1 min"
     val hours = totalMinutes / 60
     val minutes = totalMinutes % 60
@@ -301,7 +303,7 @@ fun LibraryScreen() {
                         TextButton(onClick = { showResetStatsDialog = true }) { Text("Reiniciar historial") }
                     }
                     Text(
-                        "El tiempo se registra localmente mientras un lector EPUB o PDF está en primer plano; no cuenta audio ni TTS.",
+                        "El tiempo se registra localmente mientras un lector EPUB o PDF está en primer plano. No incluye audiolibros reproducidos en segundo plano.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp
                     )
