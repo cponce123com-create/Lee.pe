@@ -4,7 +4,7 @@
 
 ## Estado del desarrollo
 
-La biblioteca importa EPUB, PDF y archivos de audiolibro desde el selector del sistema y conserva sus URI locales. Los EPUB ya se abren con Readium, con índice y avance guardado. El menú de apariencia ofrece temas claro, sepia, oscuro y OLED; tamaño y tipografía; interlineado, márgenes, alineación, paginación o desplazamiento; y brillo por libro con opción de usar el brillo del sistema. Al tocar el texto se ocultan o recuperan los controles.
+La biblioteca importa EPUB, PDF y archivos de audiolibro desde el selector del sistema y conserva sus URI locales. Los EPUB ya se abren con Readium, con índice y avance guardado. El menú de apariencia ofrece temas claro, sepia, oscuro y OLED; tamaño y tipografía; interlineado, márgenes, alineación, paginación o desplazamiento; brillo por libro con opción de usar el brillo del sistema y un control para mantener la pantalla encendida. Al tocar el texto se ocultan o recuperan los controles.
 
 Los PDF locales ya abren en un visor sin conexión con navegación por página, salto a página y restauración de la última página. El reproductor de audiolibros sigue pendiente. La biblioteca ahora guarda sus libros en Room y migra automáticamente las URI que ya estaban en las preferencias locales. El avance EPUB (locator y porcentaje) y la página PDF se guardan también en Room; las preferencias siguen como respaldo de compatibilidad para posiciones creadas antes de esta migración. Esta integración queda pendiente de sincronizar y validar en Android Studio. Los ajustes avanzados de EPUB dependen de la API experimental de preferencias de Readium.
 
