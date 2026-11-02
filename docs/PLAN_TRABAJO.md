@@ -186,7 +186,7 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Hacer única la copia temporal PDF, cancelar su copia si se abandona la carga y eliminarla si falla.
 - [x] Comprobar el espacio disponible antes y durante la copia temporal.
 - [x] Dar al enlace TTS un ciclo explícito de desconexión al detener la voz o salir del lector.
-- [x] Ejecutar el build Android en pull requests e instalar explícitamente Android SDK Platform 37.
+- [x] Ejecutar el build Android en pull requests e instalar explícitamente Android SDK Platform 36, alineado con compileSdk/targetSdk 36.
 - [ ] Confirmar compilación y lint tras el cambio; el entorno local de auditoría no pudo descargar Gradle.
 - [ ] Validar PDF, notificaciones y reproducción TTS en Android 13+, Android 15/16 y dispositivos Samsung/Xiaomi.
 
