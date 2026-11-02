@@ -6,7 +6,7 @@
 
 La biblioteca importa EPUB, PDF y archivos de audiolibro desde el selector del sistema y conserva sus URI locales. Los EPUB ya se abren con el navegador de Readium en una vista de página completa. El avance se puede mover con la barra de progreso y la posición estructural del EPUB se guarda para reanudar la lectura.
 
-PDF y audiolibros aparecen en la biblioteca, pero sus visores todavía no están implementados. La biblioteca usa actualmente preferencias locales como almacenamiento inicial; la migración a Room está planificada antes de ampliar las funciones de biblioteca y anotaciones.
+Los PDF locales ya abren en un visor sin conexión con navegación por página, salto a página y restauración de la última página. El reproductor de audiolibros sigue pendiente. La biblioteca usa actualmente preferencias locales como almacenamiento inicial; la migración a Room está planificada antes de ampliar las funciones de biblioteca y anotaciones.
 
 Consulta el [plan de trabajo](docs/PLAN_TRABAJO.md) para el orden de los siguientes módulos y sus criterios de salida.
 
