@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,6 +27,8 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.ZoomIn
+import androidx.compose.material.icons.filled.ZoomOut
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -47,6 +50,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -109,6 +116,8 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
     var pageIndex by remember { mutableIntStateOf(0) }
     var sliderPage by remember { mutableFloatStateOf(0f) }
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var zoomScale by remember(uri) { mutableFloatStateOf(1f) }
+    var panOffset by remember(uri) { mutableStateOf(Offset.Zero) }
     var loading by remember { mutableStateOf(true) }
     var rendering by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -245,7 +254,22 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                     Image(
                         bitmap = pageBitmap.asImageBitmap(),
                         contentDescription = "Página ${pageIndex + 1}",
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clipToBounds()
+                            .pointerInput(pageIndex) {
+                                detectTransformGestures { _, pan, zoomChange, _ ->
+                                    val nextScale = (zoomScale * zoomChange).coerceIn(1f, 3f)
+                                    zoomScale = nextScale
+                                    panOffset = if (nextScale == 1f) Offset.Zero else panOffset + pan
+                                }
+                            }
+                            .graphicsLayer {
+                                scaleX = zoomScale
+                                scaleY = zoomScale
+                                translationX = panOffset.x
+                                translationY = panOffset.y
+                            },
                         contentScale = ContentScale.Fit
                     )
                 }
@@ -275,6 +299,34 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(
+                            onClick = {
+                                zoomScale = (zoomScale - 0.25f).coerceAtLeast(1f)
+                                if (zoomScale == 1f) panOffset = Offset.Zero
+                            },
+                            enabled = zoomScale > 1f
+                        ) {
+                            Icon(Icons.Default.ZoomOut, contentDescription = "Reducir zoom", tint = Color.White)
+                        }
+                        TextButton(onClick = {
+                            zoomScale = 1f
+                            panOffset = Offset.Zero
+                        }) {
+                            Text("${(zoomScale * 100).toInt()}% · Restablecer", color = Color.White)
+                        }
+                        IconButton(
+                            onClick = { zoomScale = (zoomScale + 0.25f).coerceAtMost(3f) },
+                            enabled = zoomScale < 3f
+                        ) {
+                            Icon(Icons.Default.ZoomIn, contentDescription = "Ampliar zoom", tint = Color.White)
+                        }
+                    }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
