@@ -219,11 +219,12 @@ fun LibraryScreen() {
         )
     }
 
-    val filters = listOf("Todos", "En curso", "Favoritos", "EPUB", "PDF", "Audio")
+    val filters = listOf("Todos", "En curso", "Terminados", "Favoritos", "EPUB", "PDF", "Audio")
     val visibleBooks = books.filter { book ->
         val matchesQuery = book.title.contains(query, ignoreCase = true)
         val matchesFilter = when (selectedFilter) {
             "En curso" -> book.format != "Audio" && book.readProgress > 0f && book.readProgress < 1f
+            "Terminados" -> book.format != "Audio" && book.readProgress >= 1f
             "Favoritos" -> book.isFavorite
             "EPUB" -> book.format == "EPUB"
             "PDF" -> book.format == "PDF"
@@ -658,8 +659,20 @@ private fun BookCard(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
+            if (book.format != "Audio" && book.readProgress > 0f) {
+                LinearProgressIndicator(
+                    progress = book.readProgress.coerceIn(0f, 1f),
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                )
+            }
+            val readingStatus = when {
+                book.format == "Audio" -> "Audiolibro"
+                book.readProgress >= 1f -> "Terminado"
+                book.readProgress > 0f -> "${(book.readProgress.coerceIn(0f, 1f) * 100).toInt()}% leído"
+                else -> "Sin empezar"
+            }
             Text(
-                "En tu dispositivo",
+                readingStatus,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 11.sp,
                 modifier = Modifier.padding(top = 3.dp, bottom = 4.dp)
