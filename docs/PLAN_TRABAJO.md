@@ -4,7 +4,7 @@
 
 Crear un lector nativo Android que permita importar EPUB, PDF y audiolibros desde el teléfono; leer en una vista amplia de página completa; retomar exactamente donde se dejó; y usar las funciones principales sin conexión. La estética tomará como referencia la interfaz futurista de Lee.pe, con controles discretos durante la lectura y herramientas accesibles al tocar la página.
 
-Estado actual: biblioteca local con Room e importación SAF (incluida migración de la lista anterior), lector EPUB con Readium e índice, y visor PDF offline con navegación por página y restauración de posición. La integración Room aún necesita sincronizarse y validarse en Android Studio. Este plan marca lo que falta y las condiciones para cerrar cada etapa.
+Estado actual: biblioteca local con Room e importación SAF (incluida migración de la lista anterior), lector EPUB con Readium e índice, y visor PDF offline con navegación por página. Ambos lectores guardan el avance en Room y conservan las preferencias como respaldo de posiciones anteriores; falta validar la integración en Android Studio.
 
 ## Principios de producto
 
@@ -52,7 +52,7 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 
 **Trabajo**
 - [x] Integrar Readium y abrir EPUB compatibles en una vista de página completa.
-- [x] Guardar/restaurar el locator Readium por URI de documento y saltar por porcentaje.
+- [x] Guardar/restaurar el locator Readium por URI de documento en Room, conservar compatibilidad con preferencias anteriores y saltar por porcentaje.
 - [x] Integrar navegación por gesto y tabla de contenidos con salto a capítulo.
 - Crear la pantalla de lectura inmersiva: página completa, barras superior e inferior ocultables y modo de desplazamiento configurable.
 - [x] Navegar por gesto, tabla de contenidos y porcentaje.
@@ -72,7 +72,7 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 
 **Trabajo**
 - [x] Integrar un motor PDF nativo compatible con Android y licencias adecuadas (`PdfRenderer`).
-- [x] Mostrar página completa y recuperar la última página.
+- [x] Mostrar página completa, guardar el avance en Room y recuperar la última página.
 - Mostrar una página completa por defecto; ofrecer desplazamiento continuo y ajuste de ancho.
 - [x] Ir a número de página y recuperar la última página.
 - [ ] Ampliar, reducir, rotar y ofrecer desplazamiento continuo.
