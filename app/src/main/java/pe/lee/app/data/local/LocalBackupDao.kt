@@ -75,9 +75,10 @@ interface LocalBackupDao {
         val current = allBooks()
         val usedUris = HashSet<String>()
         val mapped = LinkedHashMap<String, String>()
+        val matcher = LocalBackupMatcher(current)
         var byTitle = 0
         for (book in snapshot.books) {
-            val match = findBackupMatch(book, current) ?: continue
+            val match = matcher.find(book) ?: continue
             if (!usedUris.add(match.uri)) continue
             mapped[book.uri] = match.uri
             if (book.uri != match.uri) byTitle++
@@ -100,11 +101,15 @@ interface LocalBackupDao {
             if (insertAnnotationIfMissing(item.copy(bookUri = localUri)) != -1L) annotationCount++
         }
         var sessionCount = 0
+        val existingSessions = allSessions().associateBy { it.dayKey to it.bookUri }.toMutableMap()
         for (session in snapshot.sessions) {
             val localUri = mapped[session.bookUri] ?: continue
-            val old = findSession(session.dayKey, localUri)
+            val key = session.dayKey to localUri
+            val old = existingSessions[key]
             if (old == null || old.durationSeconds < session.durationSeconds) {
-                upsertSession(session.copy(bookUri = localUri))
+                val adjusted = session.copy(bookUri = localUri)
+                upsertSession(adjusted)
+                existingSessions[key] = adjusted
                 sessionCount++
             }
         }
@@ -120,6 +125,24 @@ interface LocalBackupDao {
 }
 
 /**
+ * Indexed matching keeps backup previews and large-library imports O(n)
+ * instead of repeatedly scanning thousands of locally imported titles.
+ */
+internal class LocalBackupMatcher(current: List<BookEntity>) {
+    private val byUri = current.associateBy { it.uri }
+    private val byTitleAndFormat = current.groupBy {
+        it.title.trim().lowercase(java.util.Locale.ROOT) to
+            it.format.trim().lowercase(java.util.Locale.ROOT)
+    }
+
+    fun find(saved: BookEntity): BookEntity? =
+        byUri[saved.uri] ?: byTitleAndFormat[
+            saved.title.trim().lowercase(java.util.Locale.ROOT) to
+                saved.format.trim().lowercase(java.util.Locale.ROOT)
+        ]?.singleOrNull()
+}
+
+/**
  * Exact URI first. The fallback requires a unique local title and format
  * match; never guess when there are multiple editions with identical titles.
  */
@@ -127,10 +150,5 @@ internal fun findBackupMatch(
     saved: BookEntity,
     current: List<BookEntity>
 ): BookEntity? {
-    current.firstOrNull { it.uri == saved.uri }?.let { return it }
-    val possible = current.filter {
-        it.format.equals(saved.format, ignoreCase = true) &&
-            it.title.trim().equals(saved.title.trim(), ignoreCase = true)
-    }
-    return possible.singleOrNull()
+    return LocalBackupMatcher(current).find(saved)
 }
