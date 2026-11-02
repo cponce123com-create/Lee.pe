@@ -99,24 +99,6 @@ private val SUPPORTED_AUDIO_EXTENSIONS = setOf("mp3", "m4a", "m4b", "aac", "ogg"
 private const val KEY_DOCUMENT_URIS = "document_uris"
 private const val KEY_LEGACY_MIGRATED = "room_library_migrated"
 
-private fun readingDayKey(timestampMillis: Long): String =
-    SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(timestampMillis))
-
-private fun calculateReadingStreak(dayKeys: List<String>, nowMillis: Long): Int {
-    val recordedDays = dayKeys.toSet()
-    val calendar = Calendar.getInstance().apply { timeInMillis = nowMillis }
-    if (readingDayKey(nowMillis) !in recordedDays) {
-        calendar.add(Calendar.DAY_OF_YEAR, -1)
-    }
-
-    var streak = 0
-    while (readingDayKey(calendar.timeInMillis) in recordedDays) {
-        streak++
-        calendar.add(Calendar.DAY_OF_YEAR, -1)
-    }
-    return streak
-}
-
 private fun formatReadingDuration(seconds: Long): String {
     val totalMinutes = seconds / 60
     if (seconds <= 0L) return "0 min"
