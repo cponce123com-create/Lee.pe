@@ -1,16 +1,22 @@
 package pe.lee.app.ui.reader
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import org.json.JSONObject
 import android.graphics.Bitmap
+import android.graphics.Point
 import android.graphics.pdf.PdfRenderer
+import android.graphics.pdf.models.selection.SelectionBoundary
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -157,6 +163,11 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
     var showPageDialog by remember { mutableStateOf(false) }
     var showAnnotations by remember { mutableStateOf(false) }
     var showNoteEditor by remember { mutableStateOf(false) }
+    var selectionMode by remember { mutableStateOf(false) }
+    var selectedPdfText by remember { mutableStateOf<String?>(null) }
+    var selectedPdfPage by remember { mutableIntStateOf(0) }
+    var showSelectionDialog by remember { mutableStateOf(false) }
+    var quoteForNote by remember { mutableStateOf<String?>(null) }
     var editingNote by remember { mutableStateOf<ReadingAnnotationEntity?>(null) }
     var noteDraft by remember { mutableStateOf("") }
     var requestedPage by remember { mutableStateOf("1") }
@@ -360,19 +371,73 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                             contentDescription = "Página ${pageIndex + 1}, rotación ${rotationDegrees} grados",
                             modifier = imageModifier
                                 .clipToBounds()
-                                .pointerInput(pageIndex, rotationDegrees) {
-                                    detectTransformGestures { _, pan, zoomChange, _ ->
-                                        val nextScale = (zoomScale * zoomChange).coerceIn(1f, 3f)
-                                        zoomScale = nextScale
-                                        if (nextScale == 1f) {
-                                            panOffset = Offset.Zero
-                                        } else {
-                                            val maxX = size.width * (nextScale - 1f) / 2f
-                                            val maxY = size.height * (nextScale - 1f) / 2f
-                                            panOffset = Offset(
-                                                (panOffset.x + pan.x).coerceIn(-maxX, maxX),
-                                                (panOffset.y + pan.y).coerceIn(-maxY, maxY)
-                                            )
+                                .pointerInput(pageIndex, rotationDegrees, selectionMode, zoomScale) {
+                                    if (selectionMode) {
+                                        detectTapGestures(onTap = { tap ->
+                                            val current = handle
+                                            val pageBitmap = bitmap
+                                            if (Build.VERSION.SDK_INT >= 35 &&
+                                                current != null &&
+                                                pageBitmap != null &&
+                                                rotationDegrees == 0 &&
+                                                zoomScale == 1f
+                                            ) {
+                                                val fit = min(
+                                                    size.width.toFloat() / pageBitmap.width,
+                                                    size.height.toFloat() / pageBitmap.height
+                                                )
+                                                val displayedWidth = pageBitmap.width * fit
+                                                val displayedHeight = pageBitmap.height * fit
+                                                val left = (size.width - displayedWidth) / 2f
+                                                val top = (size.height - displayedHeight) / 2f
+                                                if (tap.x in left..(left + displayedWidth) &&
+                                                    tap.y in top..(top + displayedHeight)
+                                                ) {
+                                                    val xRatio = ((tap.x - left) / displayedWidth).coerceIn(0f, 1f)
+                                                    val yRatio = ((tap.y - top) / displayedHeight).coerceIn(0f, 1f)
+                                                    coroutineScope.launch {
+                                                        val text = runCatching {
+                                                            renderMutex.withLock {
+                                                                withContext(Dispatchers.IO) {
+                                                                    val page = current.renderer.openPage(pageIndex)
+                                                                    try {
+                                                                        val point = Point(
+                                                                            (xRatio * page.width).roundToInt().coerceIn(0, page.width),
+                                                                            (yRatio * page.height).roundToInt().coerceIn(0, page.height)
+                                                                        )
+                                                                        val boundary = SelectionBoundary(point)
+                                                                        page.selectContent(boundary, boundary)
+                                                                            ?.selectedTextContents
+                                                                            ?.joinToString(separator = "") { it.text }
+                                                                    } finally {
+                                                                        page.close()
+                                                                    }
+                                                                }
+                                                            }
+                                                        }.getOrNull()?.trim()?.takeIf { it.isNotEmpty() }
+                                                        if (text != null) {
+                                                            selectedPdfText = text
+                                                            selectedPdfPage = pageIndex
+                                                            showSelectionDialog = true
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        })
+                                    } else {
+                                        detectTransformGestures { _, pan, zoomChange, _ ->
+                                            val nextScale = (zoomScale * zoomChange).coerceIn(1f, 3f)
+                                            zoomScale = nextScale
+                                            if (nextScale == 1f) {
+                                                panOffset = Offset.Zero
+                                            } else {
+                                                val maxX = size.width * (nextScale - 1f) / 2f
+                                                val maxY = size.height * (nextScale - 1f) / 2f
+                                                panOffset = Offset(
+                                                    (panOffset.x + pan.x).coerceIn(-maxX, maxX),
+                                                    (panOffset.y + pan.y).coerceIn(-maxY, maxY)
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -409,7 +474,21 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Desplazamiento continuo", color = Color.White, fontSize = 14.sp)
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Desplazamiento continuo", color = Color.White, fontSize = 14.sp)
+                            if (Build.VERSION.SDK_INT >= 35 && !continuousScroll) {
+                                TextButton(onClick = {
+                                    selectionMode = !selectionMode
+                                    selectedPdfText = null
+                                    if (!selectionMode) showSelectionDialog = false
+                                    zoomScale = 1f
+                                    rotationDegrees = 0
+                                    panOffset = Offset.Zero
+                                }) {
+                                    Text(if (selectionMode) "Cancelar selección" else "Seleccionar palabra")
+                                }
+                            }
+                        }
                         Switch(
                             checked = continuousScroll,
                             onCheckedChange = { enabled ->
@@ -513,6 +592,7 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                         TextButton(onClick = {
                             editingNote = null
                             noteDraft = ""
+                            quoteForNote = null
                             showNoteEditor = true
                         }) { Text("Añadir nota") }
                         TextButton(onClick = {
@@ -611,7 +691,8 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                                         id = UUID.randomUUID().toString(),
                                         bookUri = uri.toString(),
                                         kind = "NOTE",
-                                        locatorJson = pdfPageLocator(pageIndex),
+                                        locatorJson = pdfPageLocator(quoteForNote?.let { selectedPdfPage } ?: pageIndex),
+                                        selectedText = quoteForNote,
                                         noteText = noteDraft.trim(),
                                         createdAt = now
                                     )
@@ -624,6 +705,35 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                     }) { Text("Guardar") }
                 },
                 dismissButton = { TextButton(onClick = { showNoteEditor = false }) { Text("Cancelar") } }
+            )
+        }
+
+        if (showSelectionDialog && selectedPdfText != null) {
+            AlertDialog(
+                onDismissRequest = { showSelectionDialog = false },
+                title = { Text("Texto seleccionado · página ${selectedPdfPage + 1}") },
+                text = { Text(selectedPdfText.orEmpty()) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        selectedPdfText?.let { selected ->
+                            val clipboard = context.getSystemService(ClipboardManager::class.java)
+                            clipboard?.setPrimaryClip(ClipData.newPlainText("Texto PDF", selected))
+                        }
+                        showSelectionDialog = false
+                    }) { Text("Copiar") }
+                },
+                dismissButton = {
+                    Row {
+                        TextButton(onClick = {
+                            quoteForNote = selectedPdfText
+                            noteDraft = ""
+                            editingNote = null
+                            showSelectionDialog = false
+                            showNoteEditor = true
+                        }) { Text("Crear nota") }
+                        TextButton(onClick = { showSelectionDialog = false }) { Text("Cerrar") }
+                    }
+                }
             )
         }
 
