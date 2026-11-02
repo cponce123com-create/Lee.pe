@@ -42,7 +42,8 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Buscar títulos, filtrar por formato y quitar libros de la biblioteca sin borrar el archivo original.
 - [x] Detectar URI duplicadas y mostrar un aviso cuando el archivo ya está agregado.
 - [x] Exigir permiso persistente antes de guardar una URI y conservar en la migración las referencias antiguas que no se puedan recuperar.
-- Añadir orden, recientes, favoritos, colecciones, edición de metadatos, portadas y recuperación asistida de URI revocadas.
+- [x] Añadir favoritos y orden por título, última lectura o fecha de importación.
+- Añadir colecciones, edición de metadatos, portadas y recuperación asistida de URI revocadas.
 - Conservar el comportamiento sin conexión y no pedir acceso general a archivos.
 
 **Se considera lista cuando**
