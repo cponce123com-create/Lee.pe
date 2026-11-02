@@ -189,6 +189,7 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Ejecutar el build Android en pull requests e instalar explícitamente Android SDK Platform 36, alineado con compileSdk/targetSdk 36.
 - [x] Confirmar `assembleDebug` en CI del pull request #1 (run 24).
 - [ ] Ejecutar lint y pruebas; el entorno local no pudo descargar Gradle y el repositorio no tiene suites de prueba.
+- [x] Quitar un libro elimina en una transacción sus notas, marcadores y resaltados de Room; el diálogo informa al usuario.
 - [ ] Validar PDF, notificaciones y reproducción TTS en Android 13+, Android 15/16 y dispositivos Samsung/Xiaomi.
 
 Las casillas marcadas indican cambios en el código; la validación en dispositivos reales sigue pendiente.
