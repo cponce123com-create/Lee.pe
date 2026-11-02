@@ -79,7 +79,8 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - Mostrar una página completa por defecto; ofrecer desplazamiento continuo y ajuste de ancho.
 - [x] Ir a número de página y recuperar la última página.
 - [x] Ampliar y reducir el PDF con gestos y controles; desplazar la página ampliada y restablecer el zoom.
-- [ ] Rotar páginas y ofrecer desplazamiento continuo entre páginas.
+- [x] Rotar la página PDF en incrementos de 90°.
+- [ ] Ofrecer desplazamiento continuo entre páginas.
 - Añadir búsqueda y selección de texto cuando el PDF incluya texto seleccionable.
 - Identificar PDF escaneados y explicar que necesitan OCR para buscar o narrar.
 
