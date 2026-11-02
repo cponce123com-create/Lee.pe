@@ -287,6 +287,7 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
     val pageSearchHighlights = remember(pdfSearchResults, pageIndex) {
         pdfSearchResults.asSequence().filter { it.pageIndex == pageIndex }
             .flatMap { it.rects.asSequence() }
+            .distinct()
             .map { rect -> PdfHighlightOverlay(rect, PDF_SEARCH_HIGHLIGHT_COLOR) }
             .toList()
     }
@@ -431,19 +432,12 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
                             try {
                                 val textContents = page.getTextContents()
                                 val pageMatches = mutableListOf<PdfSearchResult>()
+                                val pageHasText = textContents.any { it.text.isNotBlank() }
                                 for (textContent in textContents) {
                                     val blockText = textContent.text
-                                    if (blockText.isNotBlank()) hasSelectableText = true
-                                    val matchIndex = blockText.indexOf(term, ignoreCase = true)
+                                    var matchIndex = blockText.indexOf(term, ignoreCase = true)
                                     if (matchIndex < 0) continue
 
-                                    val snippetStart = (matchIndex - 45).coerceAtLeast(0)
-                                    val snippetEnd = (matchIndex + term.length + 75).coerceAtMost(blockText.length)
-                                    val snippet = buildString {
-                                        if (snippetStart > 0) append('…')
-                                        append(blockText.substring(snippetStart, snippetEnd).trim())
-                                        if (snippetEnd < blockText.length) append('…')
-                                    }
                                     val rects = textContent.bounds.mapNotNull { bounds ->
                                         if (page.width <= 0 || page.height <= 0) return@mapNotNull null
                                         PdfNormalizedRect(
@@ -453,10 +447,24 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
                                             bottom = (bounds.bottom / page.height).coerceIn(0f, 1f)
                                         )
                                     }
-                                    pageMatches += PdfSearchResult(searchPageIndex, snippet, rects)
+                                    while (matchIndex >= 0 && matches.size + pageMatches.size < 100) {
+                                        val snippetStart = (matchIndex - 45).coerceAtLeast(0)
+                                        val snippetEnd = (matchIndex + term.length + 75).coerceAtMost(blockText.length)
+                                        val snippet = buildString {
+                                            if (snippetStart > 0) append('…')
+                                            append(blockText.substring(snippetStart, snippetEnd).trim())
+                                            if (snippetEnd < blockText.length) append('…')
+                                        }
+                                        pageMatches += PdfSearchResult(searchPageIndex, snippet, rects)
+                                        matchIndex = blockText.indexOf(
+                                            term,
+                                            startIndex = matchIndex + term.length,
+                                            ignoreCase = true
+                                        )
+                                    }
                                     if (matches.size + pageMatches.size >= 100) break
                                 }
-                                textContents.any { it.text.isNotBlank() } to pageMatches
+                                pageHasText to pageMatches
                             } finally {
                                 page.close()
                             }
@@ -556,6 +564,7 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
                                 highlights = pdfHighlightOverlays(annotations, pageNumber) +
                                     pdfSearchResults.filter { it.pageIndex == pageNumber }
                                         .flatMap { result -> result.rects }
+                                        .distinct()
                                         .map { rect -> PdfHighlightOverlay(rect, PDF_SEARCH_HIGHLIGHT_COLOR) }
                             )
                         }
