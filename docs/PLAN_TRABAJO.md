@@ -4,7 +4,7 @@
 
 Crear un lector nativo Android que permita importar EPUB, PDF y audiolibros desde el teléfono; leer en una vista amplia de página completa; retomar exactamente donde se dejó; y usar las funciones principales sin conexión. La estética tomará como referencia la interfaz futurista de Lee.pe, con controles discretos durante la lectura y herramientas accesibles al tocar la página.
 
-Estado actual: biblioteca local prototipo con importación SAF, lector EPUB con Readium e índice, y visor PDF offline con navegación por página y restauración de posición. Este plan marca lo que falta y las condiciones para cerrar cada etapa.
+Estado actual: biblioteca local con Room e importación SAF (incluida migración de la lista anterior), lector EPUB con Readium e índice, y visor PDF offline con navegación por página y restauración de posición. La integración Room aún necesita sincronizarse y validarse en Android Studio. Este plan marca lo que falta y las condiciones para cerrar cada etapa.
 
 ## Principios de producto
 
@@ -35,7 +35,8 @@ Estado actual: biblioteca local prototipo con importación SAF, lector EPUB con 
 **Trabajo**
 - [x] Importar EPUB, PDF y audio desde el selector del sistema sin acceso general al almacenamiento.
 - [x] Conservar URI de documentos y filtrar por formato en la biblioteca local prototipo.
-- [ ] Reemplazar el prototipo de preferencias por Room: libro, URI persistente, formato, metadatos, portada, fecha de importación y estado de lectura.
+- [x] Reemplazar el almacenamiento de la biblioteca por Room con URI, título, formato, fecha de importación, progreso y campos preparados para locator y colecciones.
+- [x] Migrar automáticamente las URI guardadas por la versión anterior y evitar duplicados al importar.
 - Importar con el selector del sistema: EPUB, PDF y formatos de audio definidos para el MVP.
 - Leer título, autor y portada cuando el formato los proporcione; permitir corregir metadatos.
 - Añadir búsqueda, filtros, orden, recientes, favoritos, colecciones y quitar de biblioteca.
