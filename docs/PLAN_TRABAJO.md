@@ -147,8 +147,12 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - Registrar velocidad de lectura; todavía no se calcula desde palabras por minuto.
 - Añadir diccionario/traducción como función separada, con explicación sobre si requiere conexión.
 - Revisar TalkBack, contraste, tamaño de objetivos táctiles, escalado de letra y modo horizontal.
+- [x] Implementar modo inmersivo opcional en PDF con botón visible para recuperar controles.
+- [x] Recrear limpiamente el lector EPUB tras rotación / restauración del proceso, reutilizando el locator persistido.
+- [x] Delegar temporizador TTS únicamente al servicio multimedia, con estado de expiración observable.
+- [ ] Comprobar en dispositivos que restauración EPUB, modo PDF e interfaz de temporizador funcionan correctamente.
 - Mejorar portadas, estados vacíos, errores, carga y recuperación tras cierre inesperado.
-- Crear respaldo local exportable de biblioteca, preferencias, progreso y anotaciones.
+- [ ] Crear respaldo **manual y voluntario**, local, exportable y restaurable de biblioteca, preferencias, progreso y anotaciones. La copia automática del sistema está deshabilitada por privacidad; desinstalar la app actualmente puede borrar datos locales.
 
 **Se considera lista cuando**
 - Las funciones principales son accesibles sin depender solo del color o de gestos.
@@ -191,7 +195,8 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Dar al enlace TTS un ciclo explícito de desconexión al detener la voz o salir del lector.
 - [x] Ejecutar el build Android en pull requests e instalar explícitamente Android SDK Platform 36, alineado con compileSdk/targetSdk 36.
 - [x] Confirmar `assembleDebug` en CI de los pull requests #1 (run 24) y #2 (run 27).
-- [ ] Ejecutar lint y pruebas; el entorno local no pudo descargar Gradle y el repositorio no tiene suites de prueba.
+- [x] Incorporar pruebas unitarias de rachas y hacerlas obligatorias en GitHub Actions (`testDebugUnitTest`).
+- [ ] Ejecutar Android Lint y ampliar pruebas automatizadas de PDF, TTS, almacenamiento, migraciones y UI.
 - [x] Quitar un libro elimina en una transacción sus notas, marcadores y resaltados de Room; el diálogo informa al usuario.
 - [ ] Validar PDF, notificaciones y reproducción TTS en Android 13+, Android 15/16 y dispositivos Samsung/Xiaomi.
 
