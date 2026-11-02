@@ -102,6 +102,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import pe.lee.app.data.local.LeeDatabase
+import pe.lee.app.data.local.OfflineBookStore
 import pe.lee.app.data.local.ReadingAnnotationEntity
 import pe.lee.app.ui.audio.TtsPlaybackService
 import org.readium.navigator.media.tts.AndroidTtsNavigator
@@ -160,6 +161,7 @@ class ReaderActivity : FragmentActivity() {
             return
         }
 
+        val offlineCopyUri = intent.getStringExtra(OfflineBookStore.EXTRA_COPY_URI)?.let(Uri::parse)
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "Lee.pe"
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
@@ -168,33 +170,46 @@ class ReaderActivity : FragmentActivity() {
                 EpubReaderScreen(
                     uri = uri,
                     title = title,
-                    openPublication = { openPublication(uri) },
+                    openPublication = { openPublication(uri, offlineCopyUri) },
                     onBack = { finish() }
                 )
             }
         }
     }
 
-    private suspend fun openPublication(uri: Uri): Publication = withContext(Dispatchers.IO) {
-        val url: AbsoluteUrl = uri.toAbsoluteUrl()
-            ?: throw IOException("No se pudo acceder al archivo seleccionado.")
+    private suspend fun openPublication(uri: Uri, offlineCopyUri: Uri?): Publication = withContext(Dispatchers.IO) {
+        suspend fun openFrom(sourceUri: Uri): Publication {
+            val url: AbsoluteUrl = sourceUri.toAbsoluteUrl()
+                ?: throw IOException("No se pudo acceder al archivo seleccionado.")
 
-        val httpClient = DefaultHttpClient()
-        val assetRetriever = AssetRetriever(contentResolver, httpClient)
-        val asset = assetRetriever.retrieve(url).getOrElse {
-            throw IOException("No se pudo leer el EPUB: ${it.message ?: "archivo inaccesible"}")
+            val httpClient = DefaultHttpClient()
+            val assetRetriever = AssetRetriever(contentResolver, httpClient)
+            val asset = assetRetriever.retrieve(url).getOrElse {
+                throw IOException("No se pudo leer el EPUB: ${it.message ?: "archivo inaccesible"}")
+            }
+
+            val parser = DefaultPublicationParser(
+                context = this@ReaderActivity,
+                httpClient = httpClient,
+                assetRetriever = assetRetriever,
+                pdfFactory = null
+            )
+            return PublicationOpener(parser).open(asset, allowUserInteraction = false).getOrElse {
+                asset.close()
+                throw IOException("El archivo no parece ser un EPUB compatible: ${it.message ?: "formato inválido"}")
+            }
         }
 
-        val parser = DefaultPublicationParser(
-            context = this@ReaderActivity,
-            httpClient = httpClient,
-            assetRetriever = assetRetriever,
-            pdfFactory = null
-        )
-        PublicationOpener(parser).open(asset, allowUserInteraction = false).getOrElse {
-            asset.close()
-            throw IOException("El archivo no parece ser un EPUB compatible: ${it.message ?: "formato inválido"}")
+        val candidates = listOfNotNull(offlineCopyUri, uri).distinct()
+        var lastError: IOException? = null
+        for (candidate in candidates) {
+            try {
+                return@withContext openFrom(candidate)
+            } catch (error: IOException) {
+                lastError = error
+            }
         }
+        throw lastError ?: IOException("No se pudo abrir el EPUB.")
     }
 
     companion object {

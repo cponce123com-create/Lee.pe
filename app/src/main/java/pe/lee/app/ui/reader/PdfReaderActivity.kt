@@ -100,6 +100,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.platform.LocalDensity
 import androidx.activity.ComponentActivity
 import pe.lee.app.data.local.LeeDatabase
+import pe.lee.app.data.local.OfflineBookStore
 import pe.lee.app.data.local.ReadingAnnotationEntity
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -213,10 +214,11 @@ class PdfReaderActivity : ComponentActivity() {
             finish()
             return
         }
+        val documentUri = intent.getStringExtra(OfflineBookStore.EXTRA_COPY_URI)?.let(Uri::parse) ?: uri
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "Documento PDF"
         setContent {
             pe.lee.app.ui.theme.LeePeTheme {
-                PdfReaderScreen(uri = uri, title = title, onBack = { finish() })
+                PdfReaderScreen(uri = uri, documentUri = documentUri, title = title, onBack = { finish() })
             }
         }
     }
@@ -233,7 +235,7 @@ private data class PdfHandle(
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
+private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: () -> Unit) {
     val context = LocalContext.current
     val database = remember(context) { LeeDatabase.get(context) }
     val bookDao = remember(database) { database.bookDao() }
@@ -276,7 +278,7 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
 
     LaunchedEffect(uri) {
         try {
-            val opened = openPdf(context, uri)
+            val opened = openPdf(context, documentUri)
             handle = opened
             pageCount = opened.renderer.pageCount
             val prefs = context.getSharedPreferences(PDF_PREFS_NAME, Context.MODE_PRIVATE)

@@ -44,6 +44,7 @@ import pe.lee.app.ui.audio.AudioPlayerActivity
 import pe.lee.app.data.local.BookDao
 import pe.lee.app.data.local.BookEntity
 import pe.lee.app.data.local.LeeDatabase
+import pe.lee.app.data.local.OfflineBookStore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -63,6 +64,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -76,6 +78,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -93,7 +96,8 @@ private data class LocalBook(
     val importedAt: Long,
     val lastOpenedAt: Long?,
     val readProgress: Float,
-    val collectionId: String?
+    val collectionId: String?,
+    val offlineCopyUri: Uri?
 )
 
 @Composable
@@ -101,8 +105,21 @@ fun LibraryScreen() {
     val context = LocalContext.current
     val dao = remember(context) { LeeDatabase.get(context).bookDao() }
     val storedBooks by dao.observeAll().collectAsState(initial = emptyList())
-    val books = remember(storedBooks) {
-        storedBooks.map { LocalBook(Uri.parse(it.uri), it.title, it.format, it.isFavorite, it.importedAt, it.lastOpenedAt, it.readProgress, it.collectionId) }
+    var offlineCopyUris by remember { mutableStateOf<Map<String, Uri>>(emptyMap()) }
+    var offlineRevision by remember { mutableIntStateOf(0) }
+    var savingBookUri by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(context, storedBooks, offlineRevision) {
+        offlineCopyUris = withContext(Dispatchers.IO) {
+            storedBooks.mapNotNull { book ->
+                OfflineBookStore.findCopy(context, Uri.parse(book.uri))?.let { book.uri to Uri.fromFile(it) }
+            }.toMap()
+        }
+    }
+    val books = remember(storedBooks, offlineCopyUris) {
+        storedBooks.map {
+            LocalBook(Uri.parse(it.uri), it.title, it.format, it.isFavorite, it.importedAt, it.lastOpenedAt,
+                it.readProgress, it.collectionId, offlineCopyUris[it.uri])
+        }
     }
     val collections = remember(books) {
         books.mapNotNull { it.collectionId?.trim()?.takeIf { name -> name.isNotBlank() } }
@@ -208,7 +225,8 @@ fun LibraryScreen() {
             text = {
                 Text(
                     "Se quitará “${book.title}” de Lee.pe y se borrarán sus marcadores, notas y " +
-                        "resaltados guardados. El archivo original no se eliminará del dispositivo."
+                        "resaltados guardados. El archivo original no se eliminará del dispositivo." +
+                        if (book.offlineCopyUri != null) " La copia sin conexión guardada en Lee.pe también se eliminará." else ""
                 )
             },
             confirmButton = {
@@ -216,7 +234,9 @@ fun LibraryScreen() {
                     onClick = {
                         coroutineScope.launch {
                             dao.deleteByUri(book.uri.toString())
+                            withContext(Dispatchers.IO) { OfflineBookStore.deleteCopy(context, book.uri) }
                             pendingRemoval = null
+                            offlineRevision++
                             Toast.makeText(context, "Libro quitado de la biblioteca", Toast.LENGTH_SHORT).show()
                         }
                     }
@@ -593,9 +613,37 @@ fun LibraryScreen() {
                     rowBooks.forEach { book ->
                         BookCard(
                             book = book,
+                            savingBookUri = savingBookUri,
                             modifier = Modifier.weight(1f),
                             onOpen = { openBook(context, book) },
                             onRemove = { pendingRemoval = book },
+                            onSaveOfflineCopy = {
+                                val key = book.uri.toString()
+                                if (savingBookUri != key) {
+                                    savingBookUri = key
+                                    coroutineScope.launch {
+                                        try {
+                                            val displayName = withContext(Dispatchers.IO) { queryDisplayName(context, book.uri) }
+                                            OfflineBookStore.saveCopy(context, book.uri, displayName)
+                                            offlineRevision++
+                                            Toast.makeText(context, "Copia guardada para usar sin conexión", Toast.LENGTH_SHORT).show()
+                                        } catch (cancelled: CancellationException) {
+                                            throw cancelled
+                                        } catch (error: Exception) {
+                                            Toast.makeText(context, error.message ?: "No se pudo guardar la copia", Toast.LENGTH_LONG).show()
+                                        } finally {
+                                            savingBookUri = null
+                                        }
+                                    }
+                                }
+                            },
+                            onRemoveOfflineCopy = {
+                                coroutineScope.launch {
+                                    withContext(Dispatchers.IO) { OfflineBookStore.deleteCopy(context, book.uri) }
+                                    offlineRevision++
+                                    Toast.makeText(context, "Copia sin conexión eliminada", Toast.LENGTH_SHORT).show()
+                                }
+                            },
                             onToggleFavorite = {
                                 coroutineScope.launch {
                                     dao.updateFavorite(book.uri.toString(), !book.isFavorite)
@@ -799,9 +847,12 @@ private fun EmptyLibraryCard(hasBooks: Boolean, onImport: () -> Unit) {
 @Composable
 private fun BookCard(
     book: LocalBook,
+    savingBookUri: String?,
     modifier: Modifier = Modifier,
     onOpen: () -> Unit,
     onRemove: () -> Unit,
+    onSaveOfflineCopy: () -> Unit,
+    onRemoveOfflineCopy: () -> Unit,
     onToggleFavorite: () -> Unit,
     onEditTitle: () -> Unit,
     onOrganize: () -> Unit
@@ -848,6 +899,16 @@ private fun BookCard(
                             onClick = {
                                 menuExpanded = false
                                 onToggleFavorite()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text(if (book.offlineCopyUri != null) "Quitar copia sin conexión" else if (savingBookUri == book.uri.toString()) "Guardando copia…" else "Guardar sin conexión")
+                            },
+                            enabled = savingBookUri != book.uri.toString(),
+                            onClick = {
+                                menuExpanded = false
+                                if (book.offlineCopyUri != null) onRemoveOfflineCopy() else onSaveOfflineCopy()
                             }
                         )
                         DropdownMenuItem(
@@ -908,8 +969,16 @@ private fun BookCard(
                 readingStatus,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 11.sp,
-                modifier = Modifier.padding(top = 3.dp, bottom = 4.dp)
+                modifier = Modifier.padding(top = 3.dp, bottom = if (book.offlineCopyUri == null) 4.dp else 2.dp)
             )
+            if (book.offlineCopyUri != null) {
+                Text(
+                    "Disponible sin conexión",
+                    color = MaterialTheme.colorScheme.secondary,
+                    fontSize = 10.sp,
+                    modifier = Modifier.padding(bottom = 3.dp)
+                )
+            }
         }
     }
 }
@@ -938,6 +1007,7 @@ private fun openBook(context: Context, book: LocalBook) {
             Intent(context, AudioPlayerActivity::class.java)
                 .setData(book.uri)
                 .putExtra(AudioPlayerActivity.EXTRA_TITLE, book.title)
+                .putExtra(OfflineBookStore.EXTRA_COPY_URI, book.offlineCopyUri?.toString())
         )
         return
     }
@@ -947,6 +1017,7 @@ private fun openBook(context: Context, book: LocalBook) {
         Intent(context, activity)
             .setData(book.uri)
             .putExtra(titleExtra, book.title)
+            .putExtra(OfflineBookStore.EXTRA_COPY_URI, book.offlineCopyUri?.toString())
     )
 }
 

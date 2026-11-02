@@ -209,3 +209,13 @@ No iniciar la sincronización ni las funciones de IA antes de que biblioteca, EP
 ## Decisiones pendientes para cada módulo
 
 Antes de implementar cada etapa, revisar la documentación del motor y probar la API real con los formatos objetivo. En especial: compatibilidad EPUB del toolkit, motor PDF y OCR, formatos de audio admitidos, guardado de locators, migraciones de Room y requisitos actuales de Google Play. No fijar comportamiento visual o prometer compatibilidad universal si el formato o el DRM lo impiden.
+
+
+## Copias locales sin conexión — noviembre de 2026
+
+- [x] Añadir acción voluntaria «Guardar sin conexión» para crear una copia local privada de EPUB, PDF o audiolibro importado.
+- [x] Abrir la copia local cuando existe y conservar el URI original como clave de progreso, notas, marcadores y posición de audio.
+- [x] Mostrar disponibilidad sin conexión en la tarjeta y permitir quitar la copia sin quitar el libro.
+- [x] Eliminar la copia local al quitar el libro de la biblioteca; el archivo original del proveedor permanece intacto.
+- Las copias se guardan en el directorio privado excluido de la copia automática de Android; se eliminan al desinstalar Lee.pe. No se envían a servicios en la nube.
+- [ ] Validar en un teléfono con EPUB, PDF y audio de distintos proveedores SAF, incluida falta de espacio, URI revocada, cancelación y reapertura sin conexión.
