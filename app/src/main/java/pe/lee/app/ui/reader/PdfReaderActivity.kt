@@ -39,6 +39,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ChevronLeft
@@ -770,6 +771,36 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 12.sp
                                     )
+                                }
+                                if (annotation.kind == "HIGHLIGHT") {
+                                    Row {
+                                        listOf(
+                                            "Amarillo" to 0xFFFFD54F.toInt(),
+                                            "Azul" to 0xFF64B5F6.toInt(),
+                                            "Verde" to 0xFF81C784.toInt(),
+                                            "Rosa" to 0xFFF48FB1.toInt()
+                                        ).forEach { (label, color) ->
+                                            IconButton(
+                                                onClick = {
+                                                    coroutineScope.launch {
+                                                        annotationDao.updateColor(
+                                                            annotation.id,
+                                                            color,
+                                                            System.currentTimeMillis()
+                                                        )
+                                                    }
+                                                },
+                                                modifier = Modifier.size(32.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Circle,
+                                                    contentDescription = "Resaltado $label",
+                                                    tint = Color(color),
+                                                    modifier = Modifier.size(19.dp)
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                                 if (annotation.kind == "NOTE") {
                                     IconButton(onClick = {
