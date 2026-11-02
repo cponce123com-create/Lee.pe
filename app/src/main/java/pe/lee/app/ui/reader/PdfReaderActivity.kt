@@ -1,6 +1,7 @@
 package pe.lee.app.ui.reader
 
 import android.content.Context
+import org.json.JSONObject
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
@@ -26,6 +27,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.PictureAsPdf
@@ -38,6 +42,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -45,6 +51,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -77,6 +84,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.platform.LocalDensity
 import androidx.activity.ComponentActivity
 import pe.lee.app.data.local.LeeDatabase
+import pe.lee.app.data.local.ReadingAnnotationEntity
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -88,10 +96,14 @@ import kotlinx.coroutines.flow.collect
 import androidx.compose.runtime.snapshotFlow
 import java.io.File
 import java.io.IOException
+import java.util.UUID
 import kotlin.math.min
 import kotlin.math.roundToInt
 
 private const val PDF_PREFS_NAME = "lee_pe_library"
+
+private fun pdfPageLocator(pageIndex: Int): String =
+    JSONObject().put("format", "pdf-page").put("pageIndex", pageIndex).toString()
 
 class PdfReaderActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -122,7 +134,10 @@ private data class PdfHandle(
 @Composable
 private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
     val context = LocalContext.current
-    val bookDao = remember(context) { LeeDatabase.get(context).bookDao() }
+    val database = remember(context) { LeeDatabase.get(context) }
+    val bookDao = remember(database) { database.bookDao() }
+    val annotationDao = remember(database) { database.readingAnnotationDao() }
+    val annotations by annotationDao.observeByBook(uri.toString()).collectAsState(initial = emptyList())
     var handle by remember { mutableStateOf<PdfHandle?>(null) }
     var pageCount by remember { mutableIntStateOf(0) }
     var continuousScroll by remember(uri) {
@@ -139,6 +154,10 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
     var rendering by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var showPageDialog by remember { mutableStateOf(false) }
+    var showAnnotations by remember { mutableStateOf(false) }
+    var showNoteEditor by remember { mutableStateOf(false) }
+    var editingNote by remember { mutableStateOf<ReadingAnnotationEntity?>(null) }
+    var noteDraft by remember { mutableStateOf("") }
     var requestedPage by remember { mutableStateOf("1") }
     val renderMutex = remember { Mutex() }
     val listState = rememberLazyListState()
@@ -289,6 +308,9 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    IconButton(onClick = { showAnnotations = true }) {
+                        Icon(Icons.Default.Bookmark, contentDescription = "Marcadores y notas PDF", tint = Color.White)
+                    }
                 }
             }
 
@@ -476,6 +498,132 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                     }
                 }
             }
+        }
+
+        if (showAnnotations) {
+            ModalBottomSheet(onDismissRequest = { showAnnotations = false }) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Notas y marcadores PDF", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Row {
+                        TextButton(onClick = {
+                            editingNote = null
+                            noteDraft = ""
+                            showNoteEditor = true
+                        }) { Text("Añadir nota") }
+                        TextButton(onClick = {
+                            val now = System.currentTimeMillis()
+                            coroutineScope.launch {
+                                annotationDao.upsert(
+                                    ReadingAnnotationEntity(
+                                        id = UUID.randomUUID().toString(),
+                                        bookUri = uri.toString(),
+                                        kind = "BOOKMARK",
+                                        locatorJson = pdfPageLocator(pageIndex),
+                                        createdAt = now
+                                    )
+                                )
+                            }
+                        }) { Text("Marcar página") }
+                    }
+                }
+                if (annotations.isEmpty()) {
+                    Text(
+                        "Todavía no guardaste notas ni marcadores para este PDF.",
+                        modifier = Modifier.padding(horizontal = 22.dp, vertical = 20.dp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                        items(annotations, key = { it.id }) { annotation ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(
+                                    modifier = Modifier.weight(1f).clickable {
+                                        val targetPage = runCatching {
+                                            JSONObject(annotation.locatorJson).optInt("pageIndex", -1)
+                                        }.getOrDefault(-1)
+                                        if (targetPage in 0 until pageCount) moveToPage(targetPage)
+                                        showAnnotations = false
+                                    }.padding(vertical = 12.dp, horizontal = 8.dp)
+                                ) {
+                                    Text(
+                                        annotation.noteText?.takeIf { it.isNotBlank() }
+                                            ?: if (annotation.kind == "NOTE") "Nota" else "Página marcada",
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        "Página ${runCatching { JSONObject(annotation.locatorJson).optInt("pageIndex", -1) + 1 }.getOrDefault(0)} · abrir",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = 12.sp
+                                    )
+                                }
+                                if (annotation.kind == "NOTE") {
+                                    IconButton(onClick = {
+                                        editingNote = annotation
+                                        noteDraft = annotation.noteText.orEmpty()
+                                        showNoteEditor = true
+                                    }) {
+                                        Icon(Icons.Default.Edit, contentDescription = "Editar nota")
+                                    }
+                                }
+                                IconButton(onClick = {
+                                    coroutineScope.launch { annotationDao.deleteById(annotation.id) }
+                                }) {
+                                    Icon(Icons.Default.DeleteOutline, contentDescription = "Eliminar anotación")
+                                }
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(14.dp))
+            }
+        }
+
+        if (showNoteEditor) {
+            AlertDialog(
+                onDismissRequest = { showNoteEditor = false },
+                title = { Text(if (editingNote == null) "Nueva nota PDF" else "Editar nota PDF") },
+                text = {
+                    OutlinedTextField(
+                        value = noteDraft,
+                        onValueChange = { noteDraft = it },
+                        label = { Text("Nota para la página ${pageIndex + 1}") },
+                        minLines = 3,
+                        maxLines = 6
+                    )
+                },
+                confirmButton = {
+                    TextButton(enabled = noteDraft.isNotBlank(), onClick = {
+                        val currentEdit = editingNote
+                        coroutineScope.launch {
+                            if (currentEdit == null) {
+                                val now = System.currentTimeMillis()
+                                annotationDao.upsert(
+                                    ReadingAnnotationEntity(
+                                        id = UUID.randomUUID().toString(),
+                                        bookUri = uri.toString(),
+                                        kind = "NOTE",
+                                        locatorJson = pdfPageLocator(pageIndex),
+                                        noteText = noteDraft.trim(),
+                                        createdAt = now
+                                    )
+                                )
+                            } else {
+                                annotationDao.updateNote(currentEdit.id, noteDraft.trim(), System.currentTimeMillis())
+                            }
+                        }
+                        showNoteEditor = false
+                    }) { Text("Guardar") }
+                },
+                dismissButton = { TextButton(onClick = { showNoteEditor = false }) { Text("Cancelar") } }
+            )
         }
 
         errorMessage?.let { message ->
