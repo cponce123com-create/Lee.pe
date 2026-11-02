@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -940,6 +941,7 @@ private fun ReaderChrome(
     var showSearch by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var searchResults by remember { mutableStateOf<List<Locator>>(emptyList()) }
+    var hasSearched by remember { mutableStateOf(false) }
     var searching by remember { mutableStateOf(false) }
     var searchError by remember { mutableStateOf<String?>(null) }
     var searchLimitReached by remember { mutableStateOf(false) }
@@ -962,7 +964,12 @@ private fun ReaderChrome(
                 ) {
                     OutlinedTextField(
                         value = searchQuery,
-                        onValueChange = { searchQuery = it },
+                        onValueChange = {
+                            searchQuery = it
+                            hasSearched = false
+                            searchResults = emptyList()
+                            searchError = null
+                        },
                         modifier = Modifier.weight(1f),
                         label = { Text("Palabra o frase") },
                         singleLine = true
@@ -1007,6 +1014,7 @@ private fun ReaderChrome(
                                         }
                                         searchResults = result.first
                                         searchLimitReached = result.second
+                                        hasSearched = true
                                     } catch (cancelled: CancellationException) {
                                         throw cancelled
                                     } catch (error: Exception) {
@@ -1066,8 +1074,10 @@ private fun ReaderChrome(
                             }
                         }
                     }
+                } else if (!searching && searchError == null && hasSearched) {
+                    Text("No se encontraron coincidencias.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else if (!searching && searchError == null && searchQuery.isNotBlank()) {
-                    Text("Escribe la búsqueda y toca la lupa.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Toca la lupa para iniciar la búsqueda.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else if (!searching && searchResults.isEmpty() && searchError == null && searchQuery.isBlank()) {
                     Text("Busca una palabra o frase en el contenido del libro.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
