@@ -12,6 +12,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
+import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -402,8 +403,8 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                                                                     val page = current.renderer.openPage(pageIndex)
                                                                     try {
                                                                         val point = Point(
-                                                                            (xRatio * page.width).roundToInt().coerceIn(0, page.width),
-                                                                            (yRatio * page.height).roundToInt().coerceIn(0, page.height)
+                                                                            (xRatio * page.width).roundToInt().coerceIn(0, page.width - 1),
+                                                                            (yRatio * page.height).roundToInt().coerceIn(0, page.height - 1)
                                                                         )
                                                                         val boundary = SelectionBoundary(point)
                                                                         page.selectContent(boundary, boundary)
@@ -419,6 +420,12 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                                                             selectedPdfText = text
                                                             selectedPdfPage = pageIndex
                                                             showSelectionDialog = true
+                                                        } else {
+                                                            Toast.makeText(
+                                                                context,
+                                                                "No se detectó texto seleccionable en este punto.",
+                                                                Toast.LENGTH_SHORT
+                                                            ).show()
                                                         }
                                                     }
                                                 }
