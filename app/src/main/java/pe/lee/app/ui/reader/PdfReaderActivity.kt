@@ -12,6 +12,7 @@ import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -39,6 +40,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -50,6 +52,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clipToBounds
@@ -69,6 +72,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.platform.LocalDensity
 import androidx.activity.ComponentActivity
 import pe.lee.app.data.local.LeeDatabase
@@ -76,6 +82,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.collect
+import androidx.compose.runtime.snapshotFlow
 import java.io.File
 import java.io.IOException
 import kotlin.math.min
@@ -115,6 +125,10 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
     val bookDao = remember(context) { LeeDatabase.get(context).bookDao() }
     var handle by remember { mutableStateOf<PdfHandle?>(null) }
     var pageCount by remember { mutableIntStateOf(0) }
+    var continuousScroll by remember(uri) {
+        mutableStateOf(context.getSharedPreferences(PDF_PREFS_NAME, Context.MODE_PRIVATE)
+            .getBoolean("pdf-continuous:$uri", false))
+    }
     var pageIndex by remember { mutableIntStateOf(0) }
     var sliderPage by remember { mutableFloatStateOf(0f) }
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
@@ -127,6 +141,8 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
     var showPageDialog by remember { mutableStateOf(false) }
     var requestedPage by remember { mutableStateOf("1") }
     val renderMutex = remember { Mutex() }
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
     val density = LocalDensity.current
 
     LaunchedEffect(pageIndex) { panOffset = Offset.Zero }
@@ -155,6 +171,10 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
         }
     }
 
+    DisposableEffect(bitmap) {
+        onDispose { bitmap?.takeIf { !it.isRecycled }?.recycle() }
+    }
+
     DisposableEffect(handle) {
         onDispose {
             handle?.let {
@@ -164,9 +184,9 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
         }
     }
 
-    LaunchedEffect(handle, pageIndex, pageCount) {
+    LaunchedEffect(handle, pageIndex, pageCount, continuousScroll) {
         val current = handle ?: return@LaunchedEffect
-        if (pageCount == 0) return@LaunchedEffect
+        if (pageCount == 0 || continuousScroll) return@LaunchedEffect
         rendering = true
         try {
             val rendered = renderMutex.withLock {
@@ -205,9 +225,34 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
         }
     }
 
+    LaunchedEffect(continuousScroll, loading, pageCount) {
+        if (!continuousScroll || loading || pageCount == 0) return@LaunchedEffect
+        listState.scrollToItem(pageIndex.coerceIn(0, pageCount - 1))
+        snapshotFlow { listState.firstVisibleItemIndex }
+            .distinctUntilChanged()
+            .collect { visiblePage ->
+                val currentPage = visiblePage.coerceIn(0, pageCount - 1)
+                pageIndex = currentPage
+                sliderPage = currentPage.toFloat()
+                val currentProgress = if (pageCount <= 1) 0f else currentPage.toFloat() / (pageCount - 1)
+                context.getSharedPreferences(PDF_PREFS_NAME, Context.MODE_PRIVATE)
+                    .edit().putInt("pdf-page:$uri", currentPage).apply()
+                bookDao.savePdfProgress(
+                    uri = uri.toString(),
+                    pageIndex = currentPage,
+                    progress = currentProgress,
+                    openedAt = System.currentTimeMillis()
+                )
+            }
+    }
+
     fun moveToPage(index: Int) {
-        pageIndex = index.coerceIn(0, (pageCount - 1).coerceAtLeast(0))
-        sliderPage = pageIndex.toFloat()
+        val targetPage = index.coerceIn(0, (pageCount - 1).coerceAtLeast(0))
+        pageIndex = targetPage
+        sliderPage = targetPage.toFloat()
+        if (continuousScroll && pageCount > 0) {
+            coroutineScope.launch { listState.animateScrollToItem(targetPage) }
+        }
     }
 
     BoxWithConstraints(
@@ -248,51 +293,83 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                 }
             }
 
-                            .graphicsLayer {
-                                scaleX = zoomScale
-                                scaleY = zoomScale
-                                translationX = panOffset.x
-                                translationY = panOffset.y
-                            },
-                        contentScale = ContentScale.Fit
-                    )
+            if (continuousScroll) {
+                if (loading) {
+                    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
+                    }
+                } else if (pageCount == 0) {
+                    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Text("Este PDF no contiene páginas.", color = Color.White)
+                    }
+                } else {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(count = pageCount, key = { pageNumber -> "pdf-page-$pageNumber" }) { pageNumber ->
+                            PdfContinuousPage(
+                                renderer = handle?.renderer,
+                                renderMutex = renderMutex,
+                                pageIndex = pageNumber,
+                                targetWidthPx = availableWidth.coerceAtLeast(1).coerceAtMost(1600)
+                            )
+                        }
+                    }
                 }
-                if (loading || rendering) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
-                }
-                if (pageCount == 0 && !loading && errorMessage == null) {
-                    Text("Este PDF no contiene páginas.", color = Color.White)
-                }
-            }
-                                detectTransformGestures { _, pan, zoomChange, _ ->
-                                    val nextScale = (zoomScale * zoomChange).coerceIn(1f, 3f)
-                                    zoomScale = nextScale
-                                    if (nextScale == 1f) {
-                                        panOffset = Offset.Zero
-                                    } else {
-                                        val maxX = size.width * (nextScale - 1f) / 2f
-                                        val maxY = size.height * (nextScale - 1f) / 2f
-                                        panOffset = Offset(
-                                            (panOffset.x + pan.x).coerceIn(-maxX, maxX),
-                                            (panOffset.y + pan.y).coerceIn(-maxY, maxY)
-                                        )
+            } else {
+                BoxWithConstraints(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    val imageModifier = if (rotationDegrees % 180 != 0) {
+                        Modifier.requiredSize(width = maxHeight, height = maxWidth)
+                    } else {
+                        Modifier.fillMaxSize()
+                    }
+                    bitmap?.let { pageBitmap ->
+                        Image(
+                            bitmap = pageBitmap.asImageBitmap(),
+                            contentDescription = "Página ${pageIndex + 1}, rotación ${rotationDegrees} grados",
+                            modifier = imageModifier
+                                .clipToBounds()
+                                .pointerInput(pageIndex, rotationDegrees) {
+                                    detectTransformGestures { _, pan, zoomChange, _ ->
+                                        val nextScale = (zoomScale * zoomChange).coerceIn(1f, 3f)
+                                        zoomScale = nextScale
+                                        if (nextScale == 1f) {
+                                            panOffset = Offset.Zero
+                                        } else {
+                                            val maxX = size.width * (nextScale - 1f) / 2f
+                                            val maxY = size.height * (nextScale - 1f) / 2f
+                                            panOffset = Offset(
+                                                (panOffset.x + pan.x).coerceIn(-maxX, maxX),
+                                                (panOffset.y + pan.y).coerceIn(-maxY, maxY)
+                                            )
+                                        }
                                     }
                                 }
-                            }
-                            .graphicsLayer {
-                                scaleX = zoomScale
-                                scaleY = zoomScale
-                                translationX = panOffset.x
-                                translationY = panOffset.y
-                            },
-                        contentScale = ContentScale.Fit
-                    )
-                }
-                if (loading || rendering) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
-                }
-                if (pageCount == 0 && !loading && errorMessage == null) {
-                    Text("Este PDF no contiene páginas.", color = Color.White)
+                                .graphicsLayer {
+                                    rotationZ = rotationDegrees.toFloat()
+                                    scaleX = zoomScale
+                                    scaleY = zoomScale
+                                    translationX = panOffset.x
+                                    translationY = panOffset.y
+                                },
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+                    if (loading || rendering) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
+                    }
+                    if (pageCount == 0 && !loading && errorMessage == null) {
+                        Text("Este PDF no contiene páginas.", color = Color.White)
+                    }
                 }
             }
 
@@ -305,6 +382,21 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                         .fillMaxWidth()
                         .padding(horizontal = 14.dp, vertical = 10.dp)
                 ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Desplazamiento continuo", color = Color.White, fontSize = 14.sp)
+                        Switch(
+                            checked = continuousScroll,
+                            onCheckedChange = { enabled ->
+                                continuousScroll = enabled
+                                context.getSharedPreferences(PDF_PREFS_NAME, Context.MODE_PRIVATE)
+                                    .edit().putBoolean("pdf-continuous:$uri", enabled).apply()
+                            }
+                        )
+                    }
                     if (pageCount > 1) {
                         Slider(
                             value = sliderPage,
@@ -314,47 +406,50 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(
-                            onClick = {
-                                zoomScale = (zoomScale - 0.25f).coerceAtLeast(1f)
-                                panOffset = Offset.Zero
-                            },
-                            enabled = zoomScale > 1f
+                    if (!continuousScroll) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.ZoomOut, contentDescription = "Reducir zoom", tint = Color.White)
-                        }
-                        TextButton(onClick = {
-                            zoomScale = 1f
-                            panOffset = Offset.Zero
-                        }) {
-                            Text("${(zoomScale * 100).toInt()}% · Restablecer", color = Color.White)
-                        }
-                        IconButton(
-                            onClick = {
-                                zoomScale = (zoomScale + 0.25f).coerceAtMost(3f)
-                                panOffset = Offset.Zero
-                            },
-                            enabled = zoomScale < 3f
-                        ) {
-                            Icon(Icons.Default.ZoomIn, contentDescription = "Ampliar zoom", tint = Color.White)
-                        }
-                        IconButton(
-                            onClick = {
-                                rotationDegrees = (rotationDegrees + 90) % 360
-                                panOffset = Offset.Zero
+                            IconButton(
+                                onClick = {
+                                    zoomScale = (zoomScale - 0.25f).coerceAtLeast(1f)
+                                    panOffset = Offset.Zero
+                                },
+                                enabled = zoomScale > 1f
+                            ) {
+                                Icon(Icons.Default.ZoomOut, contentDescription = "Reducir zoom", tint = Color.White)
                             }
-                        ) {
-                            Icon(
-                                Icons.Default.RotateRight,
-                                contentDescription = "Rotar página",
-                                tint = Color.White
-                            )
+                            TextButton(onClick = {
+                                zoomScale = 1f
+                                panOffset = Offset.Zero
+                            }) {
+                                Text("${(zoomScale * 100).toInt()}% · Restablecer", color = Color.White)
+                            }
+                            IconButton(
+                                onClick = {
+                                    zoomScale = (zoomScale + 0.25f).coerceAtMost(3f)
+                                    panOffset = Offset.Zero
+                                },
+                                enabled = zoomScale < 3f
+                            ) {
+                                Icon(Icons.Default.ZoomIn, contentDescription = "Ampliar zoom", tint = Color.White)
+                            }
+                            IconButton(
+                                onClick = {
+                                    rotationDegrees = (rotationDegrees + 90) % 360
+                                    panOffset = Offset.Zero
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Default.RotateRight,
+                                    contentDescription = "Rotar página",
+                                    tint = Color.White
+                                )
+                            }
                         }
+    
                     }
 
                     Row(
@@ -430,6 +525,60 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                 }
             )
         }
+    }
+}
+
+@Composable
+private fun PdfContinuousPage(
+    renderer: PdfRenderer?,
+    renderMutex: Mutex,
+    pageIndex: Int,
+    targetWidthPx: Int
+) {
+    var bitmap by remember(renderer, pageIndex, targetWidthPx) { mutableStateOf<Bitmap?>(null) }
+
+    LaunchedEffect(renderer, pageIndex, targetWidthPx) {
+        val currentRenderer = renderer ?: return@LaunchedEffect
+        bitmap = runCatching {
+            renderMutex.withLock {
+                withContext(Dispatchers.IO) {
+                    val page = currentRenderer.openPage(pageIndex)
+                    try {
+                        val widthLimit = targetWidthPx.coerceAtLeast(1)
+                        val scale = min(
+                            min(widthLimit.toFloat() / page.width, 2f),
+                            2200f / page.height
+                        )
+                        val targetWidth = (page.width * scale).roundToInt().coerceAtLeast(1)
+                        val targetHeight = (page.height * scale).roundToInt().coerceAtLeast(1)
+                        Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888).also {
+                            it.eraseColor(android.graphics.Color.WHITE)
+                            page.render(it, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                        }
+                    } finally {
+                        page.close()
+                    }
+                }
+            }
+        }.getOrNull()
+    }
+
+    DisposableEffect(bitmap) {
+        onDispose { bitmap?.takeIf { !it.isRecycled }?.recycle() }
+    }
+
+    bitmap?.let { pageBitmap ->
+        Image(
+            bitmap = pageBitmap.asImageBitmap(),
+            contentDescription = "Página ${pageIndex + 1}",
+            modifier = Modifier.fillMaxWidth().clipToBounds(),
+            contentScale = ContentScale.FillWidth
+        )
+    } ?: Box(
+        modifier = Modifier.fillMaxWidth().height(220.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
     }
 }
 
