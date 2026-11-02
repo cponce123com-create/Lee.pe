@@ -59,7 +59,7 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Mantener la pantalla activa durante la lectura, con preferencia por libro.
 - [x] Navegar por gesto, tabla de contenidos y porcentaje.
 - [x] Añadir tabla de contenidos navegable.
-- [ ] Añadir control para ir a una ubicación exacta dentro del EPUB.
+- [x] Permitir ingresar un porcentaje exacto para saltar a una ubicación EPUB; la paginación numérica fija queda sujeta a la configuración de pantalla y letra.
 - [x] Guardar y restaurar la ubicación Readium junto al progreso.
 - [x] Añadir apariencia EPUB con temas claro, sepia, oscuro y OLED, tamaño y familia de letra; guardar los ajustes por libro.
 - [x] Añadir interlineado, márgenes laterales, alineación, brillo del lector y preferencia de paginación; guardar ajustes por libro.
