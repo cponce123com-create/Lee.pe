@@ -1049,7 +1049,10 @@ private fun ReaderChrome(
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         items(searchResults) { locator ->
-                            val excerpt = locator.text.highlight.ifBlank { "Coincidencia en el texto" }
+                            val excerpt = listOfNotNull(locator.text.before, locator.text.highlight, locator.text.after)
+                                .filter(String::isNotBlank)
+                                .joinToString(" ")
+                                .ifBlank { "Coincidencia en el texto" }
                             val percent = locator.locations.totalProgression
                                 ?.let { "${(it.coerceIn(0.0, 1.0) * 100).toInt()}%" }
                             Surface(
