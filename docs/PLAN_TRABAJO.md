@@ -88,14 +88,14 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Ofrecer desplazamiento continuo entre páginas con renderizado diferido de las páginas visibles.
 - [x] Guardar y administrar marcadores y notas vinculadas al número de página del PDF.
 - [x] En API 35+, seleccionar una palabra tocándola para copiarla, crear una nota o resaltarla; restaurar el resaltado al volver a la página.
-- Añadir búsqueda PDF en documentos que contengan texto seleccionable.
-- Identificar PDF escaneados y explicar que necesitan OCR para buscar o narrar.
+- [x] Añadir búsqueda PDF local en documentos con texto seleccionable (Android 15 / API 35+), con resultados por página, salto y resaltado temporal.
+- [x] Si no hay texto seleccionable, explicar que el PDF podría estar escaneado y requerir OCR para buscar.
 
 **Se considera lista cuando**
 - [x] Abre PDFs locales sin conexión y permite navegar por número de página.
 - [x] El zoom opera sobre la página actual, sin cargar el documento completo en memoria.
 - [x] El desplazamiento continuo renderiza páginas visibles bajo demanda, sin cargar el documento completo.
-- La app distingue búsqueda disponible de documentos escaneados sin OCR.
+- [x] La app distingue búsqueda disponible de documentos escaneados sin OCR; en API menor que 35 informa la limitación.
 
 ### Fase 4 — Marcadores, subrayado y notas
 
@@ -226,5 +226,6 @@ Antes de implementar cada etapa, revisar la documentación del motor y probar la
 - [x] Buscar palabras o frases en el contenido EPUB con el servicio de búsqueda de Readium.
 - [x] Mostrar coincidencias en una lista paginada internamente, limitar la vista a 100 resultados y cerrar el iterador para liberar recursos.
 - [x] Saltar desde una coincidencia a su ubicación dentro del lector.
-- La búsqueda en PDF se mantiene pendiente; la disponibilidad depende de la extracción de texto del documento y no aplica a PDF escaneados sin OCR.
+- [x] Búsqueda secuencial cancelable con resultados limitados a 100, sin cargar páginas completas ni requerir conexión.
+- [ ] Validar búsqueda, acentos, documentos extensos, cancelación, resaltado y PDFs escaneados en un dispositivo Android 15+; confirmar el mensaje en Android anterior.
 - [ ] Validar coincidencias, acentos, EPUB largos, modo offline y salto al resultado en un teléfono Android.
