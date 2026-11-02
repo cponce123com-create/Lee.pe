@@ -263,7 +263,16 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                                 detectTransformGestures { _, pan, zoomChange, _ ->
                                     val nextScale = (zoomScale * zoomChange).coerceIn(1f, 3f)
                                     zoomScale = nextScale
-                                    panOffset = if (nextScale == 1f) Offset.Zero else panOffset + pan
+                                    if (nextScale == 1f) {
+                                        panOffset = Offset.Zero
+                                    } else {
+                                        val maxX = size.width * (nextScale - 1f) / 2f
+                                        val maxY = size.height * (nextScale - 1f) / 2f
+                                        panOffset = Offset(
+                                            (panOffset.x + pan.x).coerceIn(-maxX, maxX),
+                                            (panOffset.y + pan.y).coerceIn(-maxY, maxY)
+                                        )
+                                    }
                                 }
                             }
                             .graphicsLayer {
@@ -309,7 +318,7 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                         IconButton(
                             onClick = {
                                 zoomScale = (zoomScale - 0.25f).coerceAtLeast(1f)
-                                if (zoomScale == 1f) panOffset = Offset.Zero
+                                panOffset = Offset.Zero
                             },
                             enabled = zoomScale > 1f
                         ) {
@@ -322,7 +331,10 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                             Text("${(zoomScale * 100).toInt()}% · Restablecer", color = Color.White)
                         }
                         IconButton(
-                            onClick = { zoomScale = (zoomScale + 0.25f).coerceAtMost(3f) },
+                            onClick = {
+                                zoomScale = (zoomScale + 0.25f).coerceAtMost(3f)
+                                panOffset = Offset.Zero
+                            },
                             enabled = zoomScale < 3f
                         ) {
                             Icon(Icons.Default.ZoomIn, contentDescription = "Ampliar zoom", tint = Color.White)
