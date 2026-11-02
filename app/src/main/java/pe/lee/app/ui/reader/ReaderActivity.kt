@@ -3,6 +3,9 @@ package pe.lee.app.ui.reader
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
+import android.view.ActionMode
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.FrameLayout
 import androidx.activity.compose.setContent
@@ -80,11 +83,13 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import pe.lee.app.data.local.LeeDatabase
 import pe.lee.app.data.local.ReadingAnnotationEntity
+import org.readium.r2.navigator.Decoration
 import org.readium.r2.navigator.epub.EpubNavigatorFactory
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.EpubPreferences
 import org.readium.r2.navigator.epub.EpubPreferencesSerializer
 import org.readium.r2.navigator.input.InputListener
+import org.readium.r2.navigator.util.BaseActionModeCallback
 import org.readium.r2.navigator.input.TapEvent
 import org.readium.r2.navigator.preferences.Color as ReadiumColor
 import org.readium.r2.navigator.preferences.FontFamily as ReadiumFontFamily
@@ -261,10 +266,42 @@ private fun EpubReaderScreen(
                 )
             }
 
+            val selectionActionCallback = object : BaseActionModeCallback() {
+                override fun onCreateActionMode(mode: ActionMode, menu: Menu): Boolean {
+                    menu.add(Menu.NONE, MENU_HIGHLIGHT, Menu.NONE, "Resaltar")
+                    return true
+                }
+
+                override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
+                    if (item.itemId != MENU_HIGHLIGHT) return false
+                    coroutineScope.launch {
+                        val selectedLocator = navigator?.currentSelection()?.locator
+                        if (selectedLocator != null) {
+                            val now = System.currentTimeMillis()
+                            annotationDao.upsert(
+                                ReadingAnnotationEntity(
+                                    id = UUID.randomUUID().toString(),
+                                    bookUri = uri.toString(),
+                                    kind = "HIGHLIGHT",
+                                    locatorJson = selectedLocator.toJSON().toString(),
+                                    selectedText = selectedLocator.text.highlight,
+                                    colorArgb = DEFAULT_HIGHLIGHT_COLOR,
+                                    createdAt = now
+                                )
+                            )
+                        }
+                        mode.finish()
+                    }
+                    return true
+                }
+            }
             val factory = EpubNavigatorFactory(opened)
             activity.supportFragmentManager.fragmentFactory = factory.createFragmentFactory(
                 initialLocator = initialLocator,
-                initialPreferences = epubPreferences
+                initialPreferences = epubPreferences,
+                configuration = EpubNavigatorFragment.Configuration(
+                    selectionActionModeCallback = selectionActionCallback
+                )
             )
             activity.supportFragmentManager.commitNow {
                 setReorderingAllowed(true)
@@ -289,6 +326,25 @@ private fun EpubReaderScreen(
             errorMessage = error.message ?: "No se pudo abrir este EPUB."
             loading = false
         }
+    }
+
+    LaunchedEffect(annotations, navigator) {
+        val reader = navigator ?: return@LaunchedEffect
+        val highlights = annotations
+            .filter { it.kind == "HIGHLIGHT" }
+            .mapNotNull { annotation ->
+                val locator = runCatching {
+                    Locator.fromJSON(JSONObject(annotation.locatorJson))
+                }.getOrNull() ?: return@mapNotNull null
+                Decoration(
+                    id = annotation.id,
+                    locator = locator,
+                    style = Decoration.Style.Highlight(
+                        tint = annotation.colorArgb ?: DEFAULT_HIGHLIGHT_COLOR
+                    )
+                )
+            }
+        reader.applyDecorations(highlights, ANNOTATION_DECORATION_GROUP)
     }
 
     LaunchedEffect(navigator) {
@@ -519,7 +575,11 @@ private fun ReaderChrome(
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
-                                    if (annotation.kind == "NOTE") "Nota · abrir posición" else "Abrir esta posición",
+                                    when (annotation.kind) {
+                                        "NOTE" -> "Nota · abrir posición"
+                                        "HIGHLIGHT" -> "Resaltado · abrir texto"
+                                        else -> "Marcador · abrir posición"
+                                    },
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 12.sp
                                 )
@@ -963,6 +1023,9 @@ private fun selectedReaderTheme(preferences: EpubPreferences): String = when {
 
 private const val PREFS_NAME = "lee_pe_library"
 private const val NAVIGATOR_TAG = "lee_pe_epub_navigator"
+private const val MENU_HIGHLIGHT = 1
+private const val ANNOTATION_DECORATION_GROUP = "lee_pe_annotations"
+private const val DEFAULT_HIGHLIGHT_COLOR = 0xFFFFD54F.toInt()
 
 private data class TocEntry(
     val title: String,
