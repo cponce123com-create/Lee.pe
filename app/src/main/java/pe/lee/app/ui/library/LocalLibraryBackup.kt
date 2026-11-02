@@ -90,6 +90,8 @@ internal object LocalLibraryBackup {
         if (bytes.size > MAX_ARCHIVE_BYTES) {
             throw IOException("El respaldo supera 16 MB. Exporta las anotaciones por libro.")
         }
+        // Never write an archive that our own importer cannot read.
+        parse(bytes.toString(Charsets.UTF_8))
         val output = context.contentResolver.openOutputStream(uri, "wt")
             ?: throw IOException("No se pudo abrir el destino del respaldo.")
         output.use { it.write(bytes) }
