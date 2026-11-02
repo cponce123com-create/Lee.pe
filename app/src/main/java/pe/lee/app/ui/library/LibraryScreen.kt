@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Search
 import pe.lee.app.ui.reader.PdfReaderActivity
 import pe.lee.app.ui.reader.ReaderActivity
+import pe.lee.app.ui.audio.AudioPlayerActivity
 import pe.lee.app.data.local.BookDao
 import pe.lee.app.data.local.BookEntity
 import pe.lee.app.data.local.LeeDatabase
@@ -419,7 +420,11 @@ private fun formatFromFileName(fileName: String): String? {
 
 private fun openBook(context: Context, book: LocalBook) {
     if (book.format == "Audio") {
-        Toast.makeText(context, "El reproductor de audiolibros sigue en desarrollo", Toast.LENGTH_SHORT).show()
+        context.startActivity(
+            Intent(context, AudioPlayerActivity::class.java)
+                .setData(book.uri)
+                .putExtra(AudioPlayerActivity.EXTRA_TITLE, book.title)
+        )
         return
     }
     val activity = if (book.format == "PDF") PdfReaderActivity::class.java else ReaderActivity::class.java
