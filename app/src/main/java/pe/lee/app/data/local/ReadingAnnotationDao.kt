@@ -11,6 +11,9 @@ interface ReadingAnnotationDao {
     @Query("SELECT * FROM reading_annotations WHERE bookUri = :bookUri ORDER BY createdAt DESC")
     fun observeByBook(bookUri: String): Flow<List<ReadingAnnotationEntity>>
 
+    @Query("SELECT * FROM reading_annotations WHERE bookUri = :bookUri ORDER BY createdAt ASC")
+    suspend fun getByBook(bookUri: String): List<ReadingAnnotationEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(annotation: ReadingAnnotationEntity)
 
