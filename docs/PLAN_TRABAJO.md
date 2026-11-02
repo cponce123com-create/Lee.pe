@@ -52,10 +52,11 @@ Estado actual: biblioteca local prototipo con importación SAF, lector EPUB con 
 **Trabajo**
 - [x] Integrar Readium y abrir EPUB compatibles en una vista de página completa.
 - [x] Guardar/restaurar el locator Readium por URI de documento y saltar por porcentaje.
-- [ ] Integrar navegación precisa por índice y capítulo, además de la navegación por gesto.
+- [x] Integrar navegación por gesto y tabla de contenidos con salto a capítulo.
 - Crear la pantalla de lectura inmersiva: página completa, barras superior e inferior ocultables y modo de desplazamiento configurable.
-- Navegar por gesto, capítulo, tabla de contenidos, porcentaje y ubicación.
-- Añadir selector de capítulo y control para ir a una posición exacta.
+- [x] Navegar por gesto, tabla de contenidos y porcentaje.
+- [x] Añadir tabla de contenidos navegable.
+- [ ] Añadir control para ir a una ubicación exacta dentro del EPUB.
 - Guardar y restaurar la ubicación Readium junto al progreso.
 - Configurar tamaño y familia de letra, interlineado, márgenes, alineación, temas claro/sepia/oscuro/negro y brillo.
 - Añadir orientación, mantener pantalla activa y zona de toque ajustable.
