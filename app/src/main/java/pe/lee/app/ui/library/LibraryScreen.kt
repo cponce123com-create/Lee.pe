@@ -50,6 +50,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -101,6 +102,8 @@ fun LibraryScreen() {
     var query by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("Todos") }
     var pendingRemoval by remember { mutableStateOf<LocalBook?>(null) }
+    var editingBook by remember { mutableStateOf<LocalBook?>(null) }
+    var titleDraft by remember { mutableStateOf("") }
     var sortMenuExpanded by remember { mutableStateOf(false) }
     var sortMode by remember { mutableStateOf("Título A–Z") }
 
@@ -174,6 +177,41 @@ fun LibraryScreen() {
             },
             dismissButton = {
                 TextButton(onClick = { pendingRemoval = null }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    editingBook?.let { book ->
+        AlertDialog(
+            onDismissRequest = { editingBook = null },
+            title = { Text("Editar título") },
+            text = {
+                OutlinedTextField(
+                    value = titleDraft,
+                    onValueChange = { titleDraft = it },
+                    label = { Text("Título del libro") },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = titleDraft.isNotBlank(),
+                    onClick = {
+                        coroutineScope.launch {
+                            runCatching { dao.updateTitle(book.uri.toString(), titleDraft.trim()) }
+                                .onSuccess {
+                                    editingBook = null
+                                    Toast.makeText(context, "Título actualizado", Toast.LENGTH_SHORT).show()
+                                }
+                                .onFailure {
+                                    Toast.makeText(context, "No se pudo actualizar el título", Toast.LENGTH_LONG).show()
+                                }
+                        }
+                    }
+                ) { Text("Guardar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { editingBook = null }) { Text("Cancelar") }
             }
         )
     }
@@ -368,6 +406,10 @@ fun LibraryScreen() {
                                 coroutineScope.launch {
                                     dao.updateFavorite(book.uri.toString(), !book.isFavorite)
                                 }
+                            },
+                            onEditTitle = {
+                                editingBook = book
+                                titleDraft = book.title
                             }
                         )
                     }
@@ -441,7 +483,8 @@ private fun BookCard(
     modifier: Modifier = Modifier,
     onOpen: () -> Unit,
     onRemove: () -> Unit,
-    onToggleFavorite: () -> Unit
+    onToggleFavorite: () -> Unit,
+    onEditTitle: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     val (icon, colors) = when (book.format) {
@@ -485,6 +528,13 @@ private fun BookCard(
                             onClick = {
                                 menuExpanded = false
                                 onToggleFavorite()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Editar título") },
+                            onClick = {
+                                menuExpanded = false
+                                onEditTitle()
                             }
                         )
                         DropdownMenuItem(
