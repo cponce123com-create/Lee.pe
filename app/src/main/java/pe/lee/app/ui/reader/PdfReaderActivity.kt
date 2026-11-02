@@ -412,7 +412,8 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                                 renderer = handle?.renderer,
                                 renderMutex = renderMutex,
                                 pageIndex = pageNumber,
-                                targetWidthPx = availableWidth.coerceAtLeast(1).coerceAtMost(1600)
+                                targetWidthPx = availableWidth.coerceAtLeast(1).coerceAtMost(1600),
+                                highlights = pdfHighlightOverlays(annotations, pageNumber)
                             )
                         }
                     }
@@ -968,7 +969,8 @@ private fun PdfContinuousPage(
     renderer: PdfRenderer?,
     renderMutex: Mutex,
     pageIndex: Int,
-    targetWidthPx: Int
+    targetWidthPx: Int,
+    highlights: List<PdfHighlightOverlay>
 ) {
     var bitmap by remember(renderer, pageIndex, targetWidthPx) { mutableStateOf<Bitmap?>(null) }
     var renderFailed by remember(renderer, pageIndex, targetWidthPx) { mutableStateOf(false) }
@@ -1009,12 +1011,32 @@ private fun PdfContinuousPage(
     }
 
     bitmap?.let { pageBitmap ->
-        Image(
-            bitmap = pageBitmap.asImageBitmap(),
-            contentDescription = "Página ${pageIndex + 1}",
-            modifier = Modifier.fillMaxWidth().clipToBounds(),
-            contentScale = ContentScale.FillWidth
-        )
+        Box(modifier = Modifier.fillMaxWidth().clipToBounds()) {
+            Image(
+                bitmap = pageBitmap.asImageBitmap(),
+                contentDescription = "Página ${pageIndex + 1}",
+                modifier = Modifier.fillMaxWidth(),
+                contentScale = ContentScale.FillWidth
+            )
+            if (highlights.isNotEmpty()) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    highlights.forEach { highlight ->
+                        val rect = highlight.rect
+                        drawRect(
+                            color = Color(highlight.colorArgb).copy(alpha = 0.40f),
+                            topLeft = Offset(
+                                rect.left * size.width,
+                                rect.top * size.height
+                            ),
+                            size = Size(
+                                (rect.right - rect.left) * size.width,
+                                (rect.bottom - rect.top) * size.height
+                            )
+                        )
+                    }
+                }
+            }
+        }
     } ?: Box(
         modifier = Modifier.fillMaxWidth().height(220.dp),
         contentAlignment = Alignment.Center
