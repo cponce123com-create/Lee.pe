@@ -1,39 +1,39 @@
-# LumenReader Android
+# Lee.pe para Android
 
-Aplicación Android nativa para leer y escuchar libros desde el dispositivo. El nombre del repositorio es **Lee.pe** y la aplicación se presenta como **LumenReader**.
+**Lee.pe** será un lector nativo de libros para Android, diseñado para leer en una página completa, escuchar contenido y continuar sin conexión.
 
-## Dirección del producto
+## Objetivo
 
-La lectura debe funcionar sin conexión: los archivos se eligen desde el teléfono y permanecen bajo el control del usuario. Los servicios en la nube se agregarán después, de forma opcional, para sincronizar progreso y respaldos.
+Construir una biblioteca personal que importe libros del dispositivo y ofrezca una experiencia de lectura amplia, cómoda y configurable. La app funcionará localmente primero; la sincronización con Escribiendo será opcional y posterior.
 
-## Stack previsto
+## Tecnologías
 
-- Kotlin y Jetpack Compose para la aplicación nativa.
-- Readium Kotlin Toolkit para la publicación y navegación EPUB.
-- Android Storage Access Framework para seleccionar archivos sin pedir acceso general al almacenamiento.
-- Room para biblioteca, progreso, marcadores y anotaciones estructuradas.
-- Android TextToSpeech para narración EPUB.
-- Media3 para audiolibros.
-- Integración futura con Escribiendo mediante API, cuando la base local esté consolidada.
+- Kotlin y Jetpack Compose para la app Android.
+- Readium Kotlin Toolkit para navegación de publicaciones EPUB.
+- Android Storage Access Framework para importar archivos sin acceso general al almacenamiento.
+- Room para la biblioteca, progreso, notas y marcadores estructurados.
+- Android TextToSpeech para narración y Media3 para audiolibros.
+- Render y Neon solo para API y sincronización opcional; Cloudinary para portadas u otros recursos, nunca para subir libros automáticamente.
 
-## Estado inicial
+## Estado actual
 
-La primera entrega prepara el proyecto Android y la biblioteca local. Las siguientes etapas completarán el lector EPUB con página completa, el visor PDF, el audio, las anotaciones y la sincronización. La interfaz no debe presentar funciones como disponibles antes de que estén implementadas.
+El repositorio contiene la configuración inicial de Android, un tema visual oscuro y una biblioteca prototipo que importa archivos y guarda sus URI localmente. Todavía no abre ni renderiza EPUB, PDF o audio. La implementación se organizará según el [Plan de trabajo](docs/PLAN_TRABAJO.md).
 
 ## Abrir el proyecto
 
 1. Clona este repositorio.
-2. Ábrelo en una versión reciente de Android Studio que admita Android Gradle Plugin 9.3.
-3. Instala Android SDK Platform 37 y acepta la sincronización de Gradle.
+2. Ábrelo en una versión reciente de Android Studio compatible con Android Gradle Plugin 9.3.
+3. Instala Android SDK Platform 37 y sincroniza Gradle.
 4. Ejecuta la configuración `app` en un emulador o dispositivo Android.
 
-## Decisiones de arquitectura
+## Principios
 
-- El contenido de los libros no se sube automáticamente a Render, Neon ni Cloudinary.
-- Los documentos importados se abren mediante el selector del sistema y conservan permisos locales.
-- La sincronización será opcional y enviará solo los datos necesarios (por ejemplo, posición y anotaciones).
-- El lector EPUB y el lector PDF se encapsularán detrás de interfaces de dominio para permitir evolucionar motores sin acoplar toda la app.
+- La lectura y la biblioteca deben seguir disponibles sin internet.
+- No se carga el contenido de los libros al servidor.
+- La ubicación de lectura se guarda como una referencia estructural además del porcentaje, para que sobreviva a cambios de tamaño de letra.
+- Las pantallas solo mostrarán funciones que ya estén implementadas.
+- La app Lee.pe y la sección Lector de Escribiendo serán productos conectados por una API; no serán dos lectores independientes con formatos de datos incompatibles.
 
-## Licencias y atribución
+## Licencias
 
-Readium Kotlin Toolkit se distribuye bajo BSD-3-Clause. Consulta sus avisos de licencia antes de distribuir una compilación que lo incluya.
+Readium Kotlin Toolkit se distribuye bajo BSD-3-Clause. Conserva sus avisos de licencia al distribuir la aplicación.
