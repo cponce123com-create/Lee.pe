@@ -8,6 +8,7 @@ readium = "3.4.0"
 room = "3.0.3"
 ksp = "2.3.10"
 desugarJdkLibs = "2.1.5"
+media3 = "1.11.1"
 
 [libraries]
 room3-runtime = { group = "androidx.room3", name = "room3-runtime", version.ref = "room" }
@@ -23,6 +24,7 @@ readium-shared = { group = "org.readium.kotlin-toolkit", name = "readium-shared"
 readium-streamer = { group = "org.readium.kotlin-toolkit", name = "readium-streamer", version.ref = "readium" }
 readium-navigator = { group = "org.readium.kotlin-toolkit", name = "readium-navigator", version.ref = "readium" }
 desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugarJdkLibs" }
+media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "media3" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
