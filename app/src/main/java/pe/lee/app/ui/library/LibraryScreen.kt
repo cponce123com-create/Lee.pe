@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +32,7 @@ import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Search
+import pe.lee.app.ui.reader.ReaderActivity
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -56,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 private const val PREFS_NAME = "lee_pe_library"
+private val SUPPORTED_AUDIO_EXTENSIONS = setOf("mp3", "m4a", "m4b", "aac", "ogg", "wav", "flac")
 private const val KEY_DOCUMENT_URIS = "document_uris"
 
 private data class LocalBook(
@@ -90,6 +93,11 @@ fun LibraryScreen() {
                 // Some document providers do not offer persistable grants.
             }
 
+            val fileName = queryDisplayName(context, uri)
+            if (formatFromFileName(fileName) == null) {
+                Toast.makeText(context, "Formato no compatible todavía", Toast.LENGTH_LONG).show()
+                return@rememberLauncherForActivityResult
+            }
             val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val savedUris = preferences.getStringSet(KEY_DOCUMENT_URIS, emptySet())
                 .orEmpty()
@@ -97,7 +105,7 @@ fun LibraryScreen() {
             savedUris.add(uri.toString())
             preferences.edit().putStringSet(KEY_DOCUMENT_URIS, savedUris).apply()
             reloadLibrary()
-            Toast.makeText(context, "Libro añadido a tu biblioteca local", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Añadido a tu biblioteca local", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -224,7 +232,7 @@ fun LibraryScreen() {
                     )
                 }
                 Button(
-                    onClick = { documentPicker.launch(arrayOf("*/*")) },
+                    onClick = { documentPicker.launch(arrayOf("application/epub+zip", "application/pdf", "audio/*")) },
                     shape = RoundedCornerShape(14.dp),
                     contentPadding = ButtonDefaults.ContentPadding
                 ) {
@@ -239,7 +247,7 @@ fun LibraryScreen() {
             item {
                 EmptyLibraryCard(
                     hasBooks = books.isNotEmpty(),
-                    onImport = { documentPicker.launch(arrayOf("*/*")) }
+                    onImport = { documentPicker.launch(arrayOf("application/epub+zip", "application/pdf", "audio/*")) }
                 )
             }
         } else {
@@ -249,7 +257,11 @@ fun LibraryScreen() {
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     rowBooks.forEach { book ->
-                        BookCard(book = book, modifier = Modifier.weight(1f))
+                        BookCard(
+                            book = book,
+                            modifier = Modifier.weight(1f),
+                            onOpen = { openBook(context, book) }
+                        )
                     }
                     if (rowBooks.size == 1) Spacer(Modifier.weight(1f))
                 }
@@ -316,7 +328,7 @@ private fun EmptyLibraryCard(hasBooks: Boolean, onImport: () -> Unit) {
 }
 
 @Composable
-private fun BookCard(book: LocalBook, modifier: Modifier = Modifier) {
+private fun BookCard(book: LocalBook, modifier: Modifier = Modifier, onOpen: () -> Unit) {
     val (icon, colors) = when (book.format) {
         "PDF" -> Icons.Default.PictureAsPdf to listOf(Color(0xFF5C2A70), Color(0xFF1F4C70))
         "Audio" -> Icons.Default.Headphones to listOf(Color(0xFF145D67), Color(0xFF26396F))
@@ -324,7 +336,7 @@ private fun BookCard(book: LocalBook, modifier: Modifier = Modifier) {
     }
 
     Card(
-        modifier = modifier,
+        modifier = modifier.clickable(onClick = onOpen),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
@@ -365,25 +377,45 @@ private fun BookCard(book: LocalBook, modifier: Modifier = Modifier) {
     }
 }
 
+private fun queryDisplayName(context: Context, uri: Uri): String =
+    runCatching {
+        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            val nameColumn = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (cursor.moveToFirst() && nameColumn >= 0) cursor.getString(nameColumn) else null
+        }
+    }.getOrNull() ?: uri.lastPathSegment ?: "Libro importado"
+
+private fun formatFromFileName(fileName: String): String? {
+    val extension = fileName.substringAfterLast('.', "").lowercase()
+    return when {
+        extension == "epub" -> "EPUB"
+        extension == "pdf" -> "PDF"
+        extension in SUPPORTED_AUDIO_EXTENSIONS -> "Audio"
+        else -> null
+    }
+}
+
+private fun openBook(context: Context, book: LocalBook) {
+    if (book.format != "EPUB") {
+        Toast.makeText(context, "El visor ${book.format} se incorporará en la siguiente etapa", Toast.LENGTH_SHORT).show()
+        return
+    }
+    context.startActivity(
+        Intent(context, ReaderActivity::class.java)
+            .setData(book.uri)
+            .putExtra(ReaderActivity.EXTRA_TITLE, book.title)
+    )
+}
+
 private fun loadBooks(context: Context): List<LocalBook> {
     val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     return preferences.getStringSet(KEY_DOCUMENT_URIS, emptySet())
         .orEmpty()
         .mapNotNull { rawUri ->
             val uri = runCatching { Uri.parse(rawUri) }.getOrNull() ?: return@mapNotNull null
-            val title = runCatching {
-                context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                    val nameColumn = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    if (cursor.moveToFirst() && nameColumn >= 0) cursor.getString(nameColumn) else null
-                }
-            }.getOrNull() ?: uri.lastPathSegment ?: "Libro importado"
-            val extension = title.substringAfterLast('.', "").lowercase()
-            val format = when {
-                extension == "pdf" -> "PDF"
-                extension in setOf("mp3", "m4a", "m4b", "aac", "ogg", "wav", "flac") -> "Audio"
-                else -> "EPUB"
-            }
-            LocalBook(uri = uri, title = title.substringBeforeLast('.', title), format = format)
+            val fileName = queryDisplayName(context, uri)
+            val format = formatFromFileName(fileName) ?: return@mapNotNull null
+            LocalBook(uri = uri, title = fileName.substringBeforeLast('.', fileName), format = format)
         }
         .sortedBy { it.title.lowercase() }
 }
