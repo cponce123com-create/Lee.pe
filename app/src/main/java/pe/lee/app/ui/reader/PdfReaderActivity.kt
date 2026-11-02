@@ -485,7 +485,7 @@ private fun PdfReaderScreen(uri: Uri, title: String, onBack: () -> Unit) {
                                     rotationDegrees = 0
                                     panOffset = Offset.Zero
                                 }) {
-                                    Text(if (selectionMode) "Cancelar selección" else "Seleccionar palabra")
+                                    Text(if (selectionMode) "Cancelar" else "Seleccionar")
                                 }
                             }
                         }
