@@ -485,6 +485,7 @@ private fun PdfReaderScreen(uri: Uri, documentUri: Uri, title: String, onBack: (
                     else -> "No se encontraron coincidencias."
                 }
             } catch (cancelled: CancellationException) {
+                pdfSearchMessage = "Búsqueda cancelada."
                 throw cancelled
             } catch (error: Exception) {
                 pdfSearchMessage = error.message?.let { "No se pudo buscar en el PDF: $it" }
