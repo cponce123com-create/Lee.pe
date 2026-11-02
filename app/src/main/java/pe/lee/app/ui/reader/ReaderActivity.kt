@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -39,6 +40,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -58,6 +60,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -402,6 +406,10 @@ private fun ReaderChrome(
 ) {
     var showContents by remember { mutableStateOf(false) }
     var showAppearance by remember { mutableStateOf(false) }
+    var showGoTo by remember { mutableStateOf(false) }
+    var targetPercent by remember { mutableStateOf("") }
+    val targetProgress = targetPercent.replace(',', '.').toFloatOrNull()
+        ?.takeIf { it in 0f..100f }
 
     if (showAppearance) {
         ModalBottomSheet(onDismissRequest = { showAppearance = false }) {
@@ -414,6 +422,47 @@ private fun ReaderChrome(
                 onPreferencesChange = onPreferencesChange
             )
         }
+    }
+
+    if (showGoTo) {
+        AlertDialog(
+            onDismissRequest = { showGoTo = false },
+            title = { Text("Ir a una posición") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Indica el porcentaje del libro. La paginación EPUB puede cambiar con la letra y la pantalla."
+                    )
+                    OutlinedTextField(
+                        value = targetPercent,
+                        onValueChange = { input ->
+                            targetPercent = input.filter { it.isDigit() || it == '.' || it == ',' }
+                        },
+                        label = { Text("Progreso") },
+                        suffix = { Text("%") },
+                        singleLine = true,
+                        isError = targetProgress == null,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = targetProgress != null,
+                    onClick = {
+                        targetProgress?.let { value ->
+                            val normalized = value / 100f
+                            onProgressChange(normalized)
+                            onSeek(normalized)
+                            showGoTo = false
+                        }
+                    }
+                ) { Text("Ir") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showGoTo = false }) { Text("Cancelar") }
+            }
+        )
     }
 
     if (showContents) {
@@ -522,11 +571,18 @@ private fun ReaderChrome(
                     IconButton(onClick = onPrevious) {
                         Icon(Icons.Default.ChevronLeft, contentDescription = "Página anterior", tint = Color.White)
                     }
-                    Text(
-                        "${(progress * 100).toInt()}% del libro",
-                        color = Color(0xFFD3DCEC),
-                        fontSize = 12.sp
-                    )
+                    TextButton(
+                        onClick = {
+                            targetPercent = (progress * 100).toInt().toString()
+                            showGoTo = true
+                        }
+                    ) {
+                        Text(
+                            "Ir a ${(progress * 100).toInt()}%",
+                            color = Color(0xFFD3DCEC),
+                            fontSize = 12.sp
+                        )
+                    }
                     IconButton(onClick = onNext) {
                         Icon(Icons.Default.ChevronRight, contentDescription = "Página siguiente", tint = Color.White)
                     }
