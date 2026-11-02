@@ -53,6 +53,7 @@ import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -108,6 +109,7 @@ import org.readium.navigator.media.tts.android.AndroidTtsEngine
 import org.readium.navigator.media.tts.TtsNavigator
 import org.readium.navigator.media.tts.android.AndroidTtsPreferences
 import org.readium.r2.navigator.Decoration
+import org.readium.r2.navigator.VisualNavigator
 import org.readium.r2.navigator.epub.EpubNavigatorFactory
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.EpubPreferences
@@ -530,7 +532,7 @@ private fun EpubReaderScreen(
                 return@launch
             }
             val speech = factory.createNavigator(
-                listener = object : AndroidTtsNavigator.Listener {
+                listener = object : TtsNavigator.Listener {
                     override fun onStopRequested() { binder.stop() }
                 },
                 initialLocator = (navigator as? VisualNavigator)?.firstVisibleElementLocator()
@@ -856,6 +858,8 @@ private fun TtsControls(
     }
 }
 
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
 private fun ReaderChrome(
     title: String,
     ttsIsActive: Boolean,
