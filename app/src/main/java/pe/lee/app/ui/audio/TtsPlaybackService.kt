@@ -43,6 +43,7 @@ class TtsPlaybackService : MediaSessionService() {
     ) {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
         var sleepTimerJob: Job? = null
+        val sleepTimerMinutes = MutableStateFlow(0)
     }
 
     inner class ReaderBinder : Binder() {
@@ -100,11 +101,16 @@ class TtsPlaybackService : MediaSessionService() {
 
         fun setSleepTimer(minutes: Int) {
             val activeSession = sessionState.value ?: return
+            val safeMinutes = minutes.coerceIn(0, 60)
             activeSession.sleepTimerJob?.cancel()
-            activeSession.sleepTimerJob = if (minutes > 0) {
+            activeSession.sleepTimerMinutes.value = safeMinutes
+            activeSession.sleepTimerJob = if (safeMinutes > 0) {
                 activeSession.scope.launch {
-                    delay(minutes * 60_000L)
-                    if (sessionState.value === activeSession) activeSession.navigator.pause()
+                    delay(safeMinutes * 60_000L)
+                    if (sessionState.value === activeSession) {
+                        activeSession.navigator.pause()
+                        activeSession.sleepTimerMinutes.value = 0
+                    }
                 }
             } else null
         }
@@ -113,6 +119,7 @@ class TtsPlaybackService : MediaSessionService() {
             val activeSession = sessionState.value ?: return
             sessionState.value = null
             activeSession.sleepTimerJob?.cancel()
+            activeSession.sleepTimerMinutes.value = 0
             activeSession.scope.cancel()
             activeSession.mediaSession.release()
             activeSession.navigator.close()
