@@ -44,5 +44,6 @@ dependencies {
     implementation(libs.readium.shared)
     implementation(libs.readium.streamer)
     implementation(libs.readium.navigator)
+    implementation(libs.media3.exoplayer)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 }
