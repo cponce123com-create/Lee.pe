@@ -39,8 +39,10 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Migrar automáticamente las URI guardadas por la versión anterior y evitar duplicados al importar.
 - Importar con el selector del sistema: EPUB, PDF y formatos de audio definidos para el MVP.
 - Leer título, autor y portada cuando el formato los proporcione; permitir corregir metadatos.
-- Añadir búsqueda, filtros, orden, recientes, favoritos, colecciones y quitar de biblioteca.
-- Manejar URI revocadas, archivos movidos, duplicados y documentos que no se pueden abrir.
+- [x] Buscar títulos, filtrar por formato y quitar libros de la biblioteca sin borrar el archivo original.
+- [x] Detectar URI duplicadas y mostrar un aviso cuando el archivo ya está agregado.
+- [x] Exigir permiso persistente antes de guardar una URI y conservar en la migración las referencias antiguas que no se puedan recuperar.
+- Añadir orden, recientes, favoritos, colecciones, edición de metadatos, portadas y recuperación asistida de URI revocadas.
 - Conservar el comportamiento sin conexión y no pedir acceso general a archivos.
 
 **Se considera lista cuando**
