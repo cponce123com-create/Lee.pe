@@ -547,7 +547,7 @@ private fun ReaderChrome(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Marcadores y notas", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text("Marcadores, notas y resaltados", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 Row {
                     TextButton(onClick = {
                         editingAnnotation = null
@@ -559,7 +559,7 @@ private fun ReaderChrome(
             }
             if (annotations.isEmpty()) {
                 Text(
-                    "Todavía no guardaste marcadores en este libro.",
+                    "Todavía no guardaste marcadores, notas ni resaltados en este libro.",
                     modifier = Modifier.padding(horizontal = 22.dp, vertical = 20.dp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
