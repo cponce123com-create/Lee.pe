@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmark
@@ -75,6 +76,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -83,11 +85,47 @@ import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 private const val PREFS_NAME = "lee_pe_library"
+private const val READING_STATS_PREFS_NAME = "lee_pe_reading_stats"
+private const val DEFAULT_DAILY_GOAL_MINUTES = 30
+private const val MIN_DAILY_GOAL_MINUTES = 5
+private const val MAX_DAILY_GOAL_MINUTES = 240
 private val SUPPORTED_AUDIO_EXTENSIONS = setOf("mp3", "m4a", "m4b", "aac", "ogg", "wav", "flac")
 private const val KEY_DOCUMENT_URIS = "document_uris"
 private const val KEY_LEGACY_MIGRATED = "room_library_migrated"
+
+private fun readingDayKey(timestampMillis: Long): String =
+    SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(timestampMillis))
+
+private fun calculateReadingStreak(dayKeys: List<String>, nowMillis: Long): Int {
+    val recordedDays = dayKeys.toSet()
+    val calendar = Calendar.getInstance().apply { timeInMillis = nowMillis }
+    if (readingDayKey(nowMillis) !in recordedDays) {
+        calendar.add(Calendar.DAY_OF_YEAR, -1)
+    }
+
+    var streak = 0
+    while (readingDayKey(calendar.timeInMillis) in recordedDays) {
+        streak++
+        calendar.add(Calendar.DAY_OF_YEAR, -1)
+    }
+    return streak
+}
+
+private fun formatReadingDuration(seconds: Long): String {
+    val totalMinutes = seconds / 60
+    if (seconds <= 0L) return "0 min"
+    if (totalMinutes == 0L) return "Menos de 1 min"
+    val hours = totalMinutes / 60
+    val minutes = totalMinutes % 60
+    return if (hours > 0) "${hours} h ${minutes} min" else "${minutes} min"
+}
+
 
 private data class LocalBook(
     val uri: Uri,
@@ -107,6 +145,10 @@ fun LibraryScreen() {
     val database = remember(context) { LeeDatabase.get(context) }
     val dao = remember(database) { database.bookDao() }
     val annotationDao = remember(database) { database.readingAnnotationDao() }
+    val readingSessionDao = remember(database) { database.readingSessionDao() }
+    val todayKey = readingDayKey(System.currentTimeMillis())
+    val todaySeconds by readingSessionDao.observeDurationForDay(todayKey).collectAsState(initial = 0L)
+    val readingDayKeys by readingSessionDao.observeReadingDayKeys().collectAsState(initial = emptyList())
     val storedBooks by dao.observeAll().collectAsState(initial = emptyList())
     var offlineCopyUris by remember { mutableStateOf<Map<String, Uri>>(emptyMap()) }
     var offlineRevision by remember { mutableIntStateOf(0) }
@@ -137,6 +179,16 @@ fun LibraryScreen() {
     var organizingBook by remember { mutableStateOf<LocalBook?>(null) }
     var collectionDraft by remember { mutableStateOf("") }
     var showLibraryStats by remember { mutableStateOf(false) }
+    var showGoalEditor by remember { mutableStateOf(false) }
+    var showResetStatsDialog by remember { mutableStateOf(false) }
+    var goalDraft by remember { mutableStateOf("") }
+    var dailyGoalMinutes by remember {
+        mutableIntStateOf(
+            context.getSharedPreferences(READING_STATS_PREFS_NAME, Context.MODE_PRIVATE)
+                .getInt("daily_goal_minutes", DEFAULT_DAILY_GOAL_MINUTES)
+                .coerceIn(MIN_DAILY_GOAL_MINUTES, MAX_DAILY_GOAL_MINUTES)
+        )
+    }
     var pendingRemoval by remember { mutableStateOf<LocalBook?>(null) }
     var editingBook by remember { mutableStateOf<LocalBook?>(null) }
     var titleDraft by remember { mutableStateOf("") }
@@ -232,8 +284,26 @@ fun LibraryScreen() {
                     LibraryStatisticRow("En curso", readingCount)
                     LibraryStatisticRow("Terminados", completedCount)
                     LibraryStatisticRow("Favoritos", favoriteCount)
+                    Text("Tiempo de lectura hoy: ${formatReadingDuration(todaySeconds)}")
+                    Text("Racha actual: ${calculateReadingStreak(readingDayKeys, System.currentTimeMillis())} días")
+                    Text("Meta diaria: $dailyGoalMinutes min")
+                    LinearProgressIndicator(
+                        progress = (todaySeconds.toFloat() / (dailyGoalMinutes * 60f)).coerceIn(0f, 1f),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        TextButton(onClick = {
+                            goalDraft = dailyGoalMinutes.toString()
+                            showLibraryStats = false
+                            showGoalEditor = true
+                        }) { Text("Cambiar meta") }
+                        TextButton(onClick = { showResetStatsDialog = true }) { Text("Reiniciar historial") }
+                    }
                     Text(
-                        "Resumen calculado en este dispositivo. El tiempo y las rachas de lectura se añadirán después.",
+                        "El tiempo se registra localmente mientras un lector EPUB o PDF está en primer plano. No incluye audiolibros reproducidos en segundo plano.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp
                     )
@@ -241,6 +311,69 @@ fun LibraryScreen() {
             },
             confirmButton = {
                 TextButton(onClick = { showLibraryStats = false }) { Text("Cerrar") }
+            }
+        )
+    }
+
+    if (showGoalEditor) {
+        AlertDialog(
+            onDismissRequest = {
+                showGoalEditor = false
+                showLibraryStats = true
+            },
+            title = { Text("Meta diaria de lectura") },
+            text = {
+                OutlinedTextField(
+                    value = goalDraft,
+                    onValueChange = { goalDraft = it.filter(Char::isDigit).take(3) },
+                    label = { Text("Minutos (5 a 240)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = goalDraft.toIntOrNull()?.let { it in MIN_DAILY_GOAL_MINUTES..MAX_DAILY_GOAL_MINUTES } == true,
+                    onClick = {
+                        val goal = goalDraft.toIntOrNull() ?: return@TextButton
+                        dailyGoalMinutes = goal
+                        context.getSharedPreferences(READING_STATS_PREFS_NAME, Context.MODE_PRIVATE)
+                            .edit().putInt("daily_goal_minutes", goal).apply()
+                        showGoalEditor = false
+                        showLibraryStats = true
+                    }
+                ) { Text("Guardar") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showGoalEditor = false
+                    showLibraryStats = true
+                }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    if (showResetStatsDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetStatsDialog = false },
+            title = { Text("Reiniciar tiempo de lectura") },
+            text = { Text("Se borrará el historial local de tiempo y rachas. La biblioteca, el progreso y las anotaciones se conservarán.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    coroutineScope.launch {
+                        runCatching { readingSessionDao.deleteAll() }
+                            .onSuccess {
+                                showResetStatsDialog = false
+                                Toast.makeText(context, "Historial de lectura reiniciado", Toast.LENGTH_SHORT).show()
+                            }
+                            .onFailure {
+                                Toast.makeText(context, "No se pudo reiniciar el historial", Toast.LENGTH_LONG).show()
+                            }
+                    }
+                }) { Text("Reiniciar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetStatsDialog = false }) { Text("Cancelar") }
             }
         )
     }

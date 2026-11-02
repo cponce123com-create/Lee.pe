@@ -142,7 +142,8 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 
 **Trabajo**
 - [x] Mostrar resumen local de biblioteca: libros, lecturas en curso, terminados y favoritos.
-- Registrar tiempo de lectura, velocidad, rachas y objetivos configurables.
+- [x] Registrar tiempo local de lectura en sesiones EPUB/PDF en primer plano, calcular rachas y permitir una meta diaria configurable y el reinicio del historial.
+- Registrar velocidad de lectura; todavía no se calcula desde palabras por minuto.
 - Añadir diccionario/traducción como función separada, con explicación sobre si requiere conexión.
 - Revisar TalkBack, contraste, tamaño de objetivos táctiles, escalado de letra y modo horizontal.
 - Mejorar portadas, estados vacíos, errores, carga y recuperación tras cierre inesperado.
@@ -151,7 +152,7 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 **Se considera lista cuando**
 - Las funciones principales son accesibles sin depender solo del color o de gestos.
 - Se puede recuperar la biblioteca y el progreso desde un respaldo local.
-- Las estadísticas se calculan desde datos locales y se pueden reiniciar.
+- [x] Las estadísticas de tiempo se calculan desde datos locales y se pueden reiniciar.
 
 ### Fase 7 — Sincronización opcional con Escribiendo
 
@@ -221,11 +222,22 @@ Antes de implementar cada etapa, revisar la documentación del motor y probar la
 - [ ] Validar en un teléfono con EPUB, PDF y audio de distintos proveedores SAF, incluida falta de espacio, URI revocada, cancelación y reapertura sin conexión.
 
 
+## Estadísticas locales de lectura — noviembre de 2026
+
+- [x] Registrar segundos activos en EPUB y PDF mientras la pantalla de lectura está en primer plano, con guardado periódico cada 30 segundos y al salir.
+- [x] Guardar el tiempo agregado por día y libro en Room con migración 2→3.
+- [x] Mostrar tiempo de hoy, racha actual y avance hacia una meta diaria configurable de 5 a 240 minutos (30 por defecto).
+- [x] Permitir reiniciar el historial de tiempo sin borrar libros, progreso ni anotaciones.
+- El registro es local y no incluye audiolibros que continúan reproduciéndose en segundo plano. La lectura TTS cuenta solo mientras la pantalla EPUB permanece en primer plano.
+- [ ] Validar migración desde una base v2 existente, checkpoint, pausa/reanudación, cruce de medianoche y reinicio en dispositivo.
+
+
+
 ## Búsqueda dentro de EPUB — noviembre de 2026
 
 - [x] Buscar palabras o frases en el contenido EPUB con el servicio de búsqueda de Readium.
 - [x] Mostrar coincidencias en una lista paginada internamente, limitar la vista a 100 resultados y cerrar el iterador para liberar recursos.
 - [x] Saltar desde una coincidencia a su ubicación dentro del lector.
 - [x] Búsqueda secuencial cancelable con resultados limitados a 100, sin cargar páginas completas ni requerir conexión.
-- [ ] Validar búsqueda, acentos, documentos extensos, cancelación, resaltado y PDFs escaneados en un dispositivo Android 15+; confirmar el mensaje en Android anterior.
-- [ ] Validar coincidencias, acentos, EPUB largos, modo offline y salto al resultado en un teléfono Android.
+- [ ] Validar búsqueda PDF, cancelación, resaltado y PDFs escaneados en Android 15+; confirmar el mensaje en Android anterior.
+- [ ] Validar búsqueda EPUB, acentos, documentos largos, modo offline y salto al resultado en un teléfono Android.

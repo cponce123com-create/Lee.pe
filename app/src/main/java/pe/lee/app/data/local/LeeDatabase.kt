@@ -9,13 +9,14 @@ import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
 @Database(
-    entities = [BookEntity::class, ReadingAnnotationEntity::class],
-    version = 2,
+    entities = [BookEntity::class, ReadingAnnotationEntity::class, ReadingSessionEntity::class],
+    version = 3,
     exportSchema = false
 )
 abstract class LeeDatabase : RoomDatabase() {
     abstract fun bookDao(): BookDao
     abstract fun readingAnnotationDao(): ReadingAnnotationDao
+    abstract fun readingSessionDao(): ReadingSessionDao
 
     companion object {
         private val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -43,6 +44,21 @@ abstract class LeeDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override suspend fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `reading_sessions` (
+                        `dayKey` TEXT NOT NULL,
+                        `bookUri` TEXT NOT NULL,
+                        `durationSeconds` INTEGER NOT NULL,
+                        PRIMARY KEY(`dayKey`, `bookUri`)
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
         @Volatile
         private var instance: LeeDatabase? = null
 
@@ -52,7 +68,7 @@ abstract class LeeDatabase : RoomDatabase() {
                     context.applicationContext,
                     "lee_pe_library.db"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                     .also { instance = it }
             }

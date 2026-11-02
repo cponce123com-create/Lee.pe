@@ -212,6 +212,8 @@ private fun pdfBitmapSize(
 }
 
 class PdfReaderActivity : ComponentActivity() {
+    private var readingSessionRecorder: ReadingSessionRecorder? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val uri = intent.data
@@ -219,6 +221,10 @@ class PdfReaderActivity : ComponentActivity() {
             finish()
             return
         }
+        readingSessionRecorder = ReadingSessionRecorder(
+            bookUri = uri.toString(),
+            dao = LeeDatabase.get(this).readingSessionDao()
+        )
         val documentUri = intent.getStringExtra(OfflineBookStore.EXTRA_COPY_URI)?.let(Uri::parse) ?: uri
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "Documento PDF"
         setContent {
@@ -226,6 +232,16 @@ class PdfReaderActivity : ComponentActivity() {
                 PdfReaderScreen(uri = uri, documentUri = documentUri, title = title, onBack = { finish() })
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        readingSessionRecorder?.onResume()
+    }
+
+    override fun onPause() {
+        readingSessionRecorder?.onPause()
+        super.onPause()
     }
 
     companion object {
