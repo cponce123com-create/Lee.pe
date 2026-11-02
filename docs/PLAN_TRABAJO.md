@@ -81,6 +81,7 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Ampliar y reducir el PDF con gestos y controles; desplazar la página ampliada y restablecer el zoom.
 - [x] Rotar la página PDF en incrementos de 90°.
 - [x] Ofrecer desplazamiento continuo entre páginas con renderizado diferido de las páginas visibles.
+- [x] Guardar y administrar marcadores y notas vinculadas al número de página del PDF.
 - Añadir búsqueda y selección de texto cuando el PDF incluya texto seleccionable.
 - Identificar PDF escaneados y explicar que necesitan OCR para buscar o narrar.
 
@@ -99,7 +100,8 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Seleccionar texto EPUB y ofrecer acciones para copiarlo o crear un resaltado.
 - [x] Guardar resaltados EPUB amarillos con locator y texto seleccionado en Room; volver a mostrarlos al abrir el libro.
 - [x] Cambiar el color de un resaltado EPUB entre amarillo, azul, verde y rosa; guardar el cambio localmente.
-- Añadir selección y anotaciones en PDF.
+- [x] Añadir notas y marcadores PDF anclados al número de página, con edición, eliminación y navegación de retorno.
+- Añadir selección de texto y resaltados visuales PDF cuando el motor lo permita.
 - Guardar anclas estables por locator/página, relacionarlas con libro y perfil, y permitir edición y eliminación.
 - Crear una vista de notas con filtros por libro, capítulo y color.
 - Exportar notas y citas a TXT/Markdown; definir límites de cita al compartir.
