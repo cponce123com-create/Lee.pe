@@ -48,8 +48,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import pe.lee.app.R
 
 @Composable
 internal fun LibraryStatisticRow(label: String, value: Int) {
@@ -91,20 +93,19 @@ internal fun EmptyLibraryCard(hasBooks: Boolean, onImport: () -> Unit) {
                 )
             }
             Text(
-                if (hasBooks) "No encontramos coincidencias" else "Tu próxima historia empieza aquí",
+                stringResource(if (hasBooks) R.string.library_no_matches else R.string.library_empty_welcome),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                if (hasBooks) "Prueba otro título o cambia el filtro."
-                else "Importa un EPUB, PDF o audiolibro desde tu dispositivo.",
+                stringResource(if (hasBooks) R.string.library_try_another_search else R.string.library_empty_import_prompt),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             if (!hasBooks) {
                 Button(onClick = onImport, shape = RoundedCornerShape(14.dp)) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Elegir archivos")
+                    Text(stringResource(R.string.library_choose_files))
                 }
             }
         }
@@ -133,7 +134,10 @@ internal fun BookCard(
     }
 
     Card(
-        modifier = modifier.clickable(onClickLabel = "Abrir ${book.title}", onClick = onOpen),
+        modifier = modifier.clickable(
+            onClickLabel = stringResource(R.string.accessibility_open_book, book.title),
+            onClick = onOpen
+        ),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
@@ -165,11 +169,11 @@ internal fun BookCard(
                     )
                     Text(
                         when {
-                            book.format == "Audio" -> "Audiolibro"
-                            book.readProgress >= 1f -> "Terminado"
-                            book.readProgress > 0f -> "${(book.readProgress * 100).toInt()}% leído"
-                            else -> "Por leer"
-                        } + " · ${book.format}",
+                            book.format == "Audio" -> stringResource(R.string.book_status_audiobook)
+                            book.readProgress >= 1f -> stringResource(R.string.book_status_finished)
+                            book.readProgress > 0f -> stringResource(R.string.book_progress_percent, (book.readProgress * 100).toInt())
+                            else -> stringResource(R.string.book_status_to_read)
+                        }.let { status -> stringResource(R.string.book_status_with_format, status, book.format) },
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp
                     )
@@ -220,7 +224,7 @@ internal fun BookCard(
                 if (book.isFavorite) {
                     Icon(
                         Icons.Default.Bookmark,
-                        contentDescription = "Favorito",
+                        contentDescription = stringResource(R.string.accessibility_favorite_book),
                         tint = Color(0xFFFFD54F),
                         modifier = Modifier.align(Alignment.TopStart).padding(10.dp)
                     )
@@ -263,10 +267,10 @@ internal fun BookCard(
                 )
             }
             val readingStatus = when {
-                book.format == "Audio" -> "Audiolibro"
-                book.readProgress >= 1f -> "Terminado"
-                book.readProgress > 0f -> "${(book.readProgress.coerceIn(0f, 1f) * 100).toInt()}% leído"
-                else -> "Sin empezar"
+                book.format == "Audio" -> stringResource(R.string.book_status_audiobook)
+                book.readProgress >= 1f -> stringResource(R.string.book_status_finished)
+                book.readProgress > 0f -> stringResource(R.string.book_progress_percent, (book.readProgress.coerceIn(0f, 1f) * 100).toInt())
+                else -> stringResource(R.string.book_status_not_started)
             }
             Text(
                 readingStatus,
@@ -276,7 +280,7 @@ internal fun BookCard(
             )
             if (book.offlineCopyUri != null) {
                 Text(
-                    "Disponible sin conexión",
+                    stringResource(R.string.book_available_offline),
                     color = MaterialTheme.colorScheme.secondary,
                     fontSize = 10.sp,
                     modifier = Modifier.padding(bottom = 3.dp)
@@ -304,14 +308,20 @@ private fun BookActions(
     var expanded by remember { mutableStateOf(false) }
     Box(modifier = modifier) {
                     IconButton(onClick = { expanded = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Opciones de ${book.title}", tint = iconTint)
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = stringResource(R.string.accessibility_book_options, book.title),
+                            tint = iconTint
+                        )
                     }
                     DropdownMenu(
                         expanded = expanded,
                         onDismissRequest = { expanded = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text(if (book.isFavorite) "Quitar de favoritos" else "Agregar a favoritos") },
+                            text = {
+                                Text(stringResource(if (book.isFavorite) R.string.book_remove_favorite else R.string.book_add_favorite))
+                            },
                             onClick = {
                                 expanded = false
                                 onToggleFavorite()
@@ -319,7 +329,15 @@ private fun BookActions(
                         )
                         DropdownMenuItem(
                             text = {
-                                Text(if (book.offlineCopyUri != null) "Quitar copia sin conexión" else if (savingBookUri == book.uri.toString()) "Guardando copia…" else "Guardar sin conexión")
+                                Text(
+                                    stringResource(
+                                        when {
+                                            book.offlineCopyUri != null -> R.string.book_remove_offline_copy
+                                            savingBookUri == book.uri.toString() -> R.string.book_saving_copy
+                                            else -> R.string.book_save_offline
+                                        }
+                                    )
+                                )
                             },
                             enabled = savingBookUri != book.uri.toString(),
                             onClick = {
@@ -328,28 +346,28 @@ private fun BookActions(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Exportar anotaciones a Markdown") },
+                            text = { Text(stringResource(R.string.book_export_annotations)) },
                             onClick = {
                                 expanded = false
                                 onExportAnnotations()
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Organizar en colección") },
+                            text = { Text(stringResource(R.string.book_organize_collection)) },
                             onClick = {
                                 expanded = false
                                 onOrganize()
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Editar título") },
+                            text = { Text(stringResource(R.string.library_edit_title)) },
                             onClick = {
                                 expanded = false
                                 onEditTitle()
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Quitar de la biblioteca") },
+                            text = { Text(stringResource(R.string.library_remove_title)) },
                             leadingIcon = { Icon(Icons.Default.DeleteOutline, contentDescription = null) },
                             onClick = {
                                 expanded = false

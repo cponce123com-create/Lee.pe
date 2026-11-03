@@ -14,9 +14,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import pe.lee.app.R
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
@@ -47,22 +50,20 @@ internal fun LibraryProcessDialogs(
     if (scannerBusy.value) {
         AlertDialog(
             onDismissRequest = {},
-            title = { Text("Buscando libros locales") },
+            title = { Text(stringResource(R.string.scanner_searching_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     CircularProgressIndicator()
                     Text(scannerFolderName, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(
-                        "Carpetas: ${scannerProgress.folders} · " +
-                            "Archivos examinados: ${scannerProgress.files} · " +
-                            "Libros encontrados: ${scannerProgress.books}"
-                    )
-                    Text("La búsqueda puede cancelarse. No se sube ningún archivo a internet.")
+                    Text(pluralStringResource(R.plurals.scanner_folders_count, scannerProgress.folders, scannerProgress.folders))
+                    Text(pluralStringResource(R.plurals.scanner_files_count, scannerProgress.files, scannerProgress.files))
+                    Text(pluralStringResource(R.plurals.scanner_books_count, scannerProgress.books, scannerProgress.books))
+                    Text(stringResource(R.string.scanner_privacy_notice))
                 }
             },
             confirmButton = {
                 TextButton(onClick = { scannerJob.value?.cancel(); scannerBusy.value = false }) {
-                    Text("Cancelar")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -71,26 +72,24 @@ internal fun LibraryProcessDialogs(
     scannerPreview.value?.let { preview ->
         AlertDialog(
             onDismissRequest = { if (!scannerImporting.value) scannerPreview.value = null },
-            title = { Text("Resultado del escáner") },
+            title = { Text(stringResource(R.string.scanner_result_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Nuevos libros: ${preview.books.size}")
-                    Text("Ya registrados: ${preview.duplicates}")
-                    Text("Archivos examinados: ${preview.visitedFiles}")
-                    Text("Carpetas examinadas: ${preview.visitedFolders}")
+                    Text(pluralStringResource(R.plurals.scanner_new_books_count, preview.books.size, preview.books.size))
+                    Text(pluralStringResource(R.plurals.scanner_duplicates_count, preview.duplicates, preview.duplicates))
+                    Text(pluralStringResource(R.plurals.scanner_visited_files_count, preview.visitedFiles, preview.visitedFiles))
+                    Text(pluralStringResource(R.plurals.scanner_visited_folders_count, preview.visitedFolders, preview.visitedFolders))
                     if (preview.skippedFolders > 0) {
-                        Text("Carpetas no accesibles u omitidas: ${preview.skippedFolders}")
+                        Text(pluralStringResource(R.plurals.scanner_skipped_folders_count, preview.skippedFolders, preview.skippedFolders))
                     }
                     if (preview.limitReached) {
                         Text(
-                            "Se alcanzó el límite de seguridad del escaneo. " +
-                                "Puedes repetirlo seleccionando una subcarpeta.",
+                            stringResource(R.string.scanner_limit_reached),
                             color = MaterialTheme.colorScheme.error
                         )
                     }
                     Text(
-                        "Se incorporarán referencias a tus archivos EPUB, PDF y audio. " +
-                            "Los archivos permanecerán en su carpeta original y no se copiarán ni subirán."
+                        stringResource(R.string.scanner_import_privacy_notice)
                     )
                 }
             },
@@ -113,7 +112,7 @@ internal fun LibraryProcessDialogs(
                                 viewModel.insertBooks(entries)
                                 Toast.makeText(
                                     context,
-                                    "Escáner: se incorporaron hasta ${entries.size} libros a la biblioteca.",
+                                    context.resources.getQuantityString(R.plurals.scanner_imported_books_toast, entries.size, entries.size),
                                     Toast.LENGTH_LONG
                                 ).show()
                                 scannerPreview.value = null
@@ -121,7 +120,7 @@ internal fun LibraryProcessDialogs(
                                 throw cancelled
                             } catch (error: Exception) {
                                 Toast.makeText(
-                                    context, error.message ?: "No se pudieron importar los libros.",
+                                    context, error.message ?: context.getString(R.string.scanner_import_failed),
                                     Toast.LENGTH_LONG
                                 ).show()
                             } finally {
@@ -129,13 +128,13 @@ internal fun LibraryProcessDialogs(
                             }
                         }
                     }
-                ) { Text(if (scannerImporting.value) "Importando…" else "Añadir a biblioteca") }
+                ) { Text(stringResource(if (scannerImporting.value) R.string.action_importing else R.string.scanner_add_to_library)) }
             },
             dismissButton = {
                 TextButton(
                     enabled = !scannerImporting.value,
                     onClick = { scannerPreview.value = null }
-                ) { Text("Cancelar") }
+                ) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
@@ -143,19 +142,16 @@ internal fun LibraryProcessDialogs(
     if (showBackupOptions.value) {
         AlertDialog(
             onDismissRequest = { if (!backupBusy.value) showBackupOptions.value = false },
-            title = { Text("Respaldo local de Lee.pe") },
+            title = { Text(stringResource(R.string.backup_local_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Exporta o recupera tu biblioteca, ubicaciones, notas, marcadores y estadísticas.")
+                    Text(stringResource(R.string.backup_description))
                     Text(
-                        "Los archivos EPUB, PDF y audio no se incluyen. En otro teléfono primero " +
-                            "importa los libros y después recupera los datos. Las coincidencias " +
-                            "por título pueden variar entre ediciones.",
+                        stringResource(R.string.backup_books_not_included),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        "El respaldo JSON contiene notas y datos de lectura sin cifrar. " +
-                            "Guárdalo en un lugar privado. Nunca se envía a Lee.pe.",
+                        stringResource(R.string.backup_privacy_notice),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -164,15 +160,15 @@ internal fun LibraryProcessDialogs(
                 TextButton(enabled = !backupBusy.value, onClick = {
                     showBackupOptions.value = false
                     onExportBackup()
-                }) { Text("Exportar") }
+                }) { Text(stringResource(R.string.backup_export)) }
             },
             dismissButton = {
                 Row {
                     TextButton(enabled = !backupBusy.value, onClick = {
                         showBackupOptions.value = false
                         onImportBackup()
-                    }) { Text("Restaurar") }
-                    TextButton(onClick = { showBackupOptions.value = false }) { Text("Cancelar") }
+                    }) { Text(stringResource(R.string.backup_restore)) }
+                    TextButton(onClick = { showBackupOptions.value = false }) { Text(stringResource(R.string.action_cancel)) }
                 }
             }
         )
@@ -181,19 +177,16 @@ internal fun LibraryProcessDialogs(
     backupPreview.value?.let { selected ->
         AlertDialog(
             onDismissRequest = { if (!backupBusy.value) backupPreview.value = null },
-            title = { Text("Confirmar restauración") },
+            title = { Text(stringResource(R.string.backup_confirm_restore_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Libros del respaldo: ${selected.archive.snapshot.books.size}")
-                    Text("Coincidencias exactas: ${selected.exactMatches}")
-                    Text("Por título y formato: ${selected.titleMatches}")
-                    Text("Sin un libro local correspondiente: ${selected.unavailable}")
-                    Text("Notas del respaldo: ${selected.archive.snapshot.annotations.size}")
+                    Text(pluralStringResource(R.plurals.backup_books_count, selected.archive.snapshot.books.size, selected.archive.snapshot.books.size))
+                    Text(pluralStringResource(R.plurals.backup_exact_matches_count, selected.exactMatches, selected.exactMatches))
+                    Text(pluralStringResource(R.plurals.backup_title_matches_count, selected.titleMatches, selected.titleMatches))
+                    Text(pluralStringResource(R.plurals.backup_unavailable_books_count, selected.unavailable, selected.unavailable))
+                    Text(pluralStringResource(R.plurals.backup_annotations_count, selected.archive.snapshot.annotations.size, selected.archive.snapshot.annotations.size))
                     Text(
-                        "Solo se incorporarán datos de libros que ya estén en tu biblioteca. " +
-                            "No se borrarán libros ni se sobrescribirán anotaciones existentes. " +
-                            "Comprueba que las coincidencias por título sean la misma edición. " +
-                            "Podrás volver a restaurar el archivo después de importar libros faltantes.",
+                        stringResource(R.string.backup_restore_safety_notice),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -208,25 +201,29 @@ internal fun LibraryProcessDialogs(
                                 val report = LocalLibraryBackup.restore(context, selected)
                                 Toast.makeText(
                                     context,
-                                    "Recuperados ${report.linkedBooks} libros, ${report.addedAnnotations} anotaciones. " +
-                                        "Pendientes: ${report.skippedBooks}",
+                                    context.getString(
+                                        R.string.backup_restore_result,
+                                        context.resources.getQuantityString(R.plurals.backup_books_short, report.linkedBooks, report.linkedBooks),
+                                        context.resources.getQuantityString(R.plurals.backup_annotations_short, report.addedAnnotations, report.addedAnnotations),
+                                        context.resources.getQuantityString(R.plurals.backup_books_pending_short, report.skippedBooks, report.skippedBooks)
+                                    ),
                                     Toast.LENGTH_LONG
                                 ).show()
                                 backupPreview.value = null
                             } catch (cancelled: CancellationException) {
                                 throw cancelled
                             } catch (e: Exception) {
-                                Toast.makeText(context, e.message ?: "No se pudo restaurar el respaldo", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, e.message ?: context.getString(R.string.backup_restore_failed), Toast.LENGTH_LONG).show()
                             } finally {
                                 backupBusy.value = false
                             }
                         }
                     }
-                ) { Text(if (backupBusy.value) "Restaurando…" else "Restaurar datos") }
+                ) { Text(stringResource(if (backupBusy.value) R.string.backup_restoring else R.string.backup_restore_data)) }
             },
             dismissButton = {
                 TextButton(enabled = !backupBusy.value, onClick = { backupPreview.value = null }) {
-                    Text("Cancelar")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
