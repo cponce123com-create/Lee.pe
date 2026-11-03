@@ -211,12 +211,14 @@ class TtsPlaybackService : MediaSessionService() {
         private fun serviceIntent(application: Application) =
             Intent(SERVICE_INTERFACE).setClass(application, TtsPlaybackService::class.java)
 
-        fun start(application: Application) {
-            application.startService(serviceIntent(application))
-        }
-
+        /**
+         * Binds only. Media3 promotes the service to foreground as soon as the
+         * narration session becomes active, which also keeps it alive after the
+         * reader unbinds. Calling `startService` from a background context would
+         * throw `IllegalStateException` on Android 8+ (A-14), and a plain
+         * `startForegroundService` without a ready notification risks the 5 s ANR.
+         */
         suspend fun bind(application: Application): ServiceBinding {
-            start(application)
             val result = CompletableDeferred<ReaderBinder>()
             val connection = object : ServiceConnection {
                 override fun onServiceConnected(name: ComponentName?, service: IBinder) {

@@ -135,8 +135,15 @@ internal fun EpubReaderSessionEffects(
             viewModel.markOpened(uri.toString(), System.currentTimeMillis())
             val legacyLocatorJson = settings.getString(SettingsRepository.Store.LIBRARY, ReaderActivity.locatorPreferenceKey(uri), null)
             val locatorJson = savedBook?.epubLocator ?: legacyLocatorJson
-            val initialLocator = locatorJson?.let {
+            val parsedLocator = locatorJson?.let {
                 runCatching { Locator.fromJSON(JSONObject(it)) }.getOrNull()
+            }
+            // A locator from another edition or book can parse fine yet point to a
+            // resource that does not exist here; opening it leaves a blank page and
+            // the bad value stays in Room forever (A-34).
+            val initialLocator = parsedLocator?.takeIf { candidate ->
+                val target = candidate.href.toString()
+                opened.readingOrder.any { link -> link.href.toString() == target }
             }
             val preferencesJson = settings.getString(SettingsRepository.Store.LIBRARY, ReaderActivity.preferencesPreferenceKey(uri), null)
             session.epubPreferences.value = preferencesJson?.let { json ->

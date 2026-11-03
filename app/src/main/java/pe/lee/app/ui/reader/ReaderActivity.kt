@@ -4,6 +4,7 @@ import android.Manifest
 import android.net.Uri
 import android.view.View
 import android.widget.FrameLayout
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -71,6 +72,10 @@ internal fun EpubReaderScreen(
     ) { }
 
     val session = remember(uri) { EpubReaderSessionState(uri, settings) }
+    // Back hides the reading chrome first; a second back leaves the book.
+    BackHandler(enabled = session.chromeVisible.value) {
+        session.chromeVisible.value = false
+    }
     var publication by session.publication
     var navigator by session.navigator
     var ttsNavigator by session.ttsNavigator
