@@ -266,7 +266,11 @@ fun LibraryScreen() {
                         }
                         val fileName = runCatching { queryDisplayName(context, uri) }
                             .getOrNull()
-                        val format = fileName?.let(::formatFromFileName)
+                        if (fileName == null) {
+                            unsupported++
+                            return@mapNotNull null
+                        }
+                        val format = formatFromFileName(fileName)
                         if (format == null) {
                             unsupported++
                             return@mapNotNull null
@@ -656,10 +660,19 @@ fun LibraryScreen() {
     // Cache catalog calculations across unrelated UI recompositions (menus, dialogs,
     // stats updates, etc.). Everything stays on-device; no search API is required.
     val normalizedQuery = remember(query) { normalizedLibraryText(query) }
-    val visibleBooks = remember(books, normalizedQuery, selectedFilter, selectedCollection) {
+    // Precompute accents/format/collection once instead of normalizing every
+    // title again for each keystroke in a large library.
+    val searchIndex = remember(books) {
+        books.associate { book ->
+            book.uri.toString() to normalizedLibraryText(
+                "${book.title} ${book.format} ${book.collectionId.orEmpty()}"
+            )
+        }
+    }
+    val visibleBooks = remember(books, searchIndex, normalizedQuery, selectedFilter, selectedCollection) {
         books.filter { book ->
-            val matchesQuery = matchesLibraryQuery(
-                book.title, book.format, book.collectionId, normalizedQuery
+            val matchesQuery = matchesNormalizedLibraryQuery(
+                searchIndex[book.uri.toString()].orEmpty(), normalizedQuery
             )
             val matchesFilter = when (selectedFilter) {
                 "En curso" -> book.format != "Audio" && book.readProgress > 0f && book.readProgress < 1f
