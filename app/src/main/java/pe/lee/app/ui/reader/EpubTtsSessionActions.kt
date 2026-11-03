@@ -151,5 +151,5 @@ private fun createEpubReaderSessionActions(
         }
     }
 
-    EpubReaderSessionActions(::stopTts, ::startOrToggleTts)
+    return EpubReaderSessionActions(::stopTts, ::startOrToggleTts)
 }
