@@ -28,6 +28,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -55,6 +57,9 @@ internal fun EpubAnnotationSheets(
     onSelectAnnotation: (ReaderAnnotation) -> Unit,
     onDeleteAnnotation: (ReaderAnnotation) -> Unit
 ) {
+    // Deleting a note used to happen with a single tap next to the row that
+    // navigates, and the DAO deletes for good (A-33).
+    val pendingDelete = remember { mutableStateOf<ReaderAnnotation?>(null) }
     if (showAnnotations.value) {
         ModalBottomSheet(onDismissRequest = { showAnnotations.value = false }) {
             Row(
@@ -143,8 +148,8 @@ internal fun EpubAnnotationSheets(
                                     Icon(Icons.Default.Edit, contentDescription = "Editar nota")
                                 }
                             }
-                            IconButton(onClick = { onDeleteAnnotation(annotation) }) {
-                                Icon(Icons.Default.DeleteOutline, contentDescription = "Eliminar marcador")
+                            IconButton(onClick = { pendingDelete.value = annotation }) {
+                                Icon(Icons.Default.DeleteOutline, contentDescription = "Eliminar anotación")
                             }
                         }
                     }
@@ -180,6 +185,34 @@ internal fun EpubAnnotationSheets(
             },
             dismissButton = {
                 TextButton(onClick = { showNoteEditor.value = false }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    pendingDelete.value?.let { annotation ->
+        val label = when (annotation.kind) {
+            "NOTE" -> "la nota"
+            "HIGHLIGHT" -> "el resaltado"
+            else -> "el marcador"
+        }
+        AlertDialog(
+            onDismissRequest = { pendingDelete.value = null },
+            title = { Text("Eliminar $label") },
+            text = {
+                Text(
+                    annotation.noteText?.takeIf { it.isNotBlank() }
+                        ?: annotation.selectedText?.takeIf { it.isNotBlank() }
+                        ?: "Esta anotación se eliminará del libro."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    pendingDelete.value = null
+                    onDeleteAnnotation(annotation)
+                }) { Text("Eliminar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDelete.value = null }) { Text("Cancelar") }
             }
         )
     }

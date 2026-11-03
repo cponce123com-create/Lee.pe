@@ -354,6 +354,7 @@ fun LibraryScreen(
         collectionDraft = collectionDraftState,
         showCollectionsManager = showCollectionsManagerState,
         storedCollections = storedCollections,
+        storedBooks = books,
         collectionBeingRenamed = collectionBeingRenamedState,
         collectionRenameDraft = collectionRenameDraftState,
         editingBook = editingBookState,

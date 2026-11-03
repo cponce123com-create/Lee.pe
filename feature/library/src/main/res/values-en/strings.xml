@@ -72,6 +72,11 @@
     <string name="library_collection_save_failed">Could not save the collection</string>
     <string name="action_save">Save</string>
     <string name="library_no_collections_yet">There are no collections yet. Create one while organizing a book.</string>
+    <string name="library_delete_collection_title">Delete collection</string>
+    <string name="library_delete_collection_message">“%1$s” will be deleted and %2$d book(s) will no longer belong to it. The books themselves are not deleted.</string>
+    <string name="library_delete_collection_empty_message">The collection “%1$s” will be deleted. It has no books.</string>
+    <string name="library_remove_offline_copy_title">Remove offline copy</string>
+    <string name="library_remove_offline_copy_message">The saved copy of “%1$s” will be deleted. The book stays in your library but will depend on the original file again.</string>
     <string name="action_move_up">Move up</string>
     <string name="action_move_down">Move down</string>
     <string name="action_rename">Rename</string>

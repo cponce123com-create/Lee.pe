@@ -72,6 +72,11 @@
     <string name="library_collection_save_failed">No se pudo guardar la colección</string>
     <string name="action_save">Guardar</string>
     <string name="library_no_collections_yet">Todavía no hay colecciones. Crea una al organizar un libro.</string>
+    <string name="library_delete_collection_title">Eliminar colección</string>
+    <string name="library_delete_collection_message">Se eliminará «%1$s» y %2$d libro(s) dejarán de pertenecer a ella. Los libros no se borran.</string>
+    <string name="library_delete_collection_empty_message">Se eliminará la colección «%1$s». No tiene libros.</string>
+    <string name="library_remove_offline_copy_title">Quitar copia sin conexión</string>
+    <string name="library_remove_offline_copy_message">Se borrará la copia guardada de «%1$s». El libro seguirá en la biblioteca, pero volverá a depender del archivo original.</string>
     <string name="action_move_up">Subir</string>
     <string name="action_move_down">Bajar</string>
     <string name="action_rename">Renombrar</string>

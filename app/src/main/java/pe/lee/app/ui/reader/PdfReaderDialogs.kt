@@ -43,6 +43,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -89,6 +91,8 @@ internal fun PdfReaderDialogs(
     var editingNote by state.editingNote
     var noteDraft by state.noteDraft
     var requestedPage by state.requestedPage
+    // Deleting a PDF note used to be a single irreversible tap (A-33).
+    var pendingDeleteAnnotation by remember { mutableStateOf<ReaderAnnotation?>(null) }
     if (showPdfSearch) {
         ModalBottomSheet(onDismissRequest = {
             pdfSearchJob?.cancel()
@@ -274,9 +278,7 @@ internal fun PdfReaderDialogs(
                                     Icon(Icons.Default.Edit, contentDescription = "Editar nota")
                                 }
                             }
-                            IconButton(onClick = {
-                                coroutineScope.launch { viewModel.deleteAnnotation(annotation.id) }
-                            }) {
+                            IconButton(onClick = { pendingDeleteAnnotation = annotation }) {
                                 Icon(Icons.Default.DeleteOutline, contentDescription = "Eliminar anotación")
                             }
                         }
@@ -285,6 +287,29 @@ internal fun PdfReaderDialogs(
             }
             Spacer(Modifier.height(14.dp))
         }
+    }
+
+    pendingDeleteAnnotation?.let { annotation ->
+        AlertDialog(
+            onDismissRequest = { pendingDeleteAnnotation = null },
+            title = { Text("Eliminar anotación") },
+            text = {
+                Text(
+                    annotation.noteText?.takeIf { it.isNotBlank() }
+                        ?: annotation.selectedText?.takeIf { it.isNotBlank() }
+                        ?: "Esta anotación se eliminará del PDF."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    pendingDeleteAnnotation = null
+                    coroutineScope.launch { viewModel.deleteAnnotation(annotation.id) }
+                }) { Text("Eliminar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDeleteAnnotation = null }) { Text("Cancelar") }
+            }
+        )
     }
     if (showNoteEditor) {
         AlertDialog(

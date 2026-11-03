@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -49,6 +50,7 @@ internal fun LibraryManagementDialogs(
     collectionDraft: MutableState<String>,
     showCollectionsManager: MutableState<Boolean>,
     storedCollections: List<CollectionEntity>,
+    storedBooks: List<LocalBook>,
     collectionBeingRenamed: MutableState<CollectionEntity?>,
     collectionRenameDraft: MutableState<String>,
     editingBook: MutableState<LocalBook?>,
@@ -57,6 +59,9 @@ internal fun LibraryManagementDialogs(
     onRelinkFile: (LocalBook) -> Unit,
     onOfflineBooksChanged: () -> Unit
 ) {
+    // Deleting a collection also unlinks every book on it; confirm first (A-39).
+    val pendingCollectionDelete = remember { mutableStateOf<CollectionEntity?>(null) }
+
     pendingRemoval.value?.let { book ->
         AlertDialog(
             onDismissRequest = { pendingRemoval.value = null },
@@ -212,13 +217,8 @@ internal fun LibraryManagementDialogs(
                                         }
                                     ) { Text(stringResource(R.string.action_rename)) }
                                     TextButton(
-                                        onClick = {
-                                            coroutineScope.launch {
-                                                viewModel.deleteCollection(collection.id)
-                                                if (selectedCollection.value == collection.name) selectedCollection.value = null
-                                            }
-                                        }
-                                        ) { Text(stringResource(R.string.action_delete)) }
+                                        onClick = { pendingCollectionDelete.value = collection }
+                                    ) { Text(stringResource(R.string.action_delete)) }
                                 }
                             }
                         }
@@ -227,6 +227,37 @@ internal fun LibraryManagementDialogs(
             },
             confirmButton = {
                 TextButton(onClick = { showCollectionsManager.value = false }) { Text(stringResource(R.string.action_done)) }
+            }
+        )
+    }
+
+    pendingCollectionDelete.value?.let { collection ->
+        val affected = storedBooks.count { it.collectionId == collection.name }
+        AlertDialog(
+            onDismissRequest = { pendingCollectionDelete.value = null },
+            title = { Text(stringResource(R.string.library_delete_collection_title)) },
+            text = {
+                Text(
+                    if (affected > 0) {
+                        stringResource(R.string.library_delete_collection_message, collection.name, affected)
+                    } else {
+                        stringResource(R.string.library_delete_collection_empty_message, collection.name)
+                    }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    pendingCollectionDelete.value = null
+                    coroutineScope.launch {
+                        viewModel.deleteCollection(collection.id)
+                        if (selectedCollection.value == collection.name) selectedCollection.value = null
+                    }
+                }) { Text(stringResource(R.string.action_delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingCollectionDelete.value = null }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
             }
         )
     }

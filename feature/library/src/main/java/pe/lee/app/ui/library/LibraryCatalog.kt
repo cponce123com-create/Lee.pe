@@ -36,9 +36,12 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
@@ -94,6 +97,10 @@ internal fun LibraryCatalog(
     onOfflineBooksChanged: () -> Unit,
     onExportAnnotationsFile: (String) -> Unit
 ) {
+    // Removing the offline copy deletes the only local file when the original
+    // SAF grant was revoked, so ask first (A-39).
+    val pendingOfflineCopyRemoval = remember { mutableStateOf<LocalBook?>(null) }
+    Box(Modifier.fillMaxSize()) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -339,11 +346,7 @@ internal fun LibraryCatalog(
                                 }
                             },
                             onRemoveOfflineCopy = {
-                                coroutineScope.launch {
-                                    withContext(Dispatchers.IO) { OfflineBookStore.deleteCopy(context, book.uri) }
-                                    onOfflineBooksChanged()
-                                    Toast.makeText(context, context.getString(R.string.library_offline_copy_removed), Toast.LENGTH_SHORT).show()
-                                }
+                                pendingOfflineCopyRemoval.value = book
                             },
                             onExportAnnotations = {
                                 coroutineScope.launch {
@@ -392,6 +395,36 @@ internal fun LibraryCatalog(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(bottom = 24.dp)
+            )
+        }
+    }
+
+        pendingOfflineCopyRemoval.value?.let { book ->
+            AlertDialog(
+                onDismissRequest = { pendingOfflineCopyRemoval.value = null },
+                title = { Text(stringResource(R.string.library_remove_offline_copy_title)) },
+                text = {
+                    Text(stringResource(R.string.library_remove_offline_copy_message, book.title))
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        pendingOfflineCopyRemoval.value = null
+                        coroutineScope.launch {
+                            withContext(Dispatchers.IO) { OfflineBookStore.deleteCopy(context, book.uri) }
+                            onOfflineBooksChanged()
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.library_offline_copy_removed),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }) { Text(stringResource(R.string.action_delete)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingOfflineCopyRemoval.value = null }) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
+                }
             )
         }
     }
