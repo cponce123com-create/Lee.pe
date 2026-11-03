@@ -212,6 +212,15 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 
 Las casillas marcadas indican cambios en el código; la validación en dispositivos reales sigue pendiente.
 
+## Biblioteca moderna y escáner SAF — noviembre de 2026
+
+- [x] Cabecera limpia con importación, escaneo y acceso a estadísticas y respaldos.
+- [x] Vista de portadas o lista compacta con las mismas acciones de libro.
+- [x] Escáner local recursivo por carpeta SAF, con límites, barra de progreso y cancelación.
+- [x] Vista previa del resultado y confirmación antes de incorporar a Room.
+- [ ] Pruebas reales en proveedores SAF, microSD y libros protegidos; revisar TalkBack y escalado de fuentes.
+- [ ] Paginación Room completa para bibliotecas extremas (no confundir LazyColumn con Room Paging).
+
 ## Orden recomendado del MVP
 
 1. Identidad y compilación del proyecto.
