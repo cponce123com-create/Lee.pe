@@ -34,6 +34,20 @@ class ReadingSessionRecorderTest {
     }
 
     @Test
+    fun fractionalSecondAtMidnightIsAssignedToTheCorrectCalendarDay() {
+        val start = LocalDate.of(2026, 11, 2)
+            .atTime(23, 59, 30, 500_000_000)
+            .atZone(lima)
+            .toInstant()
+            .toEpochMilli()
+
+        assertEquals(
+            listOf("2026-11-02" to 30L, "2026-11-03" to 1L),
+            splitSecondsByLocalDay(start, 31L, lima)
+        )
+    }
+
+    @Test
     fun ignoresEmptyDuration() {
         assertEquals(emptyList<Pair<String, Long>>(), splitSecondsByLocalDay(0L, 0L, lima))
     }

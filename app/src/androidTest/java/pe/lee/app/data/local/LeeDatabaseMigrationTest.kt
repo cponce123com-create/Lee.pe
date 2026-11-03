@@ -33,7 +33,13 @@ class LeeDatabaseMigrationTest {
                 assertEquals("version $startingVersion title", "Libro de prueba", snapshot.books.first().title)
                 assertEquals("version $startingVersion progress", 0.65f, snapshot.books.first().readProgress)
                 assertEquals("version $startingVersion annotations", if (startingVersion >= 2) 1 else 0, snapshot.annotations.size)
+                if (startingVersion >= 2) {
+                    assertEquals("Nota antigua", snapshot.annotations.single().noteText)
+                }
                 assertEquals("version $startingVersion sessions", if (startingVersion >= 3) 1 else 0, snapshot.sessions.size)
+                if (startingVersion >= 3) {
+                    assertEquals(180L, snapshot.sessions.single().durationSeconds)
+                }
                 assertEquals("case-insensitive collection migration", listOf("Fantasía"),
                     database.bookDao().collectionNamesForBook(TEST_URI))
                 assertEquals("duplicate legacy collection merged", listOf("Fantasía"),

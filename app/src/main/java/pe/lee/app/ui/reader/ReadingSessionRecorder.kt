@@ -7,6 +7,7 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import pe.lee.app.data.local.ReadingSessionDao
 import java.time.Duration
@@ -14,6 +15,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicInteger
 
 internal class ReadingSessionRecorder(
     private val bookUri: String,
@@ -24,7 +26,8 @@ internal class ReadingSessionRecorder(
     private val handler = Handler(Looper.getMainLooper())
     private var checkpointElapsedMs: Long? = null
     private var checkpointWallMs: Long? = null
-    private var closed = false
+    @Volatile private var closed = false
+    private val pendingWrites = AtomicInteger(0)
 
     private val persistRunnable = object : Runnable {
         override fun run() {
@@ -53,6 +56,7 @@ internal class ReadingSessionRecorder(
         if (closed) return
         onPause()
         closed = true
+        if (pendingWrites.get() == 0) persistenceScope.cancel()
     }
 
     private fun persistElapsed() {
@@ -70,10 +74,15 @@ internal class ReadingSessionRecorder(
             durationSeconds = seconds,
             zoneId = ZoneId.systemDefault()
         )
+        pendingWrites.incrementAndGet()
         persistenceScope.launch {
-            dailyDurations.forEach { (dayKey, daySeconds) ->
-                runCatching { dao.addDuration(dayKey, bookUri, daySeconds) }
-                    .onFailure { Log.w(TAG, "Could not save local reading time", it) }
+            try {
+                dailyDurations.forEach { (dayKey, daySeconds) ->
+                    runCatching { dao.addDuration(dayKey, bookUri, daySeconds) }
+                        .onFailure { Log.w(TAG, "Could not save local reading time", it) }
+                }
+            } finally {
+                if (pendingWrites.decrementAndGet() == 0 && closed) persistenceScope.cancel()
             }
         }
     }
