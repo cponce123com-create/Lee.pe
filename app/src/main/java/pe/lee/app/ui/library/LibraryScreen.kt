@@ -1044,12 +1044,13 @@ fun LibraryScreen() {
             }
         } else {
             items(
-                count = (orderedBooks.size + 1) / 2,
-                key = { row -> orderedBooks[row * 2].uri.toString() }
+                count = if (listMode) orderedBooks.size else (orderedBooks.size + 1) / 2,
+                key = { row -> orderedBooks[if (listMode) row else row * 2].uri.toString() }
             ) { rowIndex ->
-                // Avoid allocating thousands of row lists every time a filter changes.
-                val first = rowIndex * 2
-                val rowBooks = orderedBooks.subList(first, minOf(first + 2, orderedBooks.size))
+                val first = if (listMode) rowIndex else rowIndex * 2
+                val rowBooks = orderedBooks.subList(
+                    first, minOf(first + if (listMode) 1 else 2, orderedBooks.size)
+                )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -1059,6 +1060,7 @@ fun LibraryScreen() {
                             book = book,
                             savingBookUri = savingBookUri,
                             modifier = Modifier.weight(1f),
+                            compact = listMode,
                             onOpen = { openBook(context, book) },
                             onRemove = { pendingRemoval = book },
                             onSaveOfflineCopy = {
@@ -1124,7 +1126,7 @@ fun LibraryScreen() {
                             }
                         )
                     }
-                    if (rowBooks.size == 1) Spacer(Modifier.weight(1f))
+                    if (!listMode && rowBooks.size == 1) Spacer(Modifier.weight(1f))
                 }
             }
         }
