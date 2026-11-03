@@ -352,55 +352,21 @@ fun LibraryScreen(
         onOfflineBooksChanged = { offlineRevision++ }
     )
 
-    // Cache catalog calculations across unrelated UI recompositions (menus, dialogs,
-    // stats updates, etc.). Everything stays on-device; no search API is required.
-    val normalizedQuery = remember(query) { normalizedLibraryText(query) }
-    // Precompute accents/format/collection once instead of normalizing every
-    // title again for each keystroke in a large library.
-    val searchIndex = remember(books) {
-        books.associate { book ->
-            book.uri.toString() to normalizedLibraryText(
-                "${book.title} ${book.format} ${book.collectionId.orEmpty()}"
-            )
-        }
-    }
-    val visibleBooks = remember(books, searchIndex, normalizedQuery, selectedFilter, selectedCollection) {
-        books.filter { book ->
-            val matchesQuery = matchesNormalizedLibraryQuery(
-                searchIndex[book.uri.toString()].orEmpty(), normalizedQuery
-            )
-            val matchesFilter = when (selectedFilter) {
-                LibraryFilter.TO_READ -> book.format != "Audio" && book.readProgress <= 0f
-                LibraryFilter.OFFLINE_COPY -> book.offlineCopyUri != null
-                LibraryFilter.IN_PROGRESS -> book.format != "Audio" && book.readProgress > 0f && book.readProgress < 1f
-                LibraryFilter.COMPLETED -> book.format != "Audio" && book.readProgress >= 1f
-                LibraryFilter.FAVORITES -> book.isFavorite
-                LibraryFilter.EPUB -> book.format == "EPUB"
-                LibraryFilter.PDF -> book.format == "PDF"
-                LibraryFilter.AUDIO -> book.format == "Audio"
-                LibraryFilter.ALL -> true
-            }
-            val matchesCollection = selectedCollection == null || book.collectionId == selectedCollection
-            matchesQuery && matchesFilter && matchesCollection
-        }
-    }
-    val continueBooks = remember(books) {
-        books.asSequence()
-            .filter { it.format != "Audio" && it.readProgress > 0f && it.readProgress < 1f }
-            .sortedByDescending { it.lastOpenedAt ?: 0L }
-            .take(8)
-            .toList()
-    }
+    // The catalog pipeline runs on Dispatchers.Default: with 10 000 books it costs
+    // hundreds of milliseconds and used to block the main thread on every Room
+    // emission (menus, dialogs and stats updates kept it recomputed) (P-06).
     val titleComparator = remember { libraryTitleComparator() }
-    val orderedBooks = remember(visibleBooks, sortMode, titleComparator) {
-        when (sortMode) {
-            LibrarySortMode.LAST_READ -> visibleBooks.sortedByDescending { it.lastOpenedAt ?: 0L }
-            LibrarySortMode.IMPORT_DATE -> visibleBooks.sortedByDescending { it.importedAt }
-            LibrarySortMode.PROGRESS -> visibleBooks.sortedByDescending { it.readProgress }
-            LibrarySortMode.TITLE_DESC -> visibleBooks.sortedWith(compareByDescending(titleComparator) { it.title })
-            LibrarySortMode.TITLE_ASC -> visibleBooks.sortedWith(compareBy(titleComparator) { it.title })
+    var catalog by remember {
+        mutableStateOf(CatalogResult(emptyList(), emptyList(), emptyList()))
+    }
+    LaunchedEffect(books, query, selectedFilter, selectedCollection, sortMode, titleComparator) {
+        catalog = withContext(Dispatchers.Default) {
+            computeCatalog(books, query, selectedFilter, selectedCollection, sortMode, titleComparator)
         }
     }
+    val visibleBooks = catalog.visible
+    val continueBooks = catalog.continueReading
+    val orderedBooks = catalog.ordered
 
     LibraryCatalog(
         books = books,
