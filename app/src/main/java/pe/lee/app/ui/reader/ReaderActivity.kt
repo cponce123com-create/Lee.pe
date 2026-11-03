@@ -20,10 +20,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,7 +40,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
-import kotlinx.coroutines.launch
 import org.json.JSONObject
 import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.core.domain.ReaderAnnotation
@@ -60,6 +65,7 @@ internal fun EpubReaderScreen(
     viewModel: EpubReaderViewModel,
     settings: SettingsRepository,
     openPublication: suspend () -> Publication,
+    onReadingVisibilityChange: (Boolean) -> Unit,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -94,6 +100,17 @@ internal fun EpubReaderScreen(
     var chromeVisible by session.chromeVisible
     var loading by session.loading
     var errorMessage by session.errorMessage
+    var seekJob by remember { mutableStateOf<Job?>(null) }
+    // Large books used to re-flatten the whole table of contents on every
+    // recomposition (each page turn and each narrated sentence) (A-30).
+    val tableOfContents = remember(publication) {
+        publication?.let { flattenContents(it.tableOfContents) }.orEmpty()
+    }
+
+    // Reading time must not accumulate while the book is loading or failed.
+    LaunchedEffect(loading, errorMessage) {
+        onReadingVisibilityChange(!loading && errorMessage == null)
+    }
 
     val sessionActions = EpubReaderSessionEffects(
         context = context,
@@ -235,15 +252,19 @@ internal fun EpubReaderScreen(
                 onBack = onBack,
                 onPrevious = { navigator?.goBackward(animated = true) },
                 onNext = { navigator?.goForward(animated = true) },
-                contents = publication?.let { flattenContents(it.tableOfContents) }.orEmpty(),
+                contents = tableOfContents,
                 searchPublication = publication,
                 onSelectContent = { link -> navigator?.go(link, animated = true) },
                 onSelectSearchResult = { locator -> navigator?.go(locator, animated = true) },
-                onSeek = {
-                    coroutineScope.launch {
-                        publication?.locateProgression(it.toDouble())?.let { locator ->
-                            navigator?.go(locator)
+                onSeek = { progression ->
+                    // Narration would drag the page back to the spoken sentence.
+                    sessionActions.pauseTtsForNavigation()
+                    seekJob?.cancel()
+                    seekJob = coroutineScope.launch {
+                        val locator = withContext(Dispatchers.IO) {
+                            publication?.locateProgression(progression.toDouble())
                         }
+                        if (locator != null) navigator?.go(locator)
                     }
                 },
                 onProgressChange = { progress = it }

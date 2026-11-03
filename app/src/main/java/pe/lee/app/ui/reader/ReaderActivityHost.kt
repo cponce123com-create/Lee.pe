@@ -63,6 +63,10 @@ class ReaderActivity : FragmentActivity() {
                     viewModel = readerViewModel,
                     settings = container.settings,
                     openPublication = { openPublication(uri, offlineCopyUri) },
+                    onReadingVisibilityChange = { active ->
+                        if (active) readingSessionRecorder?.onResume()
+                        else readingSessionRecorder?.onPause()
+                    },
                     onBack = { finish() }
                 )
             }

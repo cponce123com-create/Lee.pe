@@ -57,6 +57,7 @@ internal fun PdfReaderScreen(
     title: String,
     viewModel: PdfReaderViewModel,
     settings: SettingsRepository,
+    onReadingVisibilityChange: (Boolean) -> Unit,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -101,6 +102,11 @@ internal fun PdfReaderScreen(
 
 
     LaunchedEffect(viewModel, uri) { viewModel.openBook(uri.toString()) }
+
+    // Do not count reading time on the error screen or while the PDF is loading (A-28).
+    LaunchedEffect(loading, errorMessage) {
+        onReadingVisibilityChange(!loading && errorMessage == null)
+    }
 
     LaunchedEffect(pageIndex) { panOffset = Offset.Zero }
 
