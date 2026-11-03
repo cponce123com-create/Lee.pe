@@ -6,6 +6,8 @@ import androidx.room3.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.runBlocking
+import pe.lee.app.ui.audio.AudioProgressStore
+import pe.lee.app.ui.library.DeletedBookCleanup
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -70,6 +72,10 @@ class LeeDatabaseMigrationTest {
             )
             database.readingSessionDao().upsert(ReadingSessionEntity("2026-11-03", TEST_URI, 120L))
             database.bookDao().updateCollection(TEST_URI, "Lectura")
+            val libraryPreferences = context.getSharedPreferences("lee_pe_library", 0)
+            val preferenceKey = "test-setting:$TEST_URI"
+            libraryPreferences.edit().putBoolean(preferenceKey, true).commit()
+            AudioProgressStore.put(context, TEST_URI, 12_000L)
 
             assertEquals(listOf("Lectura"), database.bookDao().collectionNamesForBook(TEST_URI))
             database.bookDao().deleteByUri(TEST_URI)
@@ -81,7 +87,9 @@ class LeeDatabaseMigrationTest {
             assertEquals(emptyList<String>(), database.bookDao().collectionNamesForBook(TEST_URI))
             assertEquals(listOf(TEST_URI), database.bookDao().pendingBookCleanupUris())
 
-            database.bookDao().completeBookCleanup(TEST_URI)
+            assertEquals(true, DeletedBookCleanup.complete(context, database.bookDao(), TEST_URI))
+            assertFalse(libraryPreferences.contains(preferenceKey))
+            assertEquals(0L, AudioProgressStore.get(context, TEST_URI))
             assertEquals(emptyList<String>(), database.bookDao().pendingBookCleanupUris())
         } finally {
             database.close()
