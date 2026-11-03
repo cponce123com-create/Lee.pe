@@ -79,6 +79,10 @@ class LeeDatabaseMigrationTest {
             assertFalse(snapshot.annotations.any { it.bookUri == TEST_URI })
             assertFalse(snapshot.sessions.any { it.bookUri == TEST_URI })
             assertEquals(emptyList<String>(), database.bookDao().collectionNamesForBook(TEST_URI))
+            assertEquals(listOf(TEST_URI), database.bookDao().pendingBookCleanupUris())
+
+            database.bookDao().completeBookCleanup(TEST_URI)
+            assertEquals(emptyList<String>(), database.bookDao().pendingBookCleanupUris())
         } finally {
             database.close()
             context.deleteDatabase(databaseName)
