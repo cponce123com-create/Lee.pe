@@ -75,6 +75,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -1036,12 +1037,16 @@ private fun ContinueReadingCard(book: LocalBook, wide: Boolean, onOpen: () -> Un
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        if (book.format == "PDF") Icons.Default.PictureAsPdf else Icons.Default.MenuBook,
-                        contentDescription = book.format,
-                        tint = Color.White,
-                        modifier = Modifier.size(30.dp)
-                    )
+                    if (book.format == "PDF") {
+                        LocalPdfCover(
+                            originalUri = book.uri,
+                            offlineCopyUri = book.offlineCopyUri,
+                            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp))
+                        )
+                    } else {
+                        Icon(Icons.Default.MenuBook, contentDescription = null,
+                            tint = Color.White, modifier = Modifier.size(30.dp))
+                    }
                 }
                 Spacer(Modifier.width(14.dp))
                 Column(
@@ -1216,7 +1221,15 @@ private fun BookCard(
                     .background(Brush.linearGradient(colors), RoundedCornerShape(14.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = book.format, tint = Color.White, modifier = Modifier.size(42.dp))
+                if (book.format == "PDF") {
+                    LocalPdfCover(
+                        originalUri = book.uri,
+                        offlineCopyUri = book.offlineCopyUri,
+                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp))
+                    )
+                } else {
+                    Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(42.dp))
+                }
                 if (book.isFavorite) {
                     Icon(
                         Icons.Default.Bookmark,
