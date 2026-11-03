@@ -18,12 +18,11 @@ internal object AudioProgressStore {
             .apply()
     }
 
-    fun remove(context: Context, mediaId: String) {
+    fun remove(context: Context, mediaId: String): Boolean =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit()
             .remove(key(mediaId))
-            .apply()
-    }
+            .commit()
 
     private fun key(mediaId: String): String {
         val digest = MessageDigest.getInstance("SHA-256")

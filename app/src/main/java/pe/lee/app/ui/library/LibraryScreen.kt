@@ -212,6 +212,11 @@ fun LibraryScreen() {
 
     LaunchedEffect(context, dao) {
         migrateLegacyLibrary(context, dao)
+        withContext(Dispatchers.IO) {
+            dao.pendingBookCleanupUris().forEach { uri ->
+                if (DeletedBookCleanup.complete(context, dao, uri)) offlineRevision++
+            }
+        }
         if (!BundledWelcomeBook.installIfNeeded(context, dao)) {
             Toast.makeText(context, "No se pudo añadir la guía de bienvenida", Toast.LENGTH_LONG).show()
         }
@@ -734,13 +739,19 @@ fun LibraryScreen() {
                 TextButton(
                     onClick = {
                         coroutineScope.launch {
-                            dao.deleteByUri(book.uri.toString())
-                            withContext(Dispatchers.IO) { OfflineBookStore.deleteCopy(context, book.uri) }
-                            AudioProgressStore.remove(context, book.uri.toString())
-                            clearBookScopedPreferences(context, book.uri.toString())
+                            val uri = book.uri.toString()
+                            dao.deleteByUri(uri)
+                            val cleanupComplete = withContext(Dispatchers.IO) {
+                                DeletedBookCleanup.complete(context, dao, uri)
+                            }
                             pendingRemoval = null
                             offlineRevision++
-                            Toast.makeText(context, "Libro quitado de la biblioteca", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                if (cleanupComplete) "Libro quitado de la biblioteca"
+                                else "Libro quitado. La limpieza restante se reintentará al abrir la biblioteca.",
+                                Toast.LENGTH_LONG
+                            ).show()
                         }
                     }
                 ) { Text("Quitar") }
@@ -1315,13 +1326,6 @@ fun LibraryScreen() {
             )
         }
     }
-}
-
-private fun clearBookScopedPreferences(context: Context, uri: String) {
-    val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    val keys = preferences.all.keys.filter { it.endsWith(":$uri") }
-    if (keys.isEmpty()) return
-    preferences.edit().also { editor -> keys.forEach(editor::remove) }.apply()
 }
 
 private fun rebindBookScopedPreferences(context: Context, oldUri: String, newUri: String) {

@@ -6,12 +6,15 @@ import androidx.room3.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.runBlocking
+import pe.lee.app.ui.audio.AudioProgressStore
+import pe.lee.app.ui.library.DeletedBookCleanup
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.security.MessageDigest
 import java.util.Locale
 
 @RunWith(AndroidJUnit4::class)
@@ -56,6 +59,8 @@ class LeeDatabaseMigrationTest {
     fun deletingBookRemovesAnnotationsSessionsAndCollectionLinksInOneRoomTransaction() = runBlocking {
         val databaseName = "delete-transaction.db"
         context.deleteDatabase(databaseName)
+        val offlineDirectory = File(context.noBackupFilesDir, "lee_pe_offline_books")
+        offlineDirectory.deleteRecursively()
         val database = Room.databaseBuilder<LeeDatabase>(context, databaseName)
             .addMigrations(*LeeDatabase.ALL_MIGRATIONS)
             .build()
@@ -70,6 +75,10 @@ class LeeDatabaseMigrationTest {
             )
             database.readingSessionDao().upsert(ReadingSessionEntity("2026-11-03", TEST_URI, 120L))
             database.bookDao().updateCollection(TEST_URI, "Lectura")
+            val libraryPreferences = context.getSharedPreferences("lee_pe_library", 0)
+            val preferenceKey = "test-setting:$TEST_URI"
+            libraryPreferences.edit().putBoolean(preferenceKey, true).commit()
+            AudioProgressStore.put(context, TEST_URI, 12_000L)
 
             assertEquals(listOf("Lectura"), database.bookDao().collectionNamesForBook(TEST_URI))
             database.bookDao().deleteByUri(TEST_URI)
@@ -79,9 +88,27 @@ class LeeDatabaseMigrationTest {
             assertFalse(snapshot.annotations.any { it.bookUri == TEST_URI })
             assertFalse(snapshot.sessions.any { it.bookUri == TEST_URI })
             assertEquals(emptyList<String>(), database.bookDao().collectionNamesForBook(TEST_URI))
+            assertEquals(listOf(TEST_URI), database.bookDao().pendingBookCleanupUris())
+
+            offlineDirectory.writeText("simulated storage cleanup failure")
+            assertEquals(false, DeletedBookCleanup.complete(context, database.bookDao(), TEST_URI))
+            assertEquals(listOf(TEST_URI), database.bookDao().pendingBookCleanupUris())
+            assertEquals(true, libraryPreferences.contains(preferenceKey))
+            assertEquals(12_000L, AudioProgressStore.get(context, TEST_URI))
+
+            offlineDirectory.delete()
+            assertEquals(true, offlineDirectory.mkdirs())
+            val offlineCopy = File(offlineDirectory, "${sha256(TEST_URI)}.epub")
+            offlineCopy.writeText("test copy")
+            assertEquals(true, DeletedBookCleanup.complete(context, database.bookDao(), TEST_URI))
+            assertFalse(offlineCopy.exists())
+            assertFalse(libraryPreferences.contains(preferenceKey))
+            assertEquals(0L, AudioProgressStore.get(context, TEST_URI))
+            assertEquals(emptyList<String>(), database.bookDao().pendingBookCleanupUris())
         } finally {
             database.close()
             context.deleteDatabase(databaseName)
+            offlineDirectory.deleteRecursively()
         }
     }
 
@@ -201,4 +228,9 @@ class LeeDatabaseMigrationTest {
         val SECOND_URI = Uri.parse("content://lee.test/book/two").toString()
         val REBOUND_URI = Uri.parse("content://lee.test/reauthorized/book/one").toString()
     }
+
+    private fun sha256(value: String): String =
+        MessageDigest.getInstance("SHA-256")
+            .digest(value.toByteArray(Charsets.UTF_8))
+            .joinToString("") { "%02x".format(it) }
 }

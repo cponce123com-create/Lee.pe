@@ -113,11 +113,13 @@ object OfflineBookStore {
             }
         }
 
-    fun deleteCopy(context: Context, originalUri: Uri) {
+    fun deleteCopy(context: Context, originalUri: Uri): Boolean {
         val prefix = "${sha256(originalUri.toString())}."
-        directory(context).listFiles()
-            ?.filter { it.isFile && it.name.startsWith(prefix) }
-            ?.forEach(File::delete)
+        val directory = directory(context)
+        if (!directory.exists()) return true
+        val files = directory.listFiles() ?: return false
+        return files.filter { it.isFile && it.name.startsWith(prefix) }
+            .all { file -> !file.exists() || file.delete() }
     }
 
     @Synchronized
