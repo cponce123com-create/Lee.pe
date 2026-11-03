@@ -1336,6 +1336,7 @@ private fun BookCard(
     book: LocalBook,
     savingBookUri: String?,
     modifier: Modifier = Modifier,
+    compact: Boolean = false,
     onOpen: () -> Unit,
     onRemove: () -> Unit,
     onSaveOfflineCopy: () -> Unit,
@@ -1345,7 +1346,6 @@ private fun BookCard(
     onEditTitle: () -> Unit,
     onOrganize: () -> Unit
 ) {
-    var menuExpanded by remember { mutableStateOf(false) }
     val (icon, colors) = when (book.format) {
         "PDF" -> Icons.Default.PictureAsPdf to listOf(Color(0xFF5C2A70), Color(0xFF1F4C70))
         "Audio" -> Icons.Default.Headphones to listOf(Color(0xFF145D67), Color(0xFF26396F))
@@ -1357,6 +1357,62 @@ private fun BookCard(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
+        if (compact) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(width = 64.dp, height = 86.dp)
+                        .background(Brush.linearGradient(colors), RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    when (book.format) {
+                        "PDF" -> LocalPdfCover(book.uri, book.offlineCopyUri, Modifier.fillMaxSize())
+                        "EPUB" -> LocalEpubCover(book.uri, book.offlineCopyUri, Modifier.fillMaxSize())
+                        else -> Icon(Icons.Default.Headphones, contentDescription = null, tint = Color.White)
+                    }
+                }
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text(
+                        book.title,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        when {
+                            book.format == "Audio" -> "Audiolibro"
+                            book.readProgress >= 1f -> "Terminado"
+                            book.readProgress > 0f -> "${(book.readProgress * 100).toInt()}% leído"
+                            else -> "Por leer"
+                        } + " · ${book.format}",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 12.sp
+                    )
+                    if (book.format != "Audio" && book.readProgress > 0f) {
+                        LinearProgressIndicator(
+                            progress = book.readProgress.coerceIn(0f, 1f),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+                BookActions(
+                    book = book,
+                    savingBookUri = savingBookUri,
+                    onRemove = onRemove,
+                    onSaveOfflineCopy = onSaveOfflineCopy,
+                    onRemoveOfflineCopy = onRemoveOfflineCopy,
+                    onExportAnnotations = onExportAnnotations,
+                    onToggleFavorite = onToggleFavorite,
+                    onEditTitle = onEditTitle,
+                    onOrganize = onOrganize
+                )
+            }
+        } else {
         Column(modifier = Modifier.padding(10.dp)) {
             Box(
                 modifier = Modifier
@@ -1389,62 +1445,19 @@ private fun BookCard(
                         modifier = Modifier.align(Alignment.TopStart).padding(10.dp)
                     )
                 }
-                Box(modifier = Modifier.align(Alignment.TopEnd)) {
-                    IconButton(onClick = { menuExpanded = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Opciones de ${book.title}", tint = Color.White)
-                    }
-                    DropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(if (book.isFavorite) "Quitar de favoritos" else "Agregar a favoritos") },
-                            onClick = {
-                                menuExpanded = false
-                                onToggleFavorite()
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = {
-                                Text(if (book.offlineCopyUri != null) "Quitar copia sin conexión" else if (savingBookUri == book.uri.toString()) "Guardando copia…" else "Guardar sin conexión")
-                            },
-                            enabled = savingBookUri != book.uri.toString(),
-                            onClick = {
-                                menuExpanded = false
-                                if (book.offlineCopyUri != null) onRemoveOfflineCopy() else onSaveOfflineCopy()
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Exportar anotaciones a Markdown") },
-                            onClick = {
-                                menuExpanded = false
-                                onExportAnnotations()
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Organizar en colección") },
-                            onClick = {
-                                menuExpanded = false
-                                onOrganize()
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Editar título") },
-                            onClick = {
-                                menuExpanded = false
-                                onEditTitle()
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Quitar de la biblioteca") },
-                            leadingIcon = { Icon(Icons.Default.DeleteOutline, contentDescription = null) },
-                            onClick = {
-                                menuExpanded = false
-                                onRemove()
-                            }
-                        )
-                    }
-                }
+                BookActions(
+                    book = book,
+                    savingBookUri = savingBookUri,
+                    modifier = Modifier.align(Alignment.TopEnd),
+                    iconTint = Color.White,
+                    onRemove = onRemove,
+                    onSaveOfflineCopy = onSaveOfflineCopy,
+                    onRemoveOfflineCopy = onRemoveOfflineCopy,
+                    onExportAnnotations = onExportAnnotations,
+                    onToggleFavorite = onToggleFavorite,
+                    onEditTitle = onEditTitle,
+                    onOrganize = onOrganize
+                )
                 Text(
                     book.format,
                     modifier = Modifier
@@ -1490,7 +1503,82 @@ private fun BookCard(
                 )
             }
         }
+        }
     }
+}
+
+@Composable
+private fun BookActions(
+    book: LocalBook,
+    savingBookUri: String?,
+    modifier: Modifier = Modifier,
+    iconTint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    onRemove: () -> Unit,
+    onSaveOfflineCopy: () -> Unit,
+    onRemoveOfflineCopy: () -> Unit,
+    onExportAnnotations: () -> Unit,
+    onToggleFavorite: () -> Unit,
+    onEditTitle: () -> Unit,
+    onOrganize: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier = modifier) {
+                    IconButton(onClick = { expanded = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Opciones de ${book.title}", tint = iconTint)
+                    }
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(if (book.isFavorite) "Quitar de favoritos" else "Agregar a favoritos") },
+                            onClick = {
+                                expanded = false
+                                onToggleFavorite()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text(if (book.offlineCopyUri != null) "Quitar copia sin conexión" else if (savingBookUri == book.uri.toString()) "Guardando copia…" else "Guardar sin conexión")
+                            },
+                            enabled = savingBookUri != book.uri.toString(),
+                            onClick = {
+                                expanded = false
+                                if (book.offlineCopyUri != null) onRemoveOfflineCopy() else onSaveOfflineCopy()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Exportar anotaciones a Markdown") },
+                            onClick = {
+                                expanded = false
+                                onExportAnnotations()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Organizar en colección") },
+                            onClick = {
+                                expanded = false
+                                onOrganize()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Editar título") },
+                            onClick = {
+                                expanded = false
+                                onEditTitle()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Quitar de la biblioteca") },
+                            leadingIcon = { Icon(Icons.Default.DeleteOutline, contentDescription = null) },
+                            onClick = {
+                                expanded = false
+                                onRemove()
+                            }
+                        )
+                    }
+                }
+
 }
 
 private fun queryDisplayName(context: Context, uri: Uri): String =
