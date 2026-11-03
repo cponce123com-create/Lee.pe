@@ -42,6 +42,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -122,19 +123,19 @@ internal fun LibraryCatalog(
                     .padding(horizontal = 14.dp, vertical = 13.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.Search, contentDescription = "Buscar", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(Icons.Default.Search, contentDescription = context.getString(R.string.accessibility_search), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.width(10.dp))
                 BasicTextField(
                     value = query.value,
                     onValueChange = { query.value = it },
                     singleLine = true,
                     modifier = Modifier.weight(1f).semantics {
-                        contentDescription = "Buscar libros por título, formato o colección"
+                        contentDescription = context.getString(R.string.accessibility_search_books)
                     },
                     textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
                     decorationBox = { innerTextField ->
                         if (query.value.isEmpty()) {
-                            Text("Buscar título, formato o colección", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.library_search_placeholder), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         innerTextField()
                     }
@@ -143,7 +144,7 @@ internal fun LibraryCatalog(
                     IconButton(onClick = { query.value = "" }) {
                         Icon(
                             Icons.Default.Close,
-                            contentDescription = "Borrar búsqueda",
+                            contentDescription = context.getString(R.string.accessibility_clear_search),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -156,9 +157,9 @@ internal fun LibraryCatalog(
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Retomar lectura", fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
+                            Text(stringResource(R.string.library_resume_reading), fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
                             Text(
-                                "Sigue justo donde lo dejaste",
+                                stringResource(R.string.library_resume_subtitle),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 13.sp
                             )
@@ -198,17 +199,17 @@ internal fun LibraryCatalog(
         if (collections.isNotEmpty()) {
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Colección", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                    Text(stringResource(R.string.library_collection), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
                     Box {
                         TextButton(onClick = { collectionMenuExpanded.value = true }) {
-                            Text(selectedCollection.value ?: "Todas")
+                            Text(selectedCollection.value ?: stringResource(R.string.library_all_short))
                         }
                         DropdownMenu(
                             expanded = collectionMenuExpanded.value,
                             onDismissRequest = { collectionMenuExpanded.value = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Todas las colecciones") },
+                                text = { Text(stringResource(R.string.library_all_collections)) },
                                 onClick = {
                                     selectedCollection.value = null
                                     collectionMenuExpanded.value = false
@@ -224,7 +225,7 @@ internal fun LibraryCatalog(
                                 )
                             }
                             DropdownMenuItem(
-                                text = { Text("Administrar colecciones") },
+                                text = { Text(stringResource(R.string.library_manage_collections)) },
                                 onClick = {
                                     showCollectionsManager.value = true
                                     collectionMenuExpanded.value = false
@@ -274,15 +275,15 @@ internal fun LibraryCatalog(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("En este dispositivo", fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.library_on_device), fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
                     Text(
-                        "${books.size} archivo${if (books.size == 1) "" else "s"} · Mostrando ${orderedBooks.size}",
+                        pluralStringResource(R.plurals.library_files_showing, books.size, books.size, orderedBooks.size),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 13.sp
                     )
                 }
                 Text(
-                    if (listMode.value) "Lista" else "Portadas",
+                    stringResource(if (listMode.value) R.string.library_view_list else R.string.library_view_covers),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp
                 )
@@ -326,11 +327,11 @@ internal fun LibraryCatalog(
                                             val displayName = withContext(Dispatchers.IO) { queryDisplayName(context, book.uri) }
                                             OfflineBookStore.saveCopy(context, book.uri, displayName)
                                             onOfflineBooksChanged()
-                                            Toast.makeText(context, "Copia guardada para usar sin conexión", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, context.getString(R.string.library_offline_copy_saved), Toast.LENGTH_SHORT).show()
                                         } catch (cancelled: CancellationException) {
                                             throw cancelled
                                         } catch (error: Exception) {
-                                            Toast.makeText(context, error.message ?: "No se pudo guardar la copia", Toast.LENGTH_LONG).show()
+                                            Toast.makeText(context, error.message ?: context.getString(R.string.library_offline_copy_save_failed), Toast.LENGTH_LONG).show()
                                         } finally {
                                             savingBookUri.value = null
                                         }
@@ -341,7 +342,7 @@ internal fun LibraryCatalog(
                                 coroutineScope.launch {
                                     withContext(Dispatchers.IO) { OfflineBookStore.deleteCopy(context, book.uri) }
                                     onOfflineBooksChanged()
-                                    Toast.makeText(context, "Copia sin conexión eliminada", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.library_offline_copy_removed), Toast.LENGTH_SHORT).show()
                                 }
                             },
                             onExportAnnotations = {
@@ -349,7 +350,7 @@ internal fun LibraryCatalog(
                                     try {
                                         val annotations = viewModel.annotationsForBook(book.uri.toString())
                                         if (annotations.isEmpty()) {
-                                            Toast.makeText(context, "Este libro todavía no tiene anotaciones", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, context.getString(R.string.library_no_annotations), Toast.LENGTH_SHORT).show()
                                         } else {
                                             pendingMarkdown.value = AnnotationMarkdownExporter.toMarkdown(
                                                 bookTitle = book.title,
@@ -361,7 +362,7 @@ internal fun LibraryCatalog(
                                     } catch (cancelled: CancellationException) {
                                         throw cancelled
                                     } catch (error: Exception) {
-                                        Toast.makeText(context, error.message ?: "No se pudieron leer las anotaciones", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, error.message ?: context.getString(R.string.library_annotations_read_failed), Toast.LENGTH_LONG).show()
                                     }
                                 }
                             },
@@ -387,7 +388,7 @@ internal fun LibraryCatalog(
 
         item {
             Text(
-                "La biblioteca, la búsqueda y las anotaciones funcionan en tu teléfono, sin cuenta ni servidores.",
+                stringResource(R.string.library_local_privacy_note),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(bottom = 24.dp)
