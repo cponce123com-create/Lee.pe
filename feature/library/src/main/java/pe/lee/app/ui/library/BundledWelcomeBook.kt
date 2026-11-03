@@ -2,6 +2,7 @@ package pe.lee.app.ui.library
 
 import android.content.Context
 import android.net.Uri
+import androidx.core.content.FileProvider
 import pe.lee.app.data.local.BookEntity
 import pe.lee.app.data.repository.SettingsRepository
 import kotlinx.coroutines.CancellationException
@@ -13,6 +14,10 @@ import java.io.IOException
 /**
  * Copies the bundled Salgari EPUB into app-private storage once
  * and adds it to Room. The persisted flag prevents it from reappearing if deleted.
+ *
+ * The book is exposed through a [FileProvider] (`content://`), not `file://`, so a
+ * future share/open action cannot throw `FileUriExposedException` and the backup
+ * never exports a private path (A-17).
  */
 internal object BundledWelcomeBook {
     private const val ASSET_NAME = "el-tesoro-de-los-incas.epub"
@@ -22,10 +27,11 @@ internal object BundledWelcomeBook {
         context: Context,
         settings: SettingsRepository,
         findBook: suspend (String) -> BookEntity?,
-        insertBook: suspend (BookEntity) -> Unit
+        insertBook: suspend (BookEntity) -> Unit,
+        rebindBook: suspend (String, String) -> Boolean
     ): Boolean {
         val appContext = context.applicationContext
-        if (settings.getBoolean(SettingsRepository.Store.BUNDLED_BOOK, SEEDED_KEY, false)) return true
+        val alreadySeeded = settings.getBoolean(SettingsRepository.Store.BUNDLED_BOOK, SEEDED_KEY, false)
 
         return try {
             withContext(Dispatchers.IO) {
@@ -46,11 +52,27 @@ internal object BundledWelcomeBook {
                     }
                 }
 
-                val bookUri = Uri.fromFile(bookFile).toString()
-                if (findBook(bookUri) == null) {
+                val contentUri = FileProvider.getUriForFile(
+                    appContext,
+                    "${appContext.packageName}.bundled",
+                    bookFile
+                ).toString()
+                val legacyFileUri = Uri.fromFile(bookFile).toString()
+
+                if (alreadySeeded) {
+                    // Installations seeded before this change still point at the
+                    // private file path; rebind them to the content URI.
+                    val legacy = findBook(legacyFileUri)
+                    if (legacy != null) {
+                        runCatching { rebindBook(legacy.id, contentUri) }
+                    }
+                    return@withContext
+                }
+
+                if (findBook(contentUri) == null && findBook(legacyFileUri) == null) {
                     insertBook(
                         BookEntity(
-                            uri = bookUri,
+                            uri = contentUri,
                             title = "El tesoro de los Incas — Emilio Salgari",
                             format = "EPUB",
                             importedAt = System.currentTimeMillis()

@@ -1,0 +1,36 @@
+Lee.pe — Android reader
+Copyright (c) 2026 the Lee.pe authors
+
+Lee.pe is distributed under the license declared in the LICENSE file of this
+repository (to be added by the project owner). Until that file exists, all rights
+are reserved.
+
+This application includes third-party software. Their notices follow.
+
+Readium Kotlin Toolkit
+  https://github.com/readium/kotlin-toolkit
+  Copyright (c) 2017 Readium Foundation
+  Licensed under the BSD 3-Clause License.
+
+AndroidX, Jetpack Compose, Activity, Fragment, Lifecycle, Media3
+  Copyright (c) The Android Open Source Project
+  Licensed under the Apache License, Version 2.0.
+
+Kotlin standard library and kotlinx.coroutines
+  Copyright (c) JetBrains s.r.o.
+  Licensed under the Apache License, Version 2.0.
+
+org.json
+  Copyright (c) JSON.org
+  Licensed under the JSON License ("The Software shall be used for Good, not Evil").
+
+Room (androidx.room3)
+  Copyright (c) The Android Open Source Project
+  Licensed under the Apache License, Version 2.0.
+
+Bundled book: "El tesoro de los Incas" by Emilio Salgari (1901).
+  Public domain. Included as sample content, not covered by the application
+  license.
+
+Full license texts: https://www.apache.org/licenses/LICENSE-2.0,
+https://opensource.org/license/bsd-3-clause.

@@ -268,7 +268,8 @@ fun LibraryScreen(
                 context,
                 settings,
                 viewModel::findBook,
-                viewModel::insertBook
+                viewModel::insertBook,
+                viewModel::rebindUri
             )) {
             Toast.makeText(
                 context,
