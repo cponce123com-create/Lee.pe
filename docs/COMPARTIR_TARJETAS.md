@@ -51,3 +51,15 @@ Para añadir otro formato, agrégalo a `QuoteCardFormat`, añade su selector y a
 ```
 
 En un teléfono, validar selección y creación desde EPUB y PDF con texto, los tres temas, ambos formatos, cancelación del Share Sheet, envío por WhatsApp/otra app y permiso de lectura del PNG compartido.
+
+## Estabilización previa a distribución (2026-11-03)
+
+- La captura forma parte del manejo de errores del ViewModel: un fallo de captura o codificación permite reintentar y no debe cerrar la pantalla.
+- La reserva de generación es síncrona. Pulsaciones repetidas no crean exportaciones adicionales; mientras se genera se ignoran cambios de texto, metadatos, tema y formato.
+- Pruebas añadidas: fallo de captura y reintento; pulsaciones repetidas y estabilidad del contenido durante generación. Los tests de UI desplazan los controles antes de pulsarlos para funcionar en pantallas pequeñas.
+- CI conserva los informes de lint, pruebas unitarias e instrumentadas incluso si una etapa falla. Consultar el artefacto `android-validation-reports`.
+- La ejecución local está bloqueada por la descarga de Gradle (`Network is unreachable`). No equivale a pruebas aprobadas: consultar el resultado de Actions del commit exacto.
+
+Pendiente en dispositivo: compartir y volver desde el selector de apps, pulsar repetidamente, girar durante generación y probar con tamaño de fuente grande en un teléfono pequeño y otro grande.
+
+Limitaciones pendientes de corregir antes de producción: las citas largas pueden mostrar puntos suspensivos; el raster de vista previa se escala a 1080 píxeles, por lo que la nitidez depende de la pantalla. No se considera validada la exportación de citas extensas ni el rendimiento en dispositivos con poca memoria.

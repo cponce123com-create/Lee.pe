@@ -66,4 +66,52 @@ class ShareCardViewModelTest {
         advanceUntilIdle()
         assertTrue(viewModel.state.value.status is ShareCardStatus.Error)
     }
+
+    @Test
+    fun captureFailureIsReportedAndCanBeRetried() = runTest(dispatcher) {
+        var generated = 0
+        val viewModel = ShareCardViewModel(
+            QuoteCard("Frase", "Libro", "Autora"),
+            ShareCardGenerator { _, _, _ -> generated++; byteArrayOf(1) },
+            ShareCardSharer { },
+            dispatcher
+        )
+        viewModel.shareCapturedImage { error("capture failed") }
+        advanceUntilIdle()
+        assertTrue(viewModel.state.value.status is ShareCardStatus.Error)
+        assertEquals(0, generated)
+        viewModel.shareRasterForTest(QuoteCardRaster(1, 1, intArrayOf(0)))
+        advanceUntilIdle()
+        assertEquals(ShareCardStatus.Ready, viewModel.state.value.status)
+        assertEquals(1, generated)
+    }
+
+    @Test
+    fun rapidTapsAndEditsDoNotDuplicateOrChangePendingExport() = runTest(dispatcher) {
+        val encoded = CompletableDeferred<ByteArray>()
+        var generated = 0
+        var shared = 0
+        val viewModel = ShareCardViewModel(
+            QuoteCard("Original", "Libro", "Autora"),
+            ShareCardGenerator { card, _, _ ->
+                assertEquals("Original", card.text)
+                generated++
+                encoded.await()
+            },
+            ShareCardSharer { shared++ },
+            dispatcher
+        )
+        val raster = QuoteCardRaster(1, 1, intArrayOf(0))
+        viewModel.shareRasterForTest(raster)
+        viewModel.updateText("Cambio durante captura")
+        viewModel.shareRasterForTest(raster)
+        runCurrent()
+        assertEquals(1, generated)
+        assertEquals("Original", viewModel.state.value.card.text)
+        encoded.complete(byteArrayOf(1))
+        advanceUntilIdle()
+        assertEquals(1, shared)
+        assertEquals(ShareCardStatus.Ready, viewModel.state.value.status)
+    }
+
 }

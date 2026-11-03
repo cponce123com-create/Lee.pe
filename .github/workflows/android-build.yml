@@ -72,6 +72,18 @@ jobs:
           profile: pixel_2
           script: ./gradlew --no-daemon :feature:sharecard:connectedDebugAndroidTest connectedDebugAndroidTest
 
+      - name: Upload validation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-validation-reports
+          path: |
+            **/build/reports/
+            **/build/test-results/
+            **/build/outputs/androidTest-results/
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:

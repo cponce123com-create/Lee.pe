@@ -3,9 +3,9 @@ package pe.lee.feature.sharecard.ui
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performClick
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -16,7 +16,6 @@ import pe.lee.feature.sharecard.domain.ShareCardSharer
 import pe.lee.feature.sharecard.domain.model.QuoteCard
 import pe.lee.feature.sharecard.domain.model.QuoteCardThemeId
 import pe.lee.feature.sharecard.domain.model.QuoteCardRaster
-import pe.lee.feature.sharecard.ui.ShareCardStatus
 import java.util.concurrent.atomic.AtomicReference
 
 class ShareCardScreenTest {
@@ -41,7 +40,7 @@ class ShareCardScreenTest {
         composeRule.setContent { ShareCardScreen(viewModel = viewModel, onBack = {}) }
 
         composeRule.onNodeWithText("Compartir").assertIsNotEnabled()
-        composeRule.onNodeWithText("Noche").assertIsNotSelected().performClick().assertIsSelected()
+        composeRule.onNodeWithText("Noche").performScrollTo().assertIsNotSelected().performClick().assertIsSelected()
         composeRule.runOnIdle { assertEquals(QuoteCardThemeId.DARK_OLED, viewModel.state.value.card.themeId) }
     }
 
@@ -59,7 +58,7 @@ class ShareCardScreenTest {
         )
         composeRule.setContent { ShareCardScreen(viewModel = viewModel, onBack = {}) }
 
-        composeRule.onNodeWithText("Compartir").performClick()
+        composeRule.onNodeWithText("Compartir").performScrollTo().performClick()
         composeRule.waitUntil(5_000) { viewModel.state.value.status == ShareCardStatus.Ready }
 
         assertTrue((captured.get()?.width ?: 0) > 0)
