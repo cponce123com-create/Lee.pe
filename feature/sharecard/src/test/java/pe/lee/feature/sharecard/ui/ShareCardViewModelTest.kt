@@ -87,6 +87,25 @@ class ShareCardViewModelTest {
     }
 
     @Test
+    fun outOfMemoryIsReportedInsteadOfCrashingTheApp() = runTest(dispatcher) {
+        val viewModel = ShareCardViewModel(
+            QuoteCard("Frase", "Libro", "Autora"),
+            ShareCardGenerator { _, _, _ -> throw OutOfMemoryError("sin memoria") },
+            ShareCardSharer { },
+            dispatcher
+        )
+
+        viewModel.shareRasterForTest(QuoteCardRaster(1, 1, intArrayOf(0)))
+        advanceUntilIdle()
+
+        val status = viewModel.state.value.status
+        assertTrue("esperaba Error, fue $status", status is ShareCardStatus.Error)
+        assertTrue(
+            (status as ShareCardStatus.Error).message.contains("memoria", ignoreCase = true)
+        )
+    }
+
+    @Test
     fun rapidTapsAndEditsDoNotDuplicateOrChangePendingExport() = runTest(dispatcher) {
         val encoded = CompletableDeferred<ByteArray>()
         var generated = 0

@@ -55,7 +55,10 @@ fun ShareCardScreen(
     LeePeTheme {
         val state by viewModel.state.collectAsStateWithLifecycle()
         val layer = rememberGraphicsLayer()
-        val frameClock = requireNotNull(rememberCoroutineScope().coroutineContext[MonotonicFrameClock])
+        // Not every host provides a MonotonicFrameClock (previews, tests, custom
+        // Recomposers). Failing hard here crashed the whole screen, so fall back to
+        // the current context and let the capture itself decide (A-22).
+        val frameClock = rememberCoroutineScope().coroutineContext[MonotonicFrameClock]
         var editingQuote by remember { mutableStateOf(false) }
         val storyFormat = state.card.format == QuoteCardFormat.STORY
 
@@ -140,7 +143,7 @@ fun ShareCardScreen(
                     onClick = {
                         viewModel.shareCapturedImage {
                             // viewModelScope has no Compose frame clock; retain it for capture.
-                            withContext(frameClock) {
+                            withContext(frameClock ?: kotlin.coroutines.EmptyCoroutineContext) {
                                 withFrameNanos { }
                                 layer.toImageBitmap()
                             }

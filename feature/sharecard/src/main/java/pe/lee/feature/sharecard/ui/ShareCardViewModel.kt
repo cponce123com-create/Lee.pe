@@ -65,11 +65,11 @@ class ShareCardViewModel(
     fun shareCapturedImage(capture: suspend () -> ImageBitmap) = startSharing {
         val image = capture()
         withContext(workerDispatcher) {
+            // toPixelMap() already copies the frame once; its backing buffer holds
+            // exactly the ARGB ints Bitmap.createBitmap needs, so the previous
+            // per-pixel IntArray copy disappeared (A-21).
             val pixels = image.toPixelMap()
-            val argb = IntArray(image.width * image.height) { index ->
-                pixels[index % image.width, index / image.width].toArgb()
-            }
-            QuoteCardRaster(image.width, image.height, argb)
+            QuoteCardRaster(image.width, image.height, pixels.buffer)
         }
     }
 
@@ -92,6 +92,13 @@ class ShareCardViewModel(
             } catch (cancelled: CancellationException) {
                 mutableState.update { it.copy(status = ShareCardStatus.Idle) }
                 throw cancelled
+            } catch (_: OutOfMemoryError) {
+                // A low-end device can run out of memory while scaling the card.
+                // This is an Error, not an Exception: without this branch the app
+                // would crash instead of showing a message (A-21).
+                mutableState.update {
+                    it.copy(status = ShareCardStatus.Error(SHARE_MEMORY_MESSAGE))
+                }
             } catch (_: Exception) {
                 mutableState.update {
                     it.copy(status = ShareCardStatus.Error(SHARE_CARD_ERROR_MESSAGE))
@@ -117,6 +124,8 @@ class ShareCardViewModel(
             "No se pudo generar o compartir la tarjeta. Revisa el espacio disponible e inténtalo otra vez."
         const val SHARE_TIMEOUT_MESSAGE =
             "La captura de la tarjeta tardó demasiado. Vuelve a intentarlo."
+        const val SHARE_MEMORY_MESSAGE =
+            "No hay memoria suficiente para generar la tarjeta. Cierra otras apps e inténtalo otra vez."
         const val SHARE_TIMEOUT_MS = 15_000L
     }
 }

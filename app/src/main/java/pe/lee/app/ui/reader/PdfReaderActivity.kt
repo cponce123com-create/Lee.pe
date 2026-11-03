@@ -104,6 +104,15 @@ internal fun PdfReaderScreen(
 
     LaunchedEffect(pageIndex) { panOffset = Offset.Zero }
 
+    // Persist the view state per book: zoom and rotation used to reset on every
+    // rotation of the device (A-04).
+    LaunchedEffect(zoomScale, rotationDegrees) {
+        settings.apply(SettingsRepository.Store.LIBRARY) {
+            putFloat("pdf-zoom:$uri", zoomScale)
+            putInt("pdf-rotation:$uri", rotationDegrees)
+        }
+    }
+
     LaunchedEffect(uri) {
         try {
             val opened = openPdf(context, documentUri)

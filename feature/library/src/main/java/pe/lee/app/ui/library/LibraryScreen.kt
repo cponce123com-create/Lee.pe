@@ -70,6 +70,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.semantics.contentDescription
@@ -94,6 +98,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -101,6 +106,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.ZoneId
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
@@ -132,7 +139,20 @@ fun LibraryScreen(
     onOpenBook: (uri: Uri, format: String, title: String, offlineCopyUri: Uri?) -> Unit
 ) {
     val context = LocalContext.current
-    val todayKey = readingDayKey(System.currentTimeMillis())
+    val todayKeyState = remember { mutableStateOf(readingDayKey(System.currentTimeMillis())) }
+    val todayKey by todayKeyState
+    // "Today" was computed once per composition: leaving the app open past
+    // midnight kept showing yesterday's time and goal (A-37).
+    LaunchedEffect(todayKey) {
+        val now = System.currentTimeMillis()
+        val nextMidnight = LocalDate.now()
+            .plusDays(1)
+            .atStartOfDay(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+        delay((nextMidnight - now).coerceAtLeast(1_000L))
+        todayKeyState.value = readingDayKey(System.currentTimeMillis())
+    }
     // A fresh Flow instance per recomposition restarted the Room subscription on
     // every keystroke (P-01); remember it for the lifetime of the day.
     val todaySecondsFlow = remember(todayKey) { viewModel.observeDurationForDay(todayKey) }
@@ -230,13 +250,23 @@ fun LibraryScreen(
     val listModeState = rememberSaveable { mutableStateOf(false) }
     var listMode by listModeState
 
+    suspend fun drainPendingBookCleanup() {
+        // One directory rescan for the whole batch, not one per deleted book (A-38).
+        val completed = withContext(Dispatchers.IO) {
+            var cleaned = 0
+            viewModel.pendingCleanupUris().forEach { uri ->
+                if (DeletedBookCleanup.complete(context, uri, settings, viewModel::completeCleanup)) {
+                    cleaned++
+                }
+            }
+            cleaned
+        }
+        if (completed > 0) offlineRevision++
+    }
+
     LaunchedEffect(context, viewModel, settings) {
         migrateLegacyLibrary(context, viewModel)
-        withContext(Dispatchers.IO) {
-            viewModel.pendingCleanupUris().forEach { uri ->
-                if (DeletedBookCleanup.complete(context, uri, settings, viewModel::completeCleanup)) offlineRevision++
-            }
-        }
+        drainPendingBookCleanup()
         if (!BundledWelcomeBook.installIfNeeded(
                 context,
                 settings,
@@ -245,6 +275,20 @@ fun LibraryScreen(
             )) {
             Toast.makeText(context, "No se pudo añadir la guía de bienvenida", Toast.LENGTH_LONG).show()
         }
+    }
+
+    // A cleanup that fails while the library is already open (locked file, no
+    // space) is retried the next time the app comes back, not only after a
+    // process restart.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                coroutineScope.launch { drainPendingBookCleanup() }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     val documentActions = rememberLibraryDocumentActions(
