@@ -22,7 +22,6 @@ internal fun matchesLibraryQuery(
     collection: String?,
     normalizedQuery: String
 ): Boolean {
-    if (normalizedQuery.isBlank()) return true
     val fields = normalizedLibraryText("$title $format ${collection.orEmpty()}")
-    return normalizedQuery.split(' ').all { term -> term.isEmpty() || fields.contains(term) }
+    return matchesNormalizedLibraryQuery(fields, normalizedQuery)
 }
