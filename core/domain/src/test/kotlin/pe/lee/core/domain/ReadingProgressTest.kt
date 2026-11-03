@@ -28,4 +28,28 @@ class ReadingProgressTest {
         assertFalse(progress.isCompleted)
         assertTrue(ReadingProgress.from(1f).isCompleted)
     }
+
+    @Test
+    fun locatorProgressionWinsWhenAvailable() {
+        assertEquals(0.25f, readingProgressOr(0.25, 0.9f), 0f)
+    }
+
+    @Test
+    fun missingProgressionKeepsTheLastKnownValue() {
+        assertEquals(0.42f, readingProgressOr(null, 0.42f), 0f)
+        assertEquals(1f, readingProgressOr(null, 1f), 0f)
+    }
+
+    @Test
+    fun invalidProgressionNeverResetsProgress() {
+        assertEquals(0.6f, readingProgressOr(Double.NaN, 0.6f), 0f)
+        assertEquals(0.6f, readingProgressOr(Double.POSITIVE_INFINITY, 0.6f), 0f)
+        assertEquals(0.6f, readingProgressOr(Double.NEGATIVE_INFINITY, 0.6f), 0f)
+    }
+
+    @Test
+    fun progressionIsClampedToTheReadingRange() {
+        assertEquals(1f, readingProgressOr(1.7, 0.1f), 0f)
+        assertEquals(0f, readingProgressOr(-0.3, 0.1f), 0f)
+    }
 }

@@ -129,10 +129,9 @@ internal fun PdfReaderScreen(
         }
     }
 
-    DisposableEffect(bitmap) {
-        onDispose { bitmap?.takeIf { !it.isRecycled }?.recycle() }
-    }
-
+    // Bitmaps are released by the garbage collector once the new page replaces them.
+    // Recycling them here would race with the frame Compose may still be drawing
+    // ("Canvas: trying to use a recycled bitmap").
     DisposableEffect(handle) {
         onDispose {
             handle?.let {

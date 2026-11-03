@@ -31,6 +31,7 @@ import org.readium.navigator.media.tts.TtsNavigator
 import org.readium.r2.shared.ExperimentalReadiumApi
 import pe.lee.app.LeePeApplication
 import pe.lee.app.ui.reader.ReaderActivity
+import pe.lee.core.domain.readingProgressOr
 
 @OptIn(ExperimentalReadiumApi::class)
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
@@ -75,11 +76,20 @@ class TtsPlaybackService : MediaSessionService() {
 
             activeSession.scope.launch {
                 var lastSavedAt = 0L
+                val container = (application as LeePeApplication).container
+                // Books without a page list report a null progression; keep the last
+                // known value instead of resetting the user's progress to 0 %.
+                var knownProgress = runCatching { container.books.findByUri(bookUri)?.readProgress }
+                    .getOrNull() ?: 0f
                 navigator.currentLocator.collect { locator ->
                     val now = System.currentTimeMillis()
                     if (now - lastSavedAt >= 3_000L) {
-                        val progression = locator.locations.totalProgression?.toFloat() ?: 0f
-                        (application as LeePeApplication).container.books.saveEpubProgress(
+                        val progression = readingProgressOr(
+                            locator.locations.totalProgression,
+                            knownProgress
+                        )
+                        knownProgress = progression
+                        container.books.saveEpubProgress(
                             uri = bookUri,
                             locator = locator.toJSON().toString(),
                             progress = progression,
@@ -178,12 +188,15 @@ class TtsPlaybackService : MediaSessionService() {
 
     private fun updateWakeLock(shouldHold: Boolean) {
         val lock = wakeLock ?: return
-        if (shouldHold && !lock.isHeld) lock.acquire()
+        if (shouldHold && !lock.isHeld) lock.acquire(WAKE_LOCK_TIMEOUT_MS)
         else if (!shouldHold && lock.isHeld) lock.release()
     }
 
     companion object {
         const val SERVICE_INTERFACE = "pe.lee.app.ui.audio.TtsPlaybackService"
+
+        /** Safety net: a stuck session must never keep the CPU awake forever. */
+        private const val WAKE_LOCK_TIMEOUT_MS = 30L * 60L * 1000L
 
         private fun serviceIntent(application: Application) =
             Intent(SERVICE_INTERFACE).setClass(application, TtsPlaybackService::class.java)

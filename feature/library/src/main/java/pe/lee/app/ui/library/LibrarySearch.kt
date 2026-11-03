@@ -1,5 +1,6 @@
 package pe.lee.app.ui.library
 
+import java.text.Collator
 import java.text.Normalizer
 import java.util.Locale
 
@@ -36,3 +37,16 @@ internal fun matchesNormalizedLibraryQuery(
 ): Boolean =
     normalizedQuery.isBlank() ||
         normalizedQuery.split(' ').all { it.isEmpty() || indexedText.contains(it) }
+
+/**
+ * Alphabetical order for a Spanish catalog: "Ángel" sorts with the A's and
+ * "Ñandú" right after the N's, instead of at the end of the list as raw
+ * UTF-16 comparison does ("Á" is 0xC1, above "z").
+ *
+ * Case is ignored (SECONDARY strength) but accents still break ties, so the
+ * library reads like a printed index without mixing uppercase and lowercase.
+ */
+internal fun libraryTitleComparator(locale: Locale = Locale.getDefault()): Comparator<String> {
+    val collator = Collator.getInstance(locale).apply { strength = Collator.SECONDARY }
+    return Comparator { left, right -> collator.compare(left, right) }
+}

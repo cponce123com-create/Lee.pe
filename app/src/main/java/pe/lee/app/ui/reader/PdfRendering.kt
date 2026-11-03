@@ -21,7 +21,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -184,10 +183,8 @@ internal fun PdfContinuousPage(
         }
     }
 
-    DisposableEffect(bitmap) {
-        onDispose { bitmap?.takeIf { !it.isRecycled }?.recycle() }
-    }
-
+    // No manual recycle(): the page bitmap is replaced while Compose may still be
+    // drawing the previous frame, and recycling it there crashes the render thread.
     bitmap?.let { pageBitmap ->
         Box(modifier = Modifier.fillMaxWidth().clipToBounds()) {
             Image(

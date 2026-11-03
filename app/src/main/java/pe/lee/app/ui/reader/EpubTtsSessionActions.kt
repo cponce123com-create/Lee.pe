@@ -122,7 +122,7 @@ private fun createEpubReaderSessionActions(
                     ?: session.navigator.value?.currentLocator?.value,
                 initialPreferences = AndroidTtsPreferences(speed = session.ttsSpeed.value.toDouble())
             ).getOrElse { failure ->
-                session.ttsError.value = "No se pudo preparar la narración: ${failure.message ?: "error de voz"}"
+                session.ttsError.value = "No se pudo preparar la narración: ${failure.message.ifBlank { "error de voz" }}"
                 return@launch
             }
             val localVoices = speech.voices

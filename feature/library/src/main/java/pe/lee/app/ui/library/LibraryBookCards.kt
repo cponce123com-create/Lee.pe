@@ -21,7 +21,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Headphones
-import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PictureAsPdf
@@ -130,7 +130,7 @@ internal fun BookCard(
     val (icon, colors) = when (book.format) {
         "PDF" -> Icons.Default.PictureAsPdf to listOf(Color(0xFF5C2A70), Color(0xFF1F4C70))
         "Audio" -> Icons.Default.Headphones to listOf(Color(0xFF145D67), Color(0xFF26396F))
-        else -> Icons.Default.MenuBook to listOf(Color(0xFF603680), Color(0xFF204D74))
+        else -> Icons.AutoMirrored.Filled.MenuBook to listOf(Color(0xFF603680), Color(0xFF204D74))
     }
 
     Card(
@@ -179,7 +179,7 @@ internal fun BookCard(
                     )
                     if (book.format != "Audio" && book.readProgress > 0f) {
                         LinearProgressIndicator(
-                            progress = book.readProgress.coerceIn(0f, 1f),
+                            progress = { book.readProgress.coerceIn(0f, 1f) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -262,7 +262,7 @@ internal fun BookCard(
             )
             if (book.format != "Audio" && book.readProgress > 0f) {
                 LinearProgressIndicator(
-                    progress = book.readProgress.coerceIn(0f, 1f),
+                    progress = { book.readProgress.coerceIn(0f, 1f) },
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
                 )
             }

@@ -353,13 +353,14 @@ fun LibraryScreen(
             .take(8)
             .toList()
     }
-    val orderedBooks = remember(visibleBooks, sortMode) {
+    val titleComparator = remember { libraryTitleComparator() }
+    val orderedBooks = remember(visibleBooks, sortMode, titleComparator) {
         when (sortMode) {
             LibrarySortMode.LAST_READ -> visibleBooks.sortedByDescending { it.lastOpenedAt ?: 0L }
             LibrarySortMode.IMPORT_DATE -> visibleBooks.sortedByDescending { it.importedAt }
             LibrarySortMode.PROGRESS -> visibleBooks.sortedByDescending { it.readProgress }
-            LibrarySortMode.TITLE_DESC -> visibleBooks.sortedWith(compareByDescending(String.CASE_INSENSITIVE_ORDER) { it.title })
-            LibrarySortMode.TITLE_ASC -> visibleBooks.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
+            LibrarySortMode.TITLE_DESC -> visibleBooks.sortedWith(compareByDescending(titleComparator) { it.title })
+            LibrarySortMode.TITLE_ASC -> visibleBooks.sortedWith(compareBy(titleComparator) { it.title })
         }
     }
 

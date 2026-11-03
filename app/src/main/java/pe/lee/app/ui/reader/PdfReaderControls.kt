@@ -12,12 +12,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.PictureAsPdf
-import androidx.compose.material.icons.filled.RotateRight
+import androidx.compose.material.icons.automirrored.filled.RotateRight
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -57,7 +57,7 @@ internal fun PdfReaderTopBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = Color.White)
             }
             Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = Color(0xFF75DFFF), modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(10.dp))
@@ -146,7 +146,7 @@ internal fun PdfReaderBottomControls(
                         Icon(Icons.Default.ZoomIn, contentDescription = "Ampliar zoom", tint = Color.White)
                     }
                     IconButton(onClick = onRotate) {
-                        Icon(Icons.Default.RotateRight, contentDescription = "Rotar página", tint = Color.White)
+                        Icon(Icons.AutoMirrored.Filled.RotateRight, contentDescription = "Rotar página", tint = Color.White)
                     }
                 }
             }

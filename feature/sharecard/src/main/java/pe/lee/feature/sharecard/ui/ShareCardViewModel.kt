@@ -12,7 +12,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import pe.lee.feature.sharecard.domain.ShareCardGenerator
 import pe.lee.feature.sharecard.domain.ShareCardSharer
 import pe.lee.feature.sharecard.domain.model.QuoteCard
@@ -80,13 +82,25 @@ class ShareCardViewModel(
         if (!mutableState.compareAndSet(current, current.copy(status = ShareCardStatus.Generating))) return
         viewModelScope.launch {
             try {
-                generateAndShare(current.card, capture())
+                // The frame may never arrive (app backgrounded, window destroyed,
+                // rotation mid-capture): never leave the button spinning forever.
+                withTimeout(SHARE_TIMEOUT_MS) {
+                    generateAndShare(current.card, capture())
+                }
+            } catch (timeout: TimeoutCancellationException) {
+                mutableState.update { it.copy(status = ShareCardStatus.Error(SHARE_TIMEOUT_MESSAGE)) }
             } catch (cancelled: CancellationException) {
                 mutableState.update { it.copy(status = ShareCardStatus.Idle) }
                 throw cancelled
             } catch (_: Exception) {
                 mutableState.update {
                     it.copy(status = ShareCardStatus.Error(SHARE_CARD_ERROR_MESSAGE))
+                }
+            } finally {
+                // Defensive: a capture that completed after cancellation must not
+                // keep the card disabled.
+                mutableState.update {
+                    if (it.status == ShareCardStatus.Generating) it.copy(status = ShareCardStatus.Idle) else it
                 }
             }
         }
@@ -101,5 +115,8 @@ class ShareCardViewModel(
     private companion object {
         const val SHARE_CARD_ERROR_MESSAGE =
             "No se pudo generar o compartir la tarjeta. Revisa el espacio disponible e inténtalo otra vez."
+        const val SHARE_TIMEOUT_MESSAGE =
+            "La captura de la tarjeta tardó demasiado. Vuelve a intentarlo."
+        const val SHARE_TIMEOUT_MS = 15_000L
     }
 }

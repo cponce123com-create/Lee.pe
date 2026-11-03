@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
@@ -70,7 +70,7 @@ internal fun ContinueReadingCard(book: LocalBook, wide: Boolean, cardWidth: Dp, 
                             modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp))
                         )
                         else -> Icon(
-                            Icons.Default.MenuBook, contentDescription = null,
+                            Icons.AutoMirrored.Filled.MenuBook, contentDescription = null,
                             tint = Color.White, modifier = Modifier.size(30.dp)
                         )
                     }
@@ -93,7 +93,7 @@ internal fun ContinueReadingCard(book: LocalBook, wide: Boolean, cardWidth: Dp, 
                         overflow = TextOverflow.Ellipsis
                     )
                     LinearProgressIndicator(
-                        progress = progress,
+                        progress = { progress },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Text(
@@ -131,7 +131,7 @@ internal fun ContinueReadingCard(book: LocalBook, wide: Boolean, cardWidth: Dp, 
                                 modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(11.dp))
                             )
                             else -> Icon(
-                                Icons.Default.MenuBook,
+                                Icons.AutoMirrored.Filled.MenuBook,
                                 contentDescription = null,
                                 tint = Color.White
                             )
@@ -152,7 +152,7 @@ internal fun ContinueReadingCard(book: LocalBook, wide: Boolean, cardWidth: Dp, 
                     overflow = TextOverflow.Ellipsis
                 )
                 LinearProgressIndicator(
-                    progress = progress,
+                    progress = { progress },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(
