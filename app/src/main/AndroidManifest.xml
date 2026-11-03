@@ -31,7 +31,6 @@
             android:foregroundServiceType="mediaPlayback">
             <intent-filter>
                 <action android:name="androidx.media3.session.MediaSessionService" />
-                <action android:name="pe.lee.app.ui.audio.TtsPlaybackService" />
             </intent-filter>
         </service>
         <activity

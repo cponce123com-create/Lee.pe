@@ -195,6 +195,12 @@ class ReaderActivity : FragmentActivity() {
         super.onPause()
     }
 
+    override fun onDestroy() {
+        readingSessionRecorder?.close()
+        readingSessionRecorder = null
+        super.onDestroy()
+    }
+
     private suspend fun openPublication(uri: Uri, offlineCopyUri: Uri?): Publication = withContext(Dispatchers.IO) {
         suspend fun openFrom(sourceUri: Uri): Publication {
             val url: AbsoluteUrl = sourceUri.toAbsoluteUrl()

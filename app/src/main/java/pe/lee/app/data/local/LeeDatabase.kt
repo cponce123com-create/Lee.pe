@@ -9,9 +9,15 @@ import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
 @Database(
-    entities = [BookEntity::class, ReadingAnnotationEntity::class, ReadingSessionEntity::class],
-    version = 3,
-    exportSchema = false
+    entities = [
+        BookEntity::class,
+        ReadingAnnotationEntity::class,
+        ReadingSessionEntity::class,
+        CollectionEntity::class,
+        BookCollectionCrossRef::class
+    ],
+    version = 4,
+    exportSchema = true
 )
 abstract class LeeDatabase : RoomDatabase() {
     abstract fun bookDao(): BookDao
@@ -60,6 +66,107 @@ abstract class LeeDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override suspend fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `library_books_new` (
+                        `id` TEXT NOT NULL,
+                        `uri` TEXT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `format` TEXT NOT NULL,
+                        `importedAt` INTEGER NOT NULL,
+                        `lastOpenedAt` INTEGER,
+                        `epubLocator` TEXT,
+                        `readProgress` REAL NOT NULL,
+                        `pdfPageIndex` INTEGER NOT NULL,
+                        `isFavorite` INTEGER NOT NULL,
+                        `collectionId` TEXT,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                connection.execSQL(
+                    """
+                    INSERT INTO `library_books_new` (
+                        `id`, `uri`, `title`, `format`, `importedAt`, `lastOpenedAt`,
+                        `epubLocator`, `readProgress`, `pdfPageIndex`, `isFavorite`, `collectionId`
+                    )
+                    SELECT `uri`, `uri`, `title`, `format`, `importedAt`, `lastOpenedAt`,
+                           `epubLocator`, `readProgress`, `pdfPageIndex`, `isFavorite`, `collectionId`
+                    FROM `library_books`
+                    """.trimIndent()
+                )
+                connection.execSQL("DROP TABLE `library_books`")
+                connection.execSQL("ALTER TABLE `library_books_new` RENAME TO `library_books`")
+                connection.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_library_books_uri` ON `library_books` (`uri`)"
+                )
+                connection.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `collections` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `normalizedName` TEXT NOT NULL,
+                        `sortOrder` INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                connection.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_collections_normalizedName` " +
+                        "ON `collections` (`normalizedName`)"
+                )
+                connection.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `book_collections` (
+                        `bookId` TEXT NOT NULL,
+                        `collectionId` INTEGER NOT NULL,
+                        PRIMARY KEY(`bookId`, `collectionId`),
+                        FOREIGN KEY(`bookId`) REFERENCES `library_books`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE,
+                        FOREIGN KEY(`collectionId`) REFERENCES `collections`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_book_collections_bookId` ON `book_collections` (`bookId`)"
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_book_collections_collectionId` ON `book_collections` (`collectionId`)"
+                )
+                connection.execSQL(
+                    """
+                    INSERT OR IGNORE INTO `collections` (`name`, `normalizedName`, `sortOrder`)
+                    SELECT MIN(TRIM(`collectionId`) COLLATE NOCASE), LOWER(TRIM(`collectionId`)), 0
+                    FROM `library_books`
+                    WHERE `collectionId` IS NOT NULL AND TRIM(`collectionId`) <> ''
+                    GROUP BY LOWER(TRIM(`collectionId`))
+                    """.trimIndent()
+                )
+                connection.execSQL(
+                    """
+                    INSERT OR IGNORE INTO `book_collections` (`bookId`, `collectionId`)
+                    SELECT books.`id`, collections.`id`
+                    FROM `library_books` AS books
+                    JOIN `collections` AS collections
+                      ON collections.`normalizedName` = LOWER(TRIM(books.`collectionId`))
+                    WHERE books.`collectionId` IS NOT NULL AND TRIM(books.`collectionId`) <> ''
+                    """.trimIndent()
+                )
+                connection.execSQL(
+                    """
+                    UPDATE `library_books`
+                    SET `collectionId` = (
+                        SELECT `collections`.`name` FROM `collections`
+                        WHERE `collections`.`normalizedName` = LOWER(TRIM(`library_books`.`collectionId`))
+                    )
+                    WHERE `collectionId` IS NOT NULL AND TRIM(`collectionId`) <> ''
+                    """.trimIndent()
+                )
+            }
+        }
+
+        internal val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+
         @Volatile
         private var instance: LeeDatabase? = null
 
@@ -69,7 +176,7 @@ abstract class LeeDatabase : RoomDatabase() {
                     context.applicationContext,
                     "lee_pe_library.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(*ALL_MIGRATIONS)
                     .build()
                     .also { instance = it }
             }

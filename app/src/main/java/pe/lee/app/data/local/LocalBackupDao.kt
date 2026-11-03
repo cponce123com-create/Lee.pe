@@ -5,6 +5,7 @@ import androidx.room3.Insert
 import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
 import androidx.room3.Transaction
+import java.util.Locale
 
 /** A backup stores metadata, never EPUB/PDF/audio bytes or a portable file grant. */
 data class LocalBackupSnapshot(
@@ -52,12 +53,51 @@ interface LocalBackupDao {
         uri: String, locator: String?, pdfPage: Int, progress: Float, lastOpened: Long?
     )
 
-    @Query("""
-        UPDATE library_books
-        SET isFavorite = :favorite, collectionId = :collection
-        WHERE uri = :uri
-    """)
-    suspend fun updateRestoredOrganization(uri: String, favorite: Boolean, collection: String?)
+    @Query("UPDATE library_books SET isFavorite = :favorite WHERE uri = :uri")
+    suspend fun updateRestoredFavorite(uri: String, favorite: Boolean)
+
+    @Query("SELECT id FROM library_books WHERE uri = :uri LIMIT 1")
+    suspend fun bookIdForUri(uri: String): String?
+
+    @Query("DELETE FROM book_collections WHERE bookId = :bookId")
+    suspend fun clearRestoredCollections(bookId: String)
+
+    @Query("UPDATE library_books SET collectionId = :name WHERE uri = :uri")
+    suspend fun updateRestoredLegacyCollection(uri: String, name: String?)
+
+    @Query("SELECT id FROM collections WHERE normalizedName = :normalizedName LIMIT 1")
+    suspend fun findCollectionId(normalizedName: String): Long?
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertCollection(collection: CollectionEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertBookCollection(link: BookCollectionCrossRef)
+
+    @Query("SELECT name FROM collections WHERE id = :id LIMIT 1")
+    suspend fun collectionName(id: Long): String?
+
+    @Transaction
+    suspend fun updateRestoredOrganization(uri: String, favorite: Boolean, collection: String?) {
+        updateRestoredFavorite(uri, favorite)
+        val bookId = bookIdForUri(uri) ?: return
+        clearRestoredCollections(bookId)
+        val displayName = collection?.trim()?.takeIf(String::isNotEmpty)
+        val normalizedName = displayName?.lowercase(Locale.ROOT)
+        if (displayName == null || normalizedName == null) {
+            updateRestoredLegacyCollection(uri, null)
+            return
+        }
+        val id = findCollectionId(normalizedName)
+            ?: insertCollection(CollectionEntity(name = displayName, normalizedName = normalizedName))
+        val resolvedId = if (id == -1L) findCollectionId(normalizedName) else id
+        if (resolvedId != null) {
+            insertBookCollection(BookCollectionCrossRef(bookId, resolvedId))
+            updateRestoredLegacyCollection(uri, collectionName(resolvedId) ?: displayName)
+        } else {
+            updateRestoredLegacyCollection(uri, displayName)
+        }
+    }
 
     @Query("SELECT * FROM reading_sessions WHERE dayKey = :day AND bookUri = :uri LIMIT 1")
     suspend fun findSession(day: String, uri: String): ReadingSessionEntity?
