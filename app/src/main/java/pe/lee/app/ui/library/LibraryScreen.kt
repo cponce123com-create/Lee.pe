@@ -1140,11 +1140,23 @@ private fun ContinueReadingCard(book: LocalBook, wide: Boolean, onOpen: () -> Un
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            if (book.format == "PDF") Icons.Default.PictureAsPdf else Icons.Default.MenuBook,
-                            contentDescription = book.format,
-                            tint = Color.White
-                        )
+                        when (book.format) {
+                            "PDF" -> LocalPdfCover(
+                                originalUri = book.uri,
+                                offlineCopyUri = book.offlineCopyUri,
+                                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(11.dp))
+                            )
+                            "EPUB" -> LocalEpubCover(
+                                originalUri = book.uri,
+                                offlineCopyUri = book.offlineCopyUri,
+                                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(11.dp))
+                            )
+                            else -> Icon(
+                                Icons.Default.MenuBook,
+                                contentDescription = null,
+                                tint = Color.White
+                            )
+                        }
                     }
                     Spacer(Modifier.width(10.dp))
                     Text(
