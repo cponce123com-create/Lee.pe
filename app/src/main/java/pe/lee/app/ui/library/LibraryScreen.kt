@@ -64,6 +64,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -73,6 +75,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -135,11 +138,13 @@ fun LibraryScreen() {
     var offlineCopyUris by remember { mutableStateOf<Map<String, Uri>>(emptyMap()) }
     var offlineRevision by remember { mutableIntStateOf(0) }
     var savingBookUri by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(context, storedBooks, offlineRevision) {
+    val bookUris = remember(storedBooks) { storedBooks.map { Uri.parse(it.uri) } }
+    // A locator/progress update invalidates Room, but does not change the URI list.
+    // Only rescan the private offline directory when membership/copies change.
+    LaunchedEffect(context, bookUris, offlineRevision) {
         offlineCopyUris = withContext(Dispatchers.IO) {
-            storedBooks.mapNotNull { book ->
-                OfflineBookStore.findCopy(context, Uri.parse(book.uri))?.let { book.uri to Uri.fromFile(it) }
-            }.toMap()
+            OfflineBookStore.findCopies(context, bookUris)
+                .mapValues { (_, file) -> Uri.fromFile(file) }
         }
     }
     val books = remember(storedBooks, offlineCopyUris) {
@@ -244,49 +249,68 @@ fun LibraryScreen() {
     }
 
     val documentPicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri != null) {
-            val permissionPersisted = runCatching {
-                context.contentResolver.takePersistableUriPermission(
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-            }.isSuccess
-            if (!permissionPersisted) {
-                Toast.makeText(
-                    context,
-                    "Este proveedor no permite conservar el acceso al archivo. Elige otro proveedor o guarda una copia en el dispositivo.",
-                    Toast.LENGTH_LONG
-                ).show()
-                return@rememberLauncherForActivityResult
-            }
-
-            val fileName = queryDisplayName(context, uri)
-            if (formatFromFileName(fileName) == null) {
-                Toast.makeText(context, "Formato no compatible todavía", Toast.LENGTH_LONG).show()
-                return@rememberLauncherForActivityResult
-            }
-            val format = formatFromFileName(fileName) ?: return@rememberLauncherForActivityResult
-            coroutineScope.launch {
-                if (dao.findByUri(uri.toString()) != null) {
-                    Toast.makeText(context, "Este archivo ya está en tu biblioteca", Toast.LENGTH_SHORT).show()
-                    return@launch
-                }
-                runCatching {
-                    dao.insert(
+        contract = ActivityResultContracts.OpenMultipleDocuments()
+    ) { selectedUris ->
+        if (selectedUris.isNotEmpty()) coroutineScope.launch {
+            val current = storedBooks.mapTo(HashSet()) { it.uri }
+            var alreadyPresent = 0
+            var unsupported = 0
+            var noPermission = 0
+            val picked = selectedUris.distinctBy { it.toString() }
+            try {
+                val newBooks = withContext(Dispatchers.IO) {
+                    picked.mapNotNull { uri ->
+                        if (uri.toString() in current) {
+                            alreadyPresent++
+                            return@mapNotNull null
+                        }
+                        val fileName = runCatching { queryDisplayName(context, uri) }
+                            .getOrNull()
+                        if (fileName == null) {
+                            unsupported++
+                            return@mapNotNull null
+                        }
+                        val format = formatFromFileName(fileName)
+                        if (format == null) {
+                            unsupported++
+                            return@mapNotNull null
+                        }
+                        val permitted = runCatching {
+                            context.contentResolver.takePersistableUriPermission(
+                                uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            )
+                        }.isSuccess
+                        if (!permitted) {
+                            noPermission++
+                            return@mapNotNull null
+                        }
                         BookEntity(
                             uri = uri.toString(),
-                            title = fileName.substringBeforeLast('.', fileName),
+                            title = fileName.substringBeforeLast('.', fileName).ifBlank { fileName },
                             format = format,
                             importedAt = System.currentTimeMillis()
                         )
-                    )
-                }.onSuccess {
-                    Toast.makeText(context, "Añadido a tu biblioteca local", Toast.LENGTH_SHORT).show()
-                }.onFailure {
-                    Toast.makeText(context, "No se pudo guardar el archivo en la biblioteca", Toast.LENGTH_LONG).show()
+                    }
                 }
+                if (newBooks.isNotEmpty()) {
+                    dao.insertAll(newBooks)
+                }
+                Toast.makeText(
+                    context,
+                    "Archivos incorporados: ${newBooks.size}. " +
+                        "Ya existentes: $alreadyPresent. " +
+                        "No compatibles: $unsupported. " +
+                        "Sin permiso persistente: $noPermission.",
+                    Toast.LENGTH_LONG
+                ).show()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                Toast.makeText(
+                    context,
+                    error.message ?: "No se pudo completar la importación.",
+                    Toast.LENGTH_LONG
+                ).show()
             }
         }
     }
@@ -633,28 +657,49 @@ fun LibraryScreen() {
     }
 
     val filters = listOf("Todos", "En curso", "Terminados", "Favoritos", "EPUB", "PDF", "Audio")
-    val visibleBooks = books.filter { book ->
-        val matchesQuery = book.title.contains(query, ignoreCase = true)
-        val matchesFilter = when (selectedFilter) {
-            "En curso" -> book.format != "Audio" && book.readProgress > 0f && book.readProgress < 1f
-            "Terminados" -> book.format != "Audio" && book.readProgress >= 1f
-            "Favoritos" -> book.isFavorite
-            "EPUB" -> book.format == "EPUB"
-            "PDF" -> book.format == "PDF"
-            "Audio" -> book.format == "Audio"
-            else -> true
+    // Cache catalog calculations across unrelated UI recompositions (menus, dialogs,
+    // stats updates, etc.). Everything stays on-device; no search API is required.
+    val normalizedQuery = remember(query) { normalizedLibraryText(query) }
+    // Precompute accents/format/collection once instead of normalizing every
+    // title again for each keystroke in a large library.
+    val searchIndex = remember(books) {
+        books.associate { book ->
+            book.uri.toString() to normalizedLibraryText(
+                "${book.title} ${book.format} ${book.collectionId.orEmpty()}"
+            )
         }
-        val matchesCollection = selectedCollection == null || book.collectionId == selectedCollection
-        matchesQuery && matchesFilter && matchesCollection
     }
-    val continueBooks = books
-        .filter { it.format != "Audio" && it.readProgress > 0f && it.readProgress < 1f }
-        .sortedByDescending { it.lastOpenedAt ?: 0L }
-        .take(8)
-    val orderedBooks = when (sortMode) {
-        "Última lectura" -> visibleBooks.sortedByDescending { it.lastOpenedAt ?: 0L }
-        "Fecha de importación" -> visibleBooks.sortedByDescending { it.importedAt }
-        else -> visibleBooks.sortedBy { it.title.lowercase() }
+    val visibleBooks = remember(books, searchIndex, normalizedQuery, selectedFilter, selectedCollection) {
+        books.filter { book ->
+            val matchesQuery = matchesNormalizedLibraryQuery(
+                searchIndex[book.uri.toString()].orEmpty(), normalizedQuery
+            )
+            val matchesFilter = when (selectedFilter) {
+                "En curso" -> book.format != "Audio" && book.readProgress > 0f && book.readProgress < 1f
+                "Terminados" -> book.format != "Audio" && book.readProgress >= 1f
+                "Favoritos" -> book.isFavorite
+                "EPUB" -> book.format == "EPUB"
+                "PDF" -> book.format == "PDF"
+                "Audio" -> book.format == "Audio"
+                else -> true
+            }
+            val matchesCollection = selectedCollection == null || book.collectionId == selectedCollection
+            matchesQuery && matchesFilter && matchesCollection
+        }
+    }
+    val continueBooks = remember(books) {
+        books.asSequence()
+            .filter { it.format != "Audio" && it.readProgress > 0f && it.readProgress < 1f }
+            .sortedByDescending { it.lastOpenedAt ?: 0L }
+            .take(8)
+            .toList()
+    }
+    val orderedBooks = remember(visibleBooks, sortMode) {
+        when (sortMode) {
+            "Última lectura" -> visibleBooks.sortedByDescending { it.lastOpenedAt ?: 0L }
+            "Fecha de importación" -> visibleBooks.sortedByDescending { it.importedAt }
+            else -> visibleBooks.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
+        }
     }
 
     LazyColumn(
@@ -753,11 +798,13 @@ fun LibraryScreen() {
                     value = query,
                     onValueChange = { query = it },
                     singleLine = true,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).semantics {
+                        contentDescription = "Buscar libros por título, formato o colección"
+                    },
                     textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
                     decorationBox = { innerTextField ->
                         if (query.isEmpty()) {
-                            Text("Buscar título", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Buscar título, formato o colección", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         innerTextField()
                     }
@@ -898,7 +945,13 @@ fun LibraryScreen() {
                 )
             }
         } else {
-            items(orderedBooks.chunked(2)) { rowBooks ->
+            items(
+                count = (orderedBooks.size + 1) / 2,
+                key = { row -> orderedBooks[row * 2].uri.toString() }
+            ) { rowIndex ->
+                // Avoid allocating thousands of row lists every time a filter changes.
+                val first = rowIndex * 2
+                val rowBooks = orderedBooks.subList(first, minOf(first + 2, orderedBooks.size))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -980,7 +1033,7 @@ fun LibraryScreen() {
 
         item {
             Text(
-                "La biblioteca se guarda en tu teléfono. La lectura y la sincronización se incorporarán por etapas.",
+                "La biblioteca, la búsqueda y las anotaciones funcionan en tu teléfono, sin cuenta ni servidores.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(bottom = 24.dp)
@@ -1012,12 +1065,16 @@ private fun ContinueReadingCard(book: LocalBook, wide: Boolean, onOpen: () -> Un
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        if (book.format == "PDF") Icons.Default.PictureAsPdf else Icons.Default.MenuBook,
-                        contentDescription = book.format,
-                        tint = Color.White,
-                        modifier = Modifier.size(30.dp)
-                    )
+                    if (book.format == "PDF") {
+                        LocalPdfCover(
+                            originalUri = book.uri,
+                            offlineCopyUri = book.offlineCopyUri,
+                            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp))
+                        )
+                    } else {
+                        Icon(Icons.Default.MenuBook, contentDescription = null,
+                            tint = Color.White, modifier = Modifier.size(30.dp))
+                    }
                 }
                 Spacer(Modifier.width(14.dp))
                 Column(
@@ -1192,7 +1249,15 @@ private fun BookCard(
                     .background(Brush.linearGradient(colors), RoundedCornerShape(14.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = book.format, tint = Color.White, modifier = Modifier.size(42.dp))
+                if (book.format == "PDF") {
+                    LocalPdfCover(
+                        originalUri = book.uri,
+                        offlineCopyUri = book.offlineCopyUri,
+                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp))
+                    )
+                } else {
+                    Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(42.dp))
+                }
                 if (book.isFavorite) {
                     Icon(
                         Icons.Default.Bookmark,
@@ -1203,7 +1268,7 @@ private fun BookCard(
                 }
                 Box(modifier = Modifier.align(Alignment.TopEnd)) {
                     IconButton(onClick = { menuExpanded = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Opciones del libro", tint = Color.White)
+                        Icon(Icons.Default.MoreVert, contentDescription = "Opciones de ${book.title}", tint = Color.White)
                     }
                     DropdownMenu(
                         expanded = menuExpanded,

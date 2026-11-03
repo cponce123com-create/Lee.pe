@@ -20,10 +20,30 @@ object OfflineBookStore {
 
     private const val DIRECTORY_NAME = "lee_pe_offline_books"
 
-    fun findCopy(context: Context, originalUri: Uri): File? {
-        val prefix = "${sha256(originalUri.toString())}."
-        return directory(context).listFiles()
-            ?.firstOrNull { it.isFile && it.name.startsWith(prefix) && it.length() > 0L }
+    fun findCopy(context: Context, originalUri: Uri): File? =
+        findCopies(context, listOf(originalUri))[originalUri.toString()]
+
+    /**
+     * Scans the private directory ONCE for the whole library, instead of
+     * listFiles() once for each book (quadratic work with large collections).
+     * Call from Dispatchers.IO: File metadata must not be read on the UI thread.
+     */
+    fun findCopies(context: Context, originalUris: Collection<Uri>): Map<String, File> {
+        if (originalUris.isEmpty()) return emptyMap()
+        val available = directory(context).listFiles()
+            ?.asSequence()
+            ?.filter { it.isFile && it.length() > 0L }
+            ?.mapNotNull { file ->
+                val prefix = file.name.substringBefore('.', "")
+                if (prefix.length == 64 && prefix.all { it in '0'..'9' || it in 'a'..'f' }) {
+                    prefix to file
+                } else null
+            }
+            ?.toMap()
+            .orEmpty()
+        return originalUris.mapNotNull { uri ->
+            available[sha256(uri.toString())]?.let { uri.toString() to it }
+        }.toMap()
     }
 
     suspend fun saveCopy(context: Context, originalUri: Uri, displayName: String): File =

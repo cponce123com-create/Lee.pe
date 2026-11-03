@@ -45,7 +45,12 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Añadir favoritos y orden por título, última lectura o fecha de importación.
 - [x] Editar el título que muestra Lee.pe sin cambiar el archivo original.
 - [x] Crear colecciones locales, asignar o mover libros y filtrar la biblioteca por colección.
-- Añadir lectura y edición de autor/portada, y recuperación asistida de URI revocadas.
+- [x] Añadir selección múltiple SAF para importar EPUB, PDF y audio compatibles, conservando permisos persistentes y evitando duplicados.
+- [x] Generar en el dispositivo miniaturas pequeñas y bajo demanda de la primera página de PDFs; si el documento falla, mostrar el icono de PDF.
+- [x] Optimizar exploración del directorio de copias offline a una sola pasada y evitar reconstruir todas las filas de la biblioteca con cada cambio.
+- [x] Implementar búsqueda sin conexión que ignore acentos y mayúsculas, con términos por título, formato y colección.
+- [ ] Extraer metadatos/portada EPUB y audio respetando licencias y tamaño máximo; recuperar URI revocadas con asistencia del usuario.
+- [ ] Migrar filtrado/ordenación a consultas paginadas de Room + Paging 3 para catálogos muy grandes, tras medir rendimiento.
 - Conservar el comportamiento sin conexión y no pedir acceso general a archivos.
 
 **Se considera lista cuando**
@@ -147,6 +152,8 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - Registrar velocidad de lectura; todavía no se calcula desde palabras por minuto.
 - Añadir diccionario/traducción como función separada, con explicación sobre si requiere conexión.
 - Revisar TalkBack, contraste, tamaño de objetivos táctiles, escalado de letra y modo horizontal.
+- [x] Añadir una etiqueta TalkBack al cuadro de búsqueda y nombres específicos a los menús de opciones de libro.
+- [ ] Validar rendimiento de importación múltiple, scroll, búsqueda y miniaturas PDF con 1.000 / 10.000 entradas en un teléfono real.
 - [x] Implementar modo inmersivo opcional en PDF con botón visible para recuperar controles.
 - [x] Recrear limpiamente el lector EPUB tras rotación / restauración del proceso, reutilizando el locator persistido.
 - [x] Delegar temporizador TTS únicamente al servicio multimedia, con estado de expiración observable.
