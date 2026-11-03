@@ -23,6 +23,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -58,12 +59,14 @@ internal fun LibraryManagementDialogs(
     pendingRemoval.value?.let { book ->
         AlertDialog(
             onDismissRequest = { pendingRemoval.value = null },
-            title = { Text("Quitar de la biblioteca") },
+            title = { Text(stringResource(R.string.library_remove_title)) },
             text = {
                 Text(
-                    "Se quitará “${book.title}” de Lee.pe y se borrarán sus marcadores, notas y " +
-                        "resaltados guardados. El archivo original no se eliminará del dispositivo." +
-                        if (book.offlineCopyUri != null) " La copia sin conexión guardada en Lee.pe también se eliminará." else ""
+                    stringResource(
+                        if (book.offlineCopyUri != null) R.string.library_remove_book_with_copy_message
+                        else R.string.library_remove_book_message,
+                        book.title
+                    )
                 )
             },
             confirmButton = {
@@ -79,16 +82,18 @@ internal fun LibraryManagementDialogs(
                             onOfflineBooksChanged()
                             Toast.makeText(
                                 context,
-                                if (cleanupComplete) "Libro quitado de la biblioteca"
-                                else "Libro quitado. La limpieza restante se reintentará al abrir la biblioteca.",
+                                context.getString(
+                                    if (cleanupComplete) R.string.library_remove_success
+                                    else R.string.library_remove_cleanup_pending
+                                ),
                                 Toast.LENGTH_LONG
                             ).show()
                         }
                     }
-                ) { Text("Quitar") }
+                ) { Text(stringResource(R.string.action_remove)) }
             },
             dismissButton = {
-                TextButton(onClick = { pendingRemoval.value = null }) { Text("Cancelar") }
+                TextButton(onClick = { pendingRemoval.value = null }) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
@@ -96,7 +101,7 @@ internal fun LibraryManagementDialogs(
     organizingBook.value?.let { book ->
         AlertDialog(
             onDismissRequest = { organizingBook.value = null },
-            title = { Text("Colección del libro") },
+            title = { Text(stringResource(R.string.library_book_collection_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
@@ -106,7 +111,7 @@ internal fun LibraryManagementDialogs(
                         overflow = TextOverflow.Ellipsis
                     )
                     if (collections.isNotEmpty()) {
-                        Text("Mover a una colección", fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.library_move_to_collection), fontWeight = FontWeight.SemiBold)
                         FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -128,12 +133,12 @@ internal fun LibraryManagementDialogs(
                     OutlinedTextField(
                         value = collectionDraft.value,
                         onValueChange = { collectionDraft.value = it },
-                        label = { Text("Crear o usar colección") },
-                        placeholder = { Text("Ej. Fantasía, Por leer") },
+                        label = { Text(stringResource(R.string.library_create_or_use_collection)) },
+                        placeholder = { Text(stringResource(R.string.library_collection_examples)) },
                         singleLine = true
                     )
                     TextButton(onClick = { onRelinkFile(book) }) {
-                        Text("Volver a vincular archivo")
+                        Text(stringResource(R.string.library_relink_file))
                     }
                 }
             },
@@ -146,14 +151,14 @@ internal fun LibraryManagementDialogs(
                             runCatching { viewModel.updateCollection(book.uri.toString(), name) }
                                 .onSuccess {
                                     organizingBook.value = null
-                                    Toast.makeText(context, "Libro organizado en “$name”", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.library_book_organized, name), Toast.LENGTH_SHORT).show()
                                 }
                                 .onFailure {
-                                    Toast.makeText(context, "No se pudo guardar la colección", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, context.getString(R.string.library_collection_save_failed), Toast.LENGTH_LONG).show()
                                 }
                         }
                     }
-                ) { Text("Guardar") }
+                ) { Text(stringResource(R.string.action_save)) }
             },
             dismissButton = {
                 Row {
@@ -165,9 +170,9 @@ internal fun LibraryManagementDialogs(
                                     organizingBook.value = null
                                 }
                             }
-                        ) { Text("Quitar") }
+                        ) { Text(stringResource(R.string.action_remove)) }
                     }
-                    TextButton(onClick = { organizingBook.value = null }) { Text("Cancelar") }
+                    TextButton(onClick = { organizingBook.value = null }) { Text(stringResource(R.string.action_cancel)) }
                 }
             }
         )
@@ -176,10 +181,10 @@ internal fun LibraryManagementDialogs(
     if (showCollectionsManager.value) {
         AlertDialog(
             onDismissRequest = { showCollectionsManager.value = false },
-            title = { Text("Administrar colecciones") },
+            title = { Text(stringResource(R.string.library_manage_collections)) },
             text = {
                 if (storedCollections.isEmpty()) {
-                    Text("Todavía no hay colecciones. Crea una al organizar un libro.")
+                    Text(stringResource(R.string.library_no_collections_yet))
                 } else {
                     Column(
                         modifier = Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState()),
@@ -192,11 +197,11 @@ internal fun LibraryManagementDialogs(
                                     TextButton(
                                         enabled = index > 0,
                                         onClick = { coroutineScope.launch { viewModel.moveCollection(collection.id, -1) } }
-                                    ) { Text("Subir") }
+                                    ) { Text(stringResource(R.string.action_move_up)) }
                                     TextButton(
                                         enabled = index < storedCollections.lastIndex,
                                         onClick = { coroutineScope.launch { viewModel.moveCollection(collection.id, 1) } }
-                                    ) { Text("Bajar") }
+                                    ) { Text(stringResource(R.string.action_move_down)) }
                                 }
                                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                     TextButton(
@@ -204,7 +209,7 @@ internal fun LibraryManagementDialogs(
                                             collectionBeingRenamed.value = collection
                                             collectionRenameDraft.value = collection.name
                                         }
-                                    ) { Text("Renombrar") }
+                                    ) { Text(stringResource(R.string.action_rename)) }
                                     TextButton(
                                         onClick = {
                                             coroutineScope.launch {
@@ -212,7 +217,7 @@ internal fun LibraryManagementDialogs(
                                                 if (selectedCollection.value == collection.name) selectedCollection.value = null
                                             }
                                         }
-                                    ) { Text("Eliminar") }
+                                        ) { Text(stringResource(R.string.action_delete)) }
                                 }
                             }
                         }
@@ -220,7 +225,7 @@ internal fun LibraryManagementDialogs(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showCollectionsManager.value = false }) { Text("Listo") }
+                TextButton(onClick = { showCollectionsManager.value = false }) { Text(stringResource(R.string.action_done)) }
             }
         )
     }
@@ -228,12 +233,12 @@ internal fun LibraryManagementDialogs(
     collectionBeingRenamed.value?.let { collection ->
         AlertDialog(
             onDismissRequest = { collectionBeingRenamed.value = null },
-            title = { Text("Renombrar colección") },
+            title = { Text(stringResource(R.string.library_rename_collection)) },
             text = {
                 OutlinedTextField(
                     value = collectionRenameDraft.value,
                     onValueChange = { collectionRenameDraft.value = it },
-                    label = { Text("Nombre") },
+                    label = { Text(stringResource(R.string.field_name)) },
                     singleLine = true
                 )
             },
@@ -249,14 +254,14 @@ internal fun LibraryManagementDialogs(
                                     collectionBeingRenamed.value = null
                                 }
                                 .onFailure {
-                                    Toast.makeText(context, it.message ?: "No se pudo renombrar la colección", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, it.message ?: context.getString(R.string.library_collection_rename_failed), Toast.LENGTH_LONG).show()
                                 }
                         }
                     }
-                ) { Text("Guardar") }
+                ) { Text(stringResource(R.string.action_save)) }
             },
             dismissButton = {
-                TextButton(onClick = { collectionBeingRenamed.value = null }) { Text("Cancelar") }
+                TextButton(onClick = { collectionBeingRenamed.value = null }) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
@@ -264,12 +269,12 @@ internal fun LibraryManagementDialogs(
     editingBook.value?.let { book ->
         AlertDialog(
             onDismissRequest = { editingBook.value = null },
-            title = { Text("Editar título") },
+            title = { Text(stringResource(R.string.library_edit_title)) },
             text = {
                 OutlinedTextField(
                     value = titleDraft.value,
                     onValueChange = { titleDraft.value = it },
-                    label = { Text("Título del libro") },
+                    label = { Text(stringResource(R.string.library_book_title)) },
                     singleLine = true
                 )
             },
@@ -281,17 +286,17 @@ internal fun LibraryManagementDialogs(
                             runCatching { viewModel.updateTitle(book.uri.toString(), titleDraft.value.trim()) }
                                 .onSuccess {
                                     editingBook.value = null
-                                    Toast.makeText(context, "Título actualizado", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.library_title_updated), Toast.LENGTH_SHORT).show()
                                 }
                                 .onFailure {
-                                    Toast.makeText(context, "No se pudo actualizar el título", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, context.getString(R.string.library_title_update_failed), Toast.LENGTH_LONG).show()
                                 }
                         }
                     }
-                ) { Text("Guardar") }
+                ) { Text(stringResource(R.string.action_save)) }
             },
             dismissButton = {
-                TextButton(onClick = { editingBook.value = null }) { Text("Cancelar") }
+                TextButton(onClick = { editingBook.value = null }) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
