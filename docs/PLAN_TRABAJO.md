@@ -6,6 +6,14 @@ Crear un lector nativo Android que permita importar EPUB, PDF y audiolibros desd
 
 Estado actual: biblioteca local con Room e importación SAF (incluida migración de la lista anterior), lector EPUB con Readium, índice, controles de apariencia, opción de mantener pantalla activa y navegación paginada o por desplazamiento, y visor PDF offline con navegación por página, zoom, rotación y modo de desplazamiento continuo. El avance se guarda en Room; apariencia y brillo EPUB se conservan por libro. Falta validar la integración en Android Studio.
 
+## Ajustes de interfaz y contenido inicial
+
+- [x] Mostrar el símbolo oficial de Lee.pe en la cabecera dentro de un marco de tamaño fijo y respetar las zonas seguras del sistema.
+- [x] Dar ancho medido a la tarjeta única de «Retomar lectura» dentro de su lista horizontal.
+- [x] Incluir una guía EPUB original y local una sola vez; si la persona la elimina, no se repone.
+- [x] Limitar el selector TTS a voces Android locales en español y ofrecer abrir el instalador de voces del dispositivo.
+- [ ] Evaluar una voz mexicana abierta de Piper con integración Android separada, verificando licencia del runtime y del modelo antes de distribuirla.
+
 ## Principios de producto
 
 1. **Local primero:** los archivos y la lectura funcionan sin internet.
