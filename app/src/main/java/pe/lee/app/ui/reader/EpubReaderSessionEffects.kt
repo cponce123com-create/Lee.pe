@@ -43,6 +43,9 @@ import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
 
+/** Minimum interval between locator persists; scroll mode emits continuously. */
+private const val LOCATOR_SAVE_INTERVAL_MS = 2_000L
+
 
 
 @OptIn(ExperimentalReadiumApi::class)
@@ -343,7 +346,14 @@ internal fun EpubReaderSessionEffects(
 
     LaunchedEffect(session.navigator.value) {
         val reader = session.navigator.value ?: return@LaunchedEffect
+        // Scroll mode emits a locator several times per second. Persisting each
+        // one wrote to Room and SharedPreferences on every frame; throttle to one
+        // write every two seconds and rely on onPause for the final position.
+        var lastSavedAt = 0L
         reader.currentLocator.collect { locator ->
+            val now = System.currentTimeMillis()
+            if (now - lastSavedAt < LOCATOR_SAVE_INTERVAL_MS) return@collect
+            lastSavedAt = now
             val totalProgression = locator.locations.totalProgression
             if (totalProgression != null) session.progress.value = totalProgression.toFloat().coerceIn(0f, 1f)
             val locatorJson = locator.toJSON().toString()

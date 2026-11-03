@@ -23,6 +23,9 @@ object OfflineBookStore {
     const val EXTRA_COPY_URI = "pe.lee.app.library.OFFLINE_COPY_URI"
 
     private const val DIRECTORY_NAME = "lee_pe_offline_books"
+
+    /** How much is copied between free-space checks (one statfs each). */
+    private const val SPACE_CHECK_INTERVAL_BYTES = 8L * 1024L * 1024L
     private val saveLocks = ConcurrentHashMap<String, ReentrantLock>()
 
     fun findCopy(context: Context, originalUri: Uri): File? =
@@ -78,16 +81,23 @@ object OfflineBookStore {
                                 temporary.outputStream().buffered().use { output ->
                                     val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                                     var copiedBytes = 0L
+                                    var bytesSinceSpaceCheck = 0L
                                     while (true) {
                                         coroutineContext.ensureActive()
                                         val count = source.read(buffer)
                                         if (count < 0) break
-                                        // Re-check every chunk because free space can change while copying.
-                                        if (StatFs(directory.absolutePath).availableBytes < count.toLong()) {
-                                            throw IOException("No hay espacio suficiente para guardar la copia sin conexión.")
+                                        // Checking free space costs a syscall; once every
+                                        // few megabytes is enough and keeps large audio books
+                                        // from crawling (A-09).
+                                        if (bytesSinceSpaceCheck >= SPACE_CHECK_INTERVAL_BYTES) {
+                                            if (StatFs(directory.absolutePath).availableBytes < count.toLong()) {
+                                                throw IOException("No hay espacio suficiente para guardar la copia sin conexión.")
+                                            }
+                                            bytesSinceSpaceCheck = 0L
                                         }
                                         output.write(buffer, 0, count)
                                         copiedBytes += count
+                                        bytesSinceSpaceCheck += count
                                     }
                                     if (copiedBytes == 0L) {
                                         throw IOException("El archivo está vacío o no se pudo leer.")

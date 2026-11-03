@@ -18,7 +18,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.DisposableEffect
@@ -60,7 +60,7 @@ internal fun PdfReaderScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val annotations by viewModel.annotationState.collectAsState()
+    val annotations by viewModel.annotationState.collectAsStateWithLifecycle()
     val dialogState = remember(uri) { PdfReaderDialogsState() }
     var showPageDialog by dialogState.showPageDialog
     var showPdfSearch by dialogState.showPdfSearch

@@ -20,6 +20,12 @@ object AudioProgressStore {
     fun remove(context: Context, mediaId: String): Boolean =
         SettingsRepository(context).update(store) { remove(key(mediaId)) }
 
+    /**
+     * Stable preference key for a media id. Exposed so the backup exporter can
+     * read every stored position in a single preferences read (A-11).
+     */
+    fun positionKey(mediaId: String): String = key(mediaId)
+
     private fun key(mediaId: String): String {
         val digest = MessageDigest.getInstance("SHA-256")
             .digest(mediaId.toByteArray(Charsets.UTF_8))

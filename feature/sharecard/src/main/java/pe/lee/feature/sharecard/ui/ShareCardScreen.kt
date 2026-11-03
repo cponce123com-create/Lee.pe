@@ -24,7 +24,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.MonotonicFrameClock
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,6 +36,7 @@ import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.withContext
 import pe.lee.app.ui.theme.LeePeTheme
 import pe.lee.feature.sharecard.R
@@ -53,7 +53,7 @@ fun ShareCardScreen(
     modifier: Modifier = Modifier
 ) {
     LeePeTheme {
-        val state by viewModel.state.collectAsState()
+        val state by viewModel.state.collectAsStateWithLifecycle()
         val layer = rememberGraphicsLayer()
         val frameClock = requireNotNull(rememberCoroutineScope().coroutineContext[MonotonicFrameClock])
         var editingQuote by remember { mutableStateOf(false) }

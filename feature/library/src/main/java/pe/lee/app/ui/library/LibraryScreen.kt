@@ -70,7 +70,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -133,9 +133,13 @@ fun LibraryScreen(
 ) {
     val context = LocalContext.current
     val todayKey = readingDayKey(System.currentTimeMillis())
-    val todaySeconds by viewModel.observeDurationForDay(todayKey).collectAsState(initial = 0L)
-    val readingDayKeys by viewModel.observeReadingDayKeys().collectAsState(initial = emptyList())
-    val libraryState by viewModel.state.collectAsState()
+    // A fresh Flow instance per recomposition restarted the Room subscription on
+    // every keystroke (P-01); remember it for the lifetime of the day.
+    val todaySecondsFlow = remember(todayKey) { viewModel.observeDurationForDay(todayKey) }
+    val readingDayKeysFlow = remember { viewModel.observeReadingDayKeys() }
+    val todaySeconds by todaySecondsFlow.collectAsStateWithLifecycle(initialValue = 0L)
+    val readingDayKeys by readingDayKeysFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val libraryState by viewModel.state.collectAsStateWithLifecycle()
     val storedBooks = libraryState.books
     val storedCollections = libraryState.collections
     var offlineCopyUris by remember { mutableStateOf<Map<String, Uri>>(emptyMap()) }

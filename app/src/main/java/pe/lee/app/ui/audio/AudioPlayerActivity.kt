@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
@@ -149,7 +150,7 @@ private fun AudioPlayerScreen(
     error: String?,
     onClose: () -> Unit
 ) {
-    val playerState by viewModel.state.collectAsState()
+    val playerState by viewModel.state.collectAsStateWithLifecycle()
     var sliderPosition by remember(controller) { mutableFloatStateOf(0f) }
     var scrubbing by remember(controller) { mutableStateOf(false) }
     val speeds = listOf(0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)

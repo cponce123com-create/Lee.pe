@@ -113,6 +113,19 @@ internal const val DEFAULT_PDF_HIGHLIGHT_COLOR = 0xFFFFD54F.toInt()
 internal const val PDF_SEARCH_HIGHLIGHT_COLOR = 0xFF42A5F5.toInt()
 internal const val MAX_PDF_BITMAP_PIXELS = 4_194_304L
 
+/** Copies abandoned by a killed process are removed before the next open. */
+private const val STALE_COPY_AGE_MS = 7L * 24L * 60L * 60L * 1000L
+
+private fun purgeStaleCopies(context: Context) {
+    val cutoff = System.currentTimeMillis() - STALE_COPY_AGE_MS
+    context.cacheDir?.listFiles { file ->
+        file.isFile &&
+            file.name.startsWith("lee-pe-") &&
+            file.name.endsWith(".pdf") &&
+            file.lastModified() < cutoff
+    }?.forEach { stale -> runCatching { stale.delete() } }
+}
+
 internal data class PdfBitmapSize(val width: Int, val height: Int)
 
 internal fun pdfBitmapSize(
@@ -225,6 +238,7 @@ internal fun PdfContinuousPage(
 }
 
 internal suspend fun openPdf(context: Context, uri: Uri): PdfHandle = withContext(Dispatchers.IO) {
+    purgeStaleCopies(context)
     val descriptor = context.contentResolver.openFileDescriptor(uri, "r")
         ?: throw IOException("El proveedor de archivos no pudo abrir el PDF.")
     val sourceSizeBytes = runCatching { descriptor.statSize }.getOrDefault(-1L)
