@@ -38,11 +38,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import pe.lee.app.R
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 /** A clean, functional library header, rather than a decorative bookshelf. */
 @Composable
@@ -56,8 +58,8 @@ internal fun LibraryDashboardHeader(
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     Column(
-        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = Modifier.fillMaxWidth().padding(top = LeePeSpacing.lg),
+        verticalArrangement = Arrangement.spacedBy(LeePeSpacing.lg)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -68,26 +70,26 @@ internal fun LibraryDashboardHeader(
             ) {
                 Image(
                     painter = painterResource(R.drawable.leepe_icon_foreground),
-                    contentDescription = "Logotipo de Lee.pe",
+                    contentDescription = stringResource(R.string.accessibility_leepe_logo),
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.size(36.dp)
                 )
             }
             Spacer(modifier = Modifier.size(10.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text("Lee.pe", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                Text("Lector personal · Sin conexión", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.library_offline_tagline), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
             }
             IconButton(onClick = onStats) {
-                Icon(Icons.Default.BarChart, contentDescription = "Estadísticas de lectura")
+                Icon(Icons.Default.BarChart, contentDescription = stringResource(R.string.accessibility_reading_statistics))
             }
             Box {
                 IconButton(onClick = { menuExpanded = true }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "Más opciones de biblioteca")
+                    Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.accessibility_library_more_options))
                 }
                 DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                     DropdownMenuItem(
-                        text = { Text("Respaldo y restauración") },
+                        text = { Text(stringResource(R.string.library_backup_restore)) },
                         onClick = { menuExpanded = false; onBackup() }
                     )
                 }
@@ -104,17 +106,17 @@ internal fun LibraryDashboardHeader(
                         Brush.linearGradient(listOf(Color(0xFF163553), Color(0xFF263154), Color(0xFF322C5B))),
                         RoundedCornerShape(24.dp)
                     )
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(LeePeSpacing.xl),
+                verticalArrangement = Arrangement.spacedBy(LeePeSpacing.md)
             ) {
                 Text(
-                    if (totalBooks == 0) "Tu próxima historia comienza aquí" else "Tu biblioteca, a tu manera",
-                    color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.SemiBold
+                    stringResource(if (totalBooks == 0) R.string.library_empty_welcome else R.string.library_welcome),
+                    color = Color.White, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    if (totalBooks == 0) "Añade libros o escanea una carpeta de tu teléfono."
-                    else "$totalBooks archivos en tu biblioteca. Todo se queda en tu dispositivo.",
-                    color = Color(0xFFCEDBF5), fontSize = 13.sp
+                    if (totalBooks == 0) stringResource(R.string.library_empty_prompt)
+                    else stringResource(R.plurals.library_books_count, totalBooks, totalBooks),
+                    color = Color(0xFFCEDBF5), style = MaterialTheme.typography.bodyMedium
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Button(
@@ -127,8 +129,8 @@ internal fun LibraryDashboardHeader(
                         )
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.size(6.dp))
-                        Text("Importar")
+                        Spacer(Modifier.size(LeePeSpacing.xs + 2.dp))
+                        Text(stringResource(R.string.action_import))
                     }
                     FilledTonalButton(
                         onClick = onScan,
@@ -141,8 +143,8 @@ internal fun LibraryDashboardHeader(
                         )
                     ) {
                         Icon(Icons.Default.FolderOpen, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.size(6.dp))
-                        Text(if (busy) "Escaneando" else "Escanear")
+                        Spacer(Modifier.size(LeePeSpacing.xs + 2.dp))
+                        Text(stringResource(if (busy) R.string.library_scanning else R.string.library_scan))
                     }
                 }
             }
@@ -157,17 +159,17 @@ internal fun LibraryDisplayToggle(
     onModeChange: (Boolean) -> Unit
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = { onModeChange(false) }) {
+        IconButton(onClick = { onModeChange(false) }, modifier = Modifier.semantics { selected = !listMode }) {
             Icon(
                 Icons.Default.GridView,
-                contentDescription = "Ver portadas en cuadrícula",
+                contentDescription = stringResource(R.string.accessibility_view_grid),
                 tint = if (!listMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        IconButton(onClick = { onModeChange(true) }) {
+        IconButton(onClick = { onModeChange(true) }, modifier = Modifier.semantics { selected = listMode }) {
             Icon(
                 Icons.Default.ViewList,
-                contentDescription = "Ver libros en lista",
+                contentDescription = stringResource(R.string.accessibility_view_list),
                 tint = if (listMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

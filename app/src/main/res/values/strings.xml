@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Lee.pe</string>
+    <string name="accessibility_leepe_logo">Logotipo de Lee.pe</string>
+    <string name="accessibility_reading_statistics">Estadísticas de lectura</string>
+    <string name="accessibility_library_more_options">Más opciones de biblioteca</string>
+    <string name="accessibility_view_grid">Ver portadas en cuadrícula</string>
+    <string name="accessibility_view_list">Ver libros en lista</string>
+    <string name="library_offline_tagline">Lector personal · Sin conexión</string>
+    <string name="library_backup_restore">Respaldo y restauración</string>
+    <string name="library_empty_welcome">Tu próxima historia comienza aquí</string>
+    <string name="library_welcome">Tu biblioteca, a tu manera</string>
+    <string name="library_empty_prompt">Añade libros o escanea una carpeta de tu teléfono.</string>
+    <plurals name="library_books_count">
+        <item quantity="one">%1$d archivo en tu biblioteca. Todo se queda en tu dispositivo.</item>
+        <item quantity="other">%1$d archivos en tu biblioteca. Todo se queda en tu dispositivo.</item>
+    </plurals>
+    <string name="action_import">Importar</string>
+    <string name="library_scanning">Escaneando</string>
+    <string name="library_scan">Escanear</string>
+</resources>
