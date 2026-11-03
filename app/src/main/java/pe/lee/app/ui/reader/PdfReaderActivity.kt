@@ -166,7 +166,12 @@ internal fun PdfReaderScreen(
                     val page = current.renderer.openPage(pageIndex)
                     try {
                         val maxWidthPx = with(density) { 900.dp.roundToPx() }
-                        val size = pdfBitmapSize(page.width, page.height, maxWidthPx)
+                        val size = pdfBitmapSize(
+                            page.width,
+                            page.height,
+                            maxWidthPx,
+                            maxPixels = pdfPixelBudget(context.applicationContext)
+                        )
                         Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888).also {
                             it.eraseColor(android.graphics.Color.WHITE)
                             page.render(it, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)

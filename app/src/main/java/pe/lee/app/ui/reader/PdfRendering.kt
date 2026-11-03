@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import pe.lee.core.domain.ReaderAnnotation
@@ -132,11 +133,13 @@ internal fun pdfBitmapSize(
     pageWidth: Int,
     pageHeight: Int,
     maxWidthPx: Int,
-    maxHeightPx: Int? = null
+    maxHeightPx: Int? = null,
+    maxPixels: Long = MAX_PDF_BITMAP_PIXELS
 ): PdfBitmapSize {
     require(pageWidth > 0 && pageHeight > 0) { "El PDF contiene una página sin dimensiones válidas." }
     val sourcePixels = pageWidth.toLong() * pageHeight.toLong()
-    val memoryScale = sqrt(MAX_PDF_BITMAP_PIXELS.toDouble() / sourcePixels).toFloat()
+    val budget = maxPixels.coerceAtLeast(1L)
+    val memoryScale = sqrt(budget.toDouble() / sourcePixels).toFloat()
     val widthScale = maxWidthPx.coerceAtLeast(1).toFloat() / pageWidth
     val heightScale = maxHeightPx?.let { it.coerceAtLeast(1).toFloat() / pageHeight }
         ?: Float.POSITIVE_INFINITY
@@ -144,11 +147,25 @@ internal fun pdfBitmapSize(
 
     var width = (pageWidth * scale).roundToInt().coerceAtLeast(1)
     var height = (pageHeight * scale).roundToInt().coerceAtLeast(1)
-    while (width.toLong() * height.toLong() > MAX_PDF_BITMAP_PIXELS) {
+    while (width.toLong() * height.toLong() > budget) {
         if (width >= height && width > 1) width-- else if (height > 1) height--
     }
     return PdfBitmapSize(width, height)
 }
+
+/**
+ * A page bitmap costs four bytes per pixel. On a low-RAM device the previous
+ * fixed budget (4 Mpx = 16 MB) could hold several pages at once and end in an
+ * OutOfMemoryError while scrolling (P-05).
+ */
+internal fun pdfPixelBudget(context: Context): Long =
+    if (context.getSystemService(android.app.ActivityManager::class.java)?.isLowRamDevice == true) {
+        LOW_RAM_PDF_BITMAP_PIXELS
+    } else {
+        MAX_PDF_BITMAP_PIXELS
+    }
+
+internal const val LOW_RAM_PDF_BITMAP_PIXELS = 2_097_152L
 
 internal data class PdfHandle(
     val renderer: PdfRenderer,
@@ -165,8 +182,10 @@ internal fun PdfContinuousPage(
 ) {
     var bitmap by remember(renderer, pageIndex, targetWidthPx) { mutableStateOf<Bitmap?>(null) }
     var renderFailed by remember(renderer, pageIndex, targetWidthPx) { mutableStateOf(false) }
+    val appContext = LocalContext.current.applicationContext
+    val pixelBudget = remember(appContext) { pdfPixelBudget(appContext) }
 
-    LaunchedEffect(renderer, pageIndex, targetWidthPx) {
+    LaunchedEffect(renderer, pageIndex, targetWidthPx, pixelBudget) {
         val currentRenderer = renderer ?: return@LaunchedEffect
         renderFailed = false
         try {
@@ -178,7 +197,8 @@ internal fun PdfContinuousPage(
                             page.width,
                             page.height,
                             maxWidthPx = targetWidthPx,
-                            maxHeightPx = 2200
+                            maxHeightPx = 2200,
+                            maxPixels = pixelBudget
                         )
                         Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888).also {
                             it.eraseColor(android.graphics.Color.WHITE)
