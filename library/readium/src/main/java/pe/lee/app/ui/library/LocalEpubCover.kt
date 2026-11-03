@@ -22,8 +22,8 @@ import androidx.compose.ui.layout.ContentScale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.readium.r2.shared.publication.services.coverFitting
 import org.readium.r2.shared.util.asset.AssetRetriever
@@ -39,7 +39,12 @@ import kotlin.coroutines.coroutineContext
  * Does not download cover art or rely on a cover API. Only visible cards trigger work.
  */
 private object EpubCoverCache {
-    private val mutex = Mutex() // bound concurrent publications and bitmap decoding
+    /**
+     * At most two EPUB parses at a time: enough to fill a visible grid row
+     * without opening dozens of archives while the user scrolls (P-03). A global
+     * mutex serialized every cover behind the first one.
+     */
+    private val permits = Semaphore(2)
     private val images = object : LruCache<String, Bitmap>(6 * 1024) {
         override fun sizeOf(key: String, value: Bitmap): Int =
             (value.byteCount / 1024).coerceAtLeast(1)
@@ -48,17 +53,17 @@ private object EpubCoverCache {
 
     suspend fun get(context: Context, uri: Uri): Bitmap? = withContext(Dispatchers.IO) {
         val key = uri.toString()
-        mutex.withLock {
+        permits.withPermit {
             coroutineContext.ensureActive()
-            images.get(key)?.let { return@withLock it }
-            if (failures.get(key) == true) return@withLock null
+            images.get(key)?.let { return@withPermit it }
+            if (failures.get(key) == true) return@withPermit null
             val bitmap = try {
-                val assetUrl = uri.toAbsoluteUrl() ?: return@withLock null
+                val assetUrl = uri.toAbsoluteUrl() ?: return@withPermit null
                 val httpClient = DefaultHttpClient()
                 val retriever = AssetRetriever(context.contentResolver, httpClient)
                 val asset = retriever.retrieve(assetUrl).getOrElse {
                     failures.put(key, true)
-                    return@withLock null
+                    return@withPermit null
                 }
                 val parser = DefaultPublicationParser(
                     context = context,
@@ -70,7 +75,7 @@ private object EpubCoverCache {
                     .open(asset, allowUserInteraction = false).getOrElse {
                         asset.close()
                         failures.put(key, true)
-                        return@withLock null
+                        return@withPermit null
                     }
                 try {
                     // Readium 3.2: Size is android.util.Size, not a custom type.
