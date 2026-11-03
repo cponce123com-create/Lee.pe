@@ -214,7 +214,7 @@ fun LibraryScreen() {
         migrateLegacyLibrary(context, dao)
         withContext(Dispatchers.IO) {
             dao.pendingBookCleanupUris().forEach { uri ->
-                if (cleanupDeletedBookData(context, dao, uri)) offlineRevision++
+                if (DeletedBookCleanup.complete(context, dao, uri)) offlineRevision++
             }
         }
         if (!BundledWelcomeBook.installIfNeeded(context, dao)) {
@@ -742,7 +742,7 @@ fun LibraryScreen() {
                             val uri = book.uri.toString()
                             dao.deleteByUri(uri)
                             val cleanupComplete = withContext(Dispatchers.IO) {
-                                cleanupDeletedBookData(context, dao, uri)
+                                DeletedBookCleanup.complete(context, dao, uri)
                             }
                             pendingRemoval = null
                             offlineRevision++
@@ -1326,27 +1326,6 @@ fun LibraryScreen() {
             )
         }
     }
-}
-
-private suspend fun cleanupDeletedBookData(context: Context, dao: BookDao, uri: String): Boolean {
-    return try {
-        check(OfflineBookStore.deleteCopy(context, Uri.parse(uri))) { "No se pudo borrar la copia local." }
-        check(AudioProgressStore.remove(context, uri)) { "No se pudo borrar el progreso de audio." }
-        check(clearBookScopedPreferences(context, uri)) { "No se pudieron borrar los ajustes locales." }
-        dao.completeBookCleanup(uri)
-        true
-    } catch (cancelled: CancellationException) {
-        throw cancelled
-    } catch (_: Exception) {
-        false
-    }
-}
-
-private fun clearBookScopedPreferences(context: Context, uri: String): Boolean {
-    val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    val keys = preferences.all.keys.filter { it.endsWith(":$uri") }
-    if (keys.isEmpty()) return true
-    return preferences.edit().also { editor -> keys.forEach(editor::remove) }.commit()
 }
 
 private fun rebindBookScopedPreferences(context: Context, oldUri: String, newUri: String) {
