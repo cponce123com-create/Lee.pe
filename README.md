@@ -18,7 +18,7 @@ Consulta el [plan de trabajo](docs/PLAN_TRABAJO.md) para el orden de los siguien
 
 Lee.pe utiliza el logotipo de libro con audífonos como icono adaptativo de la aplicación, y el símbolo aparece también dentro de un marco fijo en la cabecera de la biblioteca. La pantalla de apertura muestra el logotipo completo sobre fondo azul petróleo. En Android 12 y posteriores se usa la pantalla de inicio del sistema; en versiones anteriores se conserva el fondo de ventana de compatibilidad. La cabecera aplica las zonas seguras para que el logo no quede debajo de la hora ni de los indicadores del sistema.
 
-En la primera instalación se añade una guía EPUB original de Lee.pe a la biblioteca local para probar navegación, apariencia y narración. Se guarda en el dispositivo, se puede quitar y no se vuelve a insertar después de eliminarla.
+En la primera apertura de cada instalación limpia se añade el EPUB «El tesoro de los Incas — Emilio Salgari» a la biblioteca. Se copia junto con su portada al almacenamiento privado del teléfono y funciona sin conexión. Se puede eliminar; no se vuelve a insertar hasta desinstalar e instalar de nuevo Lee.pe.
 
 El selector de narración muestra solo voces Android locales en español y ofrece abrir el instalador de datos del motor TTS del dispositivo. La disponibilidad de Español (México) depende del motor y de sus datos. Hay voces mexicanas de código abierto en Piper, pero integrarlas dentro de Lee.pe requiere un motor de inferencia Android y comprobar la licencia individual de cada modelo; por eso no se descargan ni se distribuyen en esta versión.
 

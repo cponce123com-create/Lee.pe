@@ -10,7 +10,7 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 
 - [x] Mostrar el símbolo oficial de Lee.pe en la cabecera dentro de un marco de tamaño fijo y respetar las zonas seguras del sistema.
 - [x] Dar ancho medido a la tarjeta única de «Retomar lectura» dentro de su lista horizontal.
-- [x] Incluir una guía EPUB original y local una sola vez; si la persona la elimina, no se repone.
+- [x] Precargar «El tesoro de los Incas», de Emilio Salgari, desde un EPUB incluido; copiarlo al almacenamiento local una vez por instalación y conservar su portada.
 - [x] Limitar el selector TTS a voces Android locales en español y ofrecer abrir el instalador de voces del dispositivo.
 - [ ] Evaluar una voz mexicana abierta de Piper con integración Android separada, verificando licencia del runtime y del modelo antes de distribuirla.
 

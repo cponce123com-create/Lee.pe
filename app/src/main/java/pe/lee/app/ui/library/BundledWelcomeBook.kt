@@ -11,13 +11,13 @@ import java.io.File
 import java.io.IOException
 
 /**
- * Copies the small, original Lee.pe welcome guide into app-private storage once
+ * Copies the bundled Salgari EPUB into app-private storage once
  * and adds it to Room. The persisted flag prevents it from reappearing if deleted.
  */
 internal object BundledWelcomeBook {
-    private const val ASSET_NAME = "leepe-welcome.epub"
+    private const val ASSET_NAME = "el-tesoro-de-los-incas.epub"
     private const val PREFS_NAME = "lee_pe_bundled_book"
-    private const val SEEDED_KEY = "welcome_book_added"
+    private const val SEEDED_KEY = "treasure_book_added"
 
     suspend fun installIfNeeded(context: Context, dao: BookDao): Boolean {
         val appContext = context.applicationContext
@@ -39,7 +39,7 @@ internal object BundledWelcomeBook {
                     if (bookFile.exists()) bookFile.delete()
                     if (!temporary.renameTo(bookFile)) {
                         temporary.delete()
-                        throw IOException("No se pudo guardar la guía de bienvenida.")
+                        throw IOException("No se pudo guardar El tesoro de los Incas.")
                     }
                 }
 
@@ -48,7 +48,7 @@ internal object BundledWelcomeBook {
                     dao.insert(
                         BookEntity(
                             uri = bookUri,
-                            title = "Tu próxima historia empieza aquí",
+                            title = "El tesoro de los Incas — Emilio Salgari",
                             format = "EPUB",
                             importedAt = System.currentTimeMillis()
                         )
