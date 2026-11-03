@@ -25,3 +25,11 @@ internal fun matchesLibraryQuery(
     val fields = normalizedLibraryText("$title $format ${collection.orEmpty()}")
     return matchesNormalizedLibraryQuery(fields, normalizedQuery)
 }
+
+/** Search an indexed, already normalized catalog entry with minimal allocations. */
+internal fun matchesNormalizedLibraryQuery(
+    indexedText: String,
+    normalizedQuery: String
+): Boolean =
+    normalizedQuery.isBlank() ||
+        normalizedQuery.split(' ').all { it.isEmpty() || indexedText.contains(it) }
