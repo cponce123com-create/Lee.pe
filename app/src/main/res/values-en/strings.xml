@@ -18,4 +18,19 @@
     <string name="action_import">Import</string>
     <string name="library_scanning">Scanning</string>
     <string name="library_scan">Scan</string>
+    <string name="library_filter_all">All</string>
+    <string name="library_filter_to_read">To read</string>
+    <string name="library_filter_in_progress">In progress</string>
+    <string name="library_filter_completed">Finished</string>
+    <string name="library_filter_favorites">Favorites</string>
+    <string name="library_filter_epub">EPUB</string>
+    <string name="library_filter_pdf">PDF</string>
+    <string name="library_filter_audio">Audio</string>
+    <string name="library_filter_offline_copy">Offline copy</string>
+    <string name="library_sort_title_ascending">Title A–Z</string>
+    <string name="library_sort_title_descending">Title Z–A</string>
+    <string name="library_sort_last_read">Last read</string>
+    <string name="library_sort_import_date">Import date</string>
+    <string name="library_sort_progress">Progress</string>
+    <string name="library_sort_order">Sort: %1$s</string>
 </resources>

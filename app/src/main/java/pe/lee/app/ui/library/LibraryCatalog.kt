@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Close
 import pe.lee.app.data.local.OfflineBookStore
+import pe.lee.app.R
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
@@ -40,6 +41,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -59,18 +61,17 @@ import java.io.IOException
 @Composable
 internal fun LibraryCatalog(
     books: List<LocalBook>,
-    filters: List<String>,
     visibleBooks: List<LocalBook>,
     continueBooks: List<LocalBook>,
     orderedBooks: List<LocalBook>,
     collections: List<String>,
     query: MutableState<String>,
-    selectedFilter: MutableState<String>,
+    selectedFilter: MutableState<LibraryFilter>,
     selectedCollection: MutableState<String?>,
     collectionMenuExpanded: MutableState<Boolean>,
     showCollectionsManager: MutableState<Boolean>,
     sortMenuExpanded: MutableState<Boolean>,
-    sortMode: MutableState<String>,
+    sortMode: MutableState<LibrarySortMode>,
     listMode: MutableState<Boolean>,
     savingBookUri: MutableState<String?>,
     pendingRemoval: MutableState<LocalBook?>,
@@ -184,11 +185,11 @@ internal fun LibraryCatalog(
 
         item(key = "filters") {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(filters, key = { it }) { filter ->
+                items(LibraryFilter.entries, key = { it.name }) { filter ->
                     FilterChip(
                         selected = selectedFilter.value == filter,
                         onClick = { selectedFilter.value = filter },
-                        label = { Text(filter) }
+                        label = { Text(stringResource(filter.labelRes)) }
                     )
                 }
             }
@@ -247,15 +248,15 @@ internal fun LibraryCatalog(
                 )
                 Box {
                     TextButton(onClick = { sortMenuExpanded.value = true }) {
-                        Text("Orden: ${sortMode.value}")
+                        Text(stringResource(R.string.library_sort_order, stringResource(sortMode.value.labelRes)))
                     }
                     DropdownMenu(
                         expanded = sortMenuExpanded.value,
                         onDismissRequest = { sortMenuExpanded.value = false }
                     ) {
-                        listOf("Título A–Z", "Título Z–A", "Última lectura", "Fecha de importación", "Progreso").forEach { option ->
+                        LibrarySortMode.entries.forEach { option ->
                             DropdownMenuItem(
-                                text = { Text(option) },
+                                text = { Text(stringResource(option.labelRes)) },
                                 onClick = {
                                     sortMode.value = option
                                     sortMenuExpanded.value = false

@@ -158,7 +158,7 @@ fun LibraryScreen(viewModel: LibraryViewModel, settings: SettingsRepository) {
     val coroutineScope = rememberCoroutineScope()
     val queryState = remember { mutableStateOf("") }
     var query by queryState
-    val selectedFilterState = remember { mutableStateOf("Todos") }
+    val selectedFilterState = remember { mutableStateOf(LibraryFilter.ALL) }
     var selectedFilter by selectedFilterState
     val selectedCollectionState = remember { mutableStateOf<String?>(null) }
     var selectedCollection by selectedCollectionState
@@ -197,7 +197,7 @@ fun LibraryScreen(viewModel: LibraryViewModel, settings: SettingsRepository) {
     var titleDraft by titleDraftState
     val sortMenuExpandedState = remember { mutableStateOf(false) }
     var sortMenuExpanded by sortMenuExpandedState
-    val sortModeState = remember { mutableStateOf("Título A–Z") }
+    val sortModeState = remember { mutableStateOf(LibrarySortMode.TITLE_ASC) }
     var sortMode by sortModeState
     val pendingMarkdownState = remember { mutableStateOf<String?>(null) }
     var pendingMarkdown by pendingMarkdownState
@@ -310,7 +310,6 @@ fun LibraryScreen(viewModel: LibraryViewModel, settings: SettingsRepository) {
         onOfflineBooksChanged = { offlineRevision++ }
     )
 
-    val filters = listOf("Todos", "Por leer", "En curso", "Terminados", "Favoritos", "EPUB", "PDF", "Audio", "Copia en Lee.pe")
     // Cache catalog calculations across unrelated UI recompositions (menus, dialogs,
     // stats updates, etc.). Everything stays on-device; no search API is required.
     val normalizedQuery = remember(query) { normalizedLibraryText(query) }
@@ -329,15 +328,15 @@ fun LibraryScreen(viewModel: LibraryViewModel, settings: SettingsRepository) {
                 searchIndex[book.uri.toString()].orEmpty(), normalizedQuery
             )
             val matchesFilter = when (selectedFilter) {
-                "Por leer" -> book.format != "Audio" && book.readProgress <= 0f
-                "Copia en Lee.pe" -> book.offlineCopyUri != null
-                "En curso" -> book.format != "Audio" && book.readProgress > 0f && book.readProgress < 1f
-                "Terminados" -> book.format != "Audio" && book.readProgress >= 1f
-                "Favoritos" -> book.isFavorite
-                "EPUB" -> book.format == "EPUB"
-                "PDF" -> book.format == "PDF"
-                "Audio" -> book.format == "Audio"
-                else -> true
+                LibraryFilter.TO_READ -> book.format != "Audio" && book.readProgress <= 0f
+                LibraryFilter.OFFLINE_COPY -> book.offlineCopyUri != null
+                LibraryFilter.IN_PROGRESS -> book.format != "Audio" && book.readProgress > 0f && book.readProgress < 1f
+                LibraryFilter.COMPLETED -> book.format != "Audio" && book.readProgress >= 1f
+                LibraryFilter.FAVORITES -> book.isFavorite
+                LibraryFilter.EPUB -> book.format == "EPUB"
+                LibraryFilter.PDF -> book.format == "PDF"
+                LibraryFilter.AUDIO -> book.format == "Audio"
+                LibraryFilter.ALL -> true
             }
             val matchesCollection = selectedCollection == null || book.collectionId == selectedCollection
             matchesQuery && matchesFilter && matchesCollection
@@ -352,17 +351,16 @@ fun LibraryScreen(viewModel: LibraryViewModel, settings: SettingsRepository) {
     }
     val orderedBooks = remember(visibleBooks, sortMode) {
         when (sortMode) {
-            "Última lectura" -> visibleBooks.sortedByDescending { it.lastOpenedAt ?: 0L }
-            "Fecha de importación" -> visibleBooks.sortedByDescending { it.importedAt }
-            "Progreso" -> visibleBooks.sortedByDescending { it.readProgress }
-            "Título Z–A" -> visibleBooks.sortedWith(compareByDescending(String.CASE_INSENSITIVE_ORDER) { it.title })
-            else -> visibleBooks.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
+            LibrarySortMode.LAST_READ -> visibleBooks.sortedByDescending { it.lastOpenedAt ?: 0L }
+            LibrarySortMode.IMPORT_DATE -> visibleBooks.sortedByDescending { it.importedAt }
+            LibrarySortMode.PROGRESS -> visibleBooks.sortedByDescending { it.readProgress }
+            LibrarySortMode.TITLE_DESC -> visibleBooks.sortedWith(compareByDescending(String.CASE_INSENSITIVE_ORDER) { it.title })
+            LibrarySortMode.TITLE_ASC -> visibleBooks.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
         }
     }
 
     LibraryCatalog(
         books = books,
-        filters = filters,
         visibleBooks = visibleBooks,
         continueBooks = continueBooks,
         orderedBooks = orderedBooks,

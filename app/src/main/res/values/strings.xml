@@ -18,4 +18,19 @@
     <string name="action_import">Importar</string>
     <string name="library_scanning">Escaneando</string>
     <string name="library_scan">Escanear</string>
+    <string name="library_filter_all">Todos</string>
+    <string name="library_filter_to_read">Por leer</string>
+    <string name="library_filter_in_progress">En curso</string>
+    <string name="library_filter_completed">Terminados</string>
+    <string name="library_filter_favorites">Favoritos</string>
+    <string name="library_filter_epub">EPUB</string>
+    <string name="library_filter_pdf">PDF</string>
+    <string name="library_filter_audio">Audio</string>
+    <string name="library_filter_offline_copy">Copia en Lee.pe</string>
+    <string name="library_sort_title_ascending">Título A–Z</string>
+    <string name="library_sort_title_descending">Título Z–A</string>
+    <string name="library_sort_last_read">Última lectura</string>
+    <string name="library_sort_import_date">Fecha de importación</string>
+    <string name="library_sort_progress">Progreso</string>
+    <string name="library_sort_order">Orden: %1$s</string>
 </resources>
