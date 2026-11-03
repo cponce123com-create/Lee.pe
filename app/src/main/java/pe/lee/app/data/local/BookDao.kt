@@ -177,9 +177,19 @@ interface BookDao {
     @Query("DELETE FROM library_books WHERE uri = :uri")
     suspend fun deleteLibraryBookByUri(uri: String)
 
+    @androidx.room3.Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun enqueueBookCleanup(item: PendingBookCleanupEntity)
+
+    @Query("SELECT uri FROM pending_book_cleanup ORDER BY uri")
+    suspend fun pendingBookCleanupUris(): List<String>
+
+    @Query("DELETE FROM pending_book_cleanup WHERE uri = :uri")
+    suspend fun completeBookCleanup(uri: String)
+
     @Transaction
     suspend fun deleteByUri(uri: String) {
         val book = findByUri(uri) ?: return
+        enqueueBookCleanup(PendingBookCleanupEntity(uri))
         deleteAnnotationsByBookUri(uri)
         deleteSessionsByBookUri(uri)
         deleteCollectionLinks(book.id)
