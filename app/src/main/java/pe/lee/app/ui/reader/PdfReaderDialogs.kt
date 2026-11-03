@@ -47,7 +47,7 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.json.JSONObject
-import pe.lee.app.data.local.ReadingAnnotationEntity
+import pe.lee.core.domain.ReaderAnnotation
 import pe.lee.app.ui.reader.PdfReaderViewModel
 import pe.lee.app.ui.reader.pdfPageLocator
 import pe.lee.app.ui.reader.pdfTextLocator
@@ -62,7 +62,7 @@ internal fun PdfReaderDialogs(
     uri: Uri,
     pageIndex: Int,
     pageCount: Int,
-    annotations: List<ReadingAnnotationEntity>,
+    annotations: List<ReaderAnnotation>,
     viewModel: PdfReaderViewModel,
     coroutineScope: CoroutineScope,
     moveToPage: (Int) -> Unit,
@@ -180,7 +180,7 @@ internal fun PdfReaderDialogs(
                         val now = System.currentTimeMillis()
                         coroutineScope.launch {
                             viewModel.saveAnnotation(
-                                ReadingAnnotationEntity(
+                                ReaderAnnotation(
                                     id = UUID.randomUUID().toString(),
                                     bookUri = uri.toString(),
                                     kind = "BOOKMARK",
@@ -302,7 +302,7 @@ internal fun PdfReaderDialogs(
                         if (currentEdit == null) {
                             val now = System.currentTimeMillis()
                             viewModel.saveAnnotation(
-                                ReadingAnnotationEntity(
+                                ReaderAnnotation(
                                     id = UUID.randomUUID().toString(),
                                     bookUri = uri.toString(),
                                     kind = "NOTE",
@@ -342,7 +342,7 @@ internal fun PdfReaderDialogs(
                             val now = System.currentTimeMillis()
                             coroutineScope.launch {
                                 viewModel.saveAnnotation(
-                                    ReadingAnnotationEntity(
+                                    ReaderAnnotation(
                                         id = UUID.randomUUID().toString(),
                                         bookUri = uri.toString(),
                                         kind = "HIGHLIGHT",

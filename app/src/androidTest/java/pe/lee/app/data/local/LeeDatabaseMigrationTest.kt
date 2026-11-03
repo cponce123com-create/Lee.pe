@@ -6,7 +6,7 @@ import androidx.room3.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.runBlocking
-import pe.lee.app.ui.audio.AudioProgressStore
+import pe.lee.app.data.repository.AudioProgressStore
 import pe.lee.app.ui.library.DeletedBookCleanup
 import pe.lee.app.data.repository.SettingsRepository
 import org.junit.Assert.assertEquals

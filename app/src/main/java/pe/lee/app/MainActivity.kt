@@ -1,5 +1,6 @@
 package pe.lee.app
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,6 +10,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import pe.lee.app.ui.library.LibraryScreen
 import pe.lee.app.ui.library.LibraryViewModel
+import pe.lee.app.ui.audio.AudioPlayerActivity
+import pe.lee.app.ui.reader.PdfReaderActivity
+import pe.lee.app.ui.reader.ReaderActivity
+import pe.lee.app.data.local.OfflineBookStore
 import pe.lee.app.ui.theme.LeePeTheme
 
 class MainActivity : ComponentActivity() {
@@ -20,7 +25,29 @@ class MainActivity : ComponentActivity() {
         setContent {
             LeePeTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    LibraryScreen(libraryViewModel, container.settings)
+                    LibraryScreen(
+                        viewModel = libraryViewModel,
+                        settings = container.settings,
+                        backupRepository = container.backup,
+                        onOpenBook = { uri, format, title, offlineCopyUri ->
+                            val activity: Class<*> = when (format) {
+                                "Audio" -> AudioPlayerActivity::class.java
+                                "PDF" -> PdfReaderActivity::class.java
+                                else -> ReaderActivity::class.java
+                            }
+                            val titleExtra = when (format) {
+                                "Audio" -> AudioPlayerActivity.EXTRA_TITLE
+                                "PDF" -> PdfReaderActivity.EXTRA_TITLE
+                                else -> ReaderActivity.EXTRA_TITLE
+                            }
+                            startActivity(
+                                Intent(this, activity)
+                                    .setData(uri)
+                                    .putExtra(titleExtra, title)
+                                    .putExtra(OfflineBookStore.EXTRA_COPY_URI, offlineCopyUri?.toString())
+                            )
+                        }
+                    )
                 }
             }
         }

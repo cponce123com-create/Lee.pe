@@ -3,7 +3,7 @@ package pe.lee.app.ui.reader
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import kotlinx.coroutines.Job
-import pe.lee.app.data.local.ReadingAnnotationEntity
+import pe.lee.core.domain.ReaderAnnotation
 
 internal class PdfReaderDialogsState {
     val showPageDialog = mutableStateOf(false)
@@ -20,7 +20,7 @@ internal class PdfReaderDialogsState {
     val selectedPdfRects = mutableStateOf<List<PdfNormalizedRect>>(emptyList())
     val showSelectionDialog = mutableStateOf(false)
     val quoteForNote = mutableStateOf<String?>(null)
-    val editingNote = mutableStateOf<ReadingAnnotationEntity?>(null)
+    val editingNote = mutableStateOf<ReaderAnnotation?>(null)
     val noteDraft = mutableStateOf("")
     val requestedPage = mutableStateOf("1")
 }

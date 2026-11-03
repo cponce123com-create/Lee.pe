@@ -35,7 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import pe.lee.app.data.local.ReadingAnnotationEntity
+import pe.lee.core.domain.ReaderAnnotation
 import androidx.compose.runtime.MutableState
 
 
@@ -43,17 +43,17 @@ import androidx.compose.runtime.MutableState
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 internal fun EpubAnnotationSheets(
-    annotations: List<ReadingAnnotationEntity>,
+    annotations: List<ReaderAnnotation>,
     showAnnotations: MutableState<Boolean>,
     showNoteEditor: MutableState<Boolean>,
-    editingAnnotation: MutableState<ReadingAnnotationEntity?>,
+    editingAnnotation: MutableState<ReaderAnnotation?>,
     noteDraft: MutableState<String>,
     onAddBookmark: () -> Unit,
     onAddNote: (String) -> Unit,
-    onUpdateAnnotation: (ReadingAnnotationEntity, String) -> Unit,
-    onChangeHighlightColor: (ReadingAnnotationEntity, Int) -> Unit,
-    onSelectAnnotation: (ReadingAnnotationEntity) -> Unit,
-    onDeleteAnnotation: (ReadingAnnotationEntity) -> Unit
+    onUpdateAnnotation: (ReaderAnnotation, String) -> Unit,
+    onChangeHighlightColor: (ReaderAnnotation, Int) -> Unit,
+    onSelectAnnotation: (ReaderAnnotation) -> Unit,
+    onDeleteAnnotation: (ReaderAnnotation) -> Unit
 ) {
     if (showAnnotations.value) {
         ModalBottomSheet(onDismissRequest = { showAnnotations.value = false }) {

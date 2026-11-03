@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths:
       - "app/**"
+      - "core/**"
+      - "data/**"
+      - "feature/**"
+      - "library/**"
       - "gradle/**"
       - "*.gradle.kts"
       - "gradle.properties"
@@ -13,6 +17,10 @@ on:
     branches: [main]
     paths:
       - "app/**"
+      - "core/**"
+      - "data/**"
+      - "feature/**"
+      - "library/**"
       - "gradle/**"
       - "*.gradle.kts"
       - "gradle.properties"
@@ -70,6 +78,6 @@ jobs:
           name: lee-pe-debug
           path: |
             app/build/outputs/apk/debug/*.apk
-            app/schemas/**/*.json
+            core/database/schemas/**/*.json
           if-no-files-found: error
           retention-days: 14

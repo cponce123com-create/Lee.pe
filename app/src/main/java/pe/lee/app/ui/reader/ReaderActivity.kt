@@ -36,7 +36,7 @@ import androidx.fragment.app.FragmentActivity
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import pe.lee.app.data.repository.SettingsRepository
-import pe.lee.app.data.local.ReadingAnnotationEntity
+import pe.lee.core.domain.ReaderAnnotation
 import org.readium.navigator.media.tts.android.AndroidTtsPreferences
 import org.readium.r2.navigator.epub.EpubPreferencesSerializer
 import org.readium.r2.navigator.VisualNavigator
@@ -154,7 +154,7 @@ internal fun EpubReaderScreen(
                         val now = System.currentTimeMillis()
                         coroutineScope.launch {
                             viewModel.saveAnnotation(
-                                ReadingAnnotationEntity(
+                                ReaderAnnotation(
                                     id = UUID.randomUUID().toString(),
                                     bookUri = uri.toString(),
                                     kind = "BOOKMARK",
@@ -170,7 +170,7 @@ internal fun EpubReaderScreen(
                         val now = System.currentTimeMillis()
                         coroutineScope.launch {
                             viewModel.saveAnnotation(
-                                ReadingAnnotationEntity(
+                                ReaderAnnotation(
                                     id = UUID.randomUUID().toString(),
                                     bookUri = uri.toString(),
                                     kind = "NOTE",

@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Lee.pe</string>
+    <string name="accessibility_leepe_logo">Lee.pe logo</string>
+    <string name="accessibility_reading_statistics">Reading statistics</string>
+    <string name="accessibility_library_more_options">More library options</string>
+    <string name="accessibility_view_grid">View book covers in a grid</string>
+    <string name="accessibility_view_list">View books in a list</string>
+    <string name="library_offline_tagline">Personal reader · Offline</string>
+    <string name="library_backup_restore">Backup and restore</string>
+    <string name="library_empty_welcome">Your next story starts here</string>
+    <string name="library_welcome">Your library, your way</string>
+    <string name="library_empty_prompt">Add books or scan a folder on your phone.</string>
+    <plurals name="library_books_count">
+        <item quantity="one">%1$d book in your library. Everything stays on your device.</item>
+        <item quantity="other">%1$d books in your library. Everything stays on your device.</item>
+    </plurals>
+    <string name="action_import">Import</string>
+    <string name="library_scanning">Scanning</string>
+    <string name="library_scan">Scan</string>
+    <string name="library_filter_all">All</string>
+    <string name="library_filter_to_read">To read</string>
+    <string name="library_filter_in_progress">In progress</string>
+    <string name="library_filter_completed">Finished</string>
+    <string name="library_filter_favorites">Favorites</string>
+    <string name="library_filter_epub">EPUB</string>
+    <string name="library_filter_pdf">PDF</string>
+    <string name="library_filter_audio">Audio</string>
+    <string name="library_filter_offline_copy">Offline copy</string>
+    <string name="library_sort_title_ascending">Title A–Z</string>
+    <string name="library_sort_title_descending">Title Z–A</string>
+    <string name="library_sort_last_read">Last read</string>
+    <string name="library_sort_import_date">Import date</string>
+    <string name="library_sort_progress">Progress</string>
+    <string name="library_sort_order">Sort: %1$s</string>
+    <string name="accessibility_search">Search</string>
+    <string name="accessibility_search_books">Search books by title, format, or collection</string>
+    <string name="accessibility_clear_search">Clear search</string>
+    <string name="library_search_placeholder">Search title, format, or collection</string>
+    <string name="library_resume_reading">Continue reading</string>
+    <string name="library_resume_subtitle">Pick up where you left off</string>
+    <string name="library_collection">Collection</string>
+    <string name="library_all_short">All</string>
+    <string name="library_all_collections">All collections</string>
+    <string name="library_manage_collections">Manage collections</string>
+    <string name="library_on_device">On this device</string>
+    <plurals name="library_files_showing">
+        <item quantity="one">%1$d file · Showing %2$d</item>
+        <item quantity="other">%1$d files · Showing %2$d</item>
+    </plurals>
+    <string name="library_view_list">List</string>
+    <string name="library_view_covers">Covers</string>
+    <string name="library_offline_copy_saved">Copy saved for offline use</string>
+    <string name="library_offline_copy_save_failed">Could not save the copy</string>
+    <string name="library_offline_copy_removed">Offline copy removed</string>
+    <string name="library_no_annotations">This book has no annotations yet</string>
+    <string name="library_annotations_read_failed">Could not read the annotations</string>
+    <string name="library_local_privacy_note">Your library, search, and annotations work on your phone without an account or servers.</string>
+    <string name="library_remove_title">Remove from library</string>
+    <string name="library_remove_book_message">“%1$s” will be removed from Lee.pe and its bookmarks, notes, and highlights will be deleted. The original file will remain on your device.</string>
+    <string name="library_remove_book_with_copy_message">“%1$s” will be removed from Lee.pe and its bookmarks, notes, and highlights will be deleted. The original file will remain on your device. The offline copy saved in Lee.pe will also be deleted.</string>
+    <string name="library_remove_success">Book removed from library</string>
+    <string name="library_remove_cleanup_pending">Book removed. Remaining cleanup will be retried when you open the library.</string>
+    <string name="action_remove">Remove</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="library_book_collection_title">Book collection</string>
+    <string name="library_move_to_collection">Move to a collection</string>
+    <string name="library_create_or_use_collection">Create or use a collection</string>
+    <string name="library_collection_examples">E.g. Fantasy, To read</string>
+    <string name="library_relink_file">Relink file</string>
+    <string name="library_book_organized">Book added to “%1$s”</string>
+    <string name="library_collection_save_failed">Could not save the collection</string>
+    <string name="action_save">Save</string>
+    <string name="library_no_collections_yet">There are no collections yet. Create one while organizing a book.</string>
+    <string name="action_move_up">Move up</string>
+    <string name="action_move_down">Move down</string>
+    <string name="action_rename">Rename</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_done">Done</string>
+    <string name="library_rename_collection">Rename collection</string>
+    <string name="field_name">Name</string>
+    <string name="library_collection_rename_failed">Could not rename the collection</string>
+    <string name="library_edit_title">Edit title</string>
+    <string name="library_book_title">Book title</string>
+    <string name="library_title_updated">Title updated</string>
+    <string name="library_title_update_failed">Could not update the title</string>
+    <string name="scanner_searching_title">Searching for local books</string>
+    <plurals name="scanner_folders_count">
+        <item quantity="one">Folder scanned: %1$d</item>
+        <item quantity="other">Folders scanned: %1$d</item>
+    </plurals>
+    <plurals name="scanner_files_count">
+        <item quantity="one">File scanned: %1$d</item>
+        <item quantity="other">Files scanned: %1$d</item>
+    </plurals>
+    <plurals name="scanner_books_count">
+        <item quantity="one">Book found: %1$d</item>
+        <item quantity="other">Books found: %1$d</item>
+    </plurals>
+    <string name="scanner_privacy_notice">The search can be cancelled. No files are uploaded to the internet.</string>
+    <string name="scanner_result_title">Scan results</string>
+    <plurals name="scanner_new_books_count">
+        <item quantity="one">New book: %1$d</item>
+        <item quantity="other">New books: %1$d</item>
+    </plurals>
+    <plurals name="scanner_duplicates_count">
+        <item quantity="one">Already registered: %1$d</item>
+        <item quantity="other">Already registered: %1$d</item>
+    </plurals>
+    <plurals name="scanner_visited_files_count">
+        <item quantity="one">File scanned: %1$d</item>
+        <item quantity="other">Files scanned: %1$d</item>
+    </plurals>
+    <plurals name="scanner_visited_folders_count">
+        <item quantity="one">Folder scanned: %1$d</item>
+        <item quantity="other">Folders scanned: %1$d</item>
+    </plurals>
+    <plurals name="scanner_skipped_folders_count">
+        <item quantity="one">Folder unavailable or skipped: %1$d</item>
+        <item quantity="other">Folders unavailable or skipped: %1$d</item>
+    </plurals>
+    <string name="scanner_limit_reached">The scan safety limit was reached. You can run it again by selecting a subfolder.</string>
+    <string name="scanner_import_privacy_notice">References to your EPUB, PDF, and audio files will be added. Files stay in their original folder and are not copied or uploaded.</string>
+    <plurals name="scanner_imported_books_toast">
+        <item quantity="one">Scanner: %1$d book was added to your library.</item>
+        <item quantity="other">Scanner: %1$d books were added to your library.</item>
+    </plurals>
+    <string name="scanner_import_failed">The books could not be imported.</string>
+    <string name="action_importing">Importing…</string>
+    <string name="scanner_add_to_library">Add to library</string>
+    <string name="backup_local_title">Lee.pe local backup</string>
+    <string name="backup_description">Export or restore your library, locations, notes, bookmarks, and statistics.</string>
+    <string name="backup_books_not_included">EPUB, PDF, and audio files are not included. On another phone, import the books first, then restore the data. Title matches may vary between editions.</string>
+    <string name="backup_privacy_notice">The JSON backup contains unencrypted notes and reading data. Keep it somewhere private. It is never sent to Lee.pe.</string>
+    <string name="backup_export">Export</string>
+    <string name="backup_restore">Restore</string>
+    <string name="backup_confirm_restore_title">Confirm restore</string>
+    <plurals name="backup_books_count">
+        <item quantity="one">Book in backup: %1$d</item>
+        <item quantity="other">Books in backup: %1$d</item>
+    </plurals>
+    <plurals name="backup_exact_matches_count">
+        <item quantity="one">Exact match: %1$d</item>
+        <item quantity="other">Exact matches: %1$d</item>
+    </plurals>
+    <plurals name="backup_title_matches_count">
+        <item quantity="one">Title and format match: %1$d</item>
+        <item quantity="other">Title and format matches: %1$d</item>
+    </plurals>
+    <plurals name="backup_unavailable_books_count">
+        <item quantity="one">No matching local book: %1$d</item>
+        <item quantity="other">No matching local books: %1$d</item>
+    </plurals>
+    <plurals name="backup_annotations_count">
+        <item quantity="one">Annotation in backup: %1$d</item>
+        <item quantity="other">Annotations in backup: %1$d</item>
+    </plurals>
+    <string name="backup_restore_safety_notice">Only data for books already in your library will be restored. Books will not be deleted and existing annotations will not be overwritten. Check that title matches are the same edition. You can restore this file again after importing missing books.</string>
+    <string name="backup_restore_result">Restored: %1$s; %2$s. Pending: %3$s</string>
+    <string name="backup_restore_failed">The backup could not be restored</string>
+    <string name="backup_restoring">Restoring…</string>
+    <string name="backup_restore_data">Restore data</string>
+    <plurals name="backup_books_short">
+        <item quantity="one">%1$d book</item>
+        <item quantity="other">%1$d books</item>
+    </plurals>
+    <plurals name="backup_annotations_short">
+        <item quantity="one">%1$d annotation</item>
+        <item quantity="other">%1$d annotations</item>
+    </plurals>
+    <plurals name="backup_books_pending_short">
+        <item quantity="one">%1$d book pending</item>
+        <item quantity="other">%1$d books pending</item>
+    </plurals>
+    <string name="reading_duration_zero">0 min</string>
+    <string name="reading_duration_under_minute">Less than 1 min</string>
+    <string name="reading_duration_minutes">%1$d min</string>
+    <string name="reading_duration_hours">%1$d hr</string>
+    <string name="reading_duration_hours_minutes">%1$d hr %2$d min</string>
+    <string name="library_statistics_title">Library statistics</string>
+    <string name="library_stat_total_books">Total books</string>
+    <string name="library_stat_in_progress">In progress</string>
+    <string name="library_stat_completed">Finished</string>
+    <string name="library_stat_favorites">Favorites</string>
+    <string name="reading_time_today">Reading time today: %1$s</string>
+    <plurals name="reading_streak_days">
+        <item quantity="one">Current streak: %1$d day</item>
+        <item quantity="other">Current streak: %1$d days</item>
+    </plurals>
+    <string name="reading_daily_goal">Daily goal: %1$d min</string>
+    <string name="reading_change_goal">Change goal</string>
+    <string name="reading_reset_history">Reset history</string>
+    <string name="reading_stats_tracking_note">Time is tracked locally while an EPUB or PDF reader is in the foreground. Audiobooks playing in the background are not included.</string>
+    <string name="action_close">Close</string>
+    <string name="reading_daily_goal_title">Daily reading goal</string>
+    <string name="reading_goal_minutes_label">Minutes (5 to 240)</string>
+    <string name="reading_reset_title">Reset reading time</string>
+    <string name="reading_reset_confirmation">Your local reading time and streak history will be erased. Your library, progress, and annotations will be kept.</string>
+    <string name="reading_history_reset">Reading history reset</string>
+    <string name="reading_history_reset_failed">Could not reset the history</string>
+    <string name="action_reset">Reset</string>
+    <string name="library_no_matches">No matches found</string>
+    <string name="library_try_another_search">Try another title or change the filter.</string>
+    <string name="library_empty_import_prompt">Import an EPUB, PDF, or audiobook from your device.</string>
+    <string name="library_choose_files">Choose files</string>
+    <string name="accessibility_open_book">Open %1$s</string>
+    <string name="book_status_audiobook">Audiobook</string>
+    <string name="book_status_finished">Finished</string>
+    <string name="book_progress_percent">%1$d%% read</string>
+    <string name="book_status_to_read">To read</string>
+    <string name="book_status_with_format">%1$s · %2$s</string>
+    <string name="accessibility_favorite_book">Favorite</string>
+    <string name="book_status_not_started">Not started</string>
+    <string name="book_available_offline">Available offline</string>
+    <string name="accessibility_book_options">Options for %1$s</string>
+    <string name="book_remove_favorite">Remove from favorites</string>
+    <string name="book_add_favorite">Add to favorites</string>
+    <string name="book_remove_offline_copy">Remove offline copy</string>
+    <string name="book_saving_copy">Saving copy…</string>
+    <string name="book_save_offline">Save offline</string>
+    <string name="book_export_annotations">Export annotations to Markdown</string>
+    <string name="book_organize_collection">Organize in collection</string>
+</resources>
