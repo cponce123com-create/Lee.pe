@@ -28,6 +28,9 @@ class ShareCardScreenTest {
         composeRule.setContent { ShareCardScreen(viewModel = viewModel, onBack = {}) }
 
         composeRule.onNodeWithText("Cita de prueba").assertExists()
+        composeRule.onNodeWithText("Minimalista").assertExists()
+        composeRule.onNodeWithText("Editorial clásica").assertExists()
+        composeRule.onNodeWithText("Literaria premium").assertExists()
         composeRule.onNodeWithText("Papel antiguo").assertExists()
         composeRule.onNodeWithText("Oscura elegante").assertExists()
         composeRule.onNodeWithText("Degradado moderno").assertExists()
