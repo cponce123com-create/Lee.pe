@@ -40,6 +40,7 @@ import androidx.compose.runtime.MutableState
 
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 internal fun EpubAnnotationSheets(
     annotations: List<ReadingAnnotationEntity>,
     showAnnotations: MutableState<Boolean>,

@@ -39,6 +39,11 @@ import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.app.data.local.ReadingAnnotationEntity
 import org.readium.navigator.media.tts.android.AndroidTtsPreferences
 import org.readium.r2.navigator.epub.EpubPreferencesSerializer
+import org.readium.r2.navigator.VisualNavigator
+import org.readium.r2.navigator.preferences.Color as ReadiumColor
+import org.readium.r2.navigator.preferences.FontFamily as ReadiumFontFamily
+import org.readium.r2.navigator.preferences.Theme as ReadiumTheme
+import org.readium.r2.navigator.preferences.TextAlign as ReadiumTextAlign
 import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication

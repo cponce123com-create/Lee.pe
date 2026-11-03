@@ -134,6 +134,7 @@ internal object LocalLibraryBackup {
             val report = backupRepository.merge(preview.archive.snapshot)
             val settingsRepository = SettingsRepository(context)
             val currentSettings = settingsRepository.all(SettingsRepository.Store.LIBRARY)
+            val restoredBooks = backupRepository.allBooks()
             settingsRepository.apply(SettingsRepository.Store.LIBRARY) {
             for ((backupUri, localUri) in report.uriMap) {
                 val settings = preview.archive.settings[backupUri] ?: continue
@@ -166,7 +167,6 @@ internal object LocalLibraryBackup {
             }
             // PDF activity uses this legacy key first. Align it to Room's actual
             // post-merge position, not blindly to a possibly older backup.
-            val restoredBooks = backupRepository.allBooks()
             for (book in restoredBooks) {
                 if (book.uri in report.uriMap.values && book.format == "PDF") {
                     putInt("pdf-page:${book.uri}", book.pdfPageIndex)

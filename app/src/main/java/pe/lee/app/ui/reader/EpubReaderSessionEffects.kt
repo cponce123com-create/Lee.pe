@@ -16,11 +16,16 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import org.json.JSONObject
+import java.util.UUID
+import android.content.ClipData
+import android.content.ClipboardManager
 import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.app.data.local.ReadingAnnotationEntity
 import org.readium.navigator.media.tts.TtsNavigator
 import org.readium.r2.navigator.Decoration
+import org.readium.r2.navigator.VisualNavigator
 import org.readium.r2.navigator.epub.EpubNavigatorFactory
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.EpubPreferences
@@ -236,12 +241,12 @@ internal fun EpubReaderSessionEffects(
 
     LaunchedEffect(session.ttsServiceBinding.value) {
         val binder = session.ttsServiceBinding.value?.binder ?: return@LaunchedEffect
-        binder.session.collect { session ->
-            if (session?.bookUri == uri.toString()) {
-                session.ttsNavigator.value = session.session.navigator.value
-                session.ttsVoices.value = session.session.navigator.value.voices.filter { it.isLocalSpanishVoice() }
+        binder.session.collect { activeSession ->
+            if (activeSession?.bookUri == uri.toString()) {
+                session.ttsNavigator.value = activeSession.navigator
+                session.ttsVoices.value = activeSession.navigator.voices.filter { it.isLocalSpanishVoice() }
                     .sortedWith(compareBy({ it.language.toString() }, { it.id.value }))
-                session.ttsIsPlaying.value = session.session.navigator.value.playback.value.playWhenReady
+                session.ttsIsPlaying.value = activeSession.navigator.playback.value.playWhenReady
             } else {
                 session.ttsNavigator.value = null
                 session.ttsIsPlaying.value = false

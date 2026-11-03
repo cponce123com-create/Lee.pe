@@ -81,9 +81,9 @@ class TtsPlaybackService : MediaSessionService() {
                         val progression = locator.locations.totalProgression?.toFloat() ?: 0f
                         (application as LeePeApplication).container.books.saveEpubProgress(
                             uri = bookUri,
-                            locatorJson = locator.toJSON().toString(),
+                            locator = locator.toJSON().toString(),
                             progress = progression,
-                            openedAt = now
+                            at = now
                         )
                         lastSavedAt = now
                     }

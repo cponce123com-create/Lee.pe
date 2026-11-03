@@ -89,10 +89,10 @@ private fun createEpubReaderSessionActions(
             val binder = binding.binder
             val existing = binder.currentSession
             if (existing?.bookUri == uri.toString()) {
-                session.ttsNavigator.value = existing.session.navigator.value
-                session.ttsVoices.value = existing.session.navigator.value.voices.filter { it.isLocalSpanishVoice() }
+                session.ttsNavigator.value = existing.navigator
+                session.ttsVoices.value = existing.navigator.voices.filter { it.isLocalSpanishVoice() }
                     .sortedWith(compareBy({ it.language.toString() }, { it.id.value }))
-                if (!existing.session.navigator.value.playback.value.playWhenReady) existing.session.navigator.value.play()
+                if (!existing.navigator.playback.value.playWhenReady) existing.navigator.play()
                 return@launch
             }
             val activePublication = session.publication.value

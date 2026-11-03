@@ -51,13 +51,13 @@ import java.io.IOException
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalReadiumApi::class)
 @Composable
 internal fun EpubSearchSheet(
-    publication: Publication?,
-    query: MutableState<String>,
-    results: MutableState<List<Locator>>,
+    searchPublication: Publication?,
+    searchQuery: MutableState<String>,
+    searchResults: MutableState<List<Locator>>,
     hasSearched: MutableState<Boolean>,
     searching: MutableState<Boolean>,
-    error: MutableState<String?>,
-    limitReached: MutableState<Boolean>,
+    searchError: MutableState<String?>,
+    searchLimitReached: MutableState<Boolean>,
     onDismiss: () -> Unit,
     onSelectResult: (Locator) -> Unit
 ) {

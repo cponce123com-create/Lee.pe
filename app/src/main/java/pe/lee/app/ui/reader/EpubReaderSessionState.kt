@@ -7,9 +7,9 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.MutableIntState
-import org.readium.navigator.epub.EpubNavigatorFragment
+import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.navigator.media.tts.android.AndroidTtsEngine
-import org.readium.navigator.media.tts.android.AndroidTtsNavigator
+import org.readium.navigator.media.tts.AndroidTtsNavigator
 import org.readium.r2.navigator.epub.EpubPreferences
 import org.readium.r2.shared.publication.Publication
 import pe.lee.app.data.repository.SettingsRepository

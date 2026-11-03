@@ -47,9 +47,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -123,13 +125,13 @@ internal fun ReaderChrome(
         ?.takeIf { it in 0f..100f }
 
     if (showSearch) EpubSearchSheet(
-        publication = searchPublication,
-        query = searchQueryState,
-        results = searchResultsState,
+        searchPublication = searchPublication,
+        searchQuery = searchQueryState,
+        searchResults = searchResultsState,
         hasSearched = hasSearchedState,
         searching = searchingState,
-        error = searchErrorState,
-        limitReached = searchLimitReachedState,
+        searchError = searchErrorState,
+        searchLimitReached = searchLimitReachedState,
         onDismiss = { showSearch = false },
         onSelectResult = onSelectSearchResult
     )

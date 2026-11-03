@@ -242,12 +242,12 @@ internal fun LibraryCatalog(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 LibraryDisplayToggle(
-                    listMode.value = listMode.value,
+                    listMode = listMode.value,
                     onModeChange = { listMode.value = it }
                 )
                 Box {
                     TextButton(onClick = { sortMenuExpanded.value = true }) {
-                        Text("Orden: $sortMode.value")
+                        Text("Orden: ${sortMode.value}")
                     }
                     DropdownMenu(
                         expanded = sortMenuExpanded.value,
@@ -311,7 +311,7 @@ internal fun LibraryCatalog(
                     rowBooks.forEach { book ->
                         BookCard(
                             book = book,
-                            savingBookUri.value = savingBookUri.value,
+                            savingBookUri = savingBookUri.value,
                             modifier = Modifier.weight(1f),
                             compact = listMode.value,
                             onOpen = { onOpen(book) },
