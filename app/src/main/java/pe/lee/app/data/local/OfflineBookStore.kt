@@ -110,6 +110,7 @@ object OfflineBookStore {
                         }
                     }
                 }
+            }
         }
 
     fun deleteCopy(context: Context, originalUri: Uri) {
