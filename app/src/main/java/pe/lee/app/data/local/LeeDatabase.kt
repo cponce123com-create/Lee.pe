@@ -14,9 +14,10 @@ import androidx.sqlite.execSQL
         ReadingAnnotationEntity::class,
         ReadingSessionEntity::class,
         CollectionEntity::class,
-        BookCollectionCrossRef::class
+        BookCollectionCrossRef::class,
+        PendingBookCleanupEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class LeeDatabase : RoomDatabase() {
@@ -165,7 +166,18 @@ abstract class LeeDatabase : RoomDatabase() {
             }
         }
 
-        internal val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override suspend fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    """CREATE TABLE IF NOT EXISTS `pending_book_cleanup` (
+                        `uri` TEXT NOT NULL,
+                        PRIMARY KEY(`uri`)
+                    )""".trimIndent()
+                )
+            }
+        }
+
+        internal val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
 
         @Volatile
         private var instance: LeeDatabase? = null
