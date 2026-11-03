@@ -199,4 +199,25 @@
     <string name="reading_history_reset">Reading history reset</string>
     <string name="reading_history_reset_failed">Could not reset the history</string>
     <string name="action_reset">Reset</string>
+    <string name="library_no_matches">No matches found</string>
+    <string name="library_try_another_search">Try another title or change the filter.</string>
+    <string name="library_empty_import_prompt">Import an EPUB, PDF, or audiobook from your device.</string>
+    <string name="library_choose_files">Choose files</string>
+    <string name="accessibility_open_book">Open %1$s</string>
+    <string name="book_status_audiobook">Audiobook</string>
+    <string name="book_status_finished">Finished</string>
+    <string name="book_progress_percent">%1$d%% read</string>
+    <string name="book_status_to_read">To read</string>
+    <string name="book_status_with_format">%1$s · %2$s</string>
+    <string name="accessibility_favorite_book">Favorite</string>
+    <string name="book_status_not_started">Not started</string>
+    <string name="book_available_offline">Available offline</string>
+    <string name="accessibility_book_options">Options for %1$s</string>
+    <string name="book_remove_favorite">Remove from favorites</string>
+    <string name="book_add_favorite">Add to favorites</string>
+    <string name="book_remove_offline_copy">Remove offline copy</string>
+    <string name="book_saving_copy">Saving copy…</string>
+    <string name="book_save_offline">Save offline</string>
+    <string name="book_export_annotations">Export annotations to Markdown</string>
+    <string name="book_organize_collection">Organize in collection</string>
 </resources>

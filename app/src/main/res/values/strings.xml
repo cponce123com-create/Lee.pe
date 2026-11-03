@@ -199,4 +199,25 @@
     <string name="reading_history_reset">Historial de lectura reiniciado</string>
     <string name="reading_history_reset_failed">No se pudo reiniciar el historial</string>
     <string name="action_reset">Reiniciar</string>
+    <string name="library_no_matches">No encontramos coincidencias</string>
+    <string name="library_try_another_search">Prueba otro título o cambia el filtro.</string>
+    <string name="library_empty_import_prompt">Importa un EPUB, PDF o audiolibro desde tu dispositivo.</string>
+    <string name="library_choose_files">Elegir archivos</string>
+    <string name="accessibility_open_book">Abrir %1$s</string>
+    <string name="book_status_audiobook">Audiolibro</string>
+    <string name="book_status_finished">Terminado</string>
+    <string name="book_progress_percent">%1$d%% leído</string>
+    <string name="book_status_to_read">Por leer</string>
+    <string name="book_status_with_format">%1$s · %2$s</string>
+    <string name="accessibility_favorite_book">Favorito</string>
+    <string name="book_status_not_started">Sin empezar</string>
+    <string name="book_available_offline">Disponible sin conexión</string>
+    <string name="accessibility_book_options">Opciones de %1$s</string>
+    <string name="book_remove_favorite">Quitar de favoritos</string>
+    <string name="book_add_favorite">Agregar a favoritos</string>
+    <string name="book_remove_offline_copy">Quitar copia sin conexión</string>
+    <string name="book_saving_copy">Guardando copia…</string>
+    <string name="book_save_offline">Guardar sin conexión</string>
+    <string name="book_export_annotations">Exportar anotaciones a Markdown</string>
+    <string name="book_organize_collection">Organizar en colección</string>
 </resources>
