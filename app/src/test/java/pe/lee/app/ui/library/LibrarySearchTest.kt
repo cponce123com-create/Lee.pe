@@ -27,6 +27,19 @@ class LibrarySearchTest {
         assertTrue(matchesLibraryQuery("Libro", "EPUB", null, normalizedLibraryText("   ")))
     }
 
+    @Test fun indexedSearchRemainsCorrectWithTenThousandLocalBooks() {
+        val library = (1..10_000).map { index ->
+            normalizedLibraryText("Novela número $index EPUB Literatura")
+        }
+        val target = normalizedLibraryText("numero 9999")
+        val matches = library.count { matchesNormalizedLibraryQuery(it, target) }
+        assertEquals(1, matches)
+        assertTrue(matchesNormalizedLibraryQuery(
+            normalizedLibraryText("García Márquez EPUB Clásicos"),
+            normalizedLibraryText("marquez clasicos")
+        ))
+    }
+
     @Test fun everyQueryWordMustMatch() {
         assertFalse(matchesLibraryQuery("Donde la vida vuelve", "EPUB", null,
             normalizedLibraryText("vida desaparecida")))

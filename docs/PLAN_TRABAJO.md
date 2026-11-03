@@ -49,7 +49,9 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [x] Generar en el dispositivo miniaturas pequeñas y bajo demanda de la primera página de PDFs; si el documento falla, mostrar el icono de PDF.
 - [x] Optimizar exploración del directorio de copias offline a una sola pasada y evitar reconstruir todas las filas de la biblioteca con cada cambio.
 - [x] Implementar búsqueda sin conexión que ignore acentos y mayúsculas, con términos por título, formato y colección.
-- [ ] Extraer metadatos/portada EPUB y audio respetando licencias y tamaño máximo; recuperar URI revocadas con asistencia del usuario.
+- [x] Extraer portada EPUB localmente mediante Readium al visualizar tarjetas, limitada a 160×220 px y caché LRU; fallback si el EPUB no tiene portada.
+- [ ] Validar extracción de portada EPUB con formatos distintos, imágenes grandes, archivos dañados, proveedores SAF lentos y desaparición del permiso.
+- [ ] Extraer metadatos bibliográficos y portada de audio respetando licencias y tamaño máximo; recuperar URI revocadas con asistencia del usuario.
 - [ ] Migrar filtrado/ordenación a consultas paginadas de Room + Paging 3 para catálogos muy grandes, tras medir rendimiento.
 - Conservar el comportamiento sin conexión y no pedir acceso general a archivos.
 
