@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -116,7 +117,7 @@ internal fun LibraryDashboardHeader(
                 )
                 Text(
                     if (totalBooks == 0) stringResource(R.string.library_empty_prompt)
-                    else stringResource(R.plurals.library_books_count, totalBooks, totalBooks),
+                    else pluralStringResource(R.plurals.library_books_count, totalBooks, totalBooks),
                     color = Color(0xFFCEDBF5), style = MaterialTheme.typography.bodyMedium
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
