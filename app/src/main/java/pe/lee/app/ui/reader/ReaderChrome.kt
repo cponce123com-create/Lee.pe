@@ -61,7 +61,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import pe.lee.app.data.local.ReadingAnnotationEntity
+import pe.lee.core.domain.ReaderAnnotation
 import org.readium.r2.navigator.epub.EpubPreferences
 import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.publication.Link
@@ -77,13 +77,13 @@ internal fun ReaderChrome(
     ttsIsPlaying: Boolean,
     onToggleTts: () -> Unit,
     progress: Float,
-    annotations: List<ReadingAnnotationEntity>,
+    annotations: List<ReaderAnnotation>,
     onAddBookmark: () -> Unit,
     onAddNote: (String) -> Unit,
-    onUpdateAnnotation: (ReadingAnnotationEntity, String) -> Unit,
-    onChangeHighlightColor: (ReadingAnnotationEntity, Int) -> Unit,
-    onSelectAnnotation: (ReadingAnnotationEntity) -> Unit,
-    onDeleteAnnotation: (ReadingAnnotationEntity) -> Unit,
+    onUpdateAnnotation: (ReaderAnnotation, String) -> Unit,
+    onChangeHighlightColor: (ReaderAnnotation, Int) -> Unit,
+    onSelectAnnotation: (ReaderAnnotation) -> Unit,
+    onDeleteAnnotation: (ReaderAnnotation) -> Unit,
     preferences: EpubPreferences,
     brightness: Float,
     keepScreenOn: Boolean,
@@ -107,7 +107,7 @@ internal fun ReaderChrome(
     var showAnnotations by showAnnotationsState
     val showNoteEditorState = remember { mutableStateOf(false) }
     var showNoteEditor by showNoteEditorState
-    val editingAnnotationState = remember { mutableStateOf<ReadingAnnotationEntity?>(null) }
+    val editingAnnotationState = remember { mutableStateOf<ReaderAnnotation?>(null) }
     var editingAnnotation by editingAnnotationState
     val noteDraftState = remember { mutableStateOf("") }
     var noteDraft by noteDraftState

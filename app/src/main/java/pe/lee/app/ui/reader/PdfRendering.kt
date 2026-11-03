@@ -37,7 +37,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import pe.lee.app.data.local.ReadingAnnotationEntity
+import pe.lee.core.domain.ReaderAnnotation
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
@@ -86,7 +86,7 @@ internal fun pdfTextLocator(pageIndex: Int, rects: List<PdfNormalizedRect>): Str
     }.toString()
 
 internal fun pdfHighlightOverlays(
-    annotations: List<ReadingAnnotationEntity>,
+    annotations: List<ReaderAnnotation>,
     pageIndex: Int
 ): List<PdfHighlightOverlay> = annotations
     .filter { it.kind == "HIGHLIGHT" }

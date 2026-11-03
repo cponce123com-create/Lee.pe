@@ -46,6 +46,7 @@ import kotlinx.coroutines.isActive
 import pe.lee.app.ui.theme.LeePeTheme
 import pe.lee.app.data.local.OfflineBookStore
 import pe.lee.app.LeePeApplication
+import pe.lee.app.data.repository.AudioProgressStore
 
 class AudioPlayerActivity : ComponentActivity() {
     private var controllerFuture: ListenableFuture<MediaController>? = null

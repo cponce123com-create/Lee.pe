@@ -9,7 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import pe.lee.app.data.repository.ReadingStatsRepository
+import pe.lee.core.domain.ReadingStatisticsRepository
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 internal class ReadingSessionRecorder(
     private val bookUri: String,
-    private val repository: ReadingStatsRepository
+    private val repository: ReadingStatisticsRepository
 ) {
     // Each reader owns its short-lived persistence scope; there is no process-wide scope.
     private val persistenceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

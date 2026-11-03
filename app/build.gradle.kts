@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.ksp)
 }
 
 android {
@@ -29,11 +28,14 @@ android {
     }
 }
 
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
-}
-
 dependencies {
+    implementation(project(":core:database"))
+    implementation(project(":core:datastore"))
+    implementation(project(":core:domain"))
+    implementation(project(":core:ui"))
+    implementation(project(":data"))
+    implementation(project(":feature:notes"))
+    implementation(project(":feature:library"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.fragment.ktx)
@@ -43,17 +45,13 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
-    implementation(libs.room3.runtime)
-    ksp(libs.room3.compiler)
-
     implementation(libs.readium.shared)
     implementation(libs.readium.streamer)
     implementation(libs.readium.navigator)
     implementation(libs.readium.navigator.media.tts)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.session)
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("org.json:json:20240303")
+    testImplementation(libs.junit)
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test:runner:1.6.2")
     coreLibraryDesugaring(libs.desugar.jdk.libs)

@@ -22,7 +22,7 @@ import java.util.UUID
 import android.content.ClipData
 import android.content.ClipboardManager
 import pe.lee.app.data.repository.SettingsRepository
-import pe.lee.app.data.local.ReadingAnnotationEntity
+import pe.lee.core.domain.ReaderAnnotation
 import org.readium.navigator.media.tts.TtsNavigator
 import org.readium.r2.navigator.Decoration
 import org.readium.r2.navigator.VisualNavigator
@@ -50,7 +50,7 @@ internal fun EpubReaderSessionEffects(
     viewModel: EpubReaderViewModel,
     settings: SettingsRepository,
     containerId: Int,
-    annotations: List<ReadingAnnotationEntity>,
+    annotations: List<ReaderAnnotation>,
     session: EpubReaderSessionState,
     openPublication: suspend () -> Publication,
     onRequestNotificationPermission: () -> Unit
@@ -145,7 +145,7 @@ internal fun EpubReaderSessionEffects(
                         if (item.itemId == MENU_HIGHLIGHT && selectedLocator != null) {
                             val now = System.currentTimeMillis()
                             viewModel.saveAnnotation(
-                                ReadingAnnotationEntity(
+                                ReaderAnnotation(
                                     id = UUID.randomUUID().toString(),
                                     bookUri = uri.toString(),
                                     kind = "HIGHLIGHT",

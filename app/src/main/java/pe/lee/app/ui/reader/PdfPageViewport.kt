@@ -46,7 +46,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import pe.lee.app.data.local.ReadingAnnotationEntity
+import pe.lee.core.domain.ReaderAnnotation
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -58,7 +58,7 @@ internal fun ColumnScope.PdfPageViewport(
     renderMutex: Mutex,
     coroutineScope: CoroutineScope,
     context: Context,
-    annotations: List<ReadingAnnotationEntity>,
+    annotations: List<ReaderAnnotation>,
     availableWidth: Int
 ) {
     var handle by state.handle
