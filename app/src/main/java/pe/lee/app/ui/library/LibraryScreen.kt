@@ -64,6 +64,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -135,11 +137,13 @@ fun LibraryScreen() {
     var offlineCopyUris by remember { mutableStateOf<Map<String, Uri>>(emptyMap()) }
     var offlineRevision by remember { mutableIntStateOf(0) }
     var savingBookUri by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(context, storedBooks, offlineRevision) {
+    val bookUris = remember(storedBooks) { storedBooks.map { Uri.parse(it.uri) } }
+    // A locator/progress update invalidates Room, but does not change the URI list.
+    // Only rescan the private offline directory when membership/copies change.
+    LaunchedEffect(context, bookUris, offlineRevision) {
         offlineCopyUris = withContext(Dispatchers.IO) {
-            storedBooks.mapNotNull { book ->
-                OfflineBookStore.findCopy(context, Uri.parse(book.uri))?.let { book.uri to Uri.fromFile(it) }
-            }.toMap()
+            OfflineBookStore.findCopies(context, bookUris)
+                .mapValues { (_, file) -> Uri.fromFile(file) }
         }
     }
     val books = remember(storedBooks, offlineCopyUris) {
@@ -633,28 +637,40 @@ fun LibraryScreen() {
     }
 
     val filters = listOf("Todos", "En curso", "Terminados", "Favoritos", "EPUB", "PDF", "Audio")
-    val visibleBooks = books.filter { book ->
-        val matchesQuery = book.title.contains(query, ignoreCase = true)
-        val matchesFilter = when (selectedFilter) {
-            "En curso" -> book.format != "Audio" && book.readProgress > 0f && book.readProgress < 1f
-            "Terminados" -> book.format != "Audio" && book.readProgress >= 1f
-            "Favoritos" -> book.isFavorite
-            "EPUB" -> book.format == "EPUB"
-            "PDF" -> book.format == "PDF"
-            "Audio" -> book.format == "Audio"
-            else -> true
+    // Cache catalog calculations across unrelated UI recompositions (menus, dialogs,
+    // stats updates, etc.). Everything stays on-device; no search API is required.
+    val normalizedQuery = remember(query) { normalizedLibraryText(query) }
+    val visibleBooks = remember(books, normalizedQuery, selectedFilter, selectedCollection) {
+        books.filter { book ->
+            val matchesQuery = matchesLibraryQuery(
+                book.title, book.format, book.collectionId, normalizedQuery
+            )
+            val matchesFilter = when (selectedFilter) {
+                "En curso" -> book.format != "Audio" && book.readProgress > 0f && book.readProgress < 1f
+                "Terminados" -> book.format != "Audio" && book.readProgress >= 1f
+                "Favoritos" -> book.isFavorite
+                "EPUB" -> book.format == "EPUB"
+                "PDF" -> book.format == "PDF"
+                "Audio" -> book.format == "Audio"
+                else -> true
+            }
+            val matchesCollection = selectedCollection == null || book.collectionId == selectedCollection
+            matchesQuery && matchesFilter && matchesCollection
         }
-        val matchesCollection = selectedCollection == null || book.collectionId == selectedCollection
-        matchesQuery && matchesFilter && matchesCollection
     }
-    val continueBooks = books
-        .filter { it.format != "Audio" && it.readProgress > 0f && it.readProgress < 1f }
-        .sortedByDescending { it.lastOpenedAt ?: 0L }
-        .take(8)
-    val orderedBooks = when (sortMode) {
-        "Última lectura" -> visibleBooks.sortedByDescending { it.lastOpenedAt ?: 0L }
-        "Fecha de importación" -> visibleBooks.sortedByDescending { it.importedAt }
-        else -> visibleBooks.sortedBy { it.title.lowercase() }
+    val continueBooks = remember(books) {
+        books.asSequence()
+            .filter { it.format != "Audio" && it.readProgress > 0f && it.readProgress < 1f }
+            .sortedByDescending { it.lastOpenedAt ?: 0L }
+            .take(8)
+            .toList()
+    }
+    val orderedBooks = remember(visibleBooks, sortMode) {
+        when (sortMode) {
+            "Última lectura" -> visibleBooks.sortedByDescending { it.lastOpenedAt ?: 0L }
+            "Fecha de importación" -> visibleBooks.sortedByDescending { it.importedAt }
+            else -> visibleBooks.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
+        }
     }
 
     LazyColumn(
@@ -753,11 +769,13 @@ fun LibraryScreen() {
                     value = query,
                     onValueChange = { query = it },
                     singleLine = true,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).semantics {
+                        contentDescription = "Buscar libros por título, formato o colección"
+                    },
                     textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
                     decorationBox = { innerTextField ->
                         if (query.isEmpty()) {
-                            Text("Buscar título", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Buscar título, formato o colección", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         innerTextField()
                     }
@@ -898,7 +916,13 @@ fun LibraryScreen() {
                 )
             }
         } else {
-            items(orderedBooks.chunked(2)) { rowBooks ->
+            items(
+                count = (orderedBooks.size + 1) / 2,
+                key = { row -> orderedBooks[row * 2].uri.toString() }
+            ) { rowIndex ->
+                // Avoid allocating thousands of row lists every time a filter changes.
+                val first = rowIndex * 2
+                val rowBooks = orderedBooks.subList(first, minOf(first + 2, orderedBooks.size))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -980,7 +1004,7 @@ fun LibraryScreen() {
 
         item {
             Text(
-                "La biblioteca se guarda en tu teléfono. La lectura y la sincronización se incorporarán por etapas.",
+                "La biblioteca, la búsqueda y las anotaciones funcionan en tu teléfono, sin cuenta ni servidores.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(bottom = 24.dp)
@@ -1203,7 +1227,7 @@ private fun BookCard(
                 }
                 Box(modifier = Modifier.align(Alignment.TopEnd)) {
                     IconButton(onClick = { menuExpanded = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Opciones del libro", tint = Color.White)
+                        Icon(Icons.Default.MoreVert, contentDescription = "Opciones de ${book.title}", tint = Color.White)
                     }
                     DropdownMenu(
                         expanded = menuExpanded,
