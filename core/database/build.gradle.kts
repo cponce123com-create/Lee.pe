@@ -22,6 +22,7 @@ ksp {
 }
 
 dependencies {
-    implementation(libs.room3.runtime)
+    // LeeDatabase exposes RoomDatabase in its public API to the application container.
+    api(libs.room3.runtime)
     ksp(libs.room3.compiler)
 }
