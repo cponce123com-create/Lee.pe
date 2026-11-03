@@ -249,49 +249,64 @@ fun LibraryScreen() {
     }
 
     val documentPicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri != null) {
-            val permissionPersisted = runCatching {
-                context.contentResolver.takePersistableUriPermission(
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-            }.isSuccess
-            if (!permissionPersisted) {
-                Toast.makeText(
-                    context,
-                    "Este proveedor no permite conservar el acceso al archivo. Elige otro proveedor o guarda una copia en el dispositivo.",
-                    Toast.LENGTH_LONG
-                ).show()
-                return@rememberLauncherForActivityResult
-            }
-
-            val fileName = queryDisplayName(context, uri)
-            if (formatFromFileName(fileName) == null) {
-                Toast.makeText(context, "Formato no compatible todavía", Toast.LENGTH_LONG).show()
-                return@rememberLauncherForActivityResult
-            }
-            val format = formatFromFileName(fileName) ?: return@rememberLauncherForActivityResult
-            coroutineScope.launch {
-                if (dao.findByUri(uri.toString()) != null) {
-                    Toast.makeText(context, "Este archivo ya está en tu biblioteca", Toast.LENGTH_SHORT).show()
-                    return@launch
-                }
-                runCatching {
-                    dao.insert(
+        contract = ActivityResultContracts.OpenMultipleDocuments()
+    ) { selectedUris ->
+        if (selectedUris.isNotEmpty()) coroutineScope.launch {
+            val current = storedBooks.mapTo(HashSet()) { it.uri }
+            var alreadyPresent = 0
+            var unsupported = 0
+            var noPermission = 0
+            val picked = selectedUris.distinctBy { it.toString() }
+            try {
+                val newBooks = withContext(Dispatchers.IO) {
+                    picked.mapNotNull { uri ->
+                        if (uri.toString() in current) {
+                            alreadyPresent++
+                            return@mapNotNull null
+                        }
+                        val fileName = runCatching { queryDisplayName(context, uri) }
+                            .getOrNull()
+                        val format = fileName?.let(::formatFromFileName)
+                        if (format == null) {
+                            unsupported++
+                            return@mapNotNull null
+                        }
+                        val permitted = runCatching {
+                            context.contentResolver.takePersistableUriPermission(
+                                uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            )
+                        }.isSuccess
+                        if (!permitted) {
+                            noPermission++
+                            return@mapNotNull null
+                        }
                         BookEntity(
                             uri = uri.toString(),
-                            title = fileName.substringBeforeLast('.', fileName),
+                            title = fileName.substringBeforeLast('.', fileName).ifBlank { fileName },
                             format = format,
                             importedAt = System.currentTimeMillis()
                         )
-                    )
-                }.onSuccess {
-                    Toast.makeText(context, "Añadido a tu biblioteca local", Toast.LENGTH_SHORT).show()
-                }.onFailure {
-                    Toast.makeText(context, "No se pudo guardar el archivo en la biblioteca", Toast.LENGTH_LONG).show()
+                    }
                 }
+                if (newBooks.isNotEmpty()) {
+                    dao.insertAll(newBooks)
+                }
+                Toast.makeText(
+                    context,
+                    "Archivos incorporados: ${newBooks.size}. " +
+                        "Ya existentes: $alreadyPresent. " +
+                        "No compatibles: $unsupported. " +
+                        "Sin permiso persistente: $noPermission.",
+                    Toast.LENGTH_LONG
+                ).show()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                Toast.makeText(
+                    context,
+                    error.message ?: "No se pudo completar la importación.",
+                    Toast.LENGTH_LONG
+                ).show()
             }
         }
     }
