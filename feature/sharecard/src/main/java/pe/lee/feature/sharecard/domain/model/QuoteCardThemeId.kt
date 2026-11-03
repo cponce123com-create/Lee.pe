@@ -4,5 +4,8 @@ package pe.lee.feature.sharecard.domain.model
 enum class QuoteCardThemeId {
     PAPER,
     DARK_OLED,
-    ACCENT
+    ACCENT,
+    MINIMAL,
+    EDITORIAL,
+    PREMIUM
 }

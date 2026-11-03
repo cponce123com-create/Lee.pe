@@ -3,6 +3,7 @@ package pe.lee.feature.sharecard.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -44,7 +45,8 @@ import kotlinx.coroutines.withContext
 import pe.lee.app.ui.theme.LeePeTheme
 import pe.lee.feature.sharecard.R
 import pe.lee.feature.sharecard.domain.model.QuoteCardFormat
-import pe.lee.feature.sharecard.ui.components.QuoteCardPreview
+import pe.lee.feature.sharecard.domain.model.QuoteCardFont
+import pe.lee.feature.sharecard.ui.components.QuoteCardCanvas
 import pe.lee.feature.sharecard.ui.components.ShareCardTopBar
 import pe.lee.feature.sharecard.ui.components.ThemeSelector
 
@@ -63,6 +65,7 @@ fun ShareCardScreen(
         // the current context and let the capture itself decide (A-22).
         val frameClock = rememberCoroutineScope().coroutineContext[MonotonicFrameClock]
         var editingQuote by remember { mutableStateOf(false) }
+        var contentFits by remember(state.card) { mutableStateOf(false) }
         val storyFormat = state.card.format == QuoteCardFormat.STORY
 
         Scaffold(
@@ -77,17 +80,17 @@ fun ShareCardScreen(
                     .padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = if (storyFormat) 20.dp else 4.dp)
-                        .aspectRatio(if (storyFormat) 9f / 16f else 1f)
-                        .drawWithContent {
-                            layer.record { this@drawWithContent.drawContent() }
-                            drawLayer(layer)
-                        }
-                ) {
-                    QuoteCardPreview(card = state.card, modifier = Modifier.fillMaxSize())
+                QuoteCardCanvas(
+                    card = state.card,
+                    modifier = Modifier.fillMaxWidth(),
+                    onFitsChanged = { contentFits = it },
+                    captureModifier = Modifier.drawWithContent {
+                        layer.record { this@drawWithContent.drawContent() }
+                        drawLayer(layer)
+                    }
+                )
+                if (!contentFits) {
+                    Text(stringResource(R.string.share_card_too_long), color = MaterialTheme.colorScheme.error)
                 }
 
                 Text(stringResource(R.string.share_card_design), style = MaterialTheme.typography.titleSmall)
@@ -96,6 +99,22 @@ fun ShareCardScreen(
                     onThemeSelected = viewModel::selectTheme,
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                Text(stringResource(R.string.share_card_font), style = MaterialTheme.typography.titleSmall)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    QuoteCardFont.entries.forEach { font ->
+                        val label = when (font) {
+                            QuoteCardFont.TEMPLATE -> R.string.share_card_font_template
+                            QuoteCardFont.SERIF -> R.string.share_card_font_serif
+                            QuoteCardFont.SANS_SERIF -> R.string.share_card_font_sans
+                        }
+                        FilterChip(
+                            selected = state.card.font == font,
+                            onClick = { viewModel.selectFont(font) },
+                            label = { Text(stringResource(label)) }
+                        )
+                    }
+                }
 
                 Text(stringResource(R.string.share_card_format), style = MaterialTheme.typography.titleSmall)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -142,7 +161,7 @@ fun ShareCardScreen(
                 }
 
                 Button(
-                    enabled = state.card.text.isNotBlank() && state.status !is ShareCardStatus.Generating,
+                    enabled = contentFits && state.card.text.isNotBlank() && state.status !is ShareCardStatus.Generating,
                     onClick = {
                         viewModel.shareCapturedImage {
                             // viewModelScope has no Compose frame clock; retain it for capture.
