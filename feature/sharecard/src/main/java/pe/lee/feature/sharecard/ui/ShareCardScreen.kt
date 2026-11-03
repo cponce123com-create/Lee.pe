@@ -21,6 +21,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.runtime.MonotonicFrameClock
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -35,6 +37,7 @@ import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.withContext
 import pe.lee.app.ui.theme.LeePeTheme
 import pe.lee.feature.sharecard.R
 import pe.lee.feature.sharecard.domain.model.QuoteCardFormat
@@ -52,6 +55,7 @@ fun ShareCardScreen(
     LeePeTheme {
         val state by viewModel.state.collectAsState()
         val layer = rememberGraphicsLayer()
+        val frameClock = requireNotNull(rememberCoroutineScope().coroutineContext[MonotonicFrameClock])
         var editingQuote by remember { mutableStateOf(false) }
         val storyFormat = state.card.format == QuoteCardFormat.STORY
 
@@ -135,8 +139,11 @@ fun ShareCardScreen(
                     enabled = state.card.text.isNotBlank() && state.status !is ShareCardStatus.Generating,
                     onClick = {
                         viewModel.shareCapturedImage {
-                            withFrameNanos { }
-                            layer.toImageBitmap()
+                            // viewModelScope has no Compose frame clock; retain it for capture.
+                            withContext(frameClock) {
+                                withFrameNanos { }
+                                layer.toImageBitmap()
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxWidth()
