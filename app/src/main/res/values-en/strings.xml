@@ -84,4 +84,92 @@
     <string name="library_book_title">Book title</string>
     <string name="library_title_updated">Title updated</string>
     <string name="library_title_update_failed">Could not update the title</string>
+    <string name="scanner_searching_title">Searching for local books</string>
+    <plurals name="scanner_folders_count">
+        <item quantity="one">Folder scanned: %1$d</item>
+        <item quantity="other">Folders scanned: %1$d</item>
+    </plurals>
+    <plurals name="scanner_files_count">
+        <item quantity="one">File scanned: %1$d</item>
+        <item quantity="other">Files scanned: %1$d</item>
+    </plurals>
+    <plurals name="scanner_books_count">
+        <item quantity="one">Book found: %1$d</item>
+        <item quantity="other">Books found: %1$d</item>
+    </plurals>
+    <string name="scanner_privacy_notice">The search can be cancelled. No files are uploaded to the internet.</string>
+    <string name="scanner_result_title">Scan results</string>
+    <plurals name="scanner_new_books_count">
+        <item quantity="one">New book: %1$d</item>
+        <item quantity="other">New books: %1$d</item>
+    </plurals>
+    <plurals name="scanner_duplicates_count">
+        <item quantity="one">Already registered: %1$d</item>
+        <item quantity="other">Already registered: %1$d</item>
+    </plurals>
+    <plurals name="scanner_visited_files_count">
+        <item quantity="one">File scanned: %1$d</item>
+        <item quantity="other">Files scanned: %1$d</item>
+    </plurals>
+    <plurals name="scanner_visited_folders_count">
+        <item quantity="one">Folder scanned: %1$d</item>
+        <item quantity="other">Folders scanned: %1$d</item>
+    </plurals>
+    <plurals name="scanner_skipped_folders_count">
+        <item quantity="one">Folder unavailable or skipped: %1$d</item>
+        <item quantity="other">Folders unavailable or skipped: %1$d</item>
+    </plurals>
+    <string name="scanner_limit_reached">The scan safety limit was reached. You can run it again by selecting a subfolder.</string>
+    <string name="scanner_import_privacy_notice">References to your EPUB, PDF, and audio files will be added. Files stay in their original folder and are not copied or uploaded.</string>
+    <plurals name="scanner_imported_books_toast">
+        <item quantity="one">Scanner: %1$d book was added to your library.</item>
+        <item quantity="other">Scanner: %1$d books were added to your library.</item>
+    </plurals>
+    <string name="scanner_import_failed">The books could not be imported.</string>
+    <string name="action_importing">Importing…</string>
+    <string name="scanner_add_to_library">Add to library</string>
+    <string name="backup_local_title">Lee.pe local backup</string>
+    <string name="backup_description">Export or restore your library, locations, notes, bookmarks, and statistics.</string>
+    <string name="backup_books_not_included">EPUB, PDF, and audio files are not included. On another phone, import the books first, then restore the data. Title matches may vary between editions.</string>
+    <string name="backup_privacy_notice">The JSON backup contains unencrypted notes and reading data. Keep it somewhere private. It is never sent to Lee.pe.</string>
+    <string name="backup_export">Export</string>
+    <string name="backup_restore">Restore</string>
+    <string name="backup_confirm_restore_title">Confirm restore</string>
+    <plurals name="backup_books_count">
+        <item quantity="one">Book in backup: %1$d</item>
+        <item quantity="other">Books in backup: %1$d</item>
+    </plurals>
+    <plurals name="backup_exact_matches_count">
+        <item quantity="one">Exact match: %1$d</item>
+        <item quantity="other">Exact matches: %1$d</item>
+    </plurals>
+    <plurals name="backup_title_matches_count">
+        <item quantity="one">Title and format match: %1$d</item>
+        <item quantity="other">Title and format matches: %1$d</item>
+    </plurals>
+    <plurals name="backup_unavailable_books_count">
+        <item quantity="one">No matching local book: %1$d</item>
+        <item quantity="other">No matching local books: %1$d</item>
+    </plurals>
+    <plurals name="backup_annotations_count">
+        <item quantity="one">Annotation in backup: %1$d</item>
+        <item quantity="other">Annotations in backup: %1$d</item>
+    </plurals>
+    <string name="backup_restore_safety_notice">Only data for books already in your library will be restored. Books will not be deleted and existing annotations will not be overwritten. Check that title matches are the same edition. You can restore this file again after importing missing books.</string>
+    <string name="backup_restore_result">Restored: %1$s; %2$s. Pending: %3$s</string>
+    <string name="backup_restore_failed">The backup could not be restored</string>
+    <string name="backup_restoring">Restoring…</string>
+    <string name="backup_restore_data">Restore data</string>
+    <plurals name="backup_books_short">
+        <item quantity="one">%1$d book</item>
+        <item quantity="other">%1$d books</item>
+    </plurals>
+    <plurals name="backup_annotations_short">
+        <item quantity="one">%1$d annotation</item>
+        <item quantity="other">%1$d annotations</item>
+    </plurals>
+    <plurals name="backup_books_pending_short">
+        <item quantity="one">%1$d book pending</item>
+        <item quantity="other">%1$d books pending</item>
+    </plurals>
 </resources>

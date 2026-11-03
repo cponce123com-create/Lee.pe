@@ -84,4 +84,92 @@
     <string name="library_book_title">Título del libro</string>
     <string name="library_title_updated">Título actualizado</string>
     <string name="library_title_update_failed">No se pudo actualizar el título</string>
+    <string name="scanner_searching_title">Buscando libros locales</string>
+    <plurals name="scanner_folders_count">
+        <item quantity="one">Carpeta examinada: %1$d</item>
+        <item quantity="other">Carpetas examinadas: %1$d</item>
+    </plurals>
+    <plurals name="scanner_files_count">
+        <item quantity="one">Archivo examinado: %1$d</item>
+        <item quantity="other">Archivos examinados: %1$d</item>
+    </plurals>
+    <plurals name="scanner_books_count">
+        <item quantity="one">Libro encontrado: %1$d</item>
+        <item quantity="other">Libros encontrados: %1$d</item>
+    </plurals>
+    <string name="scanner_privacy_notice">La búsqueda se puede cancelar. No se sube ningún archivo a internet.</string>
+    <string name="scanner_result_title">Resultado del escáner</string>
+    <plurals name="scanner_new_books_count">
+        <item quantity="one">Libro nuevo: %1$d</item>
+        <item quantity="other">Libros nuevos: %1$d</item>
+    </plurals>
+    <plurals name="scanner_duplicates_count">
+        <item quantity="one">Ya registrado: %1$d</item>
+        <item quantity="other">Ya registrados: %1$d</item>
+    </plurals>
+    <plurals name="scanner_visited_files_count">
+        <item quantity="one">Archivo examinado: %1$d</item>
+        <item quantity="other">Archivos examinados: %1$d</item>
+    </plurals>
+    <plurals name="scanner_visited_folders_count">
+        <item quantity="one">Carpeta examinada: %1$d</item>
+        <item quantity="other">Carpetas examinadas: %1$d</item>
+    </plurals>
+    <plurals name="scanner_skipped_folders_count">
+        <item quantity="one">Carpeta no accesible u omitida: %1$d</item>
+        <item quantity="other">Carpetas no accesibles u omitidas: %1$d</item>
+    </plurals>
+    <string name="scanner_limit_reached">Se alcanzó el límite de seguridad del escaneo. Puedes repetirlo seleccionando una subcarpeta.</string>
+    <string name="scanner_import_privacy_notice">Se añadirán referencias a tus archivos EPUB, PDF y audio. Los archivos permanecerán en su carpeta original y no se copiarán ni subirán.</string>
+    <plurals name="scanner_imported_books_toast">
+        <item quantity="one">Escáner: se incorporó %1$d libro a la biblioteca.</item>
+        <item quantity="other">Escáner: se incorporaron %1$d libros a la biblioteca.</item>
+    </plurals>
+    <string name="scanner_import_failed">No se pudieron importar los libros.</string>
+    <string name="action_importing">Importando…</string>
+    <string name="scanner_add_to_library">Añadir a biblioteca</string>
+    <string name="backup_local_title">Respaldo local de Lee.pe</string>
+    <string name="backup_description">Exporta o recupera tu biblioteca, ubicaciones, notas, marcadores y estadísticas.</string>
+    <string name="backup_books_not_included">Los archivos EPUB, PDF y audio no se incluyen. En otro teléfono, primero importa los libros y después recupera los datos. Las coincidencias por título pueden variar entre ediciones.</string>
+    <string name="backup_privacy_notice">El respaldo JSON contiene notas y datos de lectura sin cifrar. Guárdalo en un lugar privado. Nunca se envía a Lee.pe.</string>
+    <string name="backup_export">Exportar</string>
+    <string name="backup_restore">Restaurar</string>
+    <string name="backup_confirm_restore_title">Confirmar restauración</string>
+    <plurals name="backup_books_count">
+        <item quantity="one">Libro del respaldo: %1$d</item>
+        <item quantity="other">Libros del respaldo: %1$d</item>
+    </plurals>
+    <plurals name="backup_exact_matches_count">
+        <item quantity="one">Coincidencia exacta: %1$d</item>
+        <item quantity="other">Coincidencias exactas: %1$d</item>
+    </plurals>
+    <plurals name="backup_title_matches_count">
+        <item quantity="one">Coincidencia por título y formato: %1$d</item>
+        <item quantity="other">Coincidencias por título y formato: %1$d</item>
+    </plurals>
+    <plurals name="backup_unavailable_books_count">
+        <item quantity="one">Sin libro local correspondiente: %1$d</item>
+        <item quantity="other">Sin libros locales correspondientes: %1$d</item>
+    </plurals>
+    <plurals name="backup_annotations_count">
+        <item quantity="one">Anotación del respaldo: %1$d</item>
+        <item quantity="other">Anotaciones del respaldo: %1$d</item>
+    </plurals>
+    <string name="backup_restore_safety_notice">Solo se incorporarán datos de libros que ya estén en tu biblioteca. No se borrarán libros ni se sobrescribirán anotaciones existentes. Comprueba que las coincidencias por título sean la misma edición. Podrás volver a restaurar el archivo después de importar libros faltantes.</string>
+    <string name="backup_restore_result">Recuperados: %1$s; %2$s. Pendientes: %3$s</string>
+    <string name="backup_restore_failed">No se pudo restaurar el respaldo</string>
+    <string name="backup_restoring">Restaurando…</string>
+    <string name="backup_restore_data">Restaurar datos</string>
+    <plurals name="backup_books_short">
+        <item quantity="one">%1$d libro</item>
+        <item quantity="other">%1$d libros</item>
+    </plurals>
+    <plurals name="backup_annotations_short">
+        <item quantity="one">%1$d anotación</item>
+        <item quantity="other">%1$d anotaciones</item>
+    </plurals>
+    <plurals name="backup_books_pending_short">
+        <item quantity="one">%1$d libro pendiente</item>
+        <item quantity="other">%1$d libros pendientes</item>
+    </plurals>
 </resources>
