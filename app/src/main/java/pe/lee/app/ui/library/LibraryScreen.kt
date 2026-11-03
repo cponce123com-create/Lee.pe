@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -50,6 +51,7 @@ import pe.lee.app.data.local.OfflineBookStore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -87,6 +89,8 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CancellationException
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
@@ -187,6 +191,13 @@ fun LibraryScreen() {
     var showBackupOptions by remember { mutableStateOf(false) }
     var backupPreview by remember { mutableStateOf<LocalBackupPreview?>(null) }
     var backupBusy by remember { mutableStateOf(false) }
+    var scannerBusy by remember { mutableStateOf(false) }
+    var scannerJob by remember { mutableStateOf<Job?>(null) }
+    var scannerProgress by remember { mutableStateOf(LocalFolderScanner.Progress(0, 0, 0)) }
+    var scannerPreview by remember { mutableStateOf<LocalFolderScanner.Result?>(null) }
+    var scannerImporting by remember { mutableStateOf(false) }
+    var scannerFolderName by remember { mutableStateOf("Carpeta seleccionada") }
+    var listMode by remember { mutableStateOf(false) }
 
     LaunchedEffect(context, dao) {
         migrateLegacyLibrary(context, dao)
@@ -314,6 +325,144 @@ fun LibraryScreen() {
                 ).show()
             }
         }
+    }
+
+    val directoryScannerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { treeUri ->
+        if (treeUri != null) {
+            val granted = runCatching {
+                context.contentResolver.takePersistableUriPermission(
+                    treeUri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            }.isSuccess
+            if (!granted) {
+                Toast.makeText(
+                    context, "No se pudo conservar el permiso de la carpeta.",
+                    Toast.LENGTH_LONG
+                ).show()
+            } else {
+                scannerPreview = null
+                scannerProgress = LocalFolderScanner.Progress(0, 0, 0)
+                scannerBusy = true
+                scannerFolderName = treeUri.lastPathSegment?.substringAfterLast(':')
+                    ?.takeIf { it.isNotBlank() } ?: "Carpeta seleccionada"
+                scannerJob = coroutineScope.launch {
+                    try {
+                        val existing = storedBooks.map { it.uri }
+                        scannerPreview = LocalFolderScanner.scan(context, treeUri, existing) { progress ->
+                            withContext(Dispatchers.Main.immediate) { scannerProgress = progress }
+                        }
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (error: Exception) {
+                        Toast.makeText(
+                            context, error.message ?: "No se pudo escanear la carpeta.",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    } finally {
+                        scannerBusy = false
+                        scannerJob = null
+                    }
+                }
+            }
+        }
+    }
+
+    if (scannerBusy) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text("Buscando libros locales") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    CircularProgressIndicator()
+                    Text(scannerFolderName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        "Carpetas: ${scannerProgress.folders} · " +
+                            "Archivos examinados: ${scannerProgress.files} · " +
+                            "Libros encontrados: ${scannerProgress.books}"
+                    )
+                    Text("La búsqueda puede cancelarse. No se sube ningún archivo a internet.")
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { scannerJob?.cancel(); scannerBusy = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    scannerPreview?.let { preview ->
+        AlertDialog(
+            onDismissRequest = { if (!scannerImporting) scannerPreview = null },
+            title = { Text("Resultado del escáner") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Nuevos libros: ${preview.books.size}")
+                    Text("Ya registrados: ${preview.duplicates}")
+                    Text("Archivos examinados: ${preview.visitedFiles}")
+                    Text("Carpetas examinadas: ${preview.visitedFolders}")
+                    if (preview.skippedFolders > 0) {
+                        Text("Carpetas no accesibles u omitidas: ${preview.skippedFolders}")
+                    }
+                    if (preview.limitReached) {
+                        Text(
+                            "Se alcanzó el límite de seguridad del escaneo. " +
+                                "Puedes repetirlo seleccionando una subcarpeta.",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                    Text(
+                        "Se incorporarán referencias a tus archivos EPUB, PDF y audio. " +
+                            "Los archivos permanecerán en su carpeta original y no se copiarán ni subirán."
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !scannerImporting && preview.books.isNotEmpty(),
+                    onClick = {
+                        scannerImporting = true
+                        coroutineScope.launch {
+                            try {
+                                val now = System.currentTimeMillis()
+                                val entries = preview.books.map { item ->
+                                    BookEntity(
+                                        uri = item.uri.toString(),
+                                        title = item.title,
+                                        format = item.format,
+                                        importedAt = now
+                                    )
+                                }
+                                dao.insertAll(entries)
+                                Toast.makeText(
+                                    context,
+                                    "Escáner: se incorporaron hasta ${entries.size} libros a la biblioteca.",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                scannerPreview = null
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (error: Exception) {
+                                Toast.makeText(
+                                    context, error.message ?: "No se pudieron importar los libros.",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            } finally {
+                                scannerImporting = false
+                            }
+                        }
+                    }
+                ) { Text(if (scannerImporting) "Importando…" else "Añadir a biblioteca") }
+            },
+            dismissButton = {
+                TextButton(
+                    enabled = !scannerImporting,
+                    onClick = { scannerPreview = null }
+                ) { Text("Cancelar") }
+            }
+        )
     }
 
     if (showBackupOptions) {
@@ -714,79 +863,17 @@ fun LibraryScreen() {
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 18.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(
-                            Brush.linearGradient(
-                                listOf(Color(0xFF8D50FF), Color(0xFF27C9FF))
-                            ),
-                            RoundedCornerShape(16.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AutoStories,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(27.dp)
-                    )
-                }
-                Spacer(Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Lee.pe", fontSize = 21.sp, fontWeight = FontWeight.Bold)
-                    Text(
-                        "Lee · Escucha · Disfruta",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 12.sp
-                    )
-                }
-                Box {
-                    IconButton(onClick = { libraryMenuExpanded = true }, enabled = !backupBusy) {
-                        Icon(
-                            Icons.Default.MoreVert,
-                            contentDescription = "Opciones de biblioteca",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = libraryMenuExpanded,
-                        onDismissRequest = { libraryMenuExpanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Respaldo y restauración local") },
-                            onClick = {
-                                libraryMenuExpanded = false
-                                showBackupOptions = true
-                            }
-                        )
-                    }
-                }
-                IconButton(onClick = { showLibraryStats = true }) {
-                    Icon(
-                        imageVector = Icons.Default.BarChart,
-                        contentDescription = "Estadísticas de la biblioteca",
-                        tint = MaterialTheme.colorScheme.secondary
-                    )
-                }
-            }
-        }
-
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Tu biblioteca", fontSize = 25.sp, fontWeight = FontWeight.Bold)
-                Text(
-                    "Tus historias, disponibles en el dispositivo.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        item(key = "dashboard") {
+            LibraryDashboardHeader(
+                totalBooks = books.size,
+                busy = scannerBusy || scannerImporting,
+                onImport = {
+                    documentPicker.launch(arrayOf("application/epub+zip", "application/pdf", "audio/*"))
+                },
+                onScan = { directoryScannerLauncher.launch(null) },
+                onStats = { showLibraryStats = true },
+                onBackup = { showBackupOptions = true }
+            )
         }
 
         item {
@@ -849,13 +936,9 @@ fun LibraryScreen() {
             }
         }
 
-        item {
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                filters.forEach { filter ->
+        item(key = "filters") {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(filters, key = { it }) { filter ->
                     FilterChip(
                         selected = selectedFilter == filter,
                         onClick = { selectedFilter = filter },
@@ -899,11 +982,16 @@ fun LibraryScreen() {
             }
         }
 
-        item {
+        item(key = "viewControls") {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                LibraryDisplayToggle(
+                    listMode = listMode,
+                    onModeChange = { listMode = it }
+                )
                 Box {
                     TextButton(onClick = { sortMenuExpanded = true }) {
                         Text("Orden: $sortMode")
@@ -939,15 +1027,11 @@ fun LibraryScreen() {
                         fontSize = 13.sp
                     )
                 }
-                Button(
-                    onClick = { documentPicker.launch(arrayOf("application/epub+zip", "application/pdf", "audio/*")) },
-                    shape = RoundedCornerShape(14.dp),
-                    contentPadding = ButtonDefaults.ContentPadding
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Importar")
-                }
+                Text(
+                    if (listMode) "Lista" else "Portadas",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 12.sp
+                )
             }
         }
 
