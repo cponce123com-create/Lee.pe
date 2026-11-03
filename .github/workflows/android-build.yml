@@ -55,7 +55,7 @@ jobs:
         run: sdkmanager --install "platforms;android-36"
 
       - name: Run unit tests and build APK
-        run: ./gradlew --no-daemon lintDebug testDebugUnitTest assembleDebug
+        run: ./gradlew --no-daemon lintDebug :feature:sharecard:testDebugUnitTest testDebugUnitTest assembleDebug
 
       - name: Enable KVM group permissions
         run: |
@@ -70,7 +70,7 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_2
-          script: ./gradlew --no-daemon connectedDebugAndroidTest
+          script: ./gradlew --no-daemon :feature:sharecard:connectedDebugAndroidTest connectedDebugAndroidTest
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

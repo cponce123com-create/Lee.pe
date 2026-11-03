@@ -7,6 +7,7 @@ import org.readium.r2.shared.publication.Link
 internal const val NAVIGATOR_TAG = "lee_pe_epub_navigator"
 internal const val MENU_HIGHLIGHT = 1
 internal const val MENU_COPY_SELECTION = 2
+internal const val MENU_SHARE_SELECTION = 3
 internal const val ANNOTATION_DECORATION_GROUP = "lee_pe_annotations"
 internal fun AndroidTtsEngine.Voice.isLocalSpanishVoice(): Boolean {
     if (requiresNetwork) return false

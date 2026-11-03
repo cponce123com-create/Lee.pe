@@ -52,6 +52,9 @@ import pe.lee.app.ui.reader.PdfReaderViewModel
 import pe.lee.app.ui.reader.pdfPageLocator
 import pe.lee.app.ui.reader.pdfTextLocator
 import pe.lee.app.ui.reader.DEFAULT_PDF_HIGHLIGHT_COLOR
+import pe.lee.feature.sharecard.R as ShareCardR
+import pe.lee.feature.sharecard.navigation.ShareCardArgs
+import pe.lee.feature.sharecard.navigation.shareCardIntent
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,6 +63,7 @@ internal fun PdfReaderDialogs(
     state: PdfReaderDialogsState,
     context: Context,
     uri: Uri,
+    bookTitle: String,
     pageIndex: Int,
     pageCount: Int,
     annotations: List<ReaderAnnotation>,
@@ -328,7 +332,8 @@ internal fun PdfReaderDialogs(
             title = { Text("Texto seleccionado · página ${selectedPdfPage + 1}") },
             text = { Text(selectedPdfText.orEmpty()) },
             confirmButton = {
-                Row {
+                Column(horizontalAlignment = Alignment.End) {
+                    Row {
                     TextButton(onClick = {
                         selectedPdfText?.let { selected ->
                             val clipboard = context.getSystemService(ClipboardManager::class.java)
@@ -363,6 +368,25 @@ internal fun PdfReaderDialogs(
                         showSelectionDialog = false
                         showNoteEditor = true
                     }) { Text("Nota") }
+                    }
+                    TextButton(onClick = {
+                        val selected = selectedPdfText.orEmpty().trim()
+                        if (selected.isNotEmpty()) {
+                            context.startActivity(
+                                shareCardIntent(
+                                    context,
+                                    ShareCardArgs(
+                                        text = selected,
+                                        bookId = uri.toString(),
+                                        bookTitle = bookTitle,
+                                        author = "",
+                                        locatorJson = pdfTextLocator(selectedPdfPage, selectedPdfRects)
+                                    )
+                                )
+                            )
+                        }
+                        showSelectionDialog = false
+                    }) { Text(context.getString(ShareCardR.string.share_card_create_action)) }
                 }
             },
             dismissButton = {

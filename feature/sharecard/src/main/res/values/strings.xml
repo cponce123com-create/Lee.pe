@@ -1,0 +1,24 @@
+<resources>
+    <string name="share_card_title">Crear tarjeta</string>
+    <string name="share_card_quote_label">Frase</string>
+    <string name="share_card_edit_quote">Editar frase</string>
+    <string name="share_card_theme_paper">Papel</string>
+    <string name="share_card_theme_night">Noche</string>
+    <string name="share_card_theme_accent">Acento</string>
+    <string name="share_card_format_story">Historia</string>
+    <string name="share_card_format_square">Cuadrada</string>
+    <string name="share_card_share">Compartir</string>
+    <string name="share_card_generating">Preparando imagen…</string>
+    <string name="share_card_shared">Tarjeta lista para compartir</string>
+    <string name="share_card_error">No se pudo generar la tarjeta. Inténtalo otra vez.</string>
+    <string name="share_card_chooser_title">Compartir tarjeta</string>
+    <string name="share_card_close">Cerrar</string>
+    <string name="share_card_brand">Lee.pe</string>
+    <string name="share_card_create_action">Crear tarjeta para compartir</string>
+    <string name="share_card_unknown_author">Autor desconocido</string>
+    <string name="share_card_design">Diseño</string>
+    <string name="share_card_format">Formato</string>
+    <string name="share_card_book_title_label">Título del libro</string>
+    <string name="share_card_author_label">Autor</string>
+    <string name="share_card_unknown_book">Libro sin título</string>
+</resources>

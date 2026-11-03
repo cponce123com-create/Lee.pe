@@ -23,6 +23,9 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.core.domain.ReaderAnnotation
+import pe.lee.feature.sharecard.navigation.ShareCardArgs
+import pe.lee.feature.sharecard.navigation.shareCardIntent
+import pe.lee.feature.sharecard.R as ShareCardR
 import org.readium.navigator.media.tts.TtsNavigator
 import org.readium.r2.navigator.Decoration
 import org.readium.r2.navigator.VisualNavigator
@@ -135,11 +138,12 @@ internal fun EpubReaderSessionEffects(
                 override fun onCreateActionMode(mode: ActionMode, menu: Menu): Boolean {
                     menu.add(Menu.NONE, MENU_HIGHLIGHT, Menu.NONE, "Resaltar")
                     menu.add(Menu.NONE, MENU_COPY_SELECTION, Menu.NONE, "Copiar")
+                    menu.add(Menu.NONE, MENU_SHARE_SELECTION, Menu.NONE, context.getString(ShareCardR.string.share_card_create_action))
                     return true
                 }
 
                 override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
-                    if (item.itemId != MENU_HIGHLIGHT && item.itemId != MENU_COPY_SELECTION) return false
+                    if (item.itemId !in setOf(MENU_HIGHLIGHT, MENU_COPY_SELECTION, MENU_SHARE_SELECTION)) return false
                     coroutineScope.launch {
                         val selectedLocator = session.navigator.value?.currentSelection()?.locator
                         if (item.itemId == MENU_HIGHLIGHT && selectedLocator != null) {
@@ -159,6 +163,26 @@ internal fun EpubReaderSessionEffects(
                             selectedLocator?.text?.highlight?.let { selectedText ->
                                 val clipboard = context.getSystemService(ClipboardManager::class.java)
                                 clipboard?.setPrimaryClip(ClipData.newPlainText("Texto seleccionado", selectedText))
+                            }
+                        } else if (item.itemId == MENU_SHARE_SELECTION) {
+                            val selectedText = selectedLocator?.text?.highlight?.trim().orEmpty()
+                            if (selectedText.isNotEmpty()) {
+                                val author = opened.metadata.authors
+                                    .map { it.localizedName.string }
+                                    .filter(String::isNotBlank)
+                                    .joinToString(", ")
+                                context.startActivity(
+                                    shareCardIntent(
+                                        context,
+                                        ShareCardArgs(
+                                            text = selectedText,
+                                            bookId = uri.toString(),
+                                            bookTitle = title,
+                                            author = author,
+                                            locatorJson = selectedLocator?.toJSON()?.toString()
+                                        )
+                                    )
+                                )
                             }
                         }
                         mode.finish()

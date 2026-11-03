@@ -321,6 +321,7 @@ internal fun PdfReaderScreen(
             state = dialogState,
             context = context,
             uri = uri,
+            bookTitle = title,
             pageIndex = pageIndex,
             pageCount = pageCount,
             annotations = annotations,
