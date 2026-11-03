@@ -172,4 +172,31 @@
         <item quantity="one">%1$d libro pendiente</item>
         <item quantity="other">%1$d libros pendientes</item>
     </plurals>
+    <string name="reading_duration_zero">0 min</string>
+    <string name="reading_duration_under_minute">Menos de 1 min</string>
+    <string name="reading_duration_minutes">%1$d min</string>
+    <string name="reading_duration_hours">%1$d h</string>
+    <string name="reading_duration_hours_minutes">%1$d h %2$d min</string>
+    <string name="library_statistics_title">Estadísticas de biblioteca</string>
+    <string name="library_stat_total_books">Libros en total</string>
+    <string name="library_stat_in_progress">En curso</string>
+    <string name="library_stat_completed">Terminados</string>
+    <string name="library_stat_favorites">Favoritos</string>
+    <string name="reading_time_today">Tiempo de lectura hoy: %1$s</string>
+    <plurals name="reading_streak_days">
+        <item quantity="one">Racha actual: %1$d día</item>
+        <item quantity="other">Racha actual: %1$d días</item>
+    </plurals>
+    <string name="reading_daily_goal">Meta diaria: %1$d min</string>
+    <string name="reading_change_goal">Cambiar meta</string>
+    <string name="reading_reset_history">Reiniciar historial</string>
+    <string name="reading_stats_tracking_note">El tiempo se registra localmente mientras un lector EPUB o PDF está en primer plano. No incluye audiolibros reproducidos en segundo plano.</string>
+    <string name="action_close">Cerrar</string>
+    <string name="reading_daily_goal_title">Meta diaria de lectura</string>
+    <string name="reading_goal_minutes_label">Minutos (5 a 240)</string>
+    <string name="reading_reset_title">Reiniciar tiempo de lectura</string>
+    <string name="reading_reset_confirmation">Se borrará el historial local de tiempo y rachas. La biblioteca, el progreso y las anotaciones se conservarán.</string>
+    <string name="reading_history_reset">Historial de lectura reiniciado</string>
+    <string name="reading_history_reset_failed">No se pudo reiniciar el historial</string>
+    <string name="action_reset">Reiniciar</string>
 </resources>

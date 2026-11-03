@@ -172,4 +172,31 @@
         <item quantity="one">%1$d book pending</item>
         <item quantity="other">%1$d books pending</item>
     </plurals>
+    <string name="reading_duration_zero">0 min</string>
+    <string name="reading_duration_under_minute">Less than 1 min</string>
+    <string name="reading_duration_minutes">%1$d min</string>
+    <string name="reading_duration_hours">%1$d hr</string>
+    <string name="reading_duration_hours_minutes">%1$d hr %2$d min</string>
+    <string name="library_statistics_title">Library statistics</string>
+    <string name="library_stat_total_books">Total books</string>
+    <string name="library_stat_in_progress">In progress</string>
+    <string name="library_stat_completed">Finished</string>
+    <string name="library_stat_favorites">Favorites</string>
+    <string name="reading_time_today">Reading time today: %1$s</string>
+    <plurals name="reading_streak_days">
+        <item quantity="one">Current streak: %1$d day</item>
+        <item quantity="other">Current streak: %1$d days</item>
+    </plurals>
+    <string name="reading_daily_goal">Daily goal: %1$d min</string>
+    <string name="reading_change_goal">Change goal</string>
+    <string name="reading_reset_history">Reset history</string>
+    <string name="reading_stats_tracking_note">Time is tracked locally while an EPUB or PDF reader is in the foreground. Audiobooks playing in the background are not included.</string>
+    <string name="action_close">Close</string>
+    <string name="reading_daily_goal_title">Daily reading goal</string>
+    <string name="reading_goal_minutes_label">Minutes (5 to 240)</string>
+    <string name="reading_reset_title">Reset reading time</string>
+    <string name="reading_reset_confirmation">Your local reading time and streak history will be erased. Your library, progress, and annotations will be kept.</string>
+    <string name="reading_history_reset">Reading history reset</string>
+    <string name="reading_history_reset_failed">Could not reset the history</string>
+    <string name="action_reset">Reset</string>
 </resources>
