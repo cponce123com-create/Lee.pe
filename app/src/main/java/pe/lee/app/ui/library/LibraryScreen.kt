@@ -364,7 +364,9 @@ fun LibraryScreen() {
                     val audioPosition = AudioProgressStore.get(context, targetBook.uri.toString())
                     if (audioPosition > 0L) AudioProgressStore.put(context, pickedUri.toString(), audioPosition)
                     AudioProgressStore.remove(context, targetBook.uri.toString())
-                    OfflineBookStore.rebindCopy(context, targetBook.uri, pickedUri)
+                    withContext(Dispatchers.IO) {
+                        OfflineBookStore.rebindCopy(context, targetBook.uri, pickedUri)
+                    }
                 }
                 organizingBook = null
                 offlineRevision++
