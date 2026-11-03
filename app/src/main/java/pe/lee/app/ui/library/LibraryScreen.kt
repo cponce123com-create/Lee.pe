@@ -48,8 +48,10 @@ import androidx.compose.material.icons.filled.Close
 import pe.lee.app.ui.reader.PdfReaderActivity
 import pe.lee.app.ui.reader.ReaderActivity
 import pe.lee.app.ui.audio.AudioPlayerActivity
+import pe.lee.app.ui.audio.AudioProgressStore
 import pe.lee.app.data.local.BookDao
 import pe.lee.app.data.local.BookEntity
+import pe.lee.app.data.local.CollectionEntity
 import pe.lee.app.data.local.LeeDatabase
 import pe.lee.app.data.local.OfflineBookStore
 import androidx.compose.material3.AlertDialog
@@ -123,6 +125,7 @@ private fun formatReadingDuration(seconds: Long): String {
 
 
 private data class LocalBook(
+    val id: String,
     val uri: Uri,
     val title: String,
     val format: String,
@@ -145,6 +148,7 @@ fun LibraryScreen() {
     val todaySeconds by readingSessionDao.observeDurationForDay(todayKey).collectAsState(initial = 0L)
     val readingDayKeys by readingSessionDao.observeReadingDayKeys().collectAsState(initial = emptyList())
     val storedBooks by dao.observeAll().collectAsState(initial = emptyList())
+    val storedCollections by dao.observeCollections().collectAsState(initial = emptyList())
     var offlineCopyUris by remember { mutableStateOf<Map<String, Uri>>(emptyMap()) }
     var offlineRevision by remember { mutableIntStateOf(0) }
     var savingBookUri by remember { mutableStateOf<String?>(null) }
@@ -159,20 +163,19 @@ fun LibraryScreen() {
     }
     val books = remember(storedBooks, offlineCopyUris) {
         storedBooks.map {
-            LocalBook(Uri.parse(it.uri), it.title, it.format, it.isFavorite, it.importedAt, it.lastOpenedAt,
+            LocalBook(it.id, Uri.parse(it.uri), it.title, it.format, it.isFavorite, it.importedAt, it.lastOpenedAt,
                 it.readProgress, it.collectionId, offlineCopyUris[it.uri])
         }
     }
-    val collections = remember(books) {
-        books.mapNotNull { it.collectionId?.trim()?.takeIf { name -> name.isNotBlank() } }
-            .distinctBy { it.lowercase() }
-            .sortedBy { it.lowercase() }
-    }
+    val collections = remember(storedCollections) { storedCollections.map { it.name } }
     val coroutineScope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("Todos") }
     var selectedCollection by remember { mutableStateOf<String?>(null) }
     var collectionMenuExpanded by remember { mutableStateOf(false) }
+    var showCollectionsManager by remember { mutableStateOf(false) }
+    var collectionBeingRenamed by remember { mutableStateOf<CollectionEntity?>(null) }
+    var collectionRenameDraft by remember { mutableStateOf("") }
     var organizingBook by remember { mutableStateOf<LocalBook?>(null) }
     var collectionDraft by remember { mutableStateOf("") }
     var showLibraryStats by remember { mutableStateOf(false) }
@@ -331,6 +334,45 @@ fun LibraryScreen() {
                     error.message ?: "No se pudo completar la importación.",
                     Toast.LENGTH_LONG
                 ).show()
+            }
+        }
+    }
+
+    val relinkPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { pickedUri ->
+        val targetBook = organizingBook
+        if (pickedUri != null && targetBook != null) coroutineScope.launch {
+            try {
+                val displayName = withContext(Dispatchers.IO) { queryDisplayName(context, pickedUri) }
+                val pickedFormat = formatFromFileName(displayName)
+                require(pickedFormat == targetBook.format) {
+                    "Selecciona un archivo ${targetBook.format} para volver a vincular este libro."
+                }
+                context.contentResolver.takePersistableUriPermission(
+                    pickedUri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+                context.contentResolver.openInputStream(pickedUri)?.use { input ->
+                    require(input.read() >= 0) { "El archivo seleccionado está vacío." }
+                } ?: error("No se pudo leer el archivo. Revisa el permiso del proveedor.")
+
+                val rebound = dao.rebindUri(targetBook.id, pickedUri.toString())
+                require(rebound) { "Ese archivo ya está vinculado a otro libro de la biblioteca." }
+                if (targetBook.uri != pickedUri) {
+                    rebindBookScopedPreferences(context, targetBook.uri.toString(), pickedUri.toString())
+                    val audioPosition = AudioProgressStore.get(context, targetBook.uri.toString())
+                    if (audioPosition > 0L) AudioProgressStore.put(context, pickedUri.toString(), audioPosition)
+                    AudioProgressStore.remove(context, targetBook.uri.toString())
+                    OfflineBookStore.rebindCopy(context, targetBook.uri, pickedUri)
+                }
+                organizingBook = null
+                offlineRevision++
+                Toast.makeText(context, "Libro revinculado; se conservaron su progreso y anotaciones", Toast.LENGTH_LONG).show()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                Toast.makeText(context, error.message ?: "No se pudo revincular el libro", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -689,6 +731,8 @@ fun LibraryScreen() {
                         coroutineScope.launch {
                             dao.deleteByUri(book.uri.toString())
                             withContext(Dispatchers.IO) { OfflineBookStore.deleteCopy(context, book.uri) }
+                            AudioProgressStore.remove(context, book.uri.toString())
+                            clearBookScopedPreferences(context, book.uri.toString())
                             pendingRemoval = null
                             offlineRevision++
                             Toast.makeText(context, "Libro quitado de la biblioteca", Toast.LENGTH_SHORT).show()
@@ -741,6 +785,19 @@ fun LibraryScreen() {
                         placeholder = { Text("Ej. Fantasía, Por leer") },
                         singleLine = true
                     )
+                    TextButton(
+                        onClick = {
+                            relinkPicker.launch(
+                                when (book.format) {
+                                    "EPUB" -> arrayOf("application/epub+zip", "application/octet-stream")
+                                    "PDF" -> arrayOf("application/pdf")
+                                    else -> arrayOf("audio/*")
+                                }
+                            )
+                        }
+                    ) {
+                        Text("Volver a vincular archivo")
+                    }
                 }
             },
             confirmButton = {
@@ -775,6 +832,95 @@ fun LibraryScreen() {
                     }
                     TextButton(onClick = { organizingBook = null }) { Text("Cancelar") }
                 }
+            }
+        )
+    }
+
+    if (showCollectionsManager) {
+        AlertDialog(
+            onDismissRequest = { showCollectionsManager = false },
+            title = { Text("Administrar colecciones") },
+            text = {
+                if (storedCollections.isEmpty()) {
+                    Text("Todavía no hay colecciones. Crea una al organizar un libro.")
+                } else {
+                    Column(
+                        modifier = Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        storedCollections.forEachIndexed { index, collection ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    collection.name,
+                                    modifier = Modifier.weight(1f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                TextButton(
+                                    enabled = index > 0,
+                                    onClick = { coroutineScope.launch { dao.moveCollection(collection.id, -1) } }
+                                ) { Text("↑") }
+                                TextButton(
+                                    enabled = index < storedCollections.lastIndex,
+                                    onClick = { coroutineScope.launch { dao.moveCollection(collection.id, 1) } }
+                                ) { Text("↓") }
+                                TextButton(
+                                    onClick = {
+                                        collectionBeingRenamed = collection
+                                        collectionRenameDraft = collection.name
+                                    }
+                                ) { Text("Renombrar") }
+                                TextButton(
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            dao.deleteCollection(collection.id)
+                                            if (selectedCollection == collection.name) selectedCollection = null
+                                        }
+                                    }
+                                ) { Text("Eliminar") }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showCollectionsManager = false }) { Text("Listo") }
+            }
+        )
+    }
+
+    collectionBeingRenamed?.let { collection ->
+        AlertDialog(
+            onDismissRequest = { collectionBeingRenamed = null },
+            title = { Text("Renombrar colección") },
+            text = {
+                OutlinedTextField(
+                    value = collectionRenameDraft,
+                    onValueChange = { collectionRenameDraft = it },
+                    label = { Text("Nombre") },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = collectionRenameDraft.isNotBlank(),
+                    onClick = {
+                        val newName = collectionRenameDraft.trim()
+                        coroutineScope.launch {
+                            runCatching { dao.renameCollection(collection.id, newName) }
+                                .onSuccess {
+                                    if (selectedCollection == collection.name) selectedCollection = newName
+                                    collectionBeingRenamed = null
+                                }
+                                .onFailure {
+                                    Toast.makeText(context, it.message ?: "No se pudo renombrar la colección", Toast.LENGTH_LONG).show()
+                                }
+                        }
+                    }
+                ) { Text("Guardar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { collectionBeingRenamed = null }) { Text("Cancelar") }
             }
         )
     }
@@ -994,6 +1140,13 @@ fun LibraryScreen() {
                                     }
                                 )
                             }
+                            DropdownMenuItem(
+                                text = { Text("Administrar colecciones") },
+                                onClick = {
+                                    showCollectionsManager = true
+                                    collectionMenuExpanded = false
+                                }
+                            )
                         }
                     }
                 }
@@ -1158,6 +1311,33 @@ fun LibraryScreen() {
             )
         }
     }
+}
+
+private fun clearBookScopedPreferences(context: Context, uri: String) {
+    val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    val keys = preferences.all.keys.filter { it.endsWith(":$uri") }
+    if (keys.isEmpty()) return
+    preferences.edit().also { editor -> keys.forEach(editor::remove) }.apply()
+}
+
+private fun rebindBookScopedPreferences(context: Context, oldUri: String, newUri: String) {
+    val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    val entries = preferences.all.filterKeys { it.endsWith(":$oldUri") }
+    if (entries.isEmpty()) return
+    preferences.edit().also { editor ->
+        entries.forEach { (oldKey, value) ->
+            val newKey = oldKey.removeSuffix(oldUri) + newUri
+            when (value) {
+                is String -> editor.putString(newKey, value)
+                is Boolean -> editor.putBoolean(newKey, value)
+                is Int -> editor.putInt(newKey, value)
+                is Long -> editor.putLong(newKey, value)
+                is Float -> editor.putFloat(newKey, value)
+                is Set<*> -> editor.putStringSet(newKey, value.filterIsInstance<String>().toSet())
+            }
+            editor.remove(oldKey)
+        }
+    }.apply()
 }
 
 @Composable

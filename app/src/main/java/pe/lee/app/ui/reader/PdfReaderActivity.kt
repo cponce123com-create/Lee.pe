@@ -246,6 +246,12 @@ class PdfReaderActivity : ComponentActivity() {
         super.onPause()
     }
 
+    override fun onDestroy() {
+        readingSessionRecorder?.close()
+        readingSessionRecorder = null
+        super.onDestroy()
+    }
+
     companion object {
         const val EXTRA_TITLE = "pe.lee.app.pdf.TITLE"
     }

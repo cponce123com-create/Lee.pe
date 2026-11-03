@@ -21,6 +21,8 @@ class AudioPlaybackService : MediaSessionService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var player: ExoPlayer? = null
     private var mediaSession: MediaSession? = null
+    private var lastSavedMediaId: String? = null
+    private var lastSavedPositionMs: Long = -1L
 
     override fun onCreate() {
         super.onCreate()
@@ -29,12 +31,28 @@ class AudioPlaybackService : MediaSessionService() {
         exoPlayer.setAudioAttributes(AudioAttributes.DEFAULT, true)
         player = exoPlayer
         exoPlayer.addListener(object : Player.Listener {
-            override fun onEvents(player: Player, events: Player.Events) {
-                savePosition(player)
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                if (!isPlaying) savePosition(exoPlayer, force = true)
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {
-                savePosition(exoPlayer)
+                if (playbackState == Player.STATE_ENDED) {
+                    savePosition(exoPlayer, force = true)
+                }
+            }
+
+            override fun onPositionDiscontinuity(
+                oldPosition: Player.PositionInfo,
+                newPosition: Player.PositionInfo,
+                reason: Int
+            ) {
+                savePosition(exoPlayer, force = true)
+            }
+
+            override fun onMediaItemTransition(mediaItem: androidx.media3.common.MediaItem?, reason: Int) {
+                lastSavedMediaId = null
+                lastSavedPositionMs = -1L
+                savePosition(exoPlayer, force = true)
             }
         })
 
@@ -50,8 +68,8 @@ class AudioPlaybackService : MediaSessionService() {
 
         serviceScope.launch {
             while (isActive) {
-                savePosition(exoPlayer)
-                delay(2_000)
+                if (exoPlayer.isPlaying) savePosition(exoPlayer, force = false)
+                delay(PROGRESS_SAVE_INTERVAL_MS)
             }
         }
     }
@@ -59,7 +77,7 @@ class AudioPlaybackService : MediaSessionService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession
 
     override fun onDestroy() {
-        player?.let(::savePosition)
+        player?.let { savePosition(it, force = true) }
         serviceScope.cancel()
         mediaSession?.release()
         mediaSession = null
@@ -68,9 +86,17 @@ class AudioPlaybackService : MediaSessionService() {
         super.onDestroy()
     }
 
-    private fun savePosition(player: Player) {
+    private fun savePosition(player: Player, force: Boolean) {
         val mediaId = player.currentMediaItem?.mediaId ?: return
         val position = if (player.playbackState == Player.STATE_ENDED) 0L else player.currentPosition
+        val sameItem = lastSavedMediaId == mediaId
+        if (!force && sameItem && position - lastSavedPositionMs < PROGRESS_SAVE_INTERVAL_MS) return
         AudioProgressStore.put(this, mediaId, position)
+        lastSavedMediaId = mediaId
+        lastSavedPositionMs = position
+    }
+
+    private companion object {
+        const val PROGRESS_SAVE_INTERVAL_MS = 5_000L
     }
 }
