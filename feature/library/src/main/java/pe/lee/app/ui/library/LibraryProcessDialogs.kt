@@ -15,6 +15,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -37,43 +41,42 @@ internal fun LibraryProcessDialogs(
     backupRepository: LocalBackupRepository,
     coroutineScope: CoroutineScope,
     storedBooks: List<BookEntity>,
-    scannerBusy: MutableState<Boolean>,
-    scannerJob: MutableState<Job?>,
-    scannerFolderName: String,
-    scannerProgress: LocalFolderScanner.Progress,
-    scannerPreview: MutableState<LocalFolderScanner.Result?>,
-    scannerImporting: MutableState<Boolean>,
+    scanner: ScannerUiState,
+    onCancelScan: () -> Unit,
+    onClearScanPreview: () -> Unit,
     showBackupOptions: MutableState<Boolean>,
     backupBusy: MutableState<Boolean>,
     backupPreview: MutableState<LocalBackupPreview?>,
     onExportBackup: () -> Unit,
     onImportBackup: () -> Unit
 ) {
-    if (scannerBusy.value) {
+    var importingScan by remember { mutableStateOf(false) }
+
+    if (scanner.busy) {
         AlertDialog(
             onDismissRequest = {},
             title = { Text(stringResource(R.string.scanner_searching_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     CircularProgressIndicator()
-                    Text(scannerFolderName, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(pluralStringResource(R.plurals.scanner_folders_count, scannerProgress.folders, scannerProgress.folders))
-                    Text(pluralStringResource(R.plurals.scanner_files_count, scannerProgress.files, scannerProgress.files))
-                    Text(pluralStringResource(R.plurals.scanner_books_count, scannerProgress.books, scannerProgress.books))
+                    Text(scanner.folderName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(pluralStringResource(R.plurals.scanner_folders_count, scanner.folders, scanner.folders))
+                    Text(pluralStringResource(R.plurals.scanner_files_count, scanner.files, scanner.files))
+                    Text(pluralStringResource(R.plurals.scanner_books_count, scanner.books, scanner.books))
                     Text(stringResource(R.string.scanner_privacy_notice))
                 }
             },
             confirmButton = {
-                TextButton(onClick = { scannerJob.value?.cancel(); scannerBusy.value = false }) {
+                TextButton(onClick = onCancelScan) {
                     Text(stringResource(R.string.action_cancel))
                 }
             }
         )
     }
 
-    scannerPreview.value?.let { preview ->
+    scanner.preview?.let { preview ->
         AlertDialog(
-            onDismissRequest = { if (!scannerImporting.value) scannerPreview.value = null },
+            onDismissRequest = { if (!importingScan) onClearScanPreview() },
             title = { Text(stringResource(R.string.scanner_result_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -97,9 +100,9 @@ internal fun LibraryProcessDialogs(
             },
             confirmButton = {
                 TextButton(
-                    enabled = !scannerImporting.value && preview.books.isNotEmpty(),
+                    enabled = !importingScan && preview.books.isNotEmpty(),
                     onClick = {
-                        scannerImporting.value = true
+                        importingScan = true
                         coroutineScope.launch {
                             try {
                                 val now = System.currentTimeMillis()
@@ -117,7 +120,7 @@ internal fun LibraryProcessDialogs(
                                     context.resources.getQuantityString(R.plurals.scanner_imported_books_toast, entries.size, entries.size),
                                     Toast.LENGTH_LONG
                                 ).show()
-                                scannerPreview.value = null
+                                onClearScanPreview()
                             } catch (cancelled: CancellationException) {
                                 throw cancelled
                             } catch (error: Exception) {
@@ -126,16 +129,16 @@ internal fun LibraryProcessDialogs(
                                     Toast.LENGTH_LONG
                                 ).show()
                             } finally {
-                                scannerImporting.value = false
+                                importingScan = false
                             }
                         }
                     }
-                ) { Text(stringResource(if (scannerImporting.value) R.string.action_importing else R.string.scanner_add_to_library)) }
+                ) { Text(stringResource(if (importingScan) R.string.action_importing else R.string.scanner_add_to_library)) }
             },
             dismissButton = {
                 TextButton(
-                    enabled = !scannerImporting.value,
-                    onClick = { scannerPreview.value = null }
+                    enabled = !importingScan,
+                    onClick = onClearScanPreview
                 ) { Text(stringResource(R.string.action_cancel)) }
             }
         )

@@ -26,6 +26,7 @@ import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.compose.runtime.MutableState
 import kotlinx.coroutines.CoroutineScope
 import pe.lee.app.data.repository.SettingsRepository
+import pe.lee.feature.library.R
 
 
 
@@ -49,11 +50,6 @@ internal fun rememberLibraryDocumentActions(
     backupBusy: MutableState<Boolean>,
     backupPreview: MutableState<LocalBackupPreview?>,
     organizingBook: MutableState<LocalBook?>,
-    scannerBusy: MutableState<Boolean>,
-    scannerJob: MutableState<Job?>,
-    scannerProgress: MutableState<LocalFolderScanner.Progress>,
-    scannerPreview: MutableState<LocalFolderScanner.Result?>,
-    scannerFolderName: MutableState<String>,
     onOfflineBooksChanged: () -> Unit
 ): LibraryDocumentActions {
     val exportAnnotationsLauncher = rememberLauncherForActivityResult(
@@ -66,14 +62,18 @@ internal fun rememberLibraryDocumentActions(
                 try {
                     withContext(Dispatchers.IO) {
                         val output = context.contentResolver.openOutputStream(uri, "wt")
-                            ?: throw IOException("No se pudo crear el archivo de exportación.")
+                            ?: throw IOException(context.getString(R.string.library_export_file_failed))
                         output.bufferedWriter(Charsets.UTF_8).use { it.write(markdown) }
                     }
-                    Toast.makeText(context, "Anotaciones exportadas en Markdown", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.library_export_annotations_done), Toast.LENGTH_SHORT).show()
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (error: Exception) {
-                    Toast.makeText(context, error.message ?: "No se pudo exportar las anotaciones", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        context,
+                        error.message ?: context.getString(R.string.library_export_annotations_failed),
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             }
         }
@@ -86,11 +86,15 @@ internal fun rememberLibraryDocumentActions(
             backupBusy.value = true
             try {
                 LocalLibraryBackup.save(context, destination, backupRepository)
-                Toast.makeText(context, "Respaldo local exportado correctamente", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, context.getString(R.string.library_export_backup_done), Toast.LENGTH_LONG).show()
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (e: Exception) {
-                Toast.makeText(context, e.message ?: "No se pudo exportar el respaldo", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    context,
+                    e.message ?: context.getString(R.string.library_export_backup_failed),
+                    Toast.LENGTH_LONG
+                ).show()
             } finally {
                 backupBusy.value = false
             }
@@ -106,7 +110,11 @@ internal fun rememberLibraryDocumentActions(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (e: Exception) {
-                Toast.makeText(context, e.message ?: "Respaldo no válido", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    context,
+                    e.message ?: context.getString(R.string.library_backup_invalid),
+                    Toast.LENGTH_LONG
+                ).show()
             } finally {
                 backupBusy.value = false
             }
@@ -162,10 +170,13 @@ internal fun rememberLibraryDocumentActions(
                 }
                 Toast.makeText(
                     context,
-                    "Archivos incorporados: ${newBooks.size}. " +
-                        "Ya existentes: $alreadyPresent. " +
-                        "No compatibles: $unsupported. " +
-                        "Sin permiso persistente: $noPermission.",
+                    context.getString(
+                        R.string.library_import_summary,
+                        newBooks.size,
+                        alreadyPresent,
+                        unsupported,
+                        noPermission
+                    ),
                     Toast.LENGTH_LONG
                 ).show()
             } catch (cancelled: CancellationException) {
@@ -173,7 +184,7 @@ internal fun rememberLibraryDocumentActions(
             } catch (error: Exception) {
                 Toast.makeText(
                     context,
-                    error.message ?: "No se pudo completar la importación.",
+                    error.message ?: context.getString(R.string.library_import_failed),
                     Toast.LENGTH_LONG
                 ).show()
             }
@@ -189,18 +200,20 @@ internal fun rememberLibraryDocumentActions(
                 val displayName = withContext(Dispatchers.IO) { queryDisplayName(context, pickedUri) }
                 val pickedFormat = formatFromFileName(displayName)
                 require(pickedFormat == targetBook.format) {
-                    "Selecciona un archivo ${targetBook.format} para volver a vincular este libro."
+                    context.getString(R.string.library_relink_format, targetBook.format)
                 }
                 context.contentResolver.takePersistableUriPermission(
                     pickedUri,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
                 context.contentResolver.openInputStream(pickedUri)?.use { input ->
-                    require(input.read() >= 0) { "El archivo seleccionado está vacío." }
-                } ?: error("No se pudo leer el archivo. Revisa el permiso del proveedor.")
+                    require(input.read() >= 0) {
+                        context.getString(R.string.library_relink_empty_file)
+                    }
+                } ?: error(context.getString(R.string.library_relink_unreadable))
 
                 val rebound = viewModel.rebindUri(targetBook.id, pickedUri.toString())
-                require(rebound) { "Ese archivo ya está vinculado a otro libro de la biblioteca." }
+                require(rebound) { context.getString(R.string.library_relink_already_linked) }
                 if (targetBook.uri != pickedUri) {
                     rebindBookScopedPreferences(context, targetBook.uri.toString(), pickedUri.toString())
                     val audioPosition = AudioProgressStore.get(context, targetBook.uri.toString())
@@ -212,11 +225,19 @@ internal fun rememberLibraryDocumentActions(
                 }
                 organizingBook.value = null
                 onOfflineBooksChanged()
-                Toast.makeText(context, "Libro revinculado; se conservaron su progreso y anotaciones", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.library_relink_done),
+                    Toast.LENGTH_LONG
+                ).show()
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
-                Toast.makeText(context, error.message ?: "No se pudo revincular el libro", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    context,
+                    error.message ?: context.getString(R.string.library_relink_failed),
+                    Toast.LENGTH_LONG
+                ).show()
             }
         }
     }
@@ -232,33 +253,13 @@ internal fun rememberLibraryDocumentActions(
             }.isSuccess
             if (!granted) {
                 Toast.makeText(
-                    context, "No se pudo conservar el permiso de la carpeta.",
+                    context, context.getString(R.string.library_folder_permission_failed),
                     Toast.LENGTH_LONG
                 ).show()
             } else {
-                scannerPreview.value = null
-                scannerProgress.value = LocalFolderScanner.Progress(0, 0, 0)
-                scannerBusy.value = true
-                scannerFolderName.value = treeUri.lastPathSegment?.substringAfterLast(':')
-                    ?.takeIf { it.isNotBlank() } ?: "Carpeta seleccionada"
-                scannerJob.value = coroutineScope.launch {
-                    try {
-                        val existing = storedBooks.map { it.uri }
-                        scannerPreview.value = LocalFolderScanner.scan(context, treeUri, existing) { progress ->
-                            withContext(Dispatchers.Main.immediate) { scannerProgress.value = progress }
-                        }
-                    } catch (cancelled: CancellationException) {
-                        throw cancelled
-                    } catch (error: Exception) {
-                        Toast.makeText(
-                            context, error.message ?: "No se pudo escanear la carpeta.",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    } finally {
-                        scannerBusy.value = false
-                        scannerJob.value = null
-                    }
-                }
+                // The ViewModel owns the scan: it survives rotation and reports
+                // progress through its own state (A-36).
+                viewModel.scanFolder(context, treeUri, storedBooks.map { it.uri })
             }
         }
     }

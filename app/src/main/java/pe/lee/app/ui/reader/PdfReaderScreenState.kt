@@ -17,8 +17,17 @@ internal class PdfReaderScreenState(uri: Uri, settings: SettingsRepository) {
     val pageIndex = mutableIntStateOf(0)
     val sliderPage = mutableFloatStateOf(0f)
     val bitmap = mutableStateOf<Bitmap?>(null)
-    val zoomScale = mutableFloatStateOf(1f)
-    val rotationDegrees = mutableIntStateOf(0)
+
+    // Zoom and rotation are per book, so a rotation of the device (or reopening
+    // the PDF) keeps the exact view the reader left (A-04).
+    val zoomScale = mutableFloatStateOf(
+        settings.getFloat(SettingsRepository.Store.LIBRARY, "pdf-zoom:$uri", 1f).coerceIn(1f, 3f)
+    )
+    val rotationDegrees = mutableIntStateOf(
+        normalizedRotation(
+            settings.getInt(SettingsRepository.Store.LIBRARY, "pdf-rotation:$uri", 0)
+        )
+    )
     val panOffset = mutableStateOf(Offset.Zero)
     val loading = mutableStateOf(true)
     val rendering = mutableStateOf(false)
@@ -26,3 +35,7 @@ internal class PdfReaderScreenState(uri: Uri, settings: SettingsRepository) {
     val readerControlsVisible = mutableStateOf(true)
     val selectionMode = mutableStateOf(false)
 }
+
+/** Keeps persisted rotation values on 0/90/180/270. */
+private fun normalizedRotation(value: Int): Int =
+    ((((value % 360) + 360) % 360) / 90) * 90

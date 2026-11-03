@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="annotation_sheet_title">Bookmarks, notes and highlights</string>
+    <string name="annotation_add_note">Add note</string>
+    <string name="annotation_save">Save</string>
+    <string name="annotation_cancel">Cancel</string>
+    <string name="annotation_delete_action">Delete</string>
+    <string name="annotation_edit_note">Edit note</string>
+    <string name="annotation_new_note">New note</string>
+    <string name="annotation_note_label">Note for this position</string>
+    <string name="annotation_empty_list">You have not saved bookmarks, notes or highlights in this book yet.</string>
+    <string name="annotation_open_note">Note · open position</string>
+    <string name="annotation_open_highlight">Highlight · open text</string>
+    <string name="annotation_open_bookmark">Bookmark · open position</string>
+    <string name="annotation_highlight_date">Highlight · %1$s</string>
+    <string name="annotation_bookmark_date">Bookmark · %1$s</string>
+    <string name="annotation_delete_title">Delete %1$s</string>
+    <string name="annotation_kind_note">the note</string>
+    <string name="annotation_kind_highlight">the highlight</string>
+    <string name="annotation_kind_bookmark">the bookmark</string>
+    <string name="annotation_delete_message">This annotation will be deleted from the book.</string>
+</resources>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="epub_loading">Opening your book…</string>
+    <string name="epub_selection_clip_label">Selected text</string>
+    <string name="epub_open_failed">The book could not be opened</string>
+    <string name="epub_back_to_library">Back to library</string>
+    <string name="epub_search_title">Search in the EPUB</string>
+    <string name="epub_search_hint">Word or phrase</string>
+    <string name="epub_search_action">Search</string>
+    <string name="epub_searching">Searching the book…</string>
+    <string name="epub_no_matches">No matches found.</string>
+    <string name="epub_search_prompt_tap">Tap the magnifier to start searching.</string>
+    <string name="epub_search_prompt_hint">Search for a word or phrase in the book content.</string>
+    <string name="epub_search_limit_shown">Showing the first 100 matches</string>
+    <plurals name="epub_search_matches_count">
+        <item quantity="one">%1$d match</item>
+        <item quantity="other">%1$d matches</item>
+    </plurals>
+</resources>

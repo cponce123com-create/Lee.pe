@@ -86,7 +86,7 @@ internal fun LibraryStatisticsDialogs(
                     ))
                     Text(stringResource(R.string.reading_daily_goal, dailyGoalMinutes.value))
                     LinearProgressIndicator(
-                        progress = (todaySeconds.toFloat() / (dailyGoalMinutes.value * 60f)).coerceIn(0f, 1f),
+                        progress = { (todaySeconds.toFloat() / (dailyGoalMinutes.value * 60f)).coerceIn(0f, 1f) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Row(

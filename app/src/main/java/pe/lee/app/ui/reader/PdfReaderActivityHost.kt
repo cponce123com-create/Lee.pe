@@ -39,6 +39,10 @@ class PdfReaderActivity : ComponentActivity() {
                     title = title,
                     viewModel = readerViewModel,
                     settings = container.settings,
+                    onReadingVisibilityChange = { active ->
+                        if (active) readingSessionRecorder?.onResume()
+                        else readingSessionRecorder?.onPause()
+                    },
                     onBack = { finish() }
                 )
             }

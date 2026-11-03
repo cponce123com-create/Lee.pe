@@ -1,7 +1,22 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
 }
+
+// Single source of truth for the version, shared with CI.
+val versionProperties = Properties().apply {
+    val file = rootProject.file("version.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+val appVersionCode = versionProperties.getProperty("versionCode", "1").toInt()
+val appVersionName = versionProperties.getProperty("versionName", "0.1.0")
+
+// Release signing comes from the environment; the repository never stores a
+// keystore or its passwords. Without these variables the release build is
+// produced unsigned (useful for CI size checks and R8 validation).
+val releaseKeystore = System.getenv("LEE_PE_KEYSTORE")
 
 android {
     namespace = "pe.lee.app"
@@ -11,10 +26,33 @@ android {
         applicationId = "pe.lee.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = file(releaseKeystore)
+                storePassword = System.getenv("LEE_PE_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("LEE_PE_KEY_ALIAS")
+                keyPassword = System.getenv("LEE_PE_KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            signingConfig = signingConfigs.findByName("release")
+        }
     }
 
     buildFeatures {
@@ -41,6 +79,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.lifecycle.viewmodel.ktx)
+    implementation(libs.lifecycle.runtime.compose)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.ui.tooling.preview)

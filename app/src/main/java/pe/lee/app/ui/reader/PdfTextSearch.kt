@@ -1,8 +1,10 @@
 package pe.lee.app.ui.reader
 
+import android.content.res.Resources
 import android.graphics.pdf.PdfRenderer
 import android.os.Build
 import androidx.annotation.RequiresApi
+import pe.lee.app.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
@@ -20,7 +22,8 @@ internal suspend fun searchPdfDocument(
     renderer: PdfRenderer,
     pageCount: Int,
     term: String,
-    renderMutex: Mutex
+    renderMutex: Mutex,
+    resources: Resources
 ): PdfSearchOutcome {
     val matches = mutableListOf<PdfSearchResult>()
     var hasSelectableText = false
@@ -76,10 +79,15 @@ internal suspend fun searchPdfDocument(
     }
     val results = matches.take(100)
     val message = when {
-        matches.isNotEmpty() && matches.size >= 100 -> "Se muestran las primeras 100 coincidencias."
-        matches.isNotEmpty() -> "${matches.size} coincidencia(s)."
-        !hasSelectableText -> "No se detectó texto seleccionable. Este PDF podría estar escaneado y requerir OCR."
-        else -> "No se encontraron coincidencias."
+        matches.isNotEmpty() && matches.size >= 100 ->
+            resources.getString(R.string.pdf_search_limit_shown)
+        matches.isNotEmpty() -> resources.getQuantityString(
+            R.plurals.pdf_search_matches_count,
+            matches.size,
+            matches.size
+        )
+        !hasSelectableText -> resources.getString(R.string.pdf_search_no_selectable_text)
+        else -> resources.getString(R.string.pdf_search_no_matches)
     }
     return PdfSearchOutcome(results, message)
 }

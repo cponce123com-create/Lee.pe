@@ -12,12 +12,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.PictureAsPdf
-import androidx.compose.material.icons.filled.RotateRight
+import androidx.compose.material.icons.automirrored.filled.RotateRight
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -34,10 +34,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import pe.lee.app.R
 
 @Composable
 internal fun PdfReaderTopBar(
@@ -57,7 +59,7 @@ internal fun PdfReaderTopBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.pdf_back), tint = Color.White)
             }
             Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = Color(0xFF75DFFF), modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(10.dp))
@@ -70,13 +72,13 @@ internal fun PdfReaderTopBar(
                 overflow = TextOverflow.Ellipsis
             )
             IconButton(onClick = onSearch, enabled = !loading && pageCount > 0) {
-                Icon(Icons.Default.Search, contentDescription = "Buscar en el PDF", tint = Color.White)
+                Icon(Icons.Default.Search, contentDescription = stringResource(R.string.pdf_search_title), tint = Color.White)
             }
             IconButton(onClick = onAnnotations, enabled = !loading && pageCount > 0) {
-                Icon(Icons.Default.Bookmark, contentDescription = "Marcadores y notas PDF", tint = Color.White)
+                Icon(Icons.Default.Bookmark, contentDescription = stringResource(R.string.pdf_annotations_content_description), tint = Color.White)
             }
             IconButton(onClick = onHideControls, enabled = !loading) {
-                Icon(Icons.Default.VisibilityOff, contentDescription = "Ocultar controles del PDF", tint = Color.White)
+                Icon(Icons.Default.VisibilityOff, contentDescription = stringResource(R.string.pdf_hide_controls), tint = Color.White)
             }
         }
     }
@@ -112,10 +114,16 @@ internal fun PdfReaderBottomControls(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Desplazamiento continuo", color = Color.White, fontSize = 14.sp)
+                    Text(stringResource(R.string.pdf_continuous_scroll), color = Color.White, fontSize = 14.sp)
                     if (Build.VERSION.SDK_INT >= 35 && !continuousScroll) {
                         TextButton(onClick = onSelectionModeToggle) {
-                            Text(if (selectionMode) "Toca o arrastra" else "Seleccionar")
+                            Text(
+                                if (selectionMode) {
+                                    stringResource(R.string.pdf_selection_tap_or_drag)
+                                } else {
+                                    stringResource(R.string.pdf_selection_select)
+                                }
+                            )
                         }
                     }
                 }
@@ -137,16 +145,19 @@ internal fun PdfReaderBottomControls(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onZoomOut, enabled = zoomScale > 1f) {
-                        Icon(Icons.Default.ZoomOut, contentDescription = "Reducir zoom", tint = Color.White)
+                        Icon(Icons.Default.ZoomOut, contentDescription = stringResource(R.string.pdf_zoom_out), tint = Color.White)
                     }
                     TextButton(onClick = onZoomReset) {
-                        Text("${(zoomScale * 100).toInt()}% · Restablecer", color = Color.White)
+                        Text(
+                            stringResource(R.string.pdf_zoom_reset, (zoomScale * 100).toInt()),
+                            color = Color.White
+                        )
                     }
                     IconButton(onClick = onZoomIn, enabled = zoomScale < 3f) {
-                        Icon(Icons.Default.ZoomIn, contentDescription = "Ampliar zoom", tint = Color.White)
+                        Icon(Icons.Default.ZoomIn, contentDescription = stringResource(R.string.pdf_zoom_in), tint = Color.White)
                     }
                     IconButton(onClick = onRotate) {
-                        Icon(Icons.Default.RotateRight, contentDescription = "Rotar página", tint = Color.White)
+                        Icon(Icons.AutoMirrored.Filled.RotateRight, contentDescription = stringResource(R.string.pdf_rotate_page), tint = Color.White)
                     }
                 }
             }
@@ -156,16 +167,20 @@ internal fun PdfReaderBottomControls(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onPrevious, enabled = pageIndex > 0) {
-                    Icon(Icons.Default.ChevronLeft, contentDescription = "Página anterior", tint = Color.White)
+                    Icon(Icons.Default.ChevronLeft, contentDescription = stringResource(R.string.pdf_previous_page), tint = Color.White)
                 }
                 TextButton(onClick = onRequestPage) {
                     Text(
-                        if (pageCount > 0) "Página ${pageIndex + 1} de $pageCount" else "Preparando PDF",
+                        if (pageCount > 0) {
+                            stringResource(R.string.pdf_page_of, pageIndex + 1, pageCount)
+                        } else {
+                            stringResource(R.string.pdf_preparing_pdf)
+                        },
                         color = Color.White
                     )
                 }
                 IconButton(onClick = onNext, enabled = pageIndex < pageCount - 1) {
-                    Icon(Icons.Default.ChevronRight, contentDescription = "Página siguiente", tint = Color.White)
+                    Icon(Icons.Default.ChevronRight, contentDescription = stringResource(R.string.pdf_next_page), tint = Color.White)
                 }
             }
         }
@@ -185,7 +200,7 @@ internal fun PdfReaderRestoreControls(
         shape = RoundedCornerShape(14.dp)
     ) {
         IconButton(onClick = onShowControls) {
-            Icon(Icons.Default.Visibility, contentDescription = "Mostrar controles del PDF", tint = Color.White)
+            Icon(Icons.Default.Visibility, contentDescription = stringResource(R.string.pdf_show_controls), tint = Color.White)
         }
     }
 }

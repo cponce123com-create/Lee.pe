@@ -1,5 +1,7 @@
 package pe.lee.app.ui.library
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import pe.lee.app.data.local.BookEntity
@@ -7,14 +9,31 @@ import pe.lee.app.data.local.CollectionEntity
 import pe.lee.app.data.repository.BookRepository
 import pe.lee.core.domain.ReadingStatisticsRepository
 import pe.lee.core.domain.ReaderAnnotationRepository
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 data class LibraryState(
     val books: List<BookEntity> = emptyList(),
     val collections: List<CollectionEntity> = emptyList()
+)
+
+/** State of the SAF folder scan, owned by the ViewModel so a rotation cannot cancel it (A-36). */
+internal data class ScannerUiState(
+    val busy: Boolean = false,
+    val folderName: String = "",
+    val folders: Int = 0,
+    val files: Int = 0,
+    val books: Int = 0,
+    val preview: LocalFolderScanner.Result? = null,
+    val error: String? = null
 )
 
 class LibraryViewModel(
@@ -45,4 +64,67 @@ class LibraryViewModel(
     suspend fun updateTitle(uri: String, title: String) = booksRepository.updateTitle(uri, title)
     suspend fun updateFavorite(uri: String, favorite: Boolean) = booksRepository.updateFavorite(uri, favorite)
     suspend fun annotationsForBook(uri: String) = annotationRepository.getReaderAnnotations(uri)
+
+    // --- Folder scanner -----------------------------------------------------
+    // The scan used to run in the composition scope, so rotating the device
+    // cancelled minutes of work without any message (A-36). It now lives here.
+
+    private val mutableScanner = MutableStateFlow(ScannerUiState())
+    internal val scanner: StateFlow<ScannerUiState> = mutableScanner.asStateFlow()
+    private var scanJob: Job? = null
+
+    internal fun scanFolder(context: Context, treeUri: Uri, alreadyImported: List<String>) {
+        scanJob?.cancel()
+        mutableScanner.update {
+            it.copy(
+                busy = true,
+                preview = null,
+                error = null,
+                folders = 0,
+                files = 0,
+                books = 0,
+                folderName = treeUri.lastPathSegment
+                    ?.substringAfterLast(':')
+                    ?.takeIf(String::isNotBlank)
+                    ?: "Carpeta seleccionada"
+            )
+        }
+        val appContext = context.applicationContext
+        scanJob = viewModelScope.launch {
+            try {
+                val result = LocalFolderScanner.scan(appContext, treeUri, alreadyImported) { progress ->
+                    mutableScanner.update {
+                        it.copy(
+                            folders = progress.folders,
+                            files = progress.files,
+                            books = progress.books
+                        )
+                    }
+                }
+                mutableScanner.update { it.copy(preview = result) }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                mutableScanner.update {
+                    it.copy(
+                        error = error.message
+                            ?: "No se pudo escanear la carpeta.",
+                        busy = false
+                    )
+                }
+            } finally {
+                mutableScanner.update { it.copy(busy = false) }
+            }
+        }
+    }
+
+    internal fun cancelScan() {
+        scanJob?.cancel()
+        scanJob = null
+        mutableScanner.update { it.copy(busy = false) }
+    }
+
+    internal fun clearScanPreview() = mutableScanner.update { it.copy(preview = null) }
+
+    internal fun dismissScanError() = mutableScanner.update { it.copy(error = null) }
 }

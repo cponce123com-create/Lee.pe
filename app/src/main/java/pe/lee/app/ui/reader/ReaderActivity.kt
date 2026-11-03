@@ -4,6 +4,7 @@ import android.Manifest
 import android.net.Uri
 import android.view.View
 import android.widget.FrameLayout
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -11,7 +12,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -19,22 +22,29 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
-import kotlinx.coroutines.launch
 import org.json.JSONObject
+import pe.lee.app.R
 import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.core.domain.ReaderAnnotation
 import org.readium.navigator.media.tts.android.AndroidTtsPreferences
@@ -59,10 +69,11 @@ internal fun EpubReaderScreen(
     viewModel: EpubReaderViewModel,
     settings: SettingsRepository,
     openPublication: suspend () -> Publication,
+    onReadingVisibilityChange: (Boolean) -> Unit,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val annotations by viewModel.annotationState.collectAsState()
+    val annotations by viewModel.annotationState.collectAsStateWithLifecycle()
     val activity = context as? FragmentActivity ?: return
     val containerId = remember { View.generateViewId() }
     val coroutineScope = rememberCoroutineScope()
@@ -71,6 +82,10 @@ internal fun EpubReaderScreen(
     ) { }
 
     val session = remember(uri) { EpubReaderSessionState(uri, settings) }
+    // Back hides the reading chrome first; a second back leaves the book.
+    BackHandler(enabled = session.chromeVisible.value) {
+        session.chromeVisible.value = false
+    }
     var publication by session.publication
     var navigator by session.navigator
     var ttsNavigator by session.ttsNavigator
@@ -89,6 +104,17 @@ internal fun EpubReaderScreen(
     var chromeVisible by session.chromeVisible
     var loading by session.loading
     var errorMessage by session.errorMessage
+    var seekJob by remember { mutableStateOf<Job?>(null) }
+    // Large books used to re-flatten the whole table of contents on every
+    // recomposition (each page turn and each narrated sentence) (A-30).
+    val tableOfContents = remember(publication) {
+        publication?.let { flattenContents(it.tableOfContents) }.orEmpty()
+    }
+
+    // Reading time must not accumulate while the book is loading or failed.
+    LaunchedEffect(loading, errorMessage) {
+        onReadingVisibilityChange(!loading && errorMessage == null)
+    }
 
     val sessionActions = EpubReaderSessionEffects(
         context = context,
@@ -123,7 +149,7 @@ internal fun EpubReaderScreen(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
-                Text("Abriendo tu libro…", color = Color.White)
+                Text(stringResource(R.string.epub_loading), color = Color.White)
             }
         }
 
@@ -135,9 +161,9 @@ internal fun EpubReaderScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Text("No se pudo abrir el libro", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(stringResource(R.string.epub_open_failed), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 Text(message, color = Color(0xFFD1D8E5))
-                Button(onClick = onBack) { Text("Volver a la biblioteca") }
+                Button(onClick = onBack) { Text(stringResource(R.string.epub_back_to_library)) }
             }
         }
 
@@ -230,15 +256,19 @@ internal fun EpubReaderScreen(
                 onBack = onBack,
                 onPrevious = { navigator?.goBackward(animated = true) },
                 onNext = { navigator?.goForward(animated = true) },
-                contents = publication?.let { flattenContents(it.tableOfContents) }.orEmpty(),
+                contents = tableOfContents,
                 searchPublication = publication,
                 onSelectContent = { link -> navigator?.go(link, animated = true) },
                 onSelectSearchResult = { locator -> navigator?.go(locator, animated = true) },
-                onSeek = {
-                    coroutineScope.launch {
-                        publication?.locateProgression(it.toDouble())?.let { locator ->
-                            navigator?.go(locator)
+                onSeek = { progression ->
+                    // Narration would drag the page back to the spoken sentence.
+                    sessionActions.pauseTtsForNavigation()
+                    seekJob?.cancel()
+                    seekJob = coroutineScope.launch {
+                        val locator = withContext(Dispatchers.IO) {
+                            publication?.locateProgression(progression.toDouble())
                         }
+                        if (locator != null) navigator?.go(locator)
                     }
                 },
                 onProgressChange = { progress = it }
@@ -292,11 +322,19 @@ internal fun EpubReaderScreen(
                         ttsServiceBinding?.binder?.setSleepTimer(nextTimer)
                     },
                     onStop = { sessionActions.stopTts() },
-                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 112.dp)
+                    // Real insets instead of guessed offsets: with gesture navigation
+                    // or a cutout the panel overlapped the system bars (A-19).
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(bottom = 96.dp)
                 )
             } else if (ttsError != null) {
                 Surface(
-                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 88.dp, start = 16.dp, end = 16.dp),
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .statusBarsPadding()
+                        .padding(top = 72.dp, start = 16.dp, end = 16.dp),
                     color = Color(0xEE24152A),
                     shape = RoundedCornerShape(14.dp)
                 ) {

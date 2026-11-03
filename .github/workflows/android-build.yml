@@ -39,6 +39,9 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -55,7 +58,9 @@ jobs:
         run: sdkmanager --install "platforms;android-36"
 
       - name: Run unit tests and build APK
-        run: ./gradlew --no-daemon lintDebug :feature:sharecard:testDebugUnitTest testDebugUnitTest assembleDebug assembleDebugAndroidTest
+        # testDebugUnitTest covers every Android module; :core:domain is a Kotlin/JVM
+        # module and would be skipped silently without the explicit task.
+        run: ./gradlew --no-daemon --stacktrace lintDebug testDebugUnitTest :core:domain:test assembleDebug assembleDebugAndroidTest
 
       - name: Enable KVM group permissions
         run: |
@@ -63,14 +68,14 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Run database instrumentation tests on Android 35
+      - name: Run instrumentation tests on Android 35
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
           target: google_apis
           arch: x86_64
           profile: pixel_2
-          script: ./gradlew --no-daemon :feature:sharecard:connectedDebugAndroidTest connectedDebugAndroidTest
+          script: ./gradlew --no-daemon connectedDebugAndroidTest
 
       - name: Upload validation reports
         if: always()

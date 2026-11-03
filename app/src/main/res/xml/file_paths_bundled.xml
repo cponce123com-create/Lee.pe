@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The bundled EPUB lives in the app's private files directory. Exposing it
+         through a FileProvider gives it a content:// URI instead of a file://
+         path, which is required to share it safely and works with Readium. -->
+    <files-path name="bundled_books" path="bundled_books/" />
+</paths>

@@ -11,7 +11,17 @@ import java.util.Locale
 data class LocalBackupSnapshot(
     val books: List<BookEntity>,
     val annotations: List<ReadingAnnotationEntity>,
-    val sessions: List<ReadingSessionEntity>
+    val sessions: List<ReadingSessionEntity>,
+    /** All collections, including empty ones, so a restore keeps the user's shelves. */
+    val collections: List<CollectionEntity> = emptyList(),
+    /** Book URI in the backup -> names of every collection it belongs to. */
+    val bookCollectionNames: Map<String, List<String>> = emptyMap()
+)
+
+/** Projection used to rebuild [LocalBackupSnapshot.bookCollectionNames] in one query. */
+data class BookCollectionName(
+    val bookUri: String,
+    val collectionName: String
 )
 
 data class LocalBackupMergeReport(
@@ -34,9 +44,27 @@ interface LocalBackupDao {
     @Query("SELECT * FROM reading_sessions ORDER BY bookUri, dayKey")
     suspend fun allSessions(): List<ReadingSessionEntity>
 
+    @Query("SELECT * FROM collections ORDER BY sortOrder, name COLLATE NOCASE")
+    suspend fun allCollections(): List<CollectionEntity>
+
+    @Query("""
+        SELECT library_books.uri AS bookUri, collections.name AS collectionName
+        FROM book_collections
+        JOIN library_books ON library_books.id = book_collections.bookId
+        JOIN collections ON collections.id = book_collections.collectionId
+        ORDER BY library_books.uri, collections.sortOrder, collections.name COLLATE NOCASE
+    """)
+    suspend fun allBookCollectionNames(): List<BookCollectionName>
+
     @Transaction
-    suspend fun snapshot(): LocalBackupSnapshot =
-        LocalBackupSnapshot(allBooks(), allAnnotations(), allSessions())
+    suspend fun snapshot(): LocalBackupSnapshot = LocalBackupSnapshot(
+        books = allBooks(),
+        annotations = allAnnotations(),
+        sessions = allSessions(),
+        collections = allCollections(),
+        bookCollectionNames = allBookCollectionNames()
+            .groupBy({ it.bookUri }, { it.collectionName })
+    )
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAnnotationIfMissing(item: ReadingAnnotationEntity): Long
@@ -77,26 +105,38 @@ interface LocalBackupDao {
     @Query("SELECT name FROM collections WHERE id = :id LIMIT 1")
     suspend fun collectionName(id: Long): String?
 
+    /**
+     * Rebuilds the organization of a restored book. Version 1 backups only carry
+     * one legacy collection name; version 2 carries every collection, so a book
+     * that belonged to "Novela" and "Perú" comes back on both shelves.
+     */
     @Transaction
-    suspend fun updateRestoredOrganization(uri: String, favorite: Boolean, collection: String?) {
+    suspend fun updateRestoredOrganization(
+        uri: String,
+        favorite: Boolean,
+        collections: List<String>
+    ) {
         updateRestoredFavorite(uri, favorite)
         val bookId = bookIdForUri(uri) ?: return
         clearRestoredCollections(bookId)
-        val displayName = collection?.trim()?.takeIf(String::isNotEmpty)
-        val normalizedName = displayName?.lowercase(Locale.ROOT)
-        if (displayName == null || normalizedName == null) {
-            updateRestoredLegacyCollection(uri, null)
-            return
+        val uniqueNames = collections
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinctBy { it.lowercase(Locale.ROOT) }
+        for (displayName in uniqueNames) {
+            val normalizedName = displayName.lowercase(Locale.ROOT)
+            val insertedId = findCollectionId(normalizedName)
+                ?: insertCollection(
+                    CollectionEntity(name = displayName, normalizedName = normalizedName)
+                )
+            val resolvedId = if (insertedId == -1L) findCollectionId(normalizedName) else insertedId
+            if (resolvedId != null) {
+                insertBookCollection(BookCollectionCrossRef(bookId, resolvedId))
+            }
         }
-        val id = findCollectionId(normalizedName)
-            ?: insertCollection(CollectionEntity(name = displayName, normalizedName = normalizedName))
-        val resolvedId = if (id == -1L) findCollectionId(normalizedName) else id
-        if (resolvedId != null) {
-            insertBookCollection(BookCollectionCrossRef(bookId, resolvedId))
-            updateRestoredLegacyCollection(uri, collectionName(resolvedId) ?: displayName)
-        } else {
-            updateRestoredLegacyCollection(uri, displayName)
-        }
+        // The legacy single-name column is still read by older exports and the
+        // library filters, so keep it aligned with the first shelf.
+        updateRestoredLegacyCollection(uri, uniqueNames.firstOrNull())
     }
 
     @Query("SELECT * FROM reading_sessions WHERE dayKey = :day AND bookUri = :uri LIMIT 1")
@@ -130,10 +170,27 @@ interface LocalBackupDao {
                     book.readProgress.coerceIn(0f, 1f), book.lastOpenedAt
                 )
             }
+            // Version 2 archives carry every shelf of the book; version 1 only
+            // had the legacy single name, so fall back to it when absent.
+            val restoredCollections = snapshot.bookCollectionNames[book.uri].orEmpty()
+                .ifEmpty { listOfNotNull(match.collectionId ?: book.collectionId) }
             updateRestoredOrganization(
-                match.uri, match.isFavorite || book.isFavorite,
-                match.collectionId ?: book.collectionId
+                match.uri,
+                match.isFavorite || book.isFavorite,
+                restoredCollections
             )
+        }
+        // Recreate shelves that had no books, so an empty collection survives a
+        // backup/restore cycle instead of disappearing.
+        for (collection in snapshot.collections) {
+            val displayName = collection.name.trim()
+            val normalizedName = displayName.lowercase(Locale.ROOT)
+            if (normalizedName.isEmpty()) continue
+            if (findCollectionId(normalizedName) == null) {
+                insertCollection(
+                    CollectionEntity(name = displayName, normalizedName = normalizedName)
+                )
+            }
         }
         var annotationCount = 0
         for (item in snapshot.annotations) {

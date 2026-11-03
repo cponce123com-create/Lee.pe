@@ -21,12 +21,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.coroutineContext
 import kotlin.math.min
 import kotlin.math.roundToInt
+import pe.lee.feature.library.R
 
 /**
  * Renders only the first page of VISIBLE local PDF books, on Dispatchers.IO.
@@ -44,11 +48,19 @@ private object PdfThumbnailCache {
     }
     private val failed = object : LruCache<String, Boolean>(256) {}
 
-    fun load(context: Context, uri: Uri): Bitmap? {
+    /**
+     * A fling composes and discards dozens of cards; opening a PdfRenderer for
+     * each one spiked file descriptors and native memory. Two renders at a time
+     * keep the grid responsive without the stampede (P-04).
+     */
+    private val permits = Semaphore(2)
+
+    suspend fun load(context: Context, uri: Uri): Bitmap? = permits.withPermit {
+        coroutineContext.ensureActive()
         val key = uri.toString()
         synchronized(thumbnails) {
-            thumbnails.get(key)?.let { return it }
-            if (failed.get(key) == true) return null
+            thumbnails.get(key)?.let { return@withPermit it }
+            if (failed.get(key) == true) return@withPermit null
         }
         val result = runCatching {
             val descriptor = context.contentResolver.openFileDescriptor(uri, "r")
@@ -75,7 +87,7 @@ private object PdfThumbnailCache {
         synchronized(thumbnails) {
             if (result == null) failed.put(key, true) else thumbnails.put(key, result)
         }
-        return result
+        result
     }
 }
 
@@ -107,7 +119,7 @@ internal fun LocalPdfCover(
         } else {
             Image(
                 bitmap = bitmap!!.asImageBitmap(),
-                contentDescription = "Vista previa local de la primera página PDF",
+                contentDescription = stringResource(R.string.library_pdf_thumbnail_description),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Fit
             )

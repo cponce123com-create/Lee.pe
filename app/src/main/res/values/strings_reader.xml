@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ReaderChrome -->
+    <string name="reader_go_to_position">Ir a una posición</string>
+    <string name="reader_go_to_description">Indica el porcentaje del libro. La paginación EPUB puede cambiar con la letra y la pantalla.</string>
+    <string name="reader_progress_label">Progreso</string>
+    <string name="reader_go">Ir</string>
+    <string name="reader_cancel">Cancelar</string>
+    <string name="reader_contents_title">Contenido del libro</string>
+    <string name="reader_contents_empty">Este EPUB no incluye una tabla de contenidos.</string>
+    <string name="reader_back">Volver</string>
+    <string name="reader_tts_pause">Pausar narración</string>
+    <string name="reader_tts_resume">Reanudar narración</string>
+    <string name="reader_tts_start">Leer en voz alta</string>
+    <string name="reader_more_options">Más opciones de lectura</string>
+    <string name="reader_search_book">Buscar en el libro</string>
+    <string name="reader_bookmarks_notes">Marcadores y notas</string>
+    <string name="reader_appearance_title">Apariencia de lectura</string>
+    <string name="reader_book_index">Índice del libro</string>
+    <string name="reader_hide_controls">Ocultar controles</string>
+    <string name="reader_previous_page">Página anterior</string>
+    <string name="reader_next_page">Página siguiente</string>
+    <string name="reader_go_to_percent">Ir a %1$d%%</string>
+
+    <!-- ReaderControls: TTS -->
+    <string name="reader_tts_book_narration">Narración del libro</string>
+    <string name="reader_tts_pause_voice">Pausar voz</string>
+    <string name="reader_tts_continue_voice">Continuar voz</string>
+    <string name="reader_language_spanish">Español</string>
+    <string name="reader_voice_spanish_mexico">Español (México)</string>
+    <string name="reader_voice_spanish_spain">Español (España)</string>
+    <string name="reader_voice_spanish_argentina">Español (Argentina)</string>
+    <string name="reader_voice_spanish_colombia">Español (Colombia)</string>
+    <string name="reader_voice_spanish_us">Español (Estados Unidos)</string>
+    <string name="reader_voice_automatic">Automática (español)</string>
+    <string name="reader_voice_none_local">No hay voces locales en español</string>
+    <string name="reader_voice_manage_device">Gestionar voces del dispositivo</string>
+    <string name="reader_voice_install_hint">Busca Español (México) en Ajustes &gt; Accesibilidad &gt; Salida de texto a voz.</string>
+    <string name="reader_timer">Temporizador</string>
+    <string name="reader_timer_minutes">%1$d min</string>
+    <string name="reader_tts_stop">Detener narración</string>
+
+    <!-- ReaderControls: appearance sheet -->
+    <string name="reader_theme_title">Tema</string>
+    <string name="reader_theme_light">Claro</string>
+    <string name="reader_theme_sepia">Sepia</string>
+    <string name="reader_theme_dark">Oscuro</string>
+    <string name="reader_theme_oled">OLED</string>
+    <string name="reader_font_size">Tamaño de letra · %1$d%%</string>
+    <string name="reader_text_style_title">Estilo del texto</string>
+    <string name="reader_text_style_publisher">Estilo del libro</string>
+    <string name="reader_text_style_app">Ajustes Lee.pe</string>
+    <string name="reader_text_style_hint">Interlineado y alineación necesitan los ajustes Lee.pe para reemplazar el formato definido por el EPUB.</string>
+    <string name="reader_line_height">Interlineado · %1$d%%</string>
+    <string name="reader_margins">Márgenes laterales · %1$d%%</string>
+    <string name="reader_alignment_title">Alineación</string>
+    <string name="reader_align_start">Inicio</string>
+    <string name="reader_align_justify">Justificada</string>
+    <string name="reader_align_center">Centro</string>
+    <string name="reader_navigation_title">Navegación</string>
+    <string name="reader_navigation_paginated">Por páginas</string>
+    <string name="reader_navigation_scroll">Desplazamiento</string>
+    <string name="reader_while_reading_title">Durante la lectura</string>
+    <string name="reader_keep_screen_on">Mantener pantalla encendida</string>
+    <string name="reader_keep_screen_on_hint">Evita que se apague mientras lees.</string>
+    <string name="reader_brightness_title">Brillo de pantalla</string>
+    <string name="reader_brightness_system">Usar brillo del sistema</string>
+    <string name="reader_typography_title">Tipografía</string>
+    <string name="reader_font_original">Original</string>
+    <string name="reader_font_serif">Serif</string>
+    <string name="reader_font_sans">Sans</string>
+    <string name="reader_font_dyslexic">Dislexia</string>
+</resources>

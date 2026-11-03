@@ -18,7 +18,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.DisposableEffect
@@ -30,12 +30,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.platform.LocalDensity
+import pe.lee.app.R
 import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.app.ui.reader.PdfReaderViewModel
 import kotlinx.coroutines.CancellationException
@@ -57,10 +59,11 @@ internal fun PdfReaderScreen(
     title: String,
     viewModel: PdfReaderViewModel,
     settings: SettingsRepository,
+    onReadingVisibilityChange: (Boolean) -> Unit,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val annotations by viewModel.annotationState.collectAsState()
+    val annotations by viewModel.annotationState.collectAsStateWithLifecycle()
     val dialogState = remember(uri) { PdfReaderDialogsState() }
     var showPageDialog by dialogState.showPageDialog
     var showPdfSearch by dialogState.showPdfSearch
@@ -102,7 +105,21 @@ internal fun PdfReaderScreen(
 
     LaunchedEffect(viewModel, uri) { viewModel.openBook(uri.toString()) }
 
+    // Do not count reading time on the error screen or while the PDF is loading (A-28).
+    LaunchedEffect(loading, errorMessage) {
+        onReadingVisibilityChange(!loading && errorMessage == null)
+    }
+
     LaunchedEffect(pageIndex) { panOffset = Offset.Zero }
+
+    // Persist the view state per book: zoom and rotation used to reset on every
+    // rotation of the device (A-04).
+    LaunchedEffect(zoomScale, rotationDegrees) {
+        settings.apply(SettingsRepository.Store.LIBRARY) {
+            putFloat("pdf-zoom:$uri", zoomScale)
+            putInt("pdf-rotation:$uri", rotationDegrees)
+        }
+    }
 
     LaunchedEffect(uri) {
         try {
@@ -124,15 +141,14 @@ internal fun PdfReaderScreen(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
-            errorMessage = error.message ?: "No se pudo abrir el PDF."
+            errorMessage = error.message ?: context.getString(R.string.pdf_open_failed)
             loading = false
         }
     }
 
-    DisposableEffect(bitmap) {
-        onDispose { bitmap?.takeIf { !it.isRecycled }?.recycle() }
-    }
-
+    // Bitmaps are released by the garbage collector once the new page replaces them.
+    // Recycling them here would race with the frame Compose may still be drawing
+    // ("Canvas: trying to use a recycled bitmap").
     DisposableEffect(handle) {
         onDispose {
             handle?.let {
@@ -152,7 +168,12 @@ internal fun PdfReaderScreen(
                     val page = current.renderer.openPage(pageIndex)
                     try {
                         val maxWidthPx = with(density) { 900.dp.roundToPx() }
-                        val size = pdfBitmapSize(page.width, page.height, maxWidthPx)
+                        val size = pdfBitmapSize(
+                            page.width,
+                            page.height,
+                            maxWidthPx,
+                            maxPixels = pdfPixelBudget(context.applicationContext)
+                        )
                         Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888).also {
                             it.eraseColor(android.graphics.Color.WHITE)
                             page.render(it, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
@@ -174,7 +195,7 @@ internal fun PdfReaderScreen(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
-            errorMessage = error.message ?: "No se pudo renderizar esta página."
+            errorMessage = error.message ?: context.getString(R.string.pdf_render_failed)
         } finally {
             rendering = false
         }
@@ -213,29 +234,36 @@ internal fun PdfReaderScreen(
         val term = query.trim()
         if (term.isEmpty()) {
             pdfSearchResults = emptyList()
-            pdfSearchMessage = "Escribe una palabra o frase para buscar."
+            pdfSearchMessage = context.getString(R.string.pdf_search_empty_query)
             return
         }
         if (Build.VERSION.SDK_INT < 35) {
             pdfSearchResults = emptyList()
-            pdfSearchMessage = "La búsqueda de PDF requiere Android 15 (API 35) o posterior."
+            pdfSearchMessage = context.getString(R.string.pdf_search_requires_android15)
             return
         }
         val current = handle ?: return
         pdfSearchResults = emptyList()
-        pdfSearchMessage = "Buscando en el documento…"
+        pdfSearchMessage = context.getString(R.string.pdf_search_in_progress_document)
         pdfSearchJob = coroutineScope.launch {
             searchingPdf = true
             try {
-                val outcome = searchPdfDocument(current.renderer, pageCount, term, renderMutex)
+                val outcome = searchPdfDocument(
+                    current.renderer,
+                    pageCount,
+                    term,
+                    renderMutex,
+                    context.resources
+                )
                 pdfSearchResults = outcome.results
                 pdfSearchMessage = outcome.message
             } catch (cancelled: CancellationException) {
-                pdfSearchMessage = "Búsqueda cancelada."
+                pdfSearchMessage = context.getString(R.string.pdf_search_cancelled)
                 throw cancelled
             } catch (error: Exception) {
-                pdfSearchMessage = error.message?.let { "No se pudo buscar en el PDF: $it" }
-                    ?: "No se pudo buscar en el PDF."
+                pdfSearchMessage = error.message?.let {
+                    context.getString(R.string.pdf_search_failed_detail, it)
+                } ?: context.getString(R.string.pdf_search_failed)
             } finally {
                 searchingPdf = false
                 pdfSearchJob = null
@@ -344,9 +372,9 @@ internal fun PdfReaderScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text("No se pudo abrir el PDF", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 19.sp)
+                    Text(stringResource(R.string.pdf_open_failed_title), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 19.sp)
                     Text(message, color = Color(0xFFD3DCEC))
-                    Button(onClick = onBack) { Text("Volver a la biblioteca") }
+                    Button(onClick = onBack) { Text(stringResource(R.string.pdf_back_to_library)) }
                 }
             }
         }

@@ -3,6 +3,7 @@ package pe.lee.app.ui.reader
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
+import android.app.Application
 import android.view.ActionMode
 import android.view.Menu
 import android.view.MenuItem
@@ -21,7 +22,9 @@ import org.json.JSONObject
 import java.util.UUID
 import android.content.ClipData
 import android.content.ClipboardManager
+import pe.lee.app.R
 import pe.lee.app.data.repository.SettingsRepository
+import pe.lee.app.ui.audio.TtsPlaybackService
 import pe.lee.core.domain.ReaderAnnotation
 import pe.lee.feature.sharecard.navigation.ShareCardArgs
 import pe.lee.feature.sharecard.navigation.shareCardIntent
@@ -40,6 +43,9 @@ import org.readium.r2.navigator.util.DirectionalNavigationAdapter
 import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
+
+/** Minimum interval between locator persists; scroll mode emits continuously. */
+private const val LOCATOR_SAVE_INTERVAL_MS = 2_000L
 
 
 
@@ -63,6 +69,24 @@ internal fun EpubReaderSessionEffects(
 
     DisposableEffect(Unit) {
         onDispose { session.ttsServiceBinding.value?.unbind() }
+    }
+
+    // The Readium Publication owns the EPUB container handles. Without closing it
+    // every rotation leaks a file descriptor and the whole archive. It is kept
+    // alive only while the TTS service is narrating this same book, because the
+    // media session holds the navigator built from this publication.
+    DisposableEffect(uri) {
+        onDispose {
+            val ttsOwnsPublication = session.ttsServiceBinding.value
+                ?.binder
+                ?.currentSession
+                ?.bookUri == uri.toString()
+            if (!ttsOwnsPublication) {
+                session.publication.value?.let { runCatching { it.close() } }
+                session.publication.value = null
+                session.navigator.value = null
+            }
+        }
     }
 
     // In immersion mode the book occupies the entire screen. System bars return
@@ -112,8 +136,15 @@ internal fun EpubReaderSessionEffects(
             viewModel.markOpened(uri.toString(), System.currentTimeMillis())
             val legacyLocatorJson = settings.getString(SettingsRepository.Store.LIBRARY, ReaderActivity.locatorPreferenceKey(uri), null)
             val locatorJson = savedBook?.epubLocator ?: legacyLocatorJson
-            val initialLocator = locatorJson?.let {
+            val parsedLocator = locatorJson?.let {
                 runCatching { Locator.fromJSON(JSONObject(it)) }.getOrNull()
+            }
+            // A locator from another edition or book can parse fine yet point to a
+            // resource that does not exist here; opening it leaves a blank page and
+            // the bad value stays in Room forever (A-34).
+            val initialLocator = parsedLocator?.takeIf { candidate ->
+                val target = candidate.href.toString()
+                opened.readingOrder.any { link -> link.href.toString() == target }
             }
             val preferencesJson = settings.getString(SettingsRepository.Store.LIBRARY, ReaderActivity.preferencesPreferenceKey(uri), null)
             session.epubPreferences.value = preferencesJson?.let { json ->
@@ -162,7 +193,12 @@ internal fun EpubReaderSessionEffects(
                         } else if (item.itemId == MENU_COPY_SELECTION) {
                             selectedLocator?.text?.highlight?.let { selectedText ->
                                 val clipboard = context.getSystemService(ClipboardManager::class.java)
-                                clipboard?.setPrimaryClip(ClipData.newPlainText("Texto seleccionado", selectedText))
+                                clipboard?.setPrimaryClip(
+                                    ClipData.newPlainText(
+                                        context.getString(R.string.epub_selection_clip_label),
+                                        selectedText
+                                    )
+                                )
                             }
                         } else if (item.itemId == MENU_SHARE_SELECTION) {
                             val selectedText = selectedLocator?.text?.highlight?.trim().orEmpty()
@@ -217,6 +253,29 @@ internal fun EpubReaderSessionEffects(
             session.navigator.value = epubNavigator
 
             session.loading.value = false
+
+            // A rotation recreates the composition while the TTS service keeps
+            // narrating. Re-attach the panel instead of leaving audio orphaned.
+            if (session.ttsServiceBinding.value == null &&
+                TtsPlaybackService.activeBookUri == uri.toString()
+            ) {
+                runCatching {
+                    TtsPlaybackService.bind(context.applicationContext as Application)
+                }.getOrNull()?.let { binding ->
+                    val existing = binding.binder.currentSession
+                    if (existing != null && existing.bookUri == uri.toString()) {
+                        session.ttsServiceBinding.value = binding
+                        session.ttsNavigator.value = existing.navigator
+                        session.ttsVoices.value = existing.navigator.voices
+                            .filter { it.isLocalSpanishVoice() }
+                            .sortedWith(compareBy({ it.language.toString() }, { it.id.value }))
+                        session.ttsIsPlaying.value =
+                            existing.navigator.playback.value.playWhenReady
+                    } else {
+                        binding.unbind()
+                    }
+                }
+            }
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
@@ -300,7 +359,14 @@ internal fun EpubReaderSessionEffects(
 
     LaunchedEffect(session.navigator.value) {
         val reader = session.navigator.value ?: return@LaunchedEffect
+        // Scroll mode emits a locator several times per second. Persisting each
+        // one wrote to Room and SharedPreferences on every frame; throttle to one
+        // write every two seconds and rely on onPause for the final position.
+        var lastSavedAt = 0L
         reader.currentLocator.collect { locator ->
+            val now = System.currentTimeMillis()
+            if (now - lastSavedAt < LOCATOR_SAVE_INTERVAL_MS) return@collect
+            lastSavedAt = now
             val totalProgression = locator.locations.totalProgression
             if (totalProgression != null) session.progress.value = totalProgression.toFloat().coerceIn(0f, 1f)
             val locatorJson = locator.toJSON().toString()

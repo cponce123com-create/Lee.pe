@@ -12,12 +12,22 @@
     <application
         android:name=".LeePeApplication"
         android:allowBackup="false"
+        android:enableOnBackInvokedCallback="true"
         android:fullBackupContent="false"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="Lee.pe"
         android:supportsRtl="true"
         android:theme="@style/LeePeAppTheme">
+        <provider
+            android:name=".BundledFileProvider"
+            android:authorities="${applicationId}.bundled"
+            android:exported="false"
+            android:grantUriPermissions="false">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths_bundled" />
+        </provider>
         <service
             android:name=".ui.audio.AudioPlaybackService"
             android:exported="true"

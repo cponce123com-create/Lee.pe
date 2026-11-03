@@ -17,7 +17,7 @@ import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.ViewList
+import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
@@ -170,7 +170,7 @@ internal fun LibraryDisplayToggle(
         }
         IconButton(onClick = { onModeChange(true) }, modifier = Modifier.semantics { selected = listMode }) {
             Icon(
-                Icons.Default.ViewList,
+                Icons.AutoMirrored.Filled.ViewList,
                 contentDescription = stringResource(R.string.accessibility_view_list),
                 tint = if (listMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             )

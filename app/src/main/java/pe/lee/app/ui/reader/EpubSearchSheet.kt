@@ -32,6 +32,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import pe.lee.app.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -67,7 +70,7 @@ internal fun EpubSearchSheet(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text("Buscar en el EPUB", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.epub_search_title), fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -82,7 +85,7 @@ internal fun EpubSearchSheet(
                             searchError.value = null
                         },
                         modifier = Modifier.weight(1f),
-                        label = { Text("Palabra o frase") },
+                        label = { Text(stringResource(R.string.epub_search_hint)) },
                         singleLine = true
                     )
                     IconButton(
@@ -139,19 +142,27 @@ internal fun EpubSearchSheet(
                             }
                         }
                     ) {
-                        Icon(Icons.Default.Search, contentDescription = "Buscar")
+                        Icon(Icons.Default.Search, contentDescription = stringResource(R.string.epub_search_action))
                     }
                 }
                 if (searching.value) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                        Text("Buscando en el libro…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.epub_searching), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 searchError.value?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 if (!searching.value && searchResults.value.isNotEmpty()) {
                     Text(
-                        if (searchLimitReached.value) "Mostrando hasta 100 coincidencias" else "${searchResults.value.size} coincidencias",
+                        if (searchLimitReached.value) {
+                            stringResource(R.string.epub_search_limit_shown)
+                        } else {
+                            pluralStringResource(
+                                R.plurals.epub_search_matches_count,
+                                searchResults.value.size,
+                                searchResults.value.size
+                            )
+                        },
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 13.sp
                     )
@@ -189,11 +200,11 @@ internal fun EpubSearchSheet(
                         }
                     }
                 } else if (!searching.value && searchError.value == null && hasSearched.value) {
-                    Text("No se encontraron coincidencias.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.epub_no_matches), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else if (!searching.value && searchError.value == null && searchQuery.value.isNotBlank()) {
-                    Text("Toca la lupa para iniciar la búsqueda.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.epub_search_prompt_tap), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else if (!searching.value && searchResults.value.isEmpty() && searchError.value == null && searchQuery.value.isBlank()) {
-                    Text("Busca una palabra o frase en el contenido del libro.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.epub_search_prompt_hint), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Spacer(Modifier.height(12.dp))
             }

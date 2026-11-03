@@ -31,6 +31,7 @@ import org.readium.navigator.media.tts.TtsNavigator
 import org.readium.r2.shared.ExperimentalReadiumApi
 import pe.lee.app.LeePeApplication
 import pe.lee.app.ui.reader.ReaderActivity
+import pe.lee.core.domain.readingProgressOr
 
 @OptIn(ExperimentalReadiumApi::class)
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
@@ -72,14 +73,24 @@ class TtsPlaybackService : MediaSessionService() {
             addSession(session)
             val activeSession = Session(navigator, session, bookUri, title)
             sessionState.value = activeSession
+            activeBookUri = bookUri
 
             activeSession.scope.launch {
                 var lastSavedAt = 0L
+                val container = (application as LeePeApplication).container
+                // Books without a page list report a null progression; keep the last
+                // known value instead of resetting the user's progress to 0 %.
+                var knownProgress = runCatching { container.books.findByUri(bookUri)?.readProgress }
+                    .getOrNull() ?: 0f
                 navigator.currentLocator.collect { locator ->
                     val now = System.currentTimeMillis()
                     if (now - lastSavedAt >= 3_000L) {
-                        val progression = locator.locations.totalProgression?.toFloat() ?: 0f
-                        (application as LeePeApplication).container.books.saveEpubProgress(
+                        val progression = readingProgressOr(
+                            locator.locations.totalProgression,
+                            knownProgress
+                        )
+                        knownProgress = progression
+                        container.books.saveEpubProgress(
                             uri = bookUri,
                             locator = locator.toJSON().toString(),
                             progress = progression,
@@ -118,6 +129,7 @@ class TtsPlaybackService : MediaSessionService() {
         fun closeSession() {
             val activeSession = sessionState.value ?: return
             sessionState.value = null
+            activeBookUri = null
             activeSession.sleepTimerJob?.cancel()
             activeSession.sleepTimerMinutes.value = 0
             activeSession.scope.cancel()
@@ -167,7 +179,7 @@ class TtsPlaybackService : MediaSessionService() {
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
-        binder.currentSession?.mediaSession
+        MediaSessionAccess.sessionFor(this, controllerInfo, binder.currentSession?.mediaSession)
 
     override fun onDestroy() {
         binder.closeSession()
@@ -178,22 +190,35 @@ class TtsPlaybackService : MediaSessionService() {
 
     private fun updateWakeLock(shouldHold: Boolean) {
         val lock = wakeLock ?: return
-        if (shouldHold && !lock.isHeld) lock.acquire()
+        if (shouldHold && !lock.isHeld) lock.acquire(WAKE_LOCK_TIMEOUT_MS)
         else if (!shouldHold && lock.isHeld) lock.release()
     }
 
     companion object {
         const val SERVICE_INTERFACE = "pe.lee.app.ui.audio.TtsPlaybackService"
 
+        /**
+         * Book currently being narrated, if any. The reader reads it after a
+         * rotation to re-attach its TTS panel to a session that kept playing.
+         */
+        @Volatile
+        var activeBookUri: String? = null
+            private set
+
+        /** Safety net: a stuck session must never keep the CPU awake forever. */
+        private const val WAKE_LOCK_TIMEOUT_MS = 30L * 60L * 1000L
+
         private fun serviceIntent(application: Application) =
             Intent(SERVICE_INTERFACE).setClass(application, TtsPlaybackService::class.java)
 
-        fun start(application: Application) {
-            application.startService(serviceIntent(application))
-        }
-
+        /**
+         * Binds only. Media3 promotes the service to foreground as soon as the
+         * narration session becomes active, which also keeps it alive after the
+         * reader unbinds. Calling `startService` from a background context would
+         * throw `IllegalStateException` on Android 8+ (A-14), and a plain
+         * `startForegroundService` without a ready notification risks the 5 s ANR.
+         */
         suspend fun bind(application: Application): ServiceBinding {
-            start(application)
             val result = CompletableDeferred<ReaderBinder>()
             val connection = object : ServiceConnection {
                 override fun onServiceConnected(name: ComponentName?, service: IBinder) {

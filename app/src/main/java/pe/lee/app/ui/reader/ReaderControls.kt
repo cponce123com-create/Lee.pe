@@ -1,3 +1,5 @@
+@file:OptIn(org.readium.r2.shared.ExperimentalReadiumApi::class)
+
 package pe.lee.app.ui.reader
 
 import android.content.Context
@@ -5,6 +7,7 @@ import android.view.Menu
 import android.view.MenuItem
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
@@ -43,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.ui.text.font.FontWeight
@@ -56,8 +60,9 @@ import org.readium.r2.navigator.preferences.FontFamily as ReadiumFontFamily
 import org.readium.r2.navigator.preferences.Theme as ReadiumTheme
 import org.readium.r2.navigator.preferences.TextAlign as ReadiumTextAlign
 import org.readium.r2.shared.ExperimentalReadiumApi
+import pe.lee.app.R
 
-@OptIn(ExperimentalReadiumApi::class)
+@OptIn(ExperimentalReadiumApi::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 internal fun TtsControls(
     sentence: String,
@@ -78,6 +83,7 @@ internal fun TtsControls(
     val speeds = listOf(0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
     var voiceMenuExpanded by remember { mutableStateOf(false) }
     val selectedVoice = voices.firstOrNull { it.id.value == selectedVoiceId }
+    val narrationFallback = stringResource(R.string.reader_tts_book_narration)
     Surface(
         modifier = modifier.fillMaxWidth().padding(horizontal = 12.dp),
         color = Color(0xF20A1423),
@@ -85,18 +91,28 @@ internal fun TtsControls(
     ) {
         Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
             Text(
-                sentence.ifBlank { "Narración del libro" },
+                sentence.ifBlank { narrationFallback },
                 color = Color.White,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 fontSize = 13.sp
             )
             error?.let { Text(it, color = Color(0xFFFFB4AB), fontSize = 12.sp) }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+            // Five controls in a plain Row overflowed on 360 dp screens with large
+            // fonts; FlowRow wraps them into a second line instead (A-19).
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
                 IconButton(onClick = onTogglePlayback) {
                     Icon(
                         if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = if (isPlaying) "Pausar voz" else "Continuar voz",
+                        contentDescription = if (isPlaying) {
+                            stringResource(R.string.reader_tts_pause_voice)
+                        } else {
+                            stringResource(R.string.reader_tts_continue_voice)
+                        },
                         tint = Color.White
                     )
                 }
@@ -106,14 +122,17 @@ internal fun TtsControls(
                 }) { Text("${speed}x") }
                 Box {
                     TextButton(onClick = { voiceMenuExpanded = true }) {
-                        Text(selectedVoice?.let(::spanishVoiceLabel) ?: "Español")
+                        Text(
+                            selectedVoice?.let { spanishVoiceLabel(context, it) }
+                                ?: stringResource(R.string.reader_language_spanish)
+                        )
                     }
                     DropdownMenu(
                         expanded = voiceMenuExpanded,
                         onDismissRequest = { voiceMenuExpanded = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Automática (español)") },
+                            text = { Text(stringResource(R.string.reader_voice_automatic)) },
                             onClick = {
                                 onVoiceChange(null)
                                 voiceMenuExpanded = false
@@ -121,14 +140,14 @@ internal fun TtsControls(
                         )
                         if (voices.isEmpty()) {
                             DropdownMenuItem(
-                                text = { Text("No hay voces locales en español") },
+                                text = { Text(stringResource(R.string.reader_voice_none_local)) },
                                 enabled = false,
                                 onClick = {}
                             )
                         } else {
                             voices.forEach { voice ->
                                 DropdownMenuItem(
-                                    text = { Text("${spanishVoiceLabel(voice)} · ${voice.id.value}") },
+                                    text = { Text("${spanishVoiceLabel(context, voice)} · ${voice.id.value}") },
                                     onClick = {
                                         onVoiceChange(voice)
                                         voiceMenuExpanded = false
@@ -137,7 +156,7 @@ internal fun TtsControls(
                             }
                         }
                         DropdownMenuItem(
-                            text = { Text("Gestionar voces del dispositivo") },
+                            text = { Text(stringResource(R.string.reader_voice_manage_device)) },
                             onClick = {
                                 voiceMenuExpanded = false
                                 try {
@@ -147,7 +166,7 @@ internal fun TtsControls(
                                 } catch (_: Exception) {
                                     Toast.makeText(
                                         context,
-                                        "Busca Español (México) en Ajustes > Accesibilidad > Salida de texto a voz.",
+                                        context.getString(R.string.reader_voice_install_hint),
                                         Toast.LENGTH_LONG
                                     ).show()
                                 }
@@ -157,10 +176,20 @@ internal fun TtsControls(
                 }
                 TextButton(onClick = onTimerChange) {
                     Icon(Icons.Default.Timer, contentDescription = null)
-                    Text(if (timerMinutes == 0) "Temporizador" else "${timerMinutes} min")
+                    Text(
+                        if (timerMinutes == 0) {
+                            stringResource(R.string.reader_timer)
+                        } else {
+                            stringResource(R.string.reader_timer_minutes, timerMinutes)
+                        }
+                    )
                 }
                 IconButton(onClick = onStop) {
-                    Icon(Icons.Default.Stop, contentDescription = "Detener narración", tint = Color.White)
+                    Icon(
+                        Icons.Default.Stop,
+                        contentDescription = stringResource(R.string.reader_tts_stop),
+                        tint = Color.White
+                    )
                 }
             }
         }
@@ -193,35 +222,48 @@ internal fun EpubAppearanceSheet(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
-        Text("Apariencia de lectura", fontSize = 21.sp, fontWeight = FontWeight.Bold)
+        Text(
+            stringResource(R.string.reader_appearance_title),
+            fontSize = 21.sp,
+            fontWeight = FontWeight.Bold
+        )
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Tema", fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.reader_theme_title), fontWeight = FontWeight.SemiBold)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                listOf("Claro", "Sepia", "Oscuro", "OLED").forEach { label ->
+                val selectedTheme = selectedReaderTheme(preferences)
+                listOf(
+                    R.string.reader_theme_light to ReaderThemeChoice.LIGHT,
+                    R.string.reader_theme_sepia to ReaderThemeChoice.SEPIA,
+                    R.string.reader_theme_dark to ReaderThemeChoice.DARK,
+                    R.string.reader_theme_oled to ReaderThemeChoice.OLED
+                ).forEach { (labelRes, choice) ->
                     FilterChip(
-                        selected = selectedReaderTheme(preferences) == label,
+                        selected = selectedTheme == choice,
                         onClick = {
-                            val updated = when (label) {
-                                "Sepia" -> preferences.copy(theme = ReadiumTheme.SEPIA, backgroundColor = null, textColor = null)
-                                "Oscuro" -> preferences.copy(theme = ReadiumTheme.DARK, backgroundColor = null, textColor = null)
-                                "OLED" -> preferences.copy(
+                            val updated = when (choice) {
+                                ReaderThemeChoice.SEPIA -> preferences.copy(theme = ReadiumTheme.SEPIA, backgroundColor = null, textColor = null)
+                                ReaderThemeChoice.DARK -> preferences.copy(theme = ReadiumTheme.DARK, backgroundColor = null, textColor = null)
+                                ReaderThemeChoice.OLED -> preferences.copy(
                                     theme = ReadiumTheme.DARK,
                                     backgroundColor = ReadiumColor(0xFF000000.toInt()),
                                     textColor = ReadiumColor(0xFFFFFFFF.toInt())
                                 )
-                                else -> preferences.copy(theme = ReadiumTheme.LIGHT, backgroundColor = null, textColor = null)
+                                ReaderThemeChoice.LIGHT -> preferences.copy(theme = ReadiumTheme.LIGHT, backgroundColor = null, textColor = null)
                             }
                             onPreferencesChange(updated)
                         },
-                        label = { Text(label) }
+                        label = { Text(stringResource(labelRes)) }
                     )
                 }
             }
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Tamaño de letra · ${(fontSize * 100).toInt()}%", fontWeight = FontWeight.SemiBold)
+            Text(
+                stringResource(R.string.reader_font_size, (fontSize * 100).toInt()),
+                fontWeight = FontWeight.SemiBold
+            )
             Slider(
                 value = fontSize,
                 onValueChange = { fontSize = it },
@@ -233,28 +275,31 @@ internal fun EpubAppearanceSheet(
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Estilo del texto", fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.reader_text_style_title), fontWeight = FontWeight.SemiBold)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 FilterChip(
                     selected = preferences.publisherStyles != false,
                     onClick = { onPreferencesChange(preferences.copy(publisherStyles = true)) },
-                    label = { Text("Estilo del libro") }
+                    label = { Text(stringResource(R.string.reader_text_style_publisher)) }
                 )
                 FilterChip(
                     selected = preferences.publisherStyles == false,
                     onClick = { onPreferencesChange(preferences.copy(publisherStyles = false)) },
-                    label = { Text("Ajustes Lee.pe") }
+                    label = { Text(stringResource(R.string.reader_text_style_app)) }
                 )
             }
             Text(
-                "Interlineado y alineación necesitan los ajustes Lee.pe para reemplazar el formato definido por el EPUB.",
+                stringResource(R.string.reader_text_style_hint),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp
             )
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Interlineado · ${(lineHeight * 100).toInt()}%", fontWeight = FontWeight.SemiBold)
+            Text(
+                stringResource(R.string.reader_line_height, (lineHeight * 100).toInt()),
+                fontWeight = FontWeight.SemiBold
+            )
             Slider(
                 value = lineHeight,
                 onValueChange = { lineHeight = it },
@@ -267,7 +312,10 @@ internal fun EpubAppearanceSheet(
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Márgenes laterales · ${(pageMargins * 100).toInt()}%", fontWeight = FontWeight.SemiBold)
+            Text(
+                stringResource(R.string.reader_margins, (pageMargins * 100).toInt()),
+                fontWeight = FontWeight.SemiBold
+            )
             Slider(
                 value = pageMargins,
                 onValueChange = { pageMargins = it },
@@ -280,57 +328,61 @@ internal fun EpubAppearanceSheet(
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Alineación", fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.reader_alignment_title), fontWeight = FontWeight.SemiBold)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf(
-                    "Inicio" to ReadiumTextAlign.START,
-                    "Justificada" to ReadiumTextAlign.JUSTIFY,
-                    "Centro" to ReadiumTextAlign.CENTER
-                ).forEach { (label, alignment) ->
+                    R.string.reader_align_start to ReadiumTextAlign.START,
+                    R.string.reader_align_justify to ReadiumTextAlign.JUSTIFY,
+                    R.string.reader_align_center to ReadiumTextAlign.CENTER
+                ).forEach { (labelRes, alignment) ->
                     FilterChip(
                         selected = (preferences.textAlign ?: ReadiumTextAlign.START) == alignment,
                         onClick = {
                             onPreferencesChange(preferences.copy(textAlign = alignment, publisherStyles = false))
                         },
-                        label = { Text(label) }
+                        label = { Text(stringResource(labelRes)) }
                     )
                 }
             }
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Navegación", fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.reader_navigation_title), fontWeight = FontWeight.SemiBold)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 FilterChip(
                     selected = preferences.scroll != true,
                     onClick = { onPreferencesChange(preferences.copy(scroll = false)) },
-                    label = { Text("Por páginas") }
+                    label = { Text(stringResource(R.string.reader_navigation_paginated)) }
                 )
                 FilterChip(
                     selected = preferences.scroll == true,
                     onClick = { onPreferencesChange(preferences.copy(scroll = true)) },
-                    label = { Text("Desplazamiento") }
+                    label = { Text(stringResource(R.string.reader_navigation_scroll)) }
                 )
             }
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Durante la lectura", fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.reader_while_reading_title), fontWeight = FontWeight.SemiBold)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Mantener pantalla encendida")
-                    Text("Evita que se apague mientras lees.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.reader_keep_screen_on))
+                    Text(
+                        stringResource(R.string.reader_keep_screen_on_hint),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
                 Switch(checked = keepScreenOn, onCheckedChange = onKeepScreenOnChange)
             }
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Brillo de pantalla", fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.reader_brightness_title), fontWeight = FontWeight.SemiBold)
             FilterChip(
                 selected = brightness < 0f,
                 onClick = { onBrightnessChange(-1f) },
-                label = { Text("Usar brillo del sistema") }
+                label = { Text(stringResource(R.string.reader_brightness_system)) }
             )
             Slider(
                 value = if (brightness < 0f) 0.7f else brightness.coerceIn(0.15f, 1f),
@@ -341,18 +393,18 @@ internal fun EpubAppearanceSheet(
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Tipografía", fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.reader_typography_title), fontWeight = FontWeight.SemiBold)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                listOf(
-                    "Original" to null,
-                    "Serif" to ReadiumFontFamily.SERIF,
-                    "Sans" to ReadiumFontFamily.SANS_SERIF,
-                    "Dislexia" to ReadiumFontFamily.OPEN_DYSLEXIC
-                ).forEach { (label, family) ->
+                listOf<Pair<Int, ReadiumFontFamily?>>(
+                    R.string.reader_font_original to null,
+                    R.string.reader_font_serif to ReadiumFontFamily.SERIF,
+                    R.string.reader_font_sans to ReadiumFontFamily.SANS_SERIF,
+                    R.string.reader_font_dyslexic to ReadiumFontFamily.OPEN_DYSLEXIC
+                ).forEach { (labelRes, family) ->
                     FilterChip(
                         selected = preferences.fontFamily?.name == family?.name,
                         onClick = { onPreferencesChange(preferences.copy(fontFamily = family)) },
-                        label = { Text(label) }
+                        label = { Text(stringResource(labelRes)) }
                     )
                 }
             }
@@ -362,10 +414,12 @@ internal fun EpubAppearanceSheet(
     }
 }
 
-private fun selectedReaderTheme(preferences: EpubPreferences): String = when {
+private enum class ReaderThemeChoice { LIGHT, SEPIA, DARK, OLED }
+
+private fun selectedReaderTheme(preferences: EpubPreferences): ReaderThemeChoice = when {
     preferences.theme == ReadiumTheme.DARK &&
-        preferences.backgroundColor?.int == 0xFF000000.toInt() -> "OLED"
-    preferences.theme == ReadiumTheme.SEPIA -> "Sepia"
-    preferences.theme == ReadiumTheme.DARK -> "Oscuro"
-    else -> "Claro"
+        preferences.backgroundColor?.int == 0xFF000000.toInt() -> ReaderThemeChoice.OLED
+    preferences.theme == ReadiumTheme.SEPIA -> ReaderThemeChoice.SEPIA
+    preferences.theme == ReadiumTheme.DARK -> ReaderThemeChoice.DARK
+    else -> ReaderThemeChoice.LIGHT
 }

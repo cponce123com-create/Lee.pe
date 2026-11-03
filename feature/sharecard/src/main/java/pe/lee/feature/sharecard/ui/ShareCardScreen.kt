@@ -24,7 +24,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.MonotonicFrameClock
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,7 +35,11 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.withContext
 import pe.lee.app.ui.theme.LeePeTheme
 import pe.lee.feature.sharecard.R
@@ -53,9 +56,12 @@ fun ShareCardScreen(
     modifier: Modifier = Modifier
 ) {
     LeePeTheme {
-        val state by viewModel.state.collectAsState()
+        val state by viewModel.state.collectAsStateWithLifecycle()
         val layer = rememberGraphicsLayer()
-        val frameClock = requireNotNull(rememberCoroutineScope().coroutineContext[MonotonicFrameClock])
+        // Not every host provides a MonotonicFrameClock (previews, tests, custom
+        // Recomposers). Failing hard here crashed the whole screen, so fall back to
+        // the current context and let the capture itself decide (A-22).
+        val frameClock = rememberCoroutineScope().coroutineContext[MonotonicFrameClock]
         var editingQuote by remember { mutableStateOf(false) }
         val storyFormat = state.card.format == QuoteCardFormat.STORY
 
@@ -140,7 +146,7 @@ fun ShareCardScreen(
                     onClick = {
                         viewModel.shareCapturedImage {
                             // viewModelScope has no Compose frame clock; retain it for capture.
-                            withContext(frameClock) {
+                            withContext(frameClock ?: kotlin.coroutines.EmptyCoroutineContext) {
                                 withFrameNanos { }
                                 layer.toImageBitmap()
                             }
@@ -158,10 +164,15 @@ fun ShareCardScreen(
                 }
                 when (val status = state.status) {
                     ShareCardStatus.Idle, ShareCardStatus.Generating -> Unit
-                    ShareCardStatus.Ready -> Text(stringResource(R.string.share_card_shared))
+                    ShareCardStatus.Ready -> Text(
+                        text = stringResource(R.string.share_card_shared),
+                        // TalkBack must announce that the card is ready (A-19).
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                    )
                     is ShareCardStatus.Error -> Text(
                         text = status.message.ifBlank { stringResource(R.string.share_card_error) },
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive }
                     )
                 }
                 Spacer(Modifier.height(8.dp))

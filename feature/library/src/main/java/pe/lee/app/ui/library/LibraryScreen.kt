@@ -70,7 +70,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -79,6 +83,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -93,13 +98,17 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import pe.lee.feature.library.R
 import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.ZoneId
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
@@ -131,10 +140,27 @@ fun LibraryScreen(
     onOpenBook: (uri: Uri, format: String, title: String, offlineCopyUri: Uri?) -> Unit
 ) {
     val context = LocalContext.current
-    val todayKey = readingDayKey(System.currentTimeMillis())
-    val todaySeconds by viewModel.observeDurationForDay(todayKey).collectAsState(initial = 0L)
-    val readingDayKeys by viewModel.observeReadingDayKeys().collectAsState(initial = emptyList())
-    val libraryState by viewModel.state.collectAsState()
+    val todayKeyState = remember { mutableStateOf(readingDayKey(System.currentTimeMillis())) }
+    val todayKey by todayKeyState
+    // "Today" was computed once per composition: leaving the app open past
+    // midnight kept showing yesterday's time and goal (A-37).
+    LaunchedEffect(todayKey) {
+        val now = System.currentTimeMillis()
+        val nextMidnight = LocalDate.now()
+            .plusDays(1)
+            .atStartOfDay(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+        delay((nextMidnight - now).coerceAtLeast(1_000L))
+        todayKeyState.value = readingDayKey(System.currentTimeMillis())
+    }
+    // A fresh Flow instance per recomposition restarted the Room subscription on
+    // every keystroke (P-01); remember it for the lifetime of the day.
+    val todaySecondsFlow = remember(todayKey) { viewModel.observeDurationForDay(todayKey) }
+    val readingDayKeysFlow = remember { viewModel.observeReadingDayKeys() }
+    val todaySeconds by todaySecondsFlow.collectAsStateWithLifecycle(initialValue = 0L)
+    val readingDayKeys by readingDayKeysFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val libraryState by viewModel.state.collectAsStateWithLifecycle()
     val storedBooks = libraryState.books
     val storedCollections = libraryState.collections
     var offlineCopyUris by remember { mutableStateOf<Map<String, Uri>>(emptyMap()) }
@@ -158,11 +184,11 @@ fun LibraryScreen(
     }
     val collections = remember(storedCollections) { storedCollections.map { it.name } }
     val coroutineScope = rememberCoroutineScope()
-    val queryState = remember { mutableStateOf("") }
+    val queryState = rememberSaveable { mutableStateOf("") }
     var query by queryState
-    val selectedFilterState = remember { mutableStateOf(LibraryFilter.ALL) }
+    val selectedFilterState = rememberSaveable { mutableStateOf(LibraryFilter.ALL) }
     var selectedFilter by selectedFilterState
-    val selectedCollectionState = remember { mutableStateOf<String?>(null) }
+    val selectedCollectionState = rememberSaveable { mutableStateOf<String?>(null) }
     var selectedCollection by selectedCollectionState
     val collectionMenuExpandedState = remember { mutableStateOf(false) }
     var collectionMenuExpanded by collectionMenuExpandedState
@@ -199,7 +225,7 @@ fun LibraryScreen(
     var titleDraft by titleDraftState
     val sortMenuExpandedState = remember { mutableStateOf(false) }
     var sortMenuExpanded by sortMenuExpandedState
-    val sortModeState = remember { mutableStateOf(LibrarySortMode.TITLE_ASC) }
+    val sortModeState = rememberSaveable { mutableStateOf(LibrarySortMode.TITLE_ASC) }
     var sortMode by sortModeState
     val pendingMarkdownState = remember { mutableStateOf<String?>(null) }
     var pendingMarkdown by pendingMarkdownState
@@ -210,36 +236,61 @@ fun LibraryScreen(
     var backupPreview by backupPreviewState
     val backupBusyState = remember { mutableStateOf(false) }
     var backupBusy by backupBusyState
-    val scannerBusyState = remember { mutableStateOf(false) }
-    var scannerBusy by scannerBusyState
-    val scannerJobState = remember { mutableStateOf<Job?>(null) }
-    var scannerJob by scannerJobState
-    val scannerProgressState = remember { mutableStateOf(LocalFolderScanner.Progress(0, 0, 0)) }
-    var scannerProgress by scannerProgressState
-    val scannerPreviewState = remember { mutableStateOf<LocalFolderScanner.Result?>(null) }
-    var scannerPreview by scannerPreviewState
-    val scannerImportingState = remember { mutableStateOf(false) }
-    var scannerImporting by scannerImportingState
-    val scannerFolderNameState = remember { mutableStateOf("Carpeta seleccionada") }
-    var scannerFolderName by scannerFolderNameState
-    val listModeState = remember { mutableStateOf(false) }
+    // The folder scan lives in the ViewModel so rotation no longer cancels it (A-36).
+    val scannerState by viewModel.scanner.collectAsStateWithLifecycle()
+    val listModeState = rememberSaveable { mutableStateOf(false) }
     var listMode by listModeState
+
+    LaunchedEffect(scannerState.error) {
+        val message = scannerState.error ?: return@LaunchedEffect
+        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        viewModel.dismissScanError()
+    }
+
+    suspend fun drainPendingBookCleanup() {
+        // One directory rescan for the whole batch, not one per deleted book (A-38).
+        val completed = withContext(Dispatchers.IO) {
+            var cleaned = 0
+            viewModel.pendingCleanupUris().forEach { uri ->
+                if (DeletedBookCleanup.complete(context, uri, settings, viewModel::completeCleanup)) {
+                    cleaned++
+                }
+            }
+            cleaned
+        }
+        if (completed > 0) offlineRevision++
+    }
 
     LaunchedEffect(context, viewModel, settings) {
         migrateLegacyLibrary(context, viewModel)
-        withContext(Dispatchers.IO) {
-            viewModel.pendingCleanupUris().forEach { uri ->
-                if (DeletedBookCleanup.complete(context, uri, settings, viewModel::completeCleanup)) offlineRevision++
-            }
-        }
+        drainPendingBookCleanup()
         if (!BundledWelcomeBook.installIfNeeded(
                 context,
                 settings,
                 viewModel::findBook,
-                viewModel::insertBook
+                viewModel::insertBook,
+                viewModel::rebindUri
             )) {
-            Toast.makeText(context, "No se pudo añadir la guía de bienvenida", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                context,
+                context.getString(R.string.library_welcome_book_failed),
+                Toast.LENGTH_LONG
+            ).show()
         }
+    }
+
+    // A cleanup that fails while the library is already open (locked file, no
+    // space) is retried the next time the app comes back, not only after a
+    // process restart.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                coroutineScope.launch { drainPendingBookCleanup() }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     val documentActions = rememberLibraryDocumentActions(
@@ -252,11 +303,6 @@ fun LibraryScreen(
         backupBusy = backupBusyState,
         backupPreview = backupPreviewState,
         organizingBook = organizingBookState,
-        scannerBusy = scannerBusyState,
-        scannerJob = scannerJobState,
-        scannerProgress = scannerProgressState,
-        scannerPreview = scannerPreviewState,
-        scannerFolderName = scannerFolderNameState,
         onOfflineBooksChanged = { offlineRevision++ }
     )
 
@@ -266,12 +312,9 @@ fun LibraryScreen(
         backupRepository = backupRepository,
         coroutineScope = coroutineScope,
         storedBooks = storedBooks,
-        scannerBusy = scannerBusyState,
-        scannerJob = scannerJobState,
-        scannerFolderName = scannerFolderName,
-        scannerProgress = scannerProgress,
-        scannerPreview = scannerPreviewState,
-        scannerImporting = scannerImportingState,
+        scanner = scannerState,
+        onCancelScan = viewModel::cancelScan,
+        onClearScanPreview = viewModel::clearScanPreview,
         showBackupOptions = showBackupOptionsState,
         backupBusy = backupBusyState,
         backupPreview = backupPreviewState,
@@ -305,6 +348,7 @@ fun LibraryScreen(
         collectionDraft = collectionDraftState,
         showCollectionsManager = showCollectionsManagerState,
         storedCollections = storedCollections,
+        storedBooks = books,
         collectionBeingRenamed = collectionBeingRenamedState,
         collectionRenameDraft = collectionRenameDraftState,
         editingBook = editingBookState,
@@ -314,54 +358,21 @@ fun LibraryScreen(
         onOfflineBooksChanged = { offlineRevision++ }
     )
 
-    // Cache catalog calculations across unrelated UI recompositions (menus, dialogs,
-    // stats updates, etc.). Everything stays on-device; no search API is required.
-    val normalizedQuery = remember(query) { normalizedLibraryText(query) }
-    // Precompute accents/format/collection once instead of normalizing every
-    // title again for each keystroke in a large library.
-    val searchIndex = remember(books) {
-        books.associate { book ->
-            book.uri.toString() to normalizedLibraryText(
-                "${book.title} ${book.format} ${book.collectionId.orEmpty()}"
-            )
+    // The catalog pipeline runs on Dispatchers.Default: with 10 000 books it costs
+    // hundreds of milliseconds and used to block the main thread on every Room
+    // emission (menus, dialogs and stats updates kept it recomputed) (P-06).
+    val titleComparator = remember { libraryTitleComparator() }
+    var catalog by remember {
+        mutableStateOf(CatalogResult(emptyList(), emptyList(), emptyList()))
+    }
+    LaunchedEffect(books, query, selectedFilter, selectedCollection, sortMode, titleComparator) {
+        catalog = withContext(Dispatchers.Default) {
+            computeCatalog(books, query, selectedFilter, selectedCollection, sortMode, titleComparator)
         }
     }
-    val visibleBooks = remember(books, searchIndex, normalizedQuery, selectedFilter, selectedCollection) {
-        books.filter { book ->
-            val matchesQuery = matchesNormalizedLibraryQuery(
-                searchIndex[book.uri.toString()].orEmpty(), normalizedQuery
-            )
-            val matchesFilter = when (selectedFilter) {
-                LibraryFilter.TO_READ -> book.format != "Audio" && book.readProgress <= 0f
-                LibraryFilter.OFFLINE_COPY -> book.offlineCopyUri != null
-                LibraryFilter.IN_PROGRESS -> book.format != "Audio" && book.readProgress > 0f && book.readProgress < 1f
-                LibraryFilter.COMPLETED -> book.format != "Audio" && book.readProgress >= 1f
-                LibraryFilter.FAVORITES -> book.isFavorite
-                LibraryFilter.EPUB -> book.format == "EPUB"
-                LibraryFilter.PDF -> book.format == "PDF"
-                LibraryFilter.AUDIO -> book.format == "Audio"
-                LibraryFilter.ALL -> true
-            }
-            val matchesCollection = selectedCollection == null || book.collectionId == selectedCollection
-            matchesQuery && matchesFilter && matchesCollection
-        }
-    }
-    val continueBooks = remember(books) {
-        books.asSequence()
-            .filter { it.format != "Audio" && it.readProgress > 0f && it.readProgress < 1f }
-            .sortedByDescending { it.lastOpenedAt ?: 0L }
-            .take(8)
-            .toList()
-    }
-    val orderedBooks = remember(visibleBooks, sortMode) {
-        when (sortMode) {
-            LibrarySortMode.LAST_READ -> visibleBooks.sortedByDescending { it.lastOpenedAt ?: 0L }
-            LibrarySortMode.IMPORT_DATE -> visibleBooks.sortedByDescending { it.importedAt }
-            LibrarySortMode.PROGRESS -> visibleBooks.sortedByDescending { it.readProgress }
-            LibrarySortMode.TITLE_DESC -> visibleBooks.sortedWith(compareByDescending(String.CASE_INSENSITIVE_ORDER) { it.title })
-            LibrarySortMode.TITLE_ASC -> visibleBooks.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
-        }
-    }
+    val visibleBooks = catalog.visible
+    val continueBooks = catalog.continueReading
+    val orderedBooks = catalog.ordered
 
     LibraryCatalog(
         books = books,
@@ -384,8 +395,8 @@ fun LibraryScreen(
         pendingMarkdown = pendingMarkdownState,
         organizingBook = organizingBookState,
         collectionDraft = collectionDraftState,
-        scannerBusy = scannerBusy,
-        scannerImporting = scannerImporting,
+        scannerBusy = scannerState.busy,
+        scannerImporting = scannerState.busy,
         context = context,
         viewModel = viewModel,
         coroutineScope = coroutineScope,

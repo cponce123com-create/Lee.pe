@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
@@ -30,17 +30,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import pe.lee.feature.library.R
 
 @Composable
 internal fun ContinueReadingCard(book: LocalBook, wide: Boolean, cardWidth: Dp, onOpen: () -> Unit) {
     val progress = book.readProgress.coerceIn(0f, 1f)
     Card(
-        modifier = Modifier.width(cardWidth).clickable(onClickLabel = "Continuar ${book.title}", onClick = onOpen),
+        modifier = Modifier.width(cardWidth).clickable(
+            onClickLabel = stringResource(R.string.accessibility_open_book, book.title),
+            onClick = onOpen
+        ),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
@@ -70,7 +75,7 @@ internal fun ContinueReadingCard(book: LocalBook, wide: Boolean, cardWidth: Dp, 
                             modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp))
                         )
                         else -> Icon(
-                            Icons.Default.MenuBook, contentDescription = null,
+                            Icons.AutoMirrored.Filled.MenuBook, contentDescription = null,
                             tint = Color.White, modifier = Modifier.size(30.dp)
                         )
                     }
@@ -81,7 +86,7 @@ internal fun ContinueReadingCard(book: LocalBook, wide: Boolean, cardWidth: Dp, 
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        "${(progress * 100).toInt()}% leído",
+                        stringResource(R.string.book_progress_percent, (progress * 100).toInt()),
                         color = MaterialTheme.colorScheme.secondary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold
@@ -93,11 +98,11 @@ internal fun ContinueReadingCard(book: LocalBook, wide: Boolean, cardWidth: Dp, 
                         overflow = TextOverflow.Ellipsis
                     )
                     LinearProgressIndicator(
-                        progress = progress,
+                        progress = { progress },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Text(
-                        "Continuar leyendo  →",
+                        stringResource(R.string.book_continue_reading),
                         color = MaterialTheme.colorScheme.primary,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium
@@ -131,7 +136,7 @@ internal fun ContinueReadingCard(book: LocalBook, wide: Boolean, cardWidth: Dp, 
                                 modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(11.dp))
                             )
                             else -> Icon(
-                                Icons.Default.MenuBook,
+                                Icons.AutoMirrored.Filled.MenuBook,
                                 contentDescription = null,
                                 tint = Color.White
                             )
@@ -139,7 +144,7 @@ internal fun ContinueReadingCard(book: LocalBook, wide: Boolean, cardWidth: Dp, 
                     }
                     Spacer(Modifier.width(10.dp))
                     Text(
-                        "${(progress * 100).toInt()}% leído",
+                        stringResource(R.string.book_progress_percent, (progress * 100).toInt()),
                         color = MaterialTheme.colorScheme.secondary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold
@@ -152,11 +157,11 @@ internal fun ContinueReadingCard(book: LocalBook, wide: Boolean, cardWidth: Dp, 
                     overflow = TextOverflow.Ellipsis
                 )
                 LinearProgressIndicator(
-                    progress = progress,
+                    progress = { progress },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(
-                    "Continuar  →",
+                    stringResource(R.string.book_continue),
                     color = MaterialTheme.colorScheme.primary,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium

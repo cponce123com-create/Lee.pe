@@ -17,14 +17,19 @@ class ComposeShareCardGenerator : ShareCardGenerator {
         format: QuoteCardFormat
     ): ByteArray = withContext(Dispatchers.Default) {
         require(card.text.isNotBlank()) { "La cita está vacía." }
+        require(raster.width > 0 && raster.height > 0) { "La captura de la tarjeta está vacía." }
+        require(raster.argbPixels.size >= raster.width * raster.height) {
+            "Los píxeles capturados no coinciden con el tamaño de la tarjeta."
+        }
         val source = Bitmap.createBitmap(
             raster.argbPixels,
             raster.width,
             raster.height,
             Bitmap.Config.ARGB_8888
         )
-        val output = Bitmap.createScaledBitmap(source, format.widthPx, format.heightPx, true)
+        var output: Bitmap? = null
         try {
+            output = Bitmap.createScaledBitmap(source, format.widthPx, format.heightPx, true)
             ByteArrayOutputStream().use { stream ->
                 check(output.compress(Bitmap.CompressFormat.PNG, 100, stream)) {
                     "No se pudo codificar la imagen PNG."
@@ -32,7 +37,10 @@ class ComposeShareCardGenerator : ShareCardGenerator {
                 stream.toByteArray()
             }
         } finally {
-            if (output !== source) output.recycle()
+            // The scaled bitmap used to be created outside the try: if scaling
+            // threw, the source bitmap leaked native memory and made the next
+            // attempt more likely to hit the OOM (A-21).
+            output?.let { if (it !== source) it.recycle() }
             source.recycle()
         }
     }

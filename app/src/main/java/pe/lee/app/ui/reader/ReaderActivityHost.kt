@@ -63,6 +63,10 @@ class ReaderActivity : FragmentActivity() {
                     viewModel = readerViewModel,
                     settings = container.settings,
                     openPublication = { openPublication(uri, offlineCopyUri) },
+                    onReadingVisibilityChange = { active ->
+                        if (active) readingSessionRecorder?.onResume()
+                        else readingSessionRecorder?.onPause()
+                    },
                     onBack = { finish() }
                 )
             }
@@ -93,7 +97,7 @@ class ReaderActivity : FragmentActivity() {
             val httpClient = DefaultHttpClient()
             val assetRetriever = AssetRetriever(contentResolver, httpClient)
             val asset = assetRetriever.retrieve(url).getOrElse {
-                throw IOException("No se pudo leer el EPUB: ${it.message ?: "archivo inaccesible"}")
+                throw IOException("No se pudo leer el EPUB: ${it.message.ifBlank { "archivo inaccesible" }}")
             }
 
             val parser = DefaultPublicationParser(
@@ -104,7 +108,7 @@ class ReaderActivity : FragmentActivity() {
             )
             return PublicationOpener(parser).open(asset, allowUserInteraction = false).getOrElse {
                 asset.close()
-                throw IOException("El archivo no parece ser un EPUB compatible: ${it.message ?: "formato inválido"}")
+                throw IOException("El archivo no parece ser un EPUB compatible: ${it.message.ifBlank { "formato inválido" }}")
             }
         }
 
@@ -122,8 +126,6 @@ class ReaderActivity : FragmentActivity() {
 
     companion object {
         const val EXTRA_TITLE = "pe.lee.app.reader.TITLE"
-        private const val PREFS_NAME = "lee_pe_library"
-        private const val KEY_DOCUMENT_URIS = "document_uris"
 
         fun locatorPreferenceKey(uri: Uri): String = "locator:$uri"
         fun preferencesPreferenceKey(uri: Uri): String = "epub-preferences:$uri"

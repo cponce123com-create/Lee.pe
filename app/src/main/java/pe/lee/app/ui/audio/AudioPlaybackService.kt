@@ -75,7 +75,8 @@ class AudioPlaybackService : MediaSessionService() {
         }
     }
 
-    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
+        MediaSessionAccess.sessionFor(this, controllerInfo, mediaSession)
 
     override fun onDestroy() {
         player?.let { savePosition(it, force = true) }

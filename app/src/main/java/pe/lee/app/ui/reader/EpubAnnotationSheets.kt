@@ -28,13 +28,17 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import pe.lee.app.R
 import pe.lee.core.domain.ReaderAnnotation
 import androidx.compose.runtime.MutableState
 
@@ -55,6 +59,9 @@ internal fun EpubAnnotationSheets(
     onSelectAnnotation: (ReaderAnnotation) -> Unit,
     onDeleteAnnotation: (ReaderAnnotation) -> Unit
 ) {
+    // Deleting a note used to happen with a single tap next to the row that
+    // navigates, and the DAO deletes for good (A-33).
+    val pendingDelete = remember { mutableStateOf<ReaderAnnotation?>(null) }
     if (showAnnotations.value) {
         ModalBottomSheet(onDismissRequest = { showAnnotations.value = false }) {
             Row(
@@ -62,19 +69,19 @@ internal fun EpubAnnotationSheets(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Marcadores, notas y resaltados", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.annotation_sheet_title), fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 Row {
                     TextButton(onClick = {
                         editingAnnotation.value = null
                         noteDraft.value = ""
                         showNoteEditor.value = true
-                    }) { Text("Añadir nota") }
-                    TextButton(onClick = onAddBookmark) { Text("Guardar") }
+                    }) { Text(stringResource(R.string.annotation_add_note)) }
+                    TextButton(onClick = onAddBookmark) { Text(stringResource(R.string.annotation_save)) }
                 }
             }
             if (annotations.isEmpty()) {
                 Text(
-                    "Todavía no guardaste marcadores, notas ni resaltados en este libro.",
+                    stringResource(R.string.annotation_empty_list),
                     modifier = Modifier.padding(horizontal = 22.dp, vertical = 20.dp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -95,9 +102,17 @@ internal fun EpubAnnotationSheets(
                                     annotation.noteText?.takeIf { it.isNotBlank() }
                                         ?: annotation.selectedText?.takeIf { it.isNotBlank() }
                                         ?: if (annotation.kind == "HIGHLIGHT") {
-                                            "Resaltado · ${java.text.DateFormat.getDateTimeInstance().format(java.util.Date(annotation.createdAt))}"
+                                            stringResource(
+                                                R.string.annotation_highlight_date,
+                                                java.text.DateFormat.getDateTimeInstance()
+                                                    .format(java.util.Date(annotation.createdAt))
+                                            )
                                         } else {
-                                            "Marcador · ${java.text.DateFormat.getDateTimeInstance().format(java.util.Date(annotation.createdAt))}"
+                                            stringResource(
+                                                R.string.annotation_bookmark_date,
+                                                java.text.DateFormat.getDateTimeInstance()
+                                                    .format(java.util.Date(annotation.createdAt))
+                                            )
                                         },
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis
@@ -105,31 +120,36 @@ internal fun EpubAnnotationSheets(
                                 if (annotation.kind == "HIGHLIGHT") {
                                     Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                                         listOf(
-                                            "Amarillo" to 0xFFFFD54F.toInt(),
-                                            "Azul" to 0xFF64B5F6.toInt(),
-                                            "Verde" to 0xFF81C784.toInt(),
-                                            "Rosa" to 0xFFF48FB1.toInt()
+                                            stringResource(R.string.annotation_color_yellow) to 0xFFFFD54F.toInt(),
+                                            stringResource(R.string.annotation_color_blue) to 0xFF64B5F6.toInt(),
+                                            stringResource(R.string.annotation_color_green) to 0xFF81C784.toInt(),
+                                            stringResource(R.string.annotation_color_pink) to 0xFFF48FB1.toInt()
                                         ).forEach { (label, color) ->
                                             IconButton(
                                                 onClick = { onChangeHighlightColor(annotation, color) },
-                                                modifier = Modifier.size(34.dp)
+                                                // 34 dp was below the 48 dp minimum touch target (A-19).
+                                                modifier = Modifier.size(48.dp)
                                             ) {
                                                 Icon(
                                                     Icons.Default.Circle,
-                                                    contentDescription = "Resaltado $label",
+                                                    contentDescription = stringResource(
+                                                        R.string.annotation_highlight_color, label
+                                                    ),
                                                     tint = Color(color),
-                                                    modifier = Modifier.size(20.dp)
+                                                    modifier = Modifier.size(22.dp)
                                                 )
                                             }
                                         }
                                     }
                                 }
                                 Text(
-                                    when (annotation.kind) {
-                                        "NOTE" -> "Nota · abrir posición"
-                                        "HIGHLIGHT" -> "Resaltado · abrir texto"
-                                        else -> "Marcador · abrir posición"
-                                    },
+                                    stringResource(
+                                        when (annotation.kind) {
+                                            "NOTE" -> R.string.annotation_open_note
+                                            "HIGHLIGHT" -> R.string.annotation_open_highlight
+                                            else -> R.string.annotation_open_bookmark
+                                        }
+                                    ),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 12.sp
                                 )
@@ -140,11 +160,11 @@ internal fun EpubAnnotationSheets(
                                     noteDraft.value = annotation.noteText.orEmpty()
                                     showNoteEditor.value = true
                                 }) {
-                                    Icon(Icons.Default.Edit, contentDescription = "Editar nota")
+                                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.annotation_edit_note))
                                 }
                             }
-                            IconButton(onClick = { onDeleteAnnotation(annotation) }) {
-                                Icon(Icons.Default.DeleteOutline, contentDescription = "Eliminar marcador")
+                            IconButton(onClick = { pendingDelete.value = annotation }) {
+                                Icon(Icons.Default.DeleteOutline, contentDescription = stringResource(R.string.annotation_delete_action))
                             }
                         }
                     }
@@ -157,12 +177,19 @@ internal fun EpubAnnotationSheets(
     if (showNoteEditor.value) {
         AlertDialog(
             onDismissRequest = { showNoteEditor.value = false },
-            title = { Text(if (editingAnnotation.value == null) "Nueva nota" else "Editar nota") },
+            title = {
+                Text(
+                    stringResource(
+                        if (editingAnnotation.value == null) R.string.annotation_new_note
+                        else R.string.annotation_edit_note
+                    )
+                )
+            },
             text = {
                 OutlinedTextField(
                     value = noteDraft.value,
                     onValueChange = { noteDraft.value = it },
-                    label = { Text("Nota para esta posición") },
+                    label = { Text(stringResource(R.string.annotation_note_label)) },
                     minLines = 3,
                     maxLines = 6
                 )
@@ -176,10 +203,42 @@ internal fun EpubAnnotationSheets(
                         else onUpdateAnnotation(existing, noteDraft.value.trim())
                         showNoteEditor.value = false
                     }
-                ) { Text("Guardar") }
+                ) { Text(stringResource(R.string.annotation_save)) }
             },
             dismissButton = {
-                TextButton(onClick = { showNoteEditor.value = false }) { Text("Cancelar") }
+                TextButton(onClick = { showNoteEditor.value = false }) { Text(stringResource(R.string.annotation_cancel)) }
+            }
+        )
+    }
+
+    pendingDelete.value?.let { annotation ->
+        val label = stringResource(
+            when (annotation.kind) {
+                "NOTE" -> R.string.annotation_kind_note
+                "HIGHLIGHT" -> R.string.annotation_kind_highlight
+                else -> R.string.annotation_kind_bookmark
+            }
+        )
+        AlertDialog(
+            onDismissRequest = { pendingDelete.value = null },
+            title = { Text(stringResource(R.string.annotation_delete_title, label)) },
+            text = {
+                Text(
+                    annotation.noteText?.takeIf { it.isNotBlank() }
+                        ?: annotation.selectedText?.takeIf { it.isNotBlank() }
+                        ?: stringResource(R.string.annotation_delete_message)
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    pendingDelete.value = null
+                    onDeleteAnnotation(annotation)
+                }) { Text(stringResource(R.string.annotation_delete_action)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDelete.value = null }) {
+                    Text(stringResource(R.string.annotation_cancel))
+                }
             }
         )
     }

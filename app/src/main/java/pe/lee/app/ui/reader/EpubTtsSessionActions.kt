@@ -21,7 +21,15 @@ import org.readium.r2.shared.util.getOrElse
 import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.app.ui.audio.TtsPlaybackService
 
-internal data class EpubReaderSessionActions(val stopTts: () -> Unit, val toggleTts: () -> Unit)
+internal data class EpubReaderSessionActions(
+    val stopTts: () -> Unit,
+    val toggleTts: () -> Unit,
+    /**
+     * Stops narration before an explicit jump. Otherwise the TTS location
+     * collector moves the page back to where it was speaking (A-32).
+     */
+    val pauseTtsForNavigation: () -> Unit
+)
 
 @OptIn(ExperimentalReadiumApi::class)
 internal fun buildEpubReaderSessionActions(
@@ -122,7 +130,7 @@ private fun createEpubReaderSessionActions(
                     ?: session.navigator.value?.currentLocator?.value,
                 initialPreferences = AndroidTtsPreferences(speed = session.ttsSpeed.value.toDouble())
             ).getOrElse { failure ->
-                session.ttsError.value = "No se pudo preparar la narración: ${failure.message ?: "error de voz"}"
+                session.ttsError.value = "No se pudo preparar la narración: ${failure.message.ifBlank { "error de voz" }}"
                 return@launch
             }
             val localVoices = speech.voices
@@ -151,5 +159,10 @@ private fun createEpubReaderSessionActions(
         }
     }
 
-    return EpubReaderSessionActions(::stopTts, ::startOrToggleTts)
+    fun pauseTtsForNavigation() {
+        val current = session.ttsNavigator.value ?: return
+        if (session.ttsIsPlaying.value) current.pause()
+    }
+
+    return EpubReaderSessionActions(::stopTts, ::startOrToggleTts, ::pauseTtsForNavigation)
 }
