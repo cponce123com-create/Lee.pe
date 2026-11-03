@@ -1061,7 +1061,7 @@ private fun ContinueReadingCard(book: LocalBook, wide: Boolean, onOpen: () -> Un
     val progress = book.readProgress.coerceIn(0f, 1f)
     val cardWidth = if (wide) Modifier.fillMaxWidth() else Modifier.width(232.dp)
     Card(
-        modifier = cardWidth.clickable(onClick = onOpen),
+        modifier = cardWidth.clickable(onClickLabel = "Continuar ${book.title}", onClick = onOpen),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
@@ -1079,15 +1079,21 @@ private fun ContinueReadingCard(book: LocalBook, wide: Boolean, onOpen: () -> Un
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (book.format == "PDF") {
-                        LocalPdfCover(
+                    when (book.format) {
+                        "PDF" -> LocalPdfCover(
                             originalUri = book.uri,
                             offlineCopyUri = book.offlineCopyUri,
                             modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp))
                         )
-                    } else {
-                        Icon(Icons.Default.MenuBook, contentDescription = null,
-                            tint = Color.White, modifier = Modifier.size(30.dp))
+                        "EPUB" -> LocalEpubCover(
+                            originalUri = book.uri,
+                            offlineCopyUri = book.offlineCopyUri,
+                            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp))
+                        )
+                        else -> Icon(
+                            Icons.Default.MenuBook, contentDescription = null,
+                            tint = Color.White, modifier = Modifier.size(30.dp)
+                        )
                     }
                 }
                 Spacer(Modifier.width(14.dp))
@@ -1251,7 +1257,7 @@ private fun BookCard(
     }
 
     Card(
-        modifier = modifier.clickable(onClick = onOpen),
+        modifier = modifier.clickable(onClickLabel = "Abrir ${book.title}", onClick = onOpen),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
@@ -1263,14 +1269,21 @@ private fun BookCard(
                     .background(Brush.linearGradient(colors), RoundedCornerShape(14.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                if (book.format == "PDF") {
-                    LocalPdfCover(
+                when (book.format) {
+                    "PDF" -> LocalPdfCover(
                         originalUri = book.uri,
                         offlineCopyUri = book.offlineCopyUri,
                         modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp))
                     )
-                } else {
-                    Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(42.dp))
+                    "EPUB" -> LocalEpubCover(
+                        originalUri = book.uri,
+                        offlineCopyUri = book.offlineCopyUri,
+                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp))
+                    )
+                    else -> Icon(
+                        icon, contentDescription = null,
+                        tint = Color.White, modifier = Modifier.size(42.dp)
+                    )
                 }
                 if (book.isFavorite) {
                     Icon(
