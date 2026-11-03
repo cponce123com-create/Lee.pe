@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performClick
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -39,7 +40,7 @@ class ShareCardScreenTest {
         composeRule.setContent { ShareCardScreen(viewModel = viewModel, onBack = {}) }
 
         composeRule.onNodeWithText("Compartir").assertIsNotEnabled()
-        composeRule.onNodeWithText("Noche").assertIsNotSelected().performClick().assertIsSelected()
+        composeRule.onNodeWithText("Noche").performScrollTo().assertIsNotSelected().performClick().assertIsSelected()
         composeRule.runOnIdle { assertEquals(QuoteCardThemeId.DARK_OLED, viewModel.state.value.card.themeId) }
     }
 
@@ -57,7 +58,7 @@ class ShareCardScreenTest {
         )
         composeRule.setContent { ShareCardScreen(viewModel = viewModel, onBack = {}) }
 
-        composeRule.onNodeWithText("Compartir").performClick()
+        composeRule.onNodeWithText("Compartir").performScrollTo().performClick()
         composeRule.waitUntil(5_000) { viewModel.state.value.status == ShareCardStatus.Ready }
 
         assertTrue((captured.get()?.width ?: 0) > 0)
