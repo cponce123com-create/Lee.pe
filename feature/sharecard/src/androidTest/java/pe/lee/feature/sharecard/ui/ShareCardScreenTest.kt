@@ -28,9 +28,12 @@ class ShareCardScreenTest {
         composeRule.setContent { ShareCardScreen(viewModel = viewModel, onBack = {}) }
 
         composeRule.onNodeWithText("Cita de prueba").assertExists()
-        composeRule.onNodeWithText("Papel").assertExists()
-        composeRule.onNodeWithText("Noche").assertExists()
-        composeRule.onNodeWithText("Acento").assertExists()
+        composeRule.onNodeWithText("Minimalista").assertExists()
+        composeRule.onNodeWithText("Editorial clásica").assertExists()
+        composeRule.onNodeWithText("Literaria premium").assertExists()
+        composeRule.onNodeWithText("Papel antiguo").assertExists()
+        composeRule.onNodeWithText("Oscura elegante").assertExists()
+        composeRule.onNodeWithText("Degradado moderno").assertExists()
         composeRule.onNodeWithText("Compartir").assertExists()
     }
 
@@ -40,7 +43,7 @@ class ShareCardScreenTest {
         composeRule.setContent { ShareCardScreen(viewModel = viewModel, onBack = {}) }
 
         composeRule.onNodeWithText("Compartir").assertIsNotEnabled()
-        composeRule.onNodeWithText("Noche").performScrollTo().assertIsNotSelected().performClick().assertIsSelected()
+        composeRule.onNodeWithText("Oscura elegante").performScrollTo().assertIsNotSelected().performClick().assertIsSelected()
         composeRule.runOnIdle { assertEquals(QuoteCardThemeId.DARK_OLED, viewModel.state.value.card.themeId) }
     }
 
@@ -61,8 +64,8 @@ class ShareCardScreenTest {
         composeRule.onNodeWithText("Compartir").performScrollTo().performClick()
         composeRule.waitUntil(5_000) { viewModel.state.value.status == ShareCardStatus.Ready }
 
-        assertTrue((captured.get()?.width ?: 0) > 0)
-        assertTrue((captured.get()?.height ?: 0) > 0)
+        assertEquals(1080, captured.get()?.width)
+        assertEquals(1920, captured.get()?.height)
         assertTrue(handedOff.get())
     }
 

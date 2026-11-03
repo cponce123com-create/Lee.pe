@@ -16,6 +16,18 @@ internal data class QuoteCardPalette(
 )
 
 internal fun quoteCardPalette(theme: QuoteCardThemeId): QuoteCardPalette = when (theme) {
+    QuoteCardThemeId.MINIMAL -> QuoteCardPalette(
+        Brush.linearGradient(listOf(Color.White, Color.White)), Color(0xFF17202A),
+        Color(0xFF465362), Color(0xFF146C67), FontFamily.SansSerif
+    )
+    QuoteCardThemeId.EDITORIAL -> QuoteCardPalette(
+        Brush.linearGradient(listOf(Color(0xFFFAF7F2), Color(0xFFFAF7F2))), Color(0xFF1A1A1A),
+        Color(0xFF54483D), Color(0xFF943F35), FontFamily.Serif
+    )
+    QuoteCardThemeId.PREMIUM -> QuoteCardPalette(
+        Brush.verticalGradient(listOf(Color(0xFF102F32), Color(0xFF071B20))), Color(0xFFFFF4DD),
+        Color(0xFFDDD1B8), Color(0xFFE1BD78), FontFamily.Serif, FontStyle.Italic
+    )
     QuoteCardThemeId.PAPER -> QuoteCardPalette(
         background = Brush.verticalGradient(listOf(Color(0xFFFAF7F2), Color(0xFFF1E9DC))),
         text = Color(0xFF1A1A1A),

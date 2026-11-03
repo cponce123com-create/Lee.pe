@@ -57,6 +57,10 @@ class ShareCardViewModel(
     fun selectTheme(theme: pe.lee.feature.sharecard.domain.model.QuoteCardThemeId) =
         mutableState.update { if (it.status == ShareCardStatus.Generating) it else it.copy(card = it.card.copy(themeId = theme), status = ShareCardStatus.Idle) }
 
+    /** Overrides the template font with an installed system family. */
+    fun selectFont(font: pe.lee.feature.sharecard.domain.model.QuoteCardFont) =
+        mutableState.update { if (it.status == ShareCardStatus.Generating) it else it.copy(card = it.card.copy(font = font), status = ShareCardStatus.Idle) }
+
     /** Selects the story or square image proportions. */
     fun selectFormat(format: pe.lee.feature.sharecard.domain.model.QuoteCardFormat) =
         mutableState.update { if (it.status == ShareCardStatus.Generating) it else it.copy(card = it.card.copy(format = format), status = ShareCardStatus.Idle) }

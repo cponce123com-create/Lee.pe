@@ -1,7 +1,7 @@
 package pe.lee.feature.sharecard.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,9 +20,12 @@ internal fun ThemeSelector(
     onThemeSelected: (QuoteCardThemeId) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         QuoteCardThemeId.entries.forEach { theme ->
             val label = when (theme) {
+                QuoteCardThemeId.MINIMAL -> stringResource(R.string.share_card_theme_minimal)
+                QuoteCardThemeId.EDITORIAL -> stringResource(R.string.share_card_theme_editorial)
+                QuoteCardThemeId.PREMIUM -> stringResource(R.string.share_card_theme_premium)
                 QuoteCardThemeId.PAPER -> stringResource(R.string.share_card_theme_paper)
                 QuoteCardThemeId.DARK_OLED -> stringResource(R.string.share_card_theme_night)
                 QuoteCardThemeId.ACCENT -> stringResource(R.string.share_card_theme_accent)

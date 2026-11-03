@@ -12,6 +12,8 @@ on:
       - "gradle/**"
       - "*.gradle.kts"
       - "gradle.properties"
+      - "version.properties"
+      - "scripts/verify_debug_apk.py"
       - ".github/workflows/android-build.yml"
   pull_request:
     branches: [main]
@@ -24,6 +26,8 @@ on:
       - "gradle/**"
       - "*.gradle.kts"
       - "gradle.properties"
+      - "version.properties"
+      - "scripts/verify_debug_apk.py"
       - ".github/workflows/android-build.yml"
   workflow_dispatch:
 
@@ -60,7 +64,17 @@ jobs:
       - name: Run unit tests and build APK
         # testDebugUnitTest covers every Android module; :core:domain is a Kotlin/JVM
         # module and would be skipped silently without the explicit task.
-        run: ./gradlew --no-daemon --stacktrace lintDebug testDebugUnitTest :core:domain:test assembleDebug assembleDebugAndroidTest
+        run: ./gradlew --no-daemon --stacktrace clean lintDebug testDebugUnitTest :core:domain:test assembleDebug assembleDebugAndroidTest
+
+      - name: Verify packaged quote cards and permissions
+        run: python scripts/verify_debug_apk.py app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Record APK provenance
+        run: |
+          mkdir -p app/build/outputs/apk/debug
+          git rev-parse HEAD > app/build/outputs/apk/debug/commit.txt
+          cp version.properties app/build/outputs/apk/debug/version.properties
+          sha256sum app/build/outputs/apk/debug/*.apk > app/build/outputs/apk/debug/SHA256SUMS
 
       - name: Enable KVM group permissions
         run: |
@@ -95,6 +109,9 @@ jobs:
           name: lee-pe-debug
           path: |
             app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/debug/commit.txt
+            app/build/outputs/apk/debug/version.properties
+            app/build/outputs/apk/debug/SHA256SUMS
             core/database/schemas/**/*.json
           if-no-files-found: error
           retention-days: 14

@@ -63,3 +63,11 @@ En un teléfono, validar selección y creación desde EPUB y PDF con texto, los 
 Pendiente en dispositivo: compartir y volver desde el selector de apps, pulsar repetidamente, girar durante generación y probar con tamaño de fuente grande en un teléfono pequeño y otro grande.
 
 Limitaciones pendientes de corregir antes de producción: las citas largas pueden mostrar puntos suspensivos; el raster de vista previa se escala a 1080 píxeles, por lo que la nitidez depende de la pantalla. No se considera validada la exportación de citas extensas ni el rendimiento en dispositivos con poca memoria.
+
+## Plantillas y exportación 0.3.0
+
+Se ofrecen Minimalista, Editorial clásica, Oscura elegante, Papel antiguo, Degradado moderno y Literaria premium. El usuario elige la paleta y puede conservar la fuente de la plantilla o elegir Clásica/Moderna. Las fuentes son del sistema, sin nuevas licencias ni descargas.
+
+La tarjeta se compone a 1080 píxeles de ancho. La vista en pantalla se escala, pero la captura conserva los píxeles originales. El texto se mide y reduce hasta 12 sp; si aun así no cabe, Compartir queda deshabilitado y se pide cambiar a Historia o editar la frase. El pie bibliográfico se mide por separado. Esta regla sustituye la limitación de elipsis y ampliación descrita en la sección histórica anterior.
+
+La opción del lector se llama **Compartir como imagen**. Mantén pulsado un fragmento del EPUB; según el menú del sistema puede aparecer directamente o dentro de los tres puntos. Los colores se personalizan eligiendo plantilla; no se incluye un selector libre de colores.

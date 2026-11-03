@@ -169,7 +169,8 @@ internal fun EpubReaderSessionEffects(
                 override fun onCreateActionMode(mode: ActionMode, menu: Menu): Boolean {
                     menu.add(Menu.NONE, MENU_HIGHLIGHT, Menu.NONE, "Resaltar")
                     menu.add(Menu.NONE, MENU_COPY_SELECTION, Menu.NONE, "Copiar")
-                    menu.add(Menu.NONE, MENU_SHARE_SELECTION, Menu.NONE, context.getString(ShareCardR.string.share_card_create_action))
+                    menu.add(Menu.NONE, MENU_SHARE_SELECTION, 0, context.getString(ShareCardR.string.share_card_create_action))
+                        .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
                     return true
                 }
 
