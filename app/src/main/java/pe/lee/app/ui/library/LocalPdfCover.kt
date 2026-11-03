@@ -109,7 +109,7 @@ internal fun LocalPdfCover(
                 bitmap = bitmap!!.asImageBitmap(),
                 contentDescription = "Vista previa local de la primera página PDF",
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Fit
             )
         }
     }
