@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -320,11 +322,19 @@ internal fun EpubReaderScreen(
                         ttsServiceBinding?.binder?.setSleepTimer(nextTimer)
                     },
                     onStop = { sessionActions.stopTts() },
-                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 112.dp)
+                    // Real insets instead of guessed offsets: with gesture navigation
+                    // or a cutout the panel overlapped the system bars (A-19).
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(bottom = 96.dp)
                 )
             } else if (ttsError != null) {
                 Surface(
-                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 88.dp, start = 16.dp, end = 16.dp),
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .statusBarsPadding()
+                        .padding(top = 72.dp, start = 16.dp, end = 16.dp),
                     color = Color(0xEE24152A),
                     shape = RoundedCornerShape(14.dp)
                 ) {

@@ -1,7 +1,9 @@
 package pe.lee.app.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
@@ -17,7 +19,7 @@ object LeePeSpacing {
     val xxl: Dp = 24.dp
 }
 
-private val LeePeColors = darkColorScheme(
+private val LeePeDarkColors = darkColorScheme(
     primary = Color(0xFF9B72FF),
     onPrimary = Color(0xFF170B32),
     secondary = Color(0xFF56D7FF),
@@ -30,10 +32,31 @@ private val LeePeColors = darkColorScheme(
     outline = Color(0xFF304666)
 )
 
+/**
+ * Light palette with the same identity: deep teal text on paper surfaces and the
+ * brand purple/cyan as accents. The app used to force the dark scheme even when
+ * the system was in light mode.
+ */
+private val LeePeLightColors = lightColorScheme(
+    primary = Color(0xFF5B3FBF),
+    onPrimary = Color.White,
+    secondary = Color(0xFF00708F),
+    background = Color(0xFFF7F5FB),
+    surface = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFFE8E4F2),
+    onBackground = Color(0xFF1B1428),
+    onSurface = Color(0xFF1B1428),
+    onSurfaceVariant = Color(0xFF4E4860),
+    outline = Color(0xFF9A93AD)
+)
+
 @Composable
-fun LeePeTheme(content: @Composable () -> Unit) {
+fun LeePeTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit
+) {
     MaterialTheme(
-        colorScheme = LeePeColors,
+        colorScheme = if (darkTheme) LeePeDarkColors else LeePeLightColors,
         content = content
     )
 }

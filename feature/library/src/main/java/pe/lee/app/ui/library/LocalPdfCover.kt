@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Semaphore
@@ -29,6 +30,7 @@ import kotlinx.coroutines.withContext
 import kotlin.coroutines.coroutineContext
 import kotlin.math.min
 import kotlin.math.roundToInt
+import pe.lee.feature.library.R
 
 /**
  * Renders only the first page of VISIBLE local PDF books, on Dispatchers.IO.
@@ -117,7 +119,7 @@ internal fun LocalPdfCover(
         } else {
             Image(
                 bitmap = bitmap!!.asImageBitmap(),
-                contentDescription = "Vista previa local de la primera página PDF",
+                contentDescription = stringResource(R.string.library_pdf_thumbnail_description),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Fit
             )

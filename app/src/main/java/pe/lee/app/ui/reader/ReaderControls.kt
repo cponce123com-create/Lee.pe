@@ -7,6 +7,7 @@ import android.view.Menu
 import android.view.MenuItem
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
@@ -61,7 +62,7 @@ import org.readium.r2.navigator.preferences.TextAlign as ReadiumTextAlign
 import org.readium.r2.shared.ExperimentalReadiumApi
 import pe.lee.app.R
 
-@OptIn(ExperimentalReadiumApi::class)
+@OptIn(ExperimentalReadiumApi::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 internal fun TtsControls(
     sentence: String,
@@ -97,7 +98,13 @@ internal fun TtsControls(
                 fontSize = 13.sp
             )
             error?.let { Text(it, color = Color(0xFFFFB4AB), fontSize = 12.sp) }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+            // Five controls in a plain Row overflowed on 360 dp screens with large
+            // fonts; FlowRow wraps them into a second line instead (A-19).
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
                 IconButton(onClick = onTogglePlayback) {
                     Icon(
                         if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,

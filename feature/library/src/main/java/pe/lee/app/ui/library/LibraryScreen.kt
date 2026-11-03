@@ -105,6 +105,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import pe.lee.feature.library.R
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.ZoneId
@@ -269,7 +270,11 @@ fun LibraryScreen(
                 viewModel::findBook,
                 viewModel::insertBook
             )) {
-            Toast.makeText(context, "No se pudo añadir la guía de bienvenida", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                context,
+                context.getString(R.string.library_welcome_book_failed),
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 
