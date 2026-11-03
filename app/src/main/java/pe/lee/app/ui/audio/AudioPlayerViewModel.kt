@@ -68,6 +68,20 @@ class AudioPlayerViewModel : ViewModel() {
         mutableState.value = mutableState.value.copy(error = message)
     }
 
+    /**
+     * Releases the references held to a [MediaController] that the Activity is
+     * about to release. Without this, the polling job and the stored listener
+     * outlive the controller (rotation) and touch a released object.
+     */
+    fun detach() {
+        positionJob?.cancel()
+        positionJob = null
+        listener?.let { current -> runCatching { controller?.removeListener(current) } }
+        listener = null
+        controller = null
+        mutableState.value = AudioPlayerState()
+    }
+
     fun playPause() { if (controller?.isPlaying == true) controller?.pause() else controller?.play() }
     fun seekTo(positionMs: Long) { controller?.seekTo(positionMs.coerceAtLeast(0L)); refreshPosition() }
     fun setSpeed(speed: Float) {
@@ -85,10 +99,6 @@ class AudioPlayerViewModel : ViewModel() {
     }
 
     override fun onCleared() {
-        positionJob?.cancel()
-        positionJob = null
-        listener?.let { controller?.removeListener(it) }
-        listener = null
-        controller = null
+        detach()
     }
 }

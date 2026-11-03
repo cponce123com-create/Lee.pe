@@ -73,6 +73,7 @@ class TtsPlaybackService : MediaSessionService() {
             addSession(session)
             val activeSession = Session(navigator, session, bookUri, title)
             sessionState.value = activeSession
+            activeBookUri = bookUri
 
             activeSession.scope.launch {
                 var lastSavedAt = 0L
@@ -128,6 +129,7 @@ class TtsPlaybackService : MediaSessionService() {
         fun closeSession() {
             val activeSession = sessionState.value ?: return
             sessionState.value = null
+            activeBookUri = null
             activeSession.sleepTimerJob?.cancel()
             activeSession.sleepTimerMinutes.value = 0
             activeSession.scope.cancel()
@@ -177,7 +179,7 @@ class TtsPlaybackService : MediaSessionService() {
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
-        binder.currentSession?.mediaSession
+        MediaSessionAccess.sessionFor(this, controllerInfo, binder.currentSession?.mediaSession)
 
     override fun onDestroy() {
         binder.closeSession()
@@ -194,6 +196,14 @@ class TtsPlaybackService : MediaSessionService() {
 
     companion object {
         const val SERVICE_INTERFACE = "pe.lee.app.ui.audio.TtsPlaybackService"
+
+        /**
+         * Book currently being narrated, if any. The reader reads it after a
+         * rotation to re-attach its TTS panel to a session that kept playing.
+         */
+        @Volatile
+        var activeBookUri: String? = null
+            private set
 
         /** Safety net: a stuck session must never keep the CPU awake forever. */
         private const val WAKE_LOCK_TIMEOUT_MS = 30L * 60L * 1000L

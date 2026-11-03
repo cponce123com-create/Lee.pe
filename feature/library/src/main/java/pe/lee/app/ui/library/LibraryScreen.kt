@@ -79,6 +79,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -158,11 +159,11 @@ fun LibraryScreen(
     }
     val collections = remember(storedCollections) { storedCollections.map { it.name } }
     val coroutineScope = rememberCoroutineScope()
-    val queryState = remember { mutableStateOf("") }
+    val queryState = rememberSaveable { mutableStateOf("") }
     var query by queryState
-    val selectedFilterState = remember { mutableStateOf(LibraryFilter.ALL) }
+    val selectedFilterState = rememberSaveable { mutableStateOf(LibraryFilter.ALL) }
     var selectedFilter by selectedFilterState
-    val selectedCollectionState = remember { mutableStateOf<String?>(null) }
+    val selectedCollectionState = rememberSaveable { mutableStateOf<String?>(null) }
     var selectedCollection by selectedCollectionState
     val collectionMenuExpandedState = remember { mutableStateOf(false) }
     var collectionMenuExpanded by collectionMenuExpandedState
@@ -199,7 +200,7 @@ fun LibraryScreen(
     var titleDraft by titleDraftState
     val sortMenuExpandedState = remember { mutableStateOf(false) }
     var sortMenuExpanded by sortMenuExpandedState
-    val sortModeState = remember { mutableStateOf(LibrarySortMode.TITLE_ASC) }
+    val sortModeState = rememberSaveable { mutableStateOf(LibrarySortMode.TITLE_ASC) }
     var sortMode by sortModeState
     val pendingMarkdownState = remember { mutableStateOf<String?>(null) }
     var pendingMarkdown by pendingMarkdownState
@@ -222,7 +223,7 @@ fun LibraryScreen(
     var scannerImporting by scannerImportingState
     val scannerFolderNameState = remember { mutableStateOf("Carpeta seleccionada") }
     var scannerFolderName by scannerFolderNameState
-    val listModeState = remember { mutableStateOf(false) }
+    val listModeState = rememberSaveable { mutableStateOf(false) }
     var listMode by listModeState
 
     LaunchedEffect(context, viewModel, settings) {

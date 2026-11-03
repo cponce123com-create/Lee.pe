@@ -50,6 +50,7 @@ import pe.lee.app.data.repository.AudioProgressStore
 
 class AudioPlayerActivity : ComponentActivity() {
     private var controllerFuture: ListenableFuture<MediaController>? = null
+    private var audioViewModel: AudioPlayerViewModel? = null
     private val controllerState = mutableStateOf<MediaController?>(null)
     private val connectionError = mutableStateOf<String?>(null)
     private val notificationPermission = registerForActivityResult(
@@ -66,6 +67,7 @@ class AudioPlayerActivity : ComponentActivity() {
         val container = (application as LeePeApplication).container
         val audioViewModel = ViewModelProvider(this, container.viewModelFactory)
             .get(AudioPlayerViewModel::class.java)
+        this.audioViewModel = audioViewModel
         val playbackUri = intent.getStringExtra(OfflineBookStore.EXTRA_COPY_URI)?.let(Uri::parse) ?: uri
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "Audiolibro"
         setContent {
@@ -124,6 +126,10 @@ class AudioPlayerActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        // Detach before releasing: the ViewModel survives rotation and must not
+        // keep polling a controller that is about to be released.
+        audioViewModel?.detach()
+        audioViewModel = null
         controllerFuture?.let { MediaController.releaseFuture(it) }
         controllerFuture = null
         controllerState.value = null

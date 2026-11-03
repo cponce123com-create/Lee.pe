@@ -3,6 +3,7 @@ package pe.lee.app.ui.reader
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
+import android.app.Application
 import android.view.ActionMode
 import android.view.Menu
 import android.view.MenuItem
@@ -22,6 +23,7 @@ import java.util.UUID
 import android.content.ClipData
 import android.content.ClipboardManager
 import pe.lee.app.data.repository.SettingsRepository
+import pe.lee.app.ui.audio.TtsPlaybackService
 import pe.lee.core.domain.ReaderAnnotation
 import pe.lee.feature.sharecard.navigation.ShareCardArgs
 import pe.lee.feature.sharecard.navigation.shareCardIntent
@@ -63,6 +65,24 @@ internal fun EpubReaderSessionEffects(
 
     DisposableEffect(Unit) {
         onDispose { session.ttsServiceBinding.value?.unbind() }
+    }
+
+    // The Readium Publication owns the EPUB container handles. Without closing it
+    // every rotation leaks a file descriptor and the whole archive. It is kept
+    // alive only while the TTS service is narrating this same book, because the
+    // media session holds the navigator built from this publication.
+    DisposableEffect(uri) {
+        onDispose {
+            val ttsOwnsPublication = session.ttsServiceBinding.value
+                ?.binder
+                ?.currentSession
+                ?.bookUri == uri.toString()
+            if (!ttsOwnsPublication) {
+                session.publication.value?.let { runCatching { it.close() } }
+                session.publication.value = null
+                session.navigator.value = null
+            }
+        }
     }
 
     // In immersion mode the book occupies the entire screen. System bars return
@@ -217,6 +237,29 @@ internal fun EpubReaderSessionEffects(
             session.navigator.value = epubNavigator
 
             session.loading.value = false
+
+            // A rotation recreates the composition while the TTS service keeps
+            // narrating. Re-attach the panel instead of leaving audio orphaned.
+            if (session.ttsServiceBinding.value == null &&
+                TtsPlaybackService.activeBookUri == uri.toString()
+            ) {
+                runCatching {
+                    TtsPlaybackService.bind(context.applicationContext as Application)
+                }.getOrNull()?.let { binding ->
+                    val existing = binding.binder.currentSession
+                    if (existing != null && existing.bookUri == uri.toString()) {
+                        session.ttsServiceBinding.value = binding
+                        session.ttsNavigator.value = existing.navigator
+                        session.ttsVoices.value = existing.navigator.voices
+                            .filter { it.isLocalSpanishVoice() }
+                            .sortedWith(compareBy({ it.language.toString() }, { it.id.value }))
+                        session.ttsIsPlaying.value =
+                            existing.navigator.playback.value.playWhenReady
+                    } else {
+                        binding.unbind()
+                    }
+                }
+            }
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
