@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Close
 import pe.lee.app.ui.reader.PdfReaderActivity
 import pe.lee.app.ui.reader.ReaderActivity
 import pe.lee.app.ui.audio.AudioPlayerActivity
@@ -656,7 +657,7 @@ fun LibraryScreen() {
         )
     }
 
-    val filters = listOf("Todos", "En curso", "Terminados", "Favoritos", "EPUB", "PDF", "Audio")
+    val filters = listOf("Todos", "Por leer", "En curso", "Terminados", "Favoritos", "EPUB", "PDF", "Audio", "Copia en Lee.pe")
     // Cache catalog calculations across unrelated UI recompositions (menus, dialogs,
     // stats updates, etc.). Everything stays on-device; no search API is required.
     val normalizedQuery = remember(query) { normalizedLibraryText(query) }
@@ -675,6 +676,8 @@ fun LibraryScreen() {
                 searchIndex[book.uri.toString()].orEmpty(), normalizedQuery
             )
             val matchesFilter = when (selectedFilter) {
+                "Por leer" -> book.format != "Audio" && book.readProgress <= 0f
+                "Copia en Lee.pe" -> book.offlineCopyUri != null
                 "En curso" -> book.format != "Audio" && book.readProgress > 0f && book.readProgress < 1f
                 "Terminados" -> book.format != "Audio" && book.readProgress >= 1f
                 "Favoritos" -> book.isFavorite
@@ -698,6 +701,8 @@ fun LibraryScreen() {
         when (sortMode) {
             "Última lectura" -> visibleBooks.sortedByDescending { it.lastOpenedAt ?: 0L }
             "Fecha de importación" -> visibleBooks.sortedByDescending { it.importedAt }
+            "Progreso" -> visibleBooks.sortedByDescending { it.readProgress }
+            "Título Z–A" -> visibleBooks.sortedWith(compareByDescending(String.CASE_INSENSITIVE_ORDER) { it.title })
             else -> visibleBooks.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
         }
     }
@@ -809,6 +814,15 @@ fun LibraryScreen() {
                         innerTextField()
                     }
                 )
+                if (query.isNotBlank()) {
+                    IconButton(onClick = { query = "" }) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Borrar búsqueda",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
         }
 
@@ -898,7 +912,7 @@ fun LibraryScreen() {
                         expanded = sortMenuExpanded,
                         onDismissRequest = { sortMenuExpanded = false }
                     ) {
-                        listOf("Título A–Z", "Última lectura", "Fecha de importación").forEach { option ->
+                        listOf("Título A–Z", "Título Z–A", "Última lectura", "Fecha de importación", "Progreso").forEach { option ->
                             DropdownMenuItem(
                                 text = { Text(option) },
                                 onClick = {
@@ -920,7 +934,7 @@ fun LibraryScreen() {
                 Column(modifier = Modifier.weight(1f)) {
                     Text("En este dispositivo", fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
                     Text(
-                        "${books.size} archivo${if (books.size == 1) "" else "s"} guardado${if (books.size == 1) "" else "s"}",
+                        "${books.size} archivo${if (books.size == 1) "" else "s"} · Mostrando ${orderedBooks.size}",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 13.sp
                     )
