@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import pe.lee.app.data.local.CollectionEntity
+import pe.lee.app.R
 import pe.lee.app.data.repository.SettingsRepository
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
