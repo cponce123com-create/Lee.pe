@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Lee.pe</string>
+    <string name="accessibility_leepe_logo">Lee.pe logo</string>
+    <string name="accessibility_reading_statistics">Reading statistics</string>
+    <string name="accessibility_library_more_options">More library options</string>
+    <string name="accessibility_view_grid">View book covers in a grid</string>
+    <string name="accessibility_view_list">View books in a list</string>
+    <string name="library_offline_tagline">Personal reader · Offline</string>
+    <string name="library_backup_restore">Backup and restore</string>
+    <string name="library_empty_welcome">Your next story starts here</string>
+    <string name="library_welcome">Your library, your way</string>
+    <string name="library_empty_prompt">Add books or scan a folder on your phone.</string>
+    <plurals name="library_books_count">
+        <item quantity="one">%1$d book in your library. Everything stays on your device.</item>
+        <item quantity="other">%1$d books in your library. Everything stays on your device.</item>
+    </plurals>
+    <string name="action_import">Import</string>
+    <string name="library_scanning">Scanning</string>
+    <string name="library_scan">Scan</string>
+</resources>
