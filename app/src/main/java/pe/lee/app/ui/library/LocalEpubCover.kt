@@ -119,7 +119,7 @@ internal fun LocalEpubCover(
             Image(
                 bitmap = cover!!.asImageBitmap(),
                 contentDescription = null, // parent's title describes the book
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize()
             )
         }
