@@ -849,35 +849,34 @@ fun LibraryScreen() {
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         storedCollections.forEachIndexed { index, collection ->
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    collection.name,
-                                    modifier = Modifier.weight(1f),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                TextButton(
-                                    enabled = index > 0,
-                                    onClick = { coroutineScope.launch { dao.moveCollection(collection.id, -1) } }
-                                ) { Text("↑") }
-                                TextButton(
-                                    enabled = index < storedCollections.lastIndex,
-                                    onClick = { coroutineScope.launch { dao.moveCollection(collection.id, 1) } }
-                                ) { Text("↓") }
-                                TextButton(
-                                    onClick = {
-                                        collectionBeingRenamed = collection
-                                        collectionRenameDraft = collection.name
-                                    }
-                                ) { Text("Renombrar") }
-                                TextButton(
-                                    onClick = {
-                                        coroutineScope.launch {
-                                            dao.deleteCollection(collection.id)
-                                            if (selectedCollection == collection.name) selectedCollection = null
+                            Column {
+                                Text(collection.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    TextButton(
+                                        enabled = index > 0,
+                                        onClick = { coroutineScope.launch { dao.moveCollection(collection.id, -1) } }
+                                    ) { Text("Subir") }
+                                    TextButton(
+                                        enabled = index < storedCollections.lastIndex,
+                                        onClick = { coroutineScope.launch { dao.moveCollection(collection.id, 1) } }
+                                    ) { Text("Bajar") }
+                                }
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    TextButton(
+                                        onClick = {
+                                            collectionBeingRenamed = collection
+                                            collectionRenameDraft = collection.name
                                         }
-                                    }
-                                ) { Text("Eliminar") }
+                                    ) { Text("Renombrar") }
+                                    TextButton(
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                dao.deleteCollection(collection.id)
+                                                if (selectedCollection == collection.name) selectedCollection = null
+                                            }
+                                        }
+                                    ) { Text("Eliminar") }
+                                }
                             }
                         }
                     }
