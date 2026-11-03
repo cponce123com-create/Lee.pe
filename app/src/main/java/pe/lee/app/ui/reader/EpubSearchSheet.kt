@@ -62,7 +62,7 @@ internal fun EpubSearchSheet(
     onSelectResult: (Locator) -> Unit
 ) {
     val searchScope = rememberCoroutineScope()
-        ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
