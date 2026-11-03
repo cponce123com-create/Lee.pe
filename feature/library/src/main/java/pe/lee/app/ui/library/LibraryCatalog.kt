@@ -18,9 +18,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -101,15 +104,20 @@ internal fun LibraryCatalog(
     // SAF grant was revoked, so ask first (A-39).
     val pendingOfflineCopyRemoval = remember { mutableStateOf<LocalBook?>(null) }
     Box(Modifier.fillMaxSize()) {
-    LazyColumn(
+    // A real grid with one lazy item per book: the previous row-of-two approach
+    // composed two cards per item, keyed by the first book of the row, so
+    // favouriting one book recomposed both and positions were unstable (A-40).
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(if (listMode.value) 1 else 2),
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item(key = "dashboard") {
+        item(key = "dashboard", span = { GridItemSpan(maxLineSpan) }) {
             LibraryDashboardHeader(
                 totalBooks = books.size,
                 busy = scannerBusy || scannerImporting,
@@ -122,7 +130,7 @@ internal fun LibraryCatalog(
             )
         }
 
-        item {
+        item(key = "search", span = { GridItemSpan(maxLineSpan) }) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -160,7 +168,7 @@ internal fun LibraryCatalog(
         }
 
         if (continueBooks.isNotEmpty()) {
-            item {
+            item(key = "resume", span = { GridItemSpan(maxLineSpan) }) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
@@ -191,7 +199,7 @@ internal fun LibraryCatalog(
             }
         }
 
-        item(key = "filters") {
+        item(key = "filters", span = { GridItemSpan(maxLineSpan) }) {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(LibraryFilter.entries, key = { it.name }) { filter ->
                     FilterChip(
@@ -204,7 +212,7 @@ internal fun LibraryCatalog(
         }
 
         if (collections.isNotEmpty()) {
-            item {
+            item(key = "collections", span = { GridItemSpan(maxLineSpan) }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.library_collection), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
                     Box {
@@ -244,7 +252,7 @@ internal fun LibraryCatalog(
             }
         }
 
-        item(key = "viewControls") {
+        item(key = "viewControls", span = { GridItemSpan(maxLineSpan) }) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -276,7 +284,7 @@ internal fun LibraryCatalog(
             }
         }
 
-        item {
+        item(key = "onDevice", span = { GridItemSpan(maxLineSpan) }) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -298,30 +306,22 @@ internal fun LibraryCatalog(
         }
 
         if (visibleBooks.isEmpty()) {
-            item {
+            item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
                 EmptyLibraryCard(
                     hasBooks = books.isNotEmpty(),
                     onImport = { onImport() }
                 )
             }
         } else {
-            items(
-                count = if (listMode.value) orderedBooks.size else (orderedBooks.size + 1) / 2,
-                key = { row -> orderedBooks[if (listMode.value) row else row * 2].uri.toString() }
-            ) { rowIndex ->
-                val first = if (listMode.value) rowIndex else rowIndex * 2
-                val rowBooks = orderedBooks.subList(
-                    first, minOf(first + if (listMode.value) 1 else 2, orderedBooks.size)
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    rowBooks.forEach { book ->
+            gridItems(
+                items = orderedBooks,
+                key = { it.id },
+                contentType = { "book" }
+            ) { book ->
                         BookCard(
                             book = book,
                             savingBookUri = savingBookUri.value,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.fillMaxWidth(),
                             compact = listMode.value,
                             onOpen = { onOpen(book) },
                             onRemove = { pendingRemoval.value = book },
@@ -384,12 +384,9 @@ internal fun LibraryCatalog(
                             }
                         )
                     }
-                    if (!listMode.value && rowBooks.size == 1) Spacer(Modifier.weight(1f))
-                }
-            }
         }
 
-        item {
+        item(key = "privacy", span = { GridItemSpan(maxLineSpan) }) {
             Text(
                 stringResource(R.string.library_local_privacy_note),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
