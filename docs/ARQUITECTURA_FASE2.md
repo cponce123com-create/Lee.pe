@@ -15,13 +15,16 @@ Lee.pe usa inyección manual por constructor. La app tiene una sola base local y
 - Las preferencias se leen y escriben mediante `SettingsRepository`; su implementación conserva las preferencias antiguas para no exigir una migración de datos.
 - La biblioteca se dividió entre `LibraryScreen.kt`, `LibraryCatalog.kt`, `LibraryProcessDialogs.kt`, `LibraryManagementDialogs.kt`, `LibraryStatisticsDialogs.kt`, `LibraryDocumentActions.kt`, `LibraryFileOperations.kt`, `LibraryResumeCards.kt` y `LibraryBookCards.kt`. El lector EPUB separa la actividad, Chrome, controles, búsqueda y hojas de anotaciones. El lector PDF separa actividad host, visor, controles, diálogos, estado de pantalla, estado de diálogos y búsqueda de texto.
 
-## Criterios que faltan antes de cerrar esta fase
+## Verificación automatizada
 
-- Compilar y ejecutar lint/pruebas para confirmar que los componentes extraídos preservan el comportamiento. La división de archivos ya cumple el límite aproximado de 400 líneas.
-- Ejecutar `lintDebug`, `testDebugUnitTest` y `assembleDebug` con la versión de Gradle fijada por el repositorio.
-- Comprobar en dispositivo que la navegación, importación, lectura, anotaciones, audio y restauración de preferencias mantienen el comportamiento previo.
+- GitHub Actions, ejecución #94: correcta en `lintDebug`, `testDebugUnitTest`, `assembleDebug` y `connectedDebugAndroidTest` sobre emulador Android 35.
+- Las pruebas instrumentadas de migración y limpieza de datos compilaron y pasaron en el emulador API 35.
+- El artefacto `lee-pe-debug` se generó correctamente y queda disponible en la ejecución hasta el 17 de noviembre de 2026.
+- `git diff --check` pasa. La compilación local no pudo ejecutarse porque el entorno no pudo descargar Gradle 9.5.0 (`Network is unreachable`); el build de GitHub Actions es la verificación reproducible.
 
-La fase no se considera completada mientras la compilación, lint/pruebas y verificación de comportamiento sigan pendientes.
+## Validación manual pendiente
+
+La compilación automatizada no sustituye probar la experiencia de lectura en un teléfono real. Antes de cerrar esta fase faltan los flujos manuales enumerados abajo, especialmente restauración de ubicación, audio con pantalla bloqueada y rotación.
 
 ## Avance de revisión (3 de noviembre de 2026)
 
@@ -29,7 +32,8 @@ La fase no se considera completada mientras la compilación, lint/pruebas y veri
 - `LibraryScreen.kt` tiene 399 líneas y la biblioteca está dividida entre los componentes y acciones locales descritos arriba.
 - `PdfReaderActivity.kt` quedó en 354 líneas. `PdfPageViewport.kt`, `PdfReaderControls.kt`, `PdfReaderDialogs.kt`, `PdfReaderScreenState.kt`, `PdfReaderDialogsState.kt` y `PdfTextSearch.kt` separan visor, controles, paneles, estado y búsqueda. Todos los archivos Kotlin bajo `ui/` tienen 400 líneas o menos.
 - La búsqueda estática de `getSharedPreferences`, llamadas DAO y accesos directos a `LeeDatabase` bajo `app/src/main/java/pe/lee/app/ui` no encontró coincidencias. Esto no reemplaza la compilación.
-- `git diff --check` pasa. `./gradlew :app:compileDebugKotlin` no llegó a ejecutar Gradle: el wrapper intentó descargar Gradle 9.5.0 y el entorno rechazó la conexión (`Network is unreachable`). No se encontró una instalación local de Gradle/Kotlin ni una distribución o compilador en caché; compilación, lint, tests y verificación de comportamiento quedan pendientes.
+- La ejecución #94 de GitHub Actions pasó `lintDebug`, `testDebugUnitTest`, `assembleDebug` y `connectedDebugAndroidTest` en emulador API 35. El APK quedó publicado como artefacto `lee-pe-debug`.
+- La comprobación local no inició Gradle porque el wrapper intentó descargar Gradle 9.5.0 y el entorno rechazó la conexión (`Network is unreachable`).
 
 ## Validación pendiente en dispositivo
 
@@ -43,4 +47,4 @@ Ejecutar y registrar el resultado de estas pruebas antes de cerrar Fase 2:
 - Reproducir audio, pausar, buscar, cambiar velocidad, salir y volver a abrirlo; confirmar que no queden notificaciones ni controladores activos después de cerrar.
 - Probar lector EPUB, PDF y audio en rotación de pantalla y tras volver desde otra aplicación.
 
-La separación del ViewModel de audio también cancela el sondeo anterior al volver a asociar el controlador y evita emitir el mismo estado de posición si no cambió. Este ajuste requiere compilación y prueba de reproducción antes de considerarse validado.
+La separación del ViewModel de audio también cancela el sondeo anterior al volver a asociar el controlador y evita emitir el mismo estado de posición si no cambió. La compilación quedó validada por CI; la reproducción, el control de audio y el ciclo de vida todavía requieren prueba manual en dispositivo.
