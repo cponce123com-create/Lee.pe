@@ -87,6 +87,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
+import android.widget.Toast
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
@@ -482,7 +484,7 @@ private fun EpubReaderScreen(
         binder.session.collect { session ->
             if (session?.bookUri == uri.toString()) {
                 ttsNavigator = session.navigator
-                ttsVoices = session.navigator.voices.filterNot { it.requiresNetwork }
+                ttsVoices = session.navigator.voices.filter { it.isLocalSpanishVoice() }
                     .sortedWith(compareBy({ it.language.toString() }, { it.id.value }))
                 ttsIsPlaying = session.navigator.playback.value.playWhenReady
             } else {
@@ -575,7 +577,7 @@ private fun EpubReaderScreen(
             val existing = binder.currentSession
             if (existing?.bookUri == uri.toString()) {
                 ttsNavigator = existing.navigator
-                ttsVoices = existing.navigator.voices.filterNot { it.requiresNetwork }
+                ttsVoices = existing.navigator.voices.filter { it.isLocalSpanishVoice() }
                     .sortedWith(compareBy({ it.language.toString() }, { it.id.value }))
                 if (!existing.navigator.playback.value.playWhenReady) existing.navigator.play()
                 return@launch
@@ -611,7 +613,7 @@ private fun EpubReaderScreen(
                 return@launch
             }
             val localVoices = speech.voices
-                .filterNot { it.requiresNetwork }
+                .filter { it.isLocalSpanishVoice() }
                 .sortedWith(compareBy({ it.language.toString() }, { it.id.value }))
             ttsVoices = localVoices
             val savedVoice = ttsSelectedVoiceId?.let { id ->
@@ -853,6 +855,7 @@ private fun TtsControls(
     onStop: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val speeds = listOf(0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
     var voiceMenuExpanded by remember { mutableStateOf(false) }
     val selectedVoice = voices.firstOrNull { it.id.value == selectedVoiceId }
@@ -884,14 +887,14 @@ private fun TtsControls(
                 }) { Text("${speed}x") }
                 Box {
                     TextButton(onClick = { voiceMenuExpanded = true }) {
-                        Text(selectedVoice?.language?.toString() ?: "Voz")
+                        Text(selectedVoice?.let(::spanishVoiceLabel) ?: "Español")
                     }
                     DropdownMenu(
                         expanded = voiceMenuExpanded,
                         onDismissRequest = { voiceMenuExpanded = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Automática") },
+                            text = { Text("Automática (español)") },
                             onClick = {
                                 onVoiceChange(null)
                                 voiceMenuExpanded = false
@@ -899,14 +902,14 @@ private fun TtsControls(
                         )
                         if (voices.isEmpty()) {
                             DropdownMenuItem(
-                                text = { Text("No hay voces locales instaladas") },
+                                text = { Text("No hay voces locales en español") },
                                 enabled = false,
                                 onClick = {}
                             )
                         } else {
                             voices.forEach { voice ->
                                 DropdownMenuItem(
-                                    text = { Text("${voice.language} · ${voice.id.value}") },
+                                    text = { Text("${spanishVoiceLabel(voice)} · ${voice.id.value}") },
                                     onClick = {
                                         onVoiceChange(voice)
                                         voiceMenuExpanded = false
@@ -914,6 +917,23 @@ private fun TtsControls(
                                 )
                             }
                         }
+                        DropdownMenuItem(
+                            text = { Text("Gestionar voces del dispositivo") },
+                            onClick = {
+                                voiceMenuExpanded = false
+                                try {
+                                    context.startActivity(
+                                        Intent(android.speech.tts.TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA)
+                                    )
+                                } catch (_: Exception) {
+                                    Toast.makeText(
+                                        context,
+                                        "Busca Español (México) en Ajustes > Accesibilidad > Salida de texto a voz.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            }
+                        )
                     }
                 }
                 TextButton(onClick = onTimerChange) {
@@ -1676,6 +1696,26 @@ private const val NAVIGATOR_TAG = "lee_pe_epub_navigator"
 private const val MENU_HIGHLIGHT = 1
 private const val MENU_COPY_SELECTION = 2
 private const val ANNOTATION_DECORATION_GROUP = "lee_pe_annotations"
+private fun AndroidTtsEngine.Voice.isLocalSpanishVoice(): Boolean {
+    if (requiresNetwork) return false
+    val languageCode = language.toString()
+        .substringBefore('-')
+        .substringBefore('_')
+    return languageCode.equals("es", ignoreCase = true)
+}
+
+private fun spanishVoiceLabel(voice: AndroidTtsEngine.Voice): String {
+    val tag = voice.language.toString().uppercase()
+    return when {
+        tag.contains("MX") -> "Español (México)"
+        tag.contains("ES") -> "Español (España)"
+        tag.contains("AR") -> "Español (Argentina)"
+        tag.contains("CO") -> "Español (Colombia)"
+        tag.contains("US") -> "Español (Estados Unidos)"
+        else -> "Español"
+    }
+}
+
 private const val TTS_DECORATION_GROUP = "lee_pe_tts"
 private fun ttsSpeedPreferenceKey(uri: Uri): String = "tts-speed:$uri"
 private fun ttsVoicePreferenceKey(uri: Uri): String = "tts-voice:$uri"

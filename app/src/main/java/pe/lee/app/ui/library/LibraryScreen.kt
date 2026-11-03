@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -22,6 +23,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -84,6 +88,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CancellationException
@@ -201,6 +206,9 @@ fun LibraryScreen() {
 
     LaunchedEffect(context, dao) {
         migrateLegacyLibrary(context, dao)
+        if (!BundledWelcomeBook.installIfNeeded(context, dao)) {
+            Toast.makeText(context, "No se pudo añadir la guía de bienvenida", Toast.LENGTH_LONG).show()
+        }
     }
 
     val exportAnnotationsLauncher = rememberLauncherForActivityResult(
@@ -860,6 +868,7 @@ fun LibraryScreen() {
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .windowInsetsPadding(WindowInsets.safeDrawing)
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -927,9 +936,18 @@ fun LibraryScreen() {
                         }
                         Text("${continueBooks.size}", color = MaterialTheme.colorScheme.secondary)
                     }
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(continueBooks, key = { it.uri.toString() }) { book ->
-                            ContinueReadingCard(book = book, wide = continueBooks.size == 1, onOpen = { openBook(context, book) })
+                    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                        val singleBook = continueBooks.size == 1
+                        val resumeCardWidth = if (singleBook) maxWidth else 232.dp
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            items(continueBooks, key = { it.uri.toString() }) { book ->
+                                ContinueReadingCard(
+                                    book = book,
+                                    wide = singleBook,
+                                    cardWidth = resumeCardWidth,
+                                    onOpen = { openBook(context, book) }
+                                )
+                            }
                         }
                     }
                 }
@@ -1143,11 +1161,10 @@ fun LibraryScreen() {
 }
 
 @Composable
-private fun ContinueReadingCard(book: LocalBook, wide: Boolean, onOpen: () -> Unit) {
+private fun ContinueReadingCard(book: LocalBook, wide: Boolean, cardWidth: Dp, onOpen: () -> Unit) {
     val progress = book.readProgress.coerceIn(0f, 1f)
-    val cardWidth = if (wide) Modifier.fillMaxWidth() else Modifier.width(232.dp)
     Card(
-        modifier = cardWidth.clickable(onClickLabel = "Continuar ${book.title}", onClick = onOpen),
+        modifier = Modifier.width(cardWidth).clickable(onClickLabel = "Continuar ${book.title}", onClick = onOpen),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
