@@ -2,8 +2,8 @@ package pe.lee.app.ui.library
 
 import android.content.Context
 import android.net.Uri
-import pe.lee.app.data.local.BookDao
 import pe.lee.app.data.local.BookEntity
+import pe.lee.app.data.repository.SettingsRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,13 +16,16 @@ import java.io.IOException
  */
 internal object BundledWelcomeBook {
     private const val ASSET_NAME = "el-tesoro-de-los-incas.epub"
-    private const val PREFS_NAME = "lee_pe_bundled_book"
     private const val SEEDED_KEY = "treasure_book_added"
 
-    suspend fun installIfNeeded(context: Context, dao: BookDao): Boolean {
+    suspend fun installIfNeeded(
+        context: Context,
+        settings: SettingsRepository,
+        findBook: suspend (String) -> BookEntity?,
+        insertBook: suspend (BookEntity) -> Unit
+    ): Boolean {
         val appContext = context.applicationContext
-        val preferences = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        if (preferences.getBoolean(SEEDED_KEY, false)) return true
+        if (settings.getBoolean(SettingsRepository.Store.BUNDLED_BOOK, SEEDED_KEY, false)) return true
 
         return try {
             withContext(Dispatchers.IO) {
@@ -44,8 +47,8 @@ internal object BundledWelcomeBook {
                 }
 
                 val bookUri = Uri.fromFile(bookFile).toString()
-                if (dao.findByUri(bookUri) == null) {
-                    dao.insert(
+                if (findBook(bookUri) == null) {
+                    insertBook(
                         BookEntity(
                             uri = bookUri,
                             title = "El tesoro de los Incas — Emilio Salgari",
@@ -55,7 +58,7 @@ internal object BundledWelcomeBook {
                     )
                 }
             }
-            preferences.edit().putBoolean(SEEDED_KEY, true).apply()
+            settings.apply(SettingsRepository.Store.BUNDLED_BOOK) { putBoolean(SEEDED_KEY, true) }
             true
         } catch (cancelled: CancellationException) {
             throw cancelled

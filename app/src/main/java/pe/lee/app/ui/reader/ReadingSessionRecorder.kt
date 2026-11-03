@@ -9,7 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import pe.lee.app.data.local.ReadingSessionDao
+import pe.lee.app.data.repository.ReadingStatsRepository
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 internal class ReadingSessionRecorder(
     private val bookUri: String,
-    private val dao: ReadingSessionDao
+    private val repository: ReadingStatsRepository
 ) {
     // Each reader owns its short-lived persistence scope; there is no process-wide scope.
     private val persistenceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -78,7 +78,7 @@ internal class ReadingSessionRecorder(
         persistenceScope.launch {
             try {
                 dailyDurations.forEach { (dayKey, daySeconds) ->
-                    runCatching { dao.addDuration(dayKey, bookUri, daySeconds) }
+                    runCatching { repository.addDuration(dayKey, bookUri, daySeconds) }
                         .onFailure { Log.w(TAG, "Could not save local reading time", it) }
                 }
             } finally {

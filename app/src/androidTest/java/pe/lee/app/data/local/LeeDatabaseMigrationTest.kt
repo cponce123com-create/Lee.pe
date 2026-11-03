@@ -8,6 +8,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.runBlocking
 import pe.lee.app.ui.audio.AudioProgressStore
 import pe.lee.app.ui.library.DeletedBookCleanup
+import pe.lee.app.data.repository.SettingsRepository
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -91,7 +92,12 @@ class LeeDatabaseMigrationTest {
             assertEquals(listOf(TEST_URI), database.bookDao().pendingBookCleanupUris())
 
             offlineDirectory.writeText("simulated storage cleanup failure")
-            assertEquals(false, DeletedBookCleanup.complete(context, database.bookDao(), TEST_URI))
+            assertEquals(
+                false,
+                DeletedBookCleanup.complete(context, TEST_URI, SettingsRepository(context)) { uri ->
+                    database.bookDao().completeBookCleanup(uri)
+                }
+            )
             assertEquals(listOf(TEST_URI), database.bookDao().pendingBookCleanupUris())
             assertEquals(true, libraryPreferences.contains(preferenceKey))
             assertEquals(12_000L, AudioProgressStore.get(context, TEST_URI))
@@ -100,7 +106,12 @@ class LeeDatabaseMigrationTest {
             assertEquals(true, offlineDirectory.mkdirs())
             val offlineCopy = File(offlineDirectory, "${sha256(TEST_URI)}.epub")
             offlineCopy.writeText("test copy")
-            assertEquals(true, DeletedBookCleanup.complete(context, database.bookDao(), TEST_URI))
+            assertEquals(
+                true,
+                DeletedBookCleanup.complete(context, TEST_URI, SettingsRepository(context)) { uri ->
+                    database.bookDao().completeBookCleanup(uri)
+                }
+            )
             assertFalse(offlineCopy.exists())
             assertFalse(libraryPreferences.contains(preferenceKey))
             assertEquals(0L, AudioProgressStore.get(context, TEST_URI))

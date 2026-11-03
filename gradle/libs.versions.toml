@@ -9,6 +9,7 @@ room = "3.0.3"
 ksp = "2.3.10"
 desugarJdkLibs = "2.1.5"
 media3 = "1.11.1"
+lifecycle = "2.9.4"
 
 [libraries]
 room3-runtime = { group = "androidx.room3", name = "room3-runtime", version.ref = "room" }
@@ -27,6 +28,7 @@ readium-navigator-media-tts = { group = "org.readium.kotlin-toolkit", name = "re
 desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugarJdkLibs" }
 media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "media3" }
 media3-session = { group = "androidx.media3", name = "media3-session", version.ref = "media3" }
+lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -7,12 +7,13 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import pe.lee.app.data.local.BookEntity
-import pe.lee.app.data.local.LeeDatabase
 import pe.lee.app.data.local.LocalBackupMergeReport
 import pe.lee.app.data.local.LocalBackupSnapshot
 import pe.lee.app.data.local.ReadingAnnotationEntity
 import pe.lee.app.data.local.ReadingSessionEntity
 import pe.lee.app.data.local.LocalBackupMatcher
+import pe.lee.app.data.repository.SettingsRepository
+import pe.lee.app.LeePeApplication
 import pe.lee.app.ui.audio.AudioProgressStore
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -23,8 +24,6 @@ private const val MAX_ARCHIVE_BYTES = 16 * 1024 * 1024
 private const val MAX_BOOKS = 20000
 private const val MAX_ANNOTATIONS = 60000
 private const val MAX_SESSIONS = 100000
-private const val PREFS_LIBRARY = "lee_pe_library"
-private const val PREFS_STATS = "lee_pe_reading_stats"
 
 internal data class LocalBackupArchive(
     val snapshot: LocalBackupSnapshot,
@@ -41,10 +40,11 @@ internal data class LocalBackupPreview(
 
 internal object LocalLibraryBackup {
     suspend fun save(context: Context, uri: Uri) = withContext(Dispatchers.IO) {
-        val snapshot = LeeDatabase.get(context).localBackupDao().snapshot()
-        val prefs = context.getSharedPreferences(PREFS_LIBRARY, Context.MODE_PRIVATE)
-        val goal = context.getSharedPreferences(PREFS_STATS, Context.MODE_PRIVATE)
-            .getInt("daily_goal_minutes", 30)
+        val backupRepository = (context.applicationContext as LeePeApplication).container.backup
+        val snapshot = backupRepository.snapshot()
+        val settingsRepository = SettingsRepository(context)
+        val librarySettings = settingsRepository.all(SettingsRepository.Store.LIBRARY)
+        val goal = settingsRepository.getInt(SettingsRepository.Store.READING_STATS, "daily_goal_minutes", 30)
         val root = JSONObject()
             .put("schema", BACKUP_SCHEMA)
             .put("version", BACKUP_VERSION)
@@ -66,7 +66,9 @@ internal object LocalLibraryBackup {
             for (key in listOf("epub-preferences:", "reader-brightness:", "keep-screen-on:",
                 "tts-speed:", "tts-voice:", "pdf-continuous:")) {
                 val source = key + b.uri
-                if (prefs.contains(source)) extras.put(key, prefs.all[source])
+                if (settingsRepository.contains(SettingsRepository.Store.LIBRARY, source)) {
+                    extras.put(key, librarySettings[source])
+                }
             }
             if (b.format == "Audio") {
                 extras.put("audioPositionMs", AudioProgressStore.get(context, b.uri))
@@ -111,7 +113,8 @@ internal object LocalLibraryBackup {
             }
         }
         val archive = parse(buffer.toString(Charsets.UTF_8.name()))
-        val current = LeeDatabase.get(context).localBackupDao().allBooks()
+        val backupRepository = (context.applicationContext as LeePeApplication).container.backup
+        val current = backupRepository.allBooks()
         val matcher = LocalBackupMatcher(current)
         val used = HashSet<String>()
         var exact = 0
@@ -127,33 +130,36 @@ internal object LocalLibraryBackup {
 
     suspend fun restore(context: Context, preview: LocalBackupPreview): LocalBackupMergeReport =
         withContext(Dispatchers.IO) {
-            val report = LeeDatabase.get(context).localBackupDao().merge(preview.archive.snapshot)
-            val prefs = context.getSharedPreferences(PREFS_LIBRARY, Context.MODE_PRIVATE)
-            val editor = prefs.edit()
+            val backupRepository = (context.applicationContext as LeePeApplication).container.backup
+            val report = backupRepository.merge(preview.archive.snapshot)
+            val settingsRepository = SettingsRepository(context)
+            val currentSettings = settingsRepository.all(SettingsRepository.Store.LIBRARY)
+            val restoredBooks = backupRepository.allBooks()
+            settingsRepository.apply(SettingsRepository.Store.LIBRARY) {
             for ((backupUri, localUri) in report.uriMap) {
                 val settings = preview.archive.settings[backupUri] ?: continue
                 fun setIfAbsent(key: String, write: () -> Unit) {
-                    if (!prefs.contains(key + localUri) && settings.has(key) && !settings.isNull(key)) {
+                    if (key + localUri !in currentSettings && settings.has(key) && !settings.isNull(key)) {
                         write()
                     }
                 }
                 setIfAbsent("epub-preferences:") {
-                    editor.putString("epub-preferences:$localUri", settings.getString("epub-preferences:"))
+                    putString("epub-preferences:$localUri", settings.getString("epub-preferences:"))
                 }
                 setIfAbsent("reader-brightness:") {
-                    editor.putFloat("reader-brightness:$localUri", settings.getDouble("reader-brightness:").toFloat().coerceIn(-1f, 1f))
+                    putFloat("reader-brightness:$localUri", settings.getDouble("reader-brightness:").toFloat().coerceIn(-1f, 1f))
                 }
                 setIfAbsent("keep-screen-on:") {
-                    editor.putBoolean("keep-screen-on:$localUri", settings.getBoolean("keep-screen-on:"))
+                    putBoolean("keep-screen-on:$localUri", settings.getBoolean("keep-screen-on:"))
                 }
                 setIfAbsent("tts-speed:") {
-                    editor.putFloat("tts-speed:$localUri", settings.getDouble("tts-speed:").toFloat().coerceIn(0.5f, 2f))
+                    putFloat("tts-speed:$localUri", settings.getDouble("tts-speed:").toFloat().coerceIn(0.5f, 2f))
                 }
                 setIfAbsent("tts-voice:") {
-                    editor.putString("tts-voice:$localUri", settings.getString("tts-voice:"))
+                    putString("tts-voice:$localUri", settings.getString("tts-voice:"))
                 }
                 setIfAbsent("pdf-continuous:") {
-                    editor.putBoolean("pdf-continuous:$localUri", settings.getBoolean("pdf-continuous:"))
+                    putBoolean("pdf-continuous:$localUri", settings.getBoolean("pdf-continuous:"))
                 }
                 if (settings.has("audioPositionMs") && AudioProgressStore.get(context, localUri) == 0L) {
                     AudioProgressStore.put(context, localUri, settings.getLong("audioPositionMs").coerceAtLeast(0L))
@@ -161,17 +167,17 @@ internal object LocalLibraryBackup {
             }
             // PDF activity uses this legacy key first. Align it to Room's actual
             // post-merge position, not blindly to a possibly older backup.
-            val restoredBooks = LeeDatabase.get(context).localBackupDao().allBooks()
             for (book in restoredBooks) {
                 if (book.uri in report.uriMap.values && book.format == "PDF") {
-                    editor.putInt("pdf-page:${book.uri}", book.pdfPageIndex)
+                    putInt("pdf-page:${book.uri}", book.pdfPageIndex)
                 }
             }
-            editor.apply()
+            }
             preview.archive.dailyGoalMinutes?.let { goal ->
-                val stats = context.getSharedPreferences(PREFS_STATS, Context.MODE_PRIVATE)
-                if (!stats.contains("daily_goal_minutes")) {
-                    stats.edit().putInt("daily_goal_minutes", goal.coerceIn(5, 240)).apply()
+                if (!settingsRepository.contains(SettingsRepository.Store.READING_STATS, "daily_goal_minutes")) {
+                    settingsRepository.apply(SettingsRepository.Store.READING_STATS) {
+                        putInt("daily_goal_minutes", goal.coerceIn(5, 240))
+                    }
                 }
             }
             report
