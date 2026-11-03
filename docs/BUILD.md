@@ -51,6 +51,28 @@ export GRADLE_OPTS="-Duser.home=/ruta/escribible"
 
 Además, si hay un proxy corporativo con inspección TLS (por ejemplo Kaspersky), el JDK no confía en su CA raíz aunque Windows sí: importar el certificado en `$JAVA_HOME/lib/security/cacerts` con `keytool -importcert -alias proxy`.
 
+## Release
+
+La versión se toma de `version.properties` (`versionCode`, `versionName`). La firma
+se configura por entorno, nunca en el repositorio:
+
+```bash
+export LEE_PE_KEYSTORE=/ruta/a/release.jks
+export LEE_PE_KEYSTORE_PASSWORD=...
+export LEE_PE_KEY_ALIAS=...
+export LEE_PE_KEY_PASSWORD=...
+
+./gradlew bundleRelease     # AAB firmado (Play)
+./gradlew assembleRelease   # APK firmado (pruebas de humo)
+```
+
+Sin esas variables el release se genera **sin firmar**: sirve para validar R8 y
+medir tamaño en CI, pero no para publicar. El workflow `release.yml` compila el
+AAB en tags `v*` o a mano (`workflow_dispatch`).
+
+Tamaños medidos el 3 de noviembre de 2026: APK de release **6,4 MB**, AAB **11,8 MB**
+frente a **31,8 MB** del APK de depuración.
+
 ## Resultado esperado
 
 ```
