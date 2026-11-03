@@ -26,7 +26,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -36,7 +35,6 @@ import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
 import pe.lee.app.ui.theme.LeePeTheme
 import pe.lee.feature.sharecard.R
 import pe.lee.feature.sharecard.domain.model.QuoteCardFormat
@@ -54,7 +52,6 @@ fun ShareCardScreen(
     LeePeTheme {
         val state by viewModel.state.collectAsState()
         val layer = rememberGraphicsLayer()
-        val scope = rememberCoroutineScope()
         var editingQuote by remember { mutableStateOf(false) }
         val storyFormat = state.card.format == QuoteCardFormat.STORY
 
@@ -137,9 +134,9 @@ fun ShareCardScreen(
                 Button(
                     enabled = state.card.text.isNotBlank() && state.status !is ShareCardStatus.Generating,
                     onClick = {
-                        scope.launch {
+                        viewModel.shareCapturedImage {
                             withFrameNanos { }
-                            viewModel.shareCapturedImage(layer.toImageBitmap())
+                            layer.toImageBitmap()
                         }
                     },
                     modifier = Modifier.fillMaxWidth()

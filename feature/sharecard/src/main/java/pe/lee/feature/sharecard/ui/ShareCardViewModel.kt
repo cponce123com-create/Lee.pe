@@ -43,55 +43,46 @@ class ShareCardViewModel(
     val state = mutableState.asStateFlow()
 
     /** Replaces the quote displayed on the card. */
-    fun updateText(text: String) = mutableState.update { it.copy(card = it.card.copy(text = text), status = ShareCardStatus.Idle) }
+    fun updateText(text: String) = mutableState.update { if (it.status == ShareCardStatus.Generating) it else it.copy(card = it.card.copy(text = text), status = ShareCardStatus.Idle) }
 
     /** Updates the book title printed in the card footer. */
-    fun updateBookTitle(title: String) = mutableState.update { it.copy(card = it.card.copy(bookTitle = title), status = ShareCardStatus.Idle) }
+    fun updateBookTitle(title: String) = mutableState.update { if (it.status == ShareCardStatus.Generating) it else it.copy(card = it.card.copy(bookTitle = title), status = ShareCardStatus.Idle) }
 
     /** Updates the author printed in the card footer. */
-    fun updateAuthor(author: String) = mutableState.update { it.copy(card = it.card.copy(author = author), status = ShareCardStatus.Idle) }
+    fun updateAuthor(author: String) = mutableState.update { if (it.status == ShareCardStatus.Generating) it else it.copy(card = it.card.copy(author = author), status = ShareCardStatus.Idle) }
 
     /** Selects the visual theme used by both preview and exported image. */
     fun selectTheme(theme: pe.lee.feature.sharecard.domain.model.QuoteCardThemeId) =
-        mutableState.update { it.copy(card = it.card.copy(themeId = theme), status = ShareCardStatus.Idle) }
+        mutableState.update { if (it.status == ShareCardStatus.Generating) it else it.copy(card = it.card.copy(themeId = theme), status = ShareCardStatus.Idle) }
 
     /** Selects the story or square image proportions. */
     fun selectFormat(format: pe.lee.feature.sharecard.domain.model.QuoteCardFormat) =
-        mutableState.update { it.copy(card = it.card.copy(format = format), status = ShareCardStatus.Idle) }
+        mutableState.update { if (it.status == ShareCardStatus.Generating) it else it.copy(card = it.card.copy(format = format), status = ShareCardStatus.Idle) }
 
-    /** Captures the on-screen card, encodes it off the main thread, and opens the share sheet. */
-    fun shareCapturedImage(image: ImageBitmap) {
-        viewModelScope.launch {
-            val card = mutableState.value.card
-            if (card.text.isBlank()) return@launch
-            mutableState.update { it.copy(status = ShareCardStatus.Generating) }
-            try {
-                val raster = withContext(workerDispatcher) {
-                    val pixels = image.toPixelMap()
-                    val argb = IntArray(image.width * image.height) { index ->
-                        pixels[index % image.width, index / image.width].toArgb()
-                    }
-                    QuoteCardRaster(image.width, image.height, argb)
-                }
-                generateAndShare(card, raster)
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (_: Exception) {
-                mutableState.update {
-                    it.copy(status = ShareCardStatus.Error(SHARE_CARD_ERROR_MESSAGE))
-                }
+    /** Captures on the UI thread; converts pixels and encodes off the UI thread. */
+    fun shareCapturedImage(capture: suspend () -> ImageBitmap) = startSharing {
+        val image = capture()
+        withContext(workerDispatcher) {
+            val pixels = image.toPixelMap()
+            val argb = IntArray(image.width * image.height) { index ->
+                pixels[index % image.width, index / image.width].toArgb()
             }
+            QuoteCardRaster(image.width, image.height, argb)
         }
     }
 
-    internal fun shareRasterForTest(raster: QuoteCardRaster) {
+    internal fun shareRasterForTest(raster: QuoteCardRaster) = startSharing { raster }
+
+    private fun startSharing(capture: suspend () -> QuoteCardRaster) {
+        val current = mutableState.value
+        if (current.card.text.isBlank() || current.status == ShareCardStatus.Generating) return
+        // Reserve synchronously, before launch, so rapid taps cannot enqueue duplicate exports.
+        if (!mutableState.compareAndSet(current, current.copy(status = ShareCardStatus.Generating))) return
         viewModelScope.launch {
-            val card = mutableState.value.card
-            if (card.text.isBlank()) return@launch
-            mutableState.update { it.copy(status = ShareCardStatus.Generating) }
             try {
-                generateAndShare(card, raster)
+                generateAndShare(current.card, capture())
             } catch (cancelled: CancellationException) {
+                mutableState.update { it.copy(status = ShareCardStatus.Idle) }
                 throw cancelled
             } catch (_: Exception) {
                 mutableState.update {

@@ -3,7 +3,6 @@ package pe.lee.feature.sharecard.ui
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -16,7 +15,6 @@ import pe.lee.feature.sharecard.domain.ShareCardSharer
 import pe.lee.feature.sharecard.domain.model.QuoteCard
 import pe.lee.feature.sharecard.domain.model.QuoteCardThemeId
 import pe.lee.feature.sharecard.domain.model.QuoteCardRaster
-import pe.lee.feature.sharecard.ui.ShareCardStatus
 import java.util.concurrent.atomic.AtomicReference
 
 class ShareCardScreenTest {
