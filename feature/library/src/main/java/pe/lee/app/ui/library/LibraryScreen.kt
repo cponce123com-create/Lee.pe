@@ -235,20 +235,16 @@ fun LibraryScreen(
     var backupPreview by backupPreviewState
     val backupBusyState = remember { mutableStateOf(false) }
     var backupBusy by backupBusyState
-    val scannerBusyState = remember { mutableStateOf(false) }
-    var scannerBusy by scannerBusyState
-    val scannerJobState = remember { mutableStateOf<Job?>(null) }
-    var scannerJob by scannerJobState
-    val scannerProgressState = remember { mutableStateOf(LocalFolderScanner.Progress(0, 0, 0)) }
-    var scannerProgress by scannerProgressState
-    val scannerPreviewState = remember { mutableStateOf<LocalFolderScanner.Result?>(null) }
-    var scannerPreview by scannerPreviewState
-    val scannerImportingState = remember { mutableStateOf(false) }
-    var scannerImporting by scannerImportingState
-    val scannerFolderNameState = remember { mutableStateOf("Carpeta seleccionada") }
-    var scannerFolderName by scannerFolderNameState
+    // The folder scan lives in the ViewModel so rotation no longer cancels it (A-36).
+    val scannerState by viewModel.scanner.collectAsStateWithLifecycle()
     val listModeState = rememberSaveable { mutableStateOf(false) }
     var listMode by listModeState
+
+    LaunchedEffect(scannerState.error) {
+        val message = scannerState.error ?: return@LaunchedEffect
+        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        viewModel.dismissScanError()
+    }
 
     suspend fun drainPendingBookCleanup() {
         // One directory rescan for the whole batch, not one per deleted book (A-38).
@@ -301,11 +297,6 @@ fun LibraryScreen(
         backupBusy = backupBusyState,
         backupPreview = backupPreviewState,
         organizingBook = organizingBookState,
-        scannerBusy = scannerBusyState,
-        scannerJob = scannerJobState,
-        scannerProgress = scannerProgressState,
-        scannerPreview = scannerPreviewState,
-        scannerFolderName = scannerFolderNameState,
         onOfflineBooksChanged = { offlineRevision++ }
     )
 
@@ -315,12 +306,9 @@ fun LibraryScreen(
         backupRepository = backupRepository,
         coroutineScope = coroutineScope,
         storedBooks = storedBooks,
-        scannerBusy = scannerBusyState,
-        scannerJob = scannerJobState,
-        scannerFolderName = scannerFolderName,
-        scannerProgress = scannerProgress,
-        scannerPreview = scannerPreviewState,
-        scannerImporting = scannerImportingState,
+        scanner = scannerState,
+        onCancelScan = viewModel::cancelScan,
+        onClearScanPreview = viewModel::clearScanPreview,
         showBackupOptions = showBackupOptionsState,
         backupBusy = backupBusyState,
         backupPreview = backupPreviewState,
@@ -435,8 +423,8 @@ fun LibraryScreen(
         pendingMarkdown = pendingMarkdownState,
         organizingBook = organizingBookState,
         collectionDraft = collectionDraftState,
-        scannerBusy = scannerBusy,
-        scannerImporting = scannerImporting,
+        scannerBusy = scannerState.busy,
+        scannerImporting = scannerState.busy,
         context = context,
         viewModel = viewModel,
         coroutineScope = coroutineScope,

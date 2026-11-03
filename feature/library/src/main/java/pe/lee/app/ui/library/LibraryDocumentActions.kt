@@ -49,11 +49,6 @@ internal fun rememberLibraryDocumentActions(
     backupBusy: MutableState<Boolean>,
     backupPreview: MutableState<LocalBackupPreview?>,
     organizingBook: MutableState<LocalBook?>,
-    scannerBusy: MutableState<Boolean>,
-    scannerJob: MutableState<Job?>,
-    scannerProgress: MutableState<LocalFolderScanner.Progress>,
-    scannerPreview: MutableState<LocalFolderScanner.Result?>,
-    scannerFolderName: MutableState<String>,
     onOfflineBooksChanged: () -> Unit
 ): LibraryDocumentActions {
     val exportAnnotationsLauncher = rememberLauncherForActivityResult(
@@ -236,29 +231,9 @@ internal fun rememberLibraryDocumentActions(
                     Toast.LENGTH_LONG
                 ).show()
             } else {
-                scannerPreview.value = null
-                scannerProgress.value = LocalFolderScanner.Progress(0, 0, 0)
-                scannerBusy.value = true
-                scannerFolderName.value = treeUri.lastPathSegment?.substringAfterLast(':')
-                    ?.takeIf { it.isNotBlank() } ?: "Carpeta seleccionada"
-                scannerJob.value = coroutineScope.launch {
-                    try {
-                        val existing = storedBooks.map { it.uri }
-                        scannerPreview.value = LocalFolderScanner.scan(context, treeUri, existing) { progress ->
-                            withContext(Dispatchers.Main.immediate) { scannerProgress.value = progress }
-                        }
-                    } catch (cancelled: CancellationException) {
-                        throw cancelled
-                    } catch (error: Exception) {
-                        Toast.makeText(
-                            context, error.message ?: "No se pudo escanear la carpeta.",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    } finally {
-                        scannerBusy.value = false
-                        scannerJob.value = null
-                    }
-                }
+                // The ViewModel owns the scan: it survives rotation and reports
+                // progress through its own state (A-36).
+                viewModel.scanFolder(context, treeUri, storedBooks.map { it.uri })
             }
         }
     }
