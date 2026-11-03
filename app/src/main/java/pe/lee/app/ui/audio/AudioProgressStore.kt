@@ -1,28 +1,24 @@
 package pe.lee.app.ui.audio
 
 import android.content.Context
+import pe.lee.app.data.repository.SettingsRepository
 import java.security.MessageDigest
 
 internal object AudioProgressStore {
-    private const val PREFS = "lee_pe_audio_progress"
+    private val store = SettingsRepository.Store.AUDIO_PROGRESS
 
     fun get(context: Context, mediaId: String): Long =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getLong(key(mediaId), 0L)
+        SettingsRepository(context).getLong(store, key(mediaId), 0L)
             .coerceAtLeast(0L)
 
     fun put(context: Context, mediaId: String, positionMs: Long) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putLong(key(mediaId), positionMs.coerceAtLeast(0L))
-            .apply()
+        SettingsRepository(context).apply(store) {
+            putLong(key(mediaId), positionMs.coerceAtLeast(0L))
+        }
     }
 
     fun remove(context: Context, mediaId: String): Boolean =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .remove(key(mediaId))
-            .commit()
+        SettingsRepository(context).update(store) { remove(key(mediaId)) }
 
     private fun key(mediaId: String): String {
         val digest = MessageDigest.getInstance("SHA-256")

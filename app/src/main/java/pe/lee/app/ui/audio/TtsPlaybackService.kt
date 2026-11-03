@@ -29,7 +29,7 @@ import org.readium.navigator.media.common.Media3Adapter
 import org.readium.navigator.media.tts.AndroidTtsNavigator
 import org.readium.navigator.media.tts.TtsNavigator
 import org.readium.r2.shared.ExperimentalReadiumApi
-import pe.lee.app.data.local.LeeDatabase
+import pe.lee.app.LeePeApplication
 import pe.lee.app.ui.reader.ReaderActivity
 
 @OptIn(ExperimentalReadiumApi::class)
@@ -79,7 +79,7 @@ class TtsPlaybackService : MediaSessionService() {
                     val now = System.currentTimeMillis()
                     if (now - lastSavedAt >= 3_000L) {
                         val progression = locator.locations.totalProgression?.toFloat() ?: 0f
-                        LeeDatabase.get(this@TtsPlaybackService).bookDao().saveEpubProgress(
+                        (application as LeePeApplication).container.books.saveEpubProgress(
                             uri = bookUri,
                             locatorJson = locator.toJSON().toString(),
                             progress = progression,
