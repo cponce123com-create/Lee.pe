@@ -36,6 +36,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,6 +50,7 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import pe.lee.app.R
 import pe.lee.core.domain.ReaderAnnotation
 import pe.lee.app.ui.reader.PdfReaderViewModel
 import pe.lee.app.ui.reader.pdfPageLocator
@@ -101,10 +103,10 @@ internal fun PdfReaderDialogs(
             Column(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp)
             ) {
-                Text("Buscar en el PDF", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.pdf_search_title), fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 if (Build.VERSION.SDK_INT < 35) {
                     Text(
-                        "La búsqueda de PDF requiere Android 15 (API 35) o posterior.",
+                        stringResource(R.string.pdf_search_requires_android15),
                         modifier = Modifier.padding(top = 12.dp, bottom = 16.dp),
                         color = Color(0xFFD3DCEC)
                     )
@@ -117,14 +119,14 @@ internal fun PdfReaderDialogs(
                             value = pdfSearchQuery,
                             onValueChange = { pdfSearchQuery = it },
                             modifier = Modifier.weight(1f),
-                            label = { Text("Palabra o frase") },
+                            label = { Text(stringResource(R.string.pdf_search_query_label)) },
                             singleLine = true
                         )
                         IconButton(
                             onClick = { searchPdf(pdfSearchQuery) },
                             enabled = !searchingPdf && pdfSearchQuery.isNotBlank()
                         ) {
-                            Icon(Icons.Default.Search, contentDescription = "Iniciar búsqueda")
+                            Icon(Icons.Default.Search, contentDescription = stringResource(R.string.pdf_search_start))
                         }
                     }
                     if (searchingPdf) {
@@ -134,8 +136,8 @@ internal fun PdfReaderDialogs(
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                            Text("Buscando página por página…", modifier = Modifier.weight(1f))
-                            TextButton(onClick = { pdfSearchJob?.cancel() }) { Text("Cancelar") }
+                            Text(stringResource(R.string.pdf_search_in_progress), modifier = Modifier.weight(1f))
+                            TextButton(onClick = { pdfSearchJob?.cancel() }) { Text(stringResource(R.string.pdf_cancel)) }
                         }
                     }
                     pdfSearchMessage?.let { message ->
@@ -157,7 +159,7 @@ internal fun PdfReaderDialogs(
                                 }.padding(vertical = 8.dp)
                             ) {
                                 Text(
-                                    "Página ${result.pageIndex + 1}",
+                                    stringResource(R.string.pdf_page_number, result.pageIndex + 1),
                                     color = Color(0xFF75DFFF),
                                     fontWeight = FontWeight.SemiBold
                                 )
@@ -176,14 +178,14 @@ internal fun PdfReaderDialogs(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Notas y marcadores PDF", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.pdf_annotations_title), fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 Row {
                     TextButton(onClick = {
                         editingNote = null
                         noteDraft = ""
                         quoteForNote = null
                         showNoteEditor = true
-                    }) { Text("Añadir nota") }
+                    }) { Text(stringResource(R.string.pdf_add_note)) }
                     TextButton(onClick = {
                         val now = System.currentTimeMillis()
                         coroutineScope.launch {
@@ -197,12 +199,12 @@ internal fun PdfReaderDialogs(
                                 )
                             )
                         }
-                    }) { Text("Marcar página") }
+                    }) { Text(stringResource(R.string.pdf_bookmark_page)) }
                 }
             }
             if (annotations.isEmpty()) {
                 Text(
-                    "Todavía no guardaste notas, marcadores ni resaltados para este PDF.",
+                    stringResource(R.string.pdf_annotations_empty),
                     modifier = Modifier.padding(horizontal = 22.dp, vertical = 20.dp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -226,15 +228,20 @@ internal fun PdfReaderDialogs(
                                     annotation.noteText?.takeIf { it.isNotBlank() }
                                         ?: annotation.selectedText?.takeIf { it.isNotBlank() }
                                         ?: when (annotation.kind) {
-                                            "NOTE" -> "Nota"
-                                            "HIGHLIGHT" -> "Texto resaltado"
-                                            else -> "Página marcada"
+                                            "NOTE" -> stringResource(R.string.pdf_note)
+                                            "HIGHLIGHT" -> stringResource(R.string.pdf_annotation_highlight_text)
+                                            else -> stringResource(R.string.pdf_annotation_bookmarked_page)
                                         },
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
-                                    "Página ${runCatching { JSONObject(annotation.locatorJson).optInt("pageIndex", -1) + 1 }.getOrDefault(0)} · abrir",
+                                    stringResource(
+                                        R.string.pdf_annotation_page_open,
+                                        runCatching {
+                                            JSONObject(annotation.locatorJson).optInt("pageIndex", -1) + 1
+                                        }.getOrDefault(0)
+                                    ),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 12.sp
                                 )
@@ -242,10 +249,10 @@ internal fun PdfReaderDialogs(
                             if (annotation.kind == "HIGHLIGHT") {
                                 Row {
                                     listOf(
-                                        "Amarillo" to 0xFFFFD54F.toInt(),
-                                        "Azul" to 0xFF64B5F6.toInt(),
-                                        "Verde" to 0xFF81C784.toInt(),
-                                        "Rosa" to 0xFFF48FB1.toInt()
+                                        stringResource(R.string.pdf_color_yellow) to 0xFFFFD54F.toInt(),
+                                        stringResource(R.string.pdf_color_blue) to 0xFF64B5F6.toInt(),
+                                        stringResource(R.string.pdf_color_green) to 0xFF81C784.toInt(),
+                                        stringResource(R.string.pdf_color_pink) to 0xFFF48FB1.toInt()
                                     ).forEach { (label, color) ->
                                         IconButton(
                                             onClick = {
@@ -261,7 +268,7 @@ internal fun PdfReaderDialogs(
                                         ) {
                                             Icon(
                                                 Icons.Default.Circle,
-                                                contentDescription = "Resaltado $label",
+                                                contentDescription = stringResource(R.string.pdf_highlight_color, label),
                                                 tint = Color(color),
                                                 modifier = Modifier.size(19.dp)
                                             )
@@ -275,11 +282,11 @@ internal fun PdfReaderDialogs(
                                     noteDraft = annotation.noteText.orEmpty()
                                     showNoteEditor = true
                                 }) {
-                                    Icon(Icons.Default.Edit, contentDescription = "Editar nota")
+                                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.pdf_edit_note))
                                 }
                             }
                             IconButton(onClick = { pendingDeleteAnnotation = annotation }) {
-                                Icon(Icons.Default.DeleteOutline, contentDescription = "Eliminar anotación")
+                                Icon(Icons.Default.DeleteOutline, contentDescription = stringResource(R.string.pdf_delete_annotation))
                             }
                         }
                     }
@@ -292,34 +299,42 @@ internal fun PdfReaderDialogs(
     pendingDeleteAnnotation?.let { annotation ->
         AlertDialog(
             onDismissRequest = { pendingDeleteAnnotation = null },
-            title = { Text("Eliminar anotación") },
+            title = { Text(stringResource(R.string.pdf_delete_annotation)) },
             text = {
                 Text(
                     annotation.noteText?.takeIf { it.isNotBlank() }
                         ?: annotation.selectedText?.takeIf { it.isNotBlank() }
-                        ?: "Esta anotación se eliminará del PDF."
+                        ?: stringResource(R.string.pdf_delete_annotation_body)
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
                     pendingDeleteAnnotation = null
                     coroutineScope.launch { viewModel.deleteAnnotation(annotation.id) }
-                }) { Text("Eliminar") }
+                }) { Text(stringResource(R.string.pdf_delete)) }
             },
             dismissButton = {
-                TextButton(onClick = { pendingDeleteAnnotation = null }) { Text("Cancelar") }
+                TextButton(onClick = { pendingDeleteAnnotation = null }) { Text(stringResource(R.string.pdf_cancel)) }
             }
         )
     }
     if (showNoteEditor) {
         AlertDialog(
             onDismissRequest = { showNoteEditor = false },
-            title = { Text(if (editingNote == null) "Nueva nota PDF" else "Editar nota PDF") },
+            title = {
+                Text(
+                    if (editingNote == null) {
+                        stringResource(R.string.pdf_new_note_title)
+                    } else {
+                        stringResource(R.string.pdf_edit_note_title)
+                    }
+                )
+            },
             text = {
                 OutlinedTextField(
                     value = noteDraft,
                     onValueChange = { noteDraft = it },
-                    label = { Text("Nota vinculada a la página actual") },
+                    label = { Text(stringResource(R.string.pdf_note_page_label)) },
                     minLines = 3,
                     maxLines = 6
                 )
@@ -346,15 +361,15 @@ internal fun PdfReaderDialogs(
                         }
                     }
                     showNoteEditor = false
-                }) { Text("Guardar") }
+                }) { Text(stringResource(R.string.pdf_save)) }
             },
-            dismissButton = { TextButton(onClick = { showNoteEditor = false }) { Text("Cancelar") } }
+            dismissButton = { TextButton(onClick = { showNoteEditor = false }) { Text(stringResource(R.string.pdf_cancel)) } }
         )
     }
     if (showSelectionDialog && selectedPdfText != null) {
         AlertDialog(
             onDismissRequest = { showSelectionDialog = false },
-            title = { Text("Texto seleccionado · página ${selectedPdfPage + 1}") },
+            title = { Text(stringResource(R.string.pdf_selected_text_title, selectedPdfPage + 1)) },
             text = { Text(selectedPdfText.orEmpty()) },
             confirmButton = {
                 Column(horizontalAlignment = Alignment.End) {
@@ -362,10 +377,12 @@ internal fun PdfReaderDialogs(
                     TextButton(onClick = {
                         selectedPdfText?.let { selected ->
                             val clipboard = context.getSystemService(ClipboardManager::class.java)
-                            clipboard?.setPrimaryClip(ClipData.newPlainText("Texto PDF", selected))
+                            clipboard?.setPrimaryClip(
+                                ClipData.newPlainText(context.getString(R.string.pdf_clipboard_label), selected)
+                            )
                         }
                         showSelectionDialog = false
-                    }) { Text("Copiar") }
+                    }) { Text(stringResource(R.string.pdf_copy)) }
                     TextButton(
                         enabled = selectedPdfRects.isNotEmpty(),
                         onClick = {
@@ -385,14 +402,14 @@ internal fun PdfReaderDialogs(
                             }
                             showSelectionDialog = false
                         }
-                    ) { Text("Resaltar") }
+                    ) { Text(stringResource(R.string.pdf_highlight)) }
                     TextButton(onClick = {
                         quoteForNote = selectedPdfText
                         noteDraft = ""
                         editingNote = null
                         showSelectionDialog = false
                         showNoteEditor = true
-                    }) { Text("Nota") }
+                    }) { Text(stringResource(R.string.pdf_note)) }
                     }
                     TextButton(onClick = {
                         val selected = selectedPdfText.orEmpty().trim()
@@ -415,19 +432,19 @@ internal fun PdfReaderDialogs(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showSelectionDialog = false }) { Text("Cerrar") }
+                TextButton(onClick = { showSelectionDialog = false }) { Text(stringResource(R.string.pdf_close)) }
             }
         )
     }
     if (showPageDialog) {
         AlertDialog(
             onDismissRequest = { showPageDialog = false },
-            title = { Text("Ir a una página") },
+            title = { Text(stringResource(R.string.pdf_go_to_page_title)) },
             text = {
                 TextField(
                     value = requestedPage,
                     onValueChange = { requestedPage = it.filter(Char::isDigit) },
-                    label = { Text("Número de página") },
+                    label = { Text(stringResource(R.string.pdf_page_number_label)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true
                 )
@@ -438,10 +455,10 @@ internal fun PdfReaderDialogs(
                         if (page in 1..pageCount) moveToPage(page - 1)
                     }
                     showPageDialog = false
-                }) { Text("Ir") }
+                }) { Text(stringResource(R.string.pdf_go)) }
             },
             dismissButton = {
-                TextButton(onClick = { showPageDialog = false }) { Text("Cancelar") }
+                TextButton(onClick = { showPageDialog = false }) { Text(stringResource(R.string.pdf_cancel)) }
             }
         )
     }

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="audio_default_title">Audiobook</string>
+    <string name="audio_player_title">Player</string>
+    <string name="audio_local_subtitle">Local audiobook · available offline</string>
+    <string name="audio_connecting">Connecting the player…</string>
+    <string name="audio_connection_failed">The player could not start. Open the audiobook again.</string>
+    <string name="audio_back">Back</string>
+    <string name="audio_rewind_15">Rewind 15 seconds</string>
+    <string name="audio_forward_15">Forward 15 seconds</string>
+    <string name="audio_speed">Speed</string>
+    <string name="audio_pause">Pause</string>
+    <string name="audio_play">Play</string>
+</resources>

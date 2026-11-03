@@ -35,12 +35,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
 import org.json.JSONObject
+import pe.lee.app.R
 import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.core.domain.ReaderAnnotation
 import org.readium.navigator.media.tts.android.AndroidTtsPreferences
@@ -145,7 +147,7 @@ internal fun EpubReaderScreen(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
-                Text("Abriendo tu libro…", color = Color.White)
+                Text(stringResource(R.string.epub_loading), color = Color.White)
             }
         }
 
@@ -157,9 +159,9 @@ internal fun EpubReaderScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Text("No se pudo abrir el libro", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(stringResource(R.string.epub_open_failed), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 Text(message, color = Color(0xFFD1D8E5))
-                Button(onClick = onBack) { Text("Volver a la biblioteca") }
+                Button(onClick = onBack) { Text(stringResource(R.string.epub_back_to_library)) }
             }
         }
 

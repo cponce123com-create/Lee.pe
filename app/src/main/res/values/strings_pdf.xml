@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- PdfReaderDialogs -->
+    <string name="pdf_search_title">Buscar en el PDF</string>
+    <string name="pdf_search_requires_android15">La búsqueda de PDF requiere Android 15 (API 35) o posterior.</string>
+    <string name="pdf_search_query_label">Palabra o frase</string>
+    <string name="pdf_search_start">Iniciar búsqueda</string>
+    <string name="pdf_search_in_progress">Buscando página por página…</string>
+    <string name="pdf_page_number">Página %1$d</string>
+    <string name="pdf_search_limit_shown">Se muestran las primeras 100 coincidencias.</string>
+    <string name="pdf_search_no_selectable_text">No se detectó texto seleccionable. Este PDF podría estar escaneado y requerir OCR.</string>
+    <string name="pdf_search_no_matches">No se encontraron coincidencias.</string>
+    <plurals name="pdf_search_matches_count">
+        <item quantity="one">%1$d coincidencia.</item>
+        <item quantity="other">%1$d coincidencias.</item>
+    </plurals>
+    <string name="pdf_annotations_title">Notas y marcadores PDF</string>
+    <string name="pdf_add_note">Añadir nota</string>
+    <string name="pdf_bookmark_page">Marcar página</string>
+    <string name="pdf_annotations_empty">Todavía no guardaste notas, marcadores ni resaltados para este PDF.</string>
+    <string name="pdf_note">Nota</string>
+    <string name="pdf_annotation_highlight_text">Texto resaltado</string>
+    <string name="pdf_annotation_bookmarked_page">Página marcada</string>
+    <string name="pdf_annotation_page_open">Página %1$d · abrir</string>
+    <string name="pdf_highlight_color">Resaltado %1$s</string>
+    <string name="pdf_color_yellow">Amarillo</string>
+    <string name="pdf_color_blue">Azul</string>
+    <string name="pdf_color_green">Verde</string>
+    <string name="pdf_color_pink">Rosa</string>
+    <string name="pdf_edit_note">Editar nota</string>
+    <string name="pdf_delete_annotation">Eliminar anotación</string>
+    <string name="pdf_delete_annotation_body">Esta anotación se eliminará del PDF.</string>
+    <string name="pdf_delete">Eliminar</string>
+    <string name="pdf_cancel">Cancelar</string>
+    <string name="pdf_new_note_title">Nueva nota PDF</string>
+    <string name="pdf_edit_note_title">Editar nota PDF</string>
+    <string name="pdf_note_page_label">Nota vinculada a la página actual</string>
+    <string name="pdf_save">Guardar</string>
+    <string name="pdf_selected_text_title">Texto seleccionado · página %1$d</string>
+    <string name="pdf_clipboard_label">Texto PDF</string>
+    <string name="pdf_copy">Copiar</string>
+    <string name="pdf_highlight">Resaltar</string>
+    <string name="pdf_close">Cerrar</string>
+    <string name="pdf_go_to_page_title">Ir a una página</string>
+    <string name="pdf_page_number_label">Número de página</string>
+    <string name="pdf_go">Ir</string>
+
+    <!-- PdfReaderControls -->
+    <string name="pdf_back">Volver</string>
+    <string name="pdf_annotations_content_description">Marcadores y notas PDF</string>
+    <string name="pdf_hide_controls">Ocultar controles del PDF</string>
+    <string name="pdf_continuous_scroll">Desplazamiento continuo</string>
+    <string name="pdf_selection_tap_or_drag">Toca o arrastra</string>
+    <string name="pdf_selection_select">Seleccionar</string>
+    <string name="pdf_zoom_out">Reducir zoom</string>
+    <string name="pdf_zoom_reset">%1$d%% · Restablecer</string>
+    <string name="pdf_zoom_in">Ampliar zoom</string>
+    <string name="pdf_rotate_page">Rotar página</string>
+    <string name="pdf_previous_page">Página anterior</string>
+    <string name="pdf_page_of">Página %1$d de %2$d</string>
+    <string name="pdf_preparing_pdf">Preparando PDF</string>
+    <string name="pdf_next_page">Página siguiente</string>
+    <string name="pdf_show_controls">Mostrar controles del PDF</string>
+
+    <!-- PdfPageViewport -->
+    <string name="pdf_no_pages">Este PDF no contiene páginas.</string>
+    <string name="pdf_page_rotation_content_description">Página %1$d, rotación %2$d grados</string>
+    <string name="pdf_no_text_detected">No se detectó texto en el rango elegido; puede ser un PDF escaneado.</string>
+
+    <!-- PdfRendering -->
+    <string name="pdf_render_page_failed">No se pudo renderizar la página %1$d.</string>
+    <string name="pdf_open_provider_failed">El proveedor de archivos no pudo abrir el PDF.</string>
+    <string name="pdf_open_no_space">No hay espacio suficiente para preparar este PDF.</string>
+    <string name="pdf_open_read_failed">No se pudo leer el archivo seleccionado.</string>
+    <string name="pdf_open_local_copy_required">El PDF requiere un archivo local accesible: %1$s</string>
+    <string name="pdf_open_failed_detail">No se pudo abrir el PDF: %1$s</string>
+
+    <!-- PdfReaderActivity -->
+    <string name="pdf_open_failed">No se pudo abrir el PDF.</string>
+    <string name="pdf_open_failed_title">No se pudo abrir el PDF</string>
+    <string name="pdf_render_failed">No se pudo renderizar esta página.</string>
+    <string name="pdf_search_empty_query">Escribe una palabra o frase para buscar.</string>
+    <string name="pdf_search_in_progress_document">Buscando en el documento…</string>
+    <string name="pdf_search_cancelled">Búsqueda cancelada.</string>
+    <string name="pdf_search_failed_detail">No se pudo buscar en el PDF: %1$s</string>
+    <string name="pdf_search_failed">No se pudo buscar en el PDF.</string>
+    <string name="pdf_back_to_library">Volver a la biblioteca</string>
+</resources>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="audio_default_title">Audiolibro</string>
+    <string name="audio_player_title">Reproductor</string>
+    <string name="audio_local_subtitle">Audiolibro local · disponible sin conexión</string>
+    <string name="audio_connecting">Conectando el reproductor…</string>
+    <string name="audio_connection_failed">No se pudo iniciar el reproductor. Vuelve a abrir el audiolibro.</string>
+    <string name="audio_back">Volver</string>
+    <string name="audio_rewind_15">Retroceder 15 segundos</string>
+    <string name="audio_forward_15">Avanzar 15 segundos</string>
+    <string name="audio_speed">Velocidad</string>
+    <string name="audio_pause">Pausar</string>
+    <string name="audio_play">Reproducir</string>
+</resources>

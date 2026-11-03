@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -47,6 +48,7 @@ import kotlinx.coroutines.isActive
 import pe.lee.app.ui.theme.LeePeTheme
 import pe.lee.app.data.local.OfflineBookStore
 import pe.lee.app.LeePeApplication
+import pe.lee.app.R
 import pe.lee.app.data.repository.AudioProgressStore
 
 class AudioPlayerActivity : ComponentActivity() {
@@ -70,7 +72,7 @@ class AudioPlayerActivity : ComponentActivity() {
             .get(AudioPlayerViewModel::class.java)
         this.audioViewModel = audioViewModel
         val playbackUri = intent.getStringExtra(OfflineBookStore.EXTRA_COPY_URI)?.let(Uri::parse) ?: uri
-        val title = intent.getStringExtra(EXTRA_TITLE) ?: "Audiolibro"
+        val title = intent.getStringExtra(EXTRA_TITLE) ?: getString(R.string.audio_default_title)
         setContent {
             LeePeTheme {
                 AudioPlayerScreen(
@@ -111,7 +113,7 @@ class AudioPlayerActivity : ComponentActivity() {
                     controller.play()
                 }
             } catch (_: Exception) {
-                connectionError.value = "No se pudo iniciar el reproductor. Vuelve a abrir el audiolibro."
+                connectionError.value = getString(R.string.audio_connection_failed)
                 audioViewModel.showError(connectionError.value)
             }
         }, ContextCompat.getMainExecutor(this))
@@ -166,9 +168,9 @@ private fun AudioPlayerScreen(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onClose) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.audio_back))
                 }
-                Text("Reproductor", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.audio_player_title), fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
             }
 
             Column(
@@ -185,9 +187,9 @@ private fun AudioPlayerScreen(
                 }
                 Spacer(Modifier.height(28.dp))
                 Text(title, fontSize = 23.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                Text("Audiolibro local · disponible sin conexión", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
+                Text(stringResource(R.string.audio_local_subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
                 if (controller == null && error == null) {
-                    Text("Conectando el reproductor…", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 12.dp))
+                    Text(stringResource(R.string.audio_connecting), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 12.dp))
                 }
                 (playerState.error ?: error)?.let {
                     Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 16.dp))
@@ -213,7 +215,7 @@ private fun AudioPlayerScreen(
                     IconButton(enabled = controller != null, onClick = {
                         viewModel.seekTo((playerState.positionMs - 15_000L).coerceAtLeast(0L))
                     }) {
-                        Icon(Icons.Default.Replay10, contentDescription = "Retroceder 15 segundos", modifier = Modifier.size(32.dp))
+                        Icon(Icons.Default.Replay10, contentDescription = stringResource(R.string.audio_rewind_15), modifier = Modifier.size(32.dp))
                     }
                     IconButton(
                         enabled = controller != null,
@@ -223,7 +225,7 @@ private fun AudioPlayerScreen(
                     ) {
                         Icon(
                             if (playerState.playing) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = if (playerState.playing) "Pausar" else "Reproducir",
+                            contentDescription = if (playerState.playing) stringResource(R.string.audio_pause) else stringResource(R.string.audio_play),
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(40.dp)
                         )
@@ -232,11 +234,11 @@ private fun AudioPlayerScreen(
                         val target = playerState.positionMs + 15_000L
                         viewModel.seekTo(if (playerState.durationMs > 0L) target.coerceAtMost(playerState.durationMs) else target)
                     }) {
-                        Icon(Icons.Default.Forward10, contentDescription = "Avanzar 15 segundos", modifier = Modifier.size(32.dp))
+                        Icon(Icons.Default.Forward10, contentDescription = stringResource(R.string.audio_forward_15), modifier = Modifier.size(32.dp))
                     }
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                    Text("Velocidad", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.audio_speed), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     TextButton(enabled = controller != null, onClick = {
                     val index = speeds.indexOf(playerState.speed).coerceAtLeast(0)
                     viewModel.setSpeed(speeds[(index + 1) % speeds.size])

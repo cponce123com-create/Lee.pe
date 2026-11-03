@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -46,6 +47,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import pe.lee.app.R
 import pe.lee.core.domain.ReaderAnnotation
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -96,7 +98,7 @@ internal fun ColumnScope.PdfPageViewport(
                     }
                 } else if (pageCount == 0) {
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text("Este PDF no contiene páginas.", color = Color.White)
+                        Text(stringResource(R.string.pdf_no_pages), color = Color.White)
                     }
                 } else {
                     LazyColumn(
@@ -136,7 +138,11 @@ internal fun ColumnScope.PdfPageViewport(
                     bitmap?.let { pageBitmap ->
                         Image(
                             bitmap = pageBitmap.asImageBitmap(),
-                            contentDescription = "Página ${pageIndex + 1}, rotación ${rotationDegrees} grados",
+                            contentDescription = stringResource(
+                                R.string.pdf_page_rotation_content_description,
+                                pageIndex + 1,
+                                rotationDegrees
+                            ),
                             modifier = imageModifier
                                 .clipToBounds()
                                 .clickable(enabled = !selectionMode) {
@@ -232,7 +238,7 @@ internal fun ColumnScope.PdfPageViewport(
                                                         } else {
                                                             Toast.makeText(
                                                                 context,
-                                                                "No se detectó texto en el rango elegido; puede ser un PDF escaneado.",
+                                                                context.getString(R.string.pdf_no_text_detected),
                                                                 Toast.LENGTH_SHORT
                                                             ).show()
                                                         }
@@ -308,7 +314,7 @@ internal fun ColumnScope.PdfPageViewport(
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
                     }
                     if (pageCount == 0 && !loading && errorMessage == null) {
-                        Text("Este PDF no contiene páginas.", color = Color.White)
+                        Text(stringResource(R.string.pdf_no_pages), color = Color.White)
                     }
                 }
             }

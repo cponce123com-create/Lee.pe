@@ -35,6 +35,9 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.withContext
@@ -161,10 +164,15 @@ fun ShareCardScreen(
                 }
                 when (val status = state.status) {
                     ShareCardStatus.Idle, ShareCardStatus.Generating -> Unit
-                    ShareCardStatus.Ready -> Text(stringResource(R.string.share_card_shared))
+                    ShareCardStatus.Ready -> Text(
+                        text = stringResource(R.string.share_card_shared),
+                        // TalkBack must announce that the card is ready (A-19).
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                    )
                     is ShareCardStatus.Error -> Text(
                         text = status.message.ifBlank { stringResource(R.string.share_card_error) },
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive }
                     )
                 }
                 Spacer(Modifier.height(8.dp))

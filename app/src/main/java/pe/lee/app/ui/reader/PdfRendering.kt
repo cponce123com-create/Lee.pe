@@ -35,8 +35,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import pe.lee.app.R
 import pe.lee.core.domain.ReaderAnnotation
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -222,7 +224,7 @@ internal fun PdfContinuousPage(
         Box(modifier = Modifier.fillMaxWidth().clipToBounds()) {
             Image(
                 bitmap = pageBitmap.asImageBitmap(),
-                contentDescription = "Página ${pageIndex + 1}",
+                contentDescription = stringResource(R.string.pdf_page_number, pageIndex + 1),
                 modifier = Modifier.fillMaxWidth(),
                 contentScale = ContentScale.FillWidth
             )
@@ -250,7 +252,7 @@ internal fun PdfContinuousPage(
         contentAlignment = Alignment.Center
     ) {
         if (renderFailed) {
-            Text("No se pudo renderizar la página ${pageIndex + 1}.", color = Color.White)
+            Text(stringResource(R.string.pdf_render_page_failed, pageIndex + 1), color = Color.White)
         } else {
             CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
         }
@@ -260,7 +262,7 @@ internal fun PdfContinuousPage(
 internal suspend fun openPdf(context: Context, uri: Uri): PdfHandle = withContext(Dispatchers.IO) {
     purgeStaleCopies(context)
     val descriptor = context.contentResolver.openFileDescriptor(uri, "r")
-        ?: throw IOException("El proveedor de archivos no pudo abrir el PDF.")
+        ?: throw IOException(context.getString(R.string.pdf_open_provider_failed))
     val sourceSizeBytes = runCatching { descriptor.statSize }.getOrDefault(-1L)
 
     try {
@@ -271,7 +273,7 @@ internal suspend fun openPdf(context: Context, uri: Uri): PdfHandle = withContex
         try {
             val availableBytes = StatFs(context.cacheDir.path).availableBytes
             if (sourceSizeBytes > 0L && sourceSizeBytes > availableBytes) {
-                throw IOException("No hay espacio suficiente para preparar este PDF.")
+                throw IOException(context.getString(R.string.pdf_open_no_space))
             }
             context.contentResolver.openInputStream(uri)?.use { input ->
                 copy.outputStream().use { output ->
@@ -282,13 +284,13 @@ internal suspend fun openPdf(context: Context, uri: Uri): PdfHandle = withContex
                         val count = input.read(buffer)
                         if (count < 0) break
                         if (copiedBytes + count > availableBytes) {
-                            throw IOException("No hay espacio suficiente para preparar este PDF.")
+                            throw IOException(context.getString(R.string.pdf_open_no_space))
                         }
                         output.write(buffer, 0, count)
                         copiedBytes += count
                     }
                 }
-            } ?: throw IOException("No se pudo leer el archivo seleccionado.")
+            } ?: throw IOException(context.getString(R.string.pdf_open_read_failed))
             coroutineContext.ensureActive()
             val copyDescriptor = ParcelFileDescriptor.open(copy, ParcelFileDescriptor.MODE_READ_ONLY)
             val copyRenderer = try {
@@ -303,10 +305,15 @@ internal suspend fun openPdf(context: Context, uri: Uri): PdfHandle = withContex
             throw cancelled
         } catch (copyError: Exception) {
             copy.delete()
-            throw IOException("El PDF requiere un archivo local accesible: ${copyError.message ?: error.message}")
+            throw IOException(
+                context.getString(
+                    R.string.pdf_open_local_copy_required,
+                    copyError.message ?: error.message
+                )
+            )
         }
     } catch (error: Exception) {
         runCatching { descriptor.close() }
-        throw IOException("No se pudo abrir el PDF: ${error.message}")
+        throw IOException(context.getString(R.string.pdf_open_failed_detail, error.message))
     }
 }

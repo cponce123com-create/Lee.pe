@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Lee.pe</string>
+    <string name="annotation_highlight_color">Resaltado %1$s</string>
+    <string name="annotation_color_yellow">Amarillo</string>
+    <string name="annotation_color_blue">Azul</string>
+    <string name="annotation_color_green">Verde</string>
+    <string name="annotation_color_pink">Rosa</string>
     <string name="accessibility_leepe_logo">Logotipo de Lee.pe</string>
     <string name="accessibility_reading_statistics">Estadísticas de lectura</string>
     <string name="accessibility_library_more_options">Más opciones de biblioteca</string>

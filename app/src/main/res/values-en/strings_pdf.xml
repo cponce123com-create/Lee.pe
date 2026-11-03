@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- PdfReaderDialogs -->
+    <string name="pdf_search_title">Search in the PDF</string>
+    <string name="pdf_search_requires_android15">PDF search requires Android 15 (API 35) or later.</string>
+    <string name="pdf_search_query_label">Word or phrase</string>
+    <string name="pdf_search_start">Start search</string>
+    <string name="pdf_search_in_progress">Searching page by page…</string>
+    <string name="pdf_page_number">Page %1$d</string>
+    <string name="pdf_search_limit_shown">Showing the first 100 matches.</string>
+    <string name="pdf_search_no_selectable_text">No selectable text was detected. This PDF may be scanned and require OCR.</string>
+    <string name="pdf_search_no_matches">No matches found.</string>
+    <plurals name="pdf_search_matches_count">
+        <item quantity="one">%1$d match.</item>
+        <item quantity="other">%1$d matches.</item>
+    </plurals>
+    <string name="pdf_annotations_title">PDF notes and bookmarks</string>
+    <string name="pdf_add_note">Add note</string>
+    <string name="pdf_bookmark_page">Bookmark page</string>
+    <string name="pdf_annotations_empty">You haven\'t saved any notes, bookmarks, or highlights for this PDF yet.</string>
+    <string name="pdf_note">Note</string>
+    <string name="pdf_annotation_highlight_text">Highlighted text</string>
+    <string name="pdf_annotation_bookmarked_page">Bookmarked page</string>
+    <string name="pdf_annotation_page_open">Page %1$d · open</string>
+    <string name="pdf_highlight_color">%1$s highlight</string>
+    <string name="pdf_color_yellow">Yellow</string>
+    <string name="pdf_color_blue">Blue</string>
+    <string name="pdf_color_green">Green</string>
+    <string name="pdf_color_pink">Pink</string>
+    <string name="pdf_edit_note">Edit note</string>
+    <string name="pdf_delete_annotation">Delete annotation</string>
+    <string name="pdf_delete_annotation_body">This annotation will be deleted from the PDF.</string>
+    <string name="pdf_delete">Delete</string>
+    <string name="pdf_cancel">Cancel</string>
+    <string name="pdf_new_note_title">New PDF note</string>
+    <string name="pdf_edit_note_title">Edit PDF note</string>
+    <string name="pdf_note_page_label">Note linked to the current page</string>
+    <string name="pdf_save">Save</string>
+    <string name="pdf_selected_text_title">Selected text · page %1$d</string>
+    <string name="pdf_clipboard_label">PDF text</string>
+    <string name="pdf_copy">Copy</string>
+    <string name="pdf_highlight">Highlight</string>
+    <string name="pdf_close">Close</string>
+    <string name="pdf_go_to_page_title">Go to a page</string>
+    <string name="pdf_page_number_label">Page number</string>
+    <string name="pdf_go">Go</string>
+
+    <!-- PdfReaderControls -->
+    <string name="pdf_back">Back</string>
+    <string name="pdf_annotations_content_description">PDF bookmarks and notes</string>
+    <string name="pdf_hide_controls">Hide PDF controls</string>
+    <string name="pdf_continuous_scroll">Continuous scroll</string>
+    <string name="pdf_selection_tap_or_drag">Tap or drag</string>
+    <string name="pdf_selection_select">Select</string>
+    <string name="pdf_zoom_out">Zoom out</string>
+    <string name="pdf_zoom_reset">%1$d%% · Reset</string>
+    <string name="pdf_zoom_in">Zoom in</string>
+    <string name="pdf_rotate_page">Rotate page</string>
+    <string name="pdf_previous_page">Previous page</string>
+    <string name="pdf_page_of">Page %1$d of %2$d</string>
+    <string name="pdf_preparing_pdf">Preparing PDF</string>
+    <string name="pdf_next_page">Next page</string>
+    <string name="pdf_show_controls">Show PDF controls</string>
+
+    <!-- PdfPageViewport -->
+    <string name="pdf_no_pages">This PDF has no pages.</string>
+    <string name="pdf_page_rotation_content_description">Page %1$d, rotated %2$d degrees</string>
+    <string name="pdf_no_text_detected">No text was detected in the selected range; it may be a scanned PDF.</string>
+
+    <!-- PdfRendering -->
+    <string name="pdf_render_page_failed">Could not render page %1$d.</string>
+    <string name="pdf_open_provider_failed">The file provider could not open the PDF.</string>
+    <string name="pdf_open_no_space">There is not enough space to prepare this PDF.</string>
+    <string name="pdf_open_read_failed">Could not read the selected file.</string>
+    <string name="pdf_open_local_copy_required">The PDF requires an accessible local file: %1$s</string>
+    <string name="pdf_open_failed_detail">Could not open the PDF: %1$s</string>
+
+    <!-- PdfReaderActivity -->
+    <string name="pdf_open_failed">Could not open the PDF.</string>
+    <string name="pdf_open_failed_title">Could not open the PDF</string>
+    <string name="pdf_render_failed">Could not render this page.</string>
+    <string name="pdf_search_empty_query">Type a word or phrase to search.</string>
+    <string name="pdf_search_in_progress_document">Searching the document…</string>
+    <string name="pdf_search_cancelled">Search cancelled.</string>
+    <string name="pdf_search_failed_detail">Could not search the PDF: %1$s</string>
+    <string name="pdf_search_failed">Could not search the PDF.</string>
+    <string name="pdf_back_to_library">Back to library</string>
+</resources>

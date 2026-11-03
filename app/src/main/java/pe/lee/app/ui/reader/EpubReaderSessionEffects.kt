@@ -22,6 +22,7 @@ import org.json.JSONObject
 import java.util.UUID
 import android.content.ClipData
 import android.content.ClipboardManager
+import pe.lee.app.R
 import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.app.ui.audio.TtsPlaybackService
 import pe.lee.core.domain.ReaderAnnotation
@@ -192,7 +193,12 @@ internal fun EpubReaderSessionEffects(
                         } else if (item.itemId == MENU_COPY_SELECTION) {
                             selectedLocator?.text?.highlight?.let { selectedText ->
                                 val clipboard = context.getSystemService(ClipboardManager::class.java)
-                                clipboard?.setPrimaryClip(ClipData.newPlainText("Texto seleccionado", selectedText))
+                                clipboard?.setPrimaryClip(
+                                    ClipData.newPlainText(
+                                        context.getString(R.string.epub_selection_clip_label),
+                                        selectedText
+                                    )
+                                )
                             }
                         } else if (item.itemId == MENU_SHARE_SELECTION) {
                             val selectedText = selectedLocator?.text?.highlight?.trim().orEmpty()

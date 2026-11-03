@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="epub_loading">Abriendo tu libro…</string>
+    <string name="epub_selection_clip_label">Texto seleccionado</string>
+    <string name="epub_open_failed">No se pudo abrir el libro</string>
+    <string name="epub_back_to_library">Volver a la biblioteca</string>
+    <string name="epub_search_title">Buscar en el EPUB</string>
+    <string name="epub_search_hint">Palabra o frase</string>
+    <string name="epub_search_action">Buscar</string>
+    <string name="epub_searching">Buscando en el libro…</string>
+    <string name="epub_no_matches">No se encontraron coincidencias.</string>
+    <string name="epub_search_prompt_tap">Toca la lupa para iniciar la búsqueda.</string>
+    <string name="epub_search_prompt_hint">Busca una palabra o frase en el contenido del libro.</string>
+    <string name="epub_search_limit_shown">Mostrando hasta 100 coincidencias</string>
+    <plurals name="epub_search_matches_count">
+        <item quantity="one">%1$d coincidencia</item>
+        <item quantity="other">%1$d coincidencias</item>
+    </plurals>
+</resources>

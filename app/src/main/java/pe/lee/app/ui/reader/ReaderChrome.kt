@@ -59,8 +59,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import pe.lee.app.R
 import pe.lee.core.domain.ReaderAnnotation
 import org.readium.r2.navigator.epub.EpubPreferences
 import org.readium.r2.shared.ExperimentalReadiumApi
@@ -166,18 +168,18 @@ internal fun ReaderChrome(
     if (showGoTo) {
         AlertDialog(
             onDismissRequest = { showGoTo = false },
-            title = { Text("Ir a una posición") },
+            title = { Text(stringResource(R.string.reader_go_to_position)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        "Indica el porcentaje del libro. La paginación EPUB puede cambiar con la letra y la pantalla."
+                        stringResource(R.string.reader_go_to_description)
                     )
                     OutlinedTextField(
                         value = targetPercent,
                         onValueChange = { input ->
                             targetPercent = input.filter { it.isDigit() || it == '.' || it == ',' }
                         },
-                        label = { Text("Progreso") },
+                        label = { Text(stringResource(R.string.reader_progress_label)) },
                         suffix = { Text("%") },
                         singleLine = true,
                         isError = targetProgress == null,
@@ -196,10 +198,10 @@ internal fun ReaderChrome(
                             showGoTo = false
                         }
                     }
-                ) { Text("Ir") }
+                ) { Text(stringResource(R.string.reader_go)) }
             },
             dismissButton = {
-                TextButton(onClick = { showGoTo = false }) { Text("Cancelar") }
+                TextButton(onClick = { showGoTo = false }) { Text(stringResource(R.string.reader_cancel)) }
             }
         )
     }
@@ -207,14 +209,14 @@ internal fun ReaderChrome(
     if (showContents) {
         ModalBottomSheet(onDismissRequest = { showContents = false }) {
             Text(
-                "Contenido del libro",
+                stringResource(R.string.reader_contents_title),
                 modifier = Modifier.padding(horizontal = 22.dp, vertical = 8.dp),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
             if (contents.isEmpty()) {
                 Text(
-                    "Este EPUB no incluye una tabla de contenidos.",
+                    stringResource(R.string.reader_contents_empty),
                     modifier = Modifier.padding(horizontal = 22.dp, vertical = 20.dp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -267,7 +269,11 @@ internal fun ReaderChrome(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.reader_back),
+                        tint = Color.White
+                    )
                 }
                 Text(
                     text = title,
@@ -280,7 +286,11 @@ internal fun ReaderChrome(
                 IconButton(onClick = onToggleTts) {
                     Icon(
                         Icons.AutoMirrored.Filled.VolumeUp,
-                        contentDescription = if (ttsIsActive && ttsIsPlaying) "Pausar narración" else "Leer en voz alta",
+                        contentDescription = when {
+                            ttsIsActive && ttsIsPlaying -> stringResource(R.string.reader_tts_pause)
+                            ttsIsActive -> stringResource(R.string.reader_tts_resume)
+                            else -> stringResource(R.string.reader_tts_start)
+                        },
                         tint = if (ttsIsActive) Color(0xFF56D7FF) else Color.White
                     )
                 }
@@ -288,7 +298,7 @@ internal fun ReaderChrome(
                     IconButton(onClick = { showActionsMenu = true }) {
                         Icon(
                             Icons.Default.MoreVert,
-                            contentDescription = "Más opciones de lectura",
+                            contentDescription = stringResource(R.string.reader_more_options),
                             tint = Color.White
                         )
                     }
@@ -297,27 +307,27 @@ internal fun ReaderChrome(
                         onDismissRequest = { showActionsMenu = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Buscar en el libro") },
+                            text = { Text(stringResource(R.string.reader_search_book)) },
                             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                             onClick = { showActionsMenu = false; showSearch = true }
                         )
                         DropdownMenuItem(
-                            text = { Text("Marcadores y notas") },
+                            text = { Text(stringResource(R.string.reader_bookmarks_notes)) },
                             leadingIcon = { Icon(Icons.Default.Bookmark, contentDescription = null) },
                             onClick = { showActionsMenu = false; showAnnotations = true }
                         )
                         DropdownMenuItem(
-                            text = { Text("Apariencia de lectura") },
+                            text = { Text(stringResource(R.string.reader_appearance_title)) },
                             leadingIcon = { Icon(Icons.Default.TextFields, contentDescription = null) },
                             onClick = { showActionsMenu = false; showAppearance = true }
                         )
                         DropdownMenuItem(
-                            text = { Text("Índice del libro") },
+                            text = { Text(stringResource(R.string.reader_book_index)) },
                             leadingIcon = { Icon(Icons.AutoMirrored.Filled.FormatListBulleted, contentDescription = null) },
                             onClick = { showActionsMenu = false; showContents = true }
                         )
                         DropdownMenuItem(
-                            text = { Text("Ocultar controles") },
+                            text = { Text(stringResource(R.string.reader_hide_controls)) },
                             leadingIcon = { Icon(Icons.Default.VisibilityOff, contentDescription = null) },
                             onClick = { showActionsMenu = false; onToggleChrome() }
                         )
@@ -347,7 +357,11 @@ internal fun ReaderChrome(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onPrevious) {
-                        Icon(Icons.Default.ChevronLeft, contentDescription = "Página anterior", tint = Color.White)
+                        Icon(
+                            Icons.Default.ChevronLeft,
+                            contentDescription = stringResource(R.string.reader_previous_page),
+                            tint = Color.White
+                        )
                     }
                     TextButton(
                         onClick = {
@@ -356,13 +370,17 @@ internal fun ReaderChrome(
                         }
                     ) {
                         Text(
-                            "Ir a ${(progress * 100).toInt()}%",
+                            stringResource(R.string.reader_go_to_percent, (progress * 100).toInt()),
                             color = Color(0xFFD3DCEC),
                             fontSize = 12.sp
                         )
                     }
                     IconButton(onClick = onNext) {
-                        Icon(Icons.Default.ChevronRight, contentDescription = "Página siguiente", tint = Color.White)
+                        Icon(
+                            Icons.Default.ChevronRight,
+                            contentDescription = stringResource(R.string.reader_next_page),
+                            tint = Color.White
+                        )
                     }
                 }
             }

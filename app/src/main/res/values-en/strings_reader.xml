@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ReaderChrome -->
+    <string name="reader_go_to_position">Go to a position</string>
+    <string name="reader_go_to_description">Enter the book percentage. EPUB pagination can change with the font and the screen size.</string>
+    <string name="reader_progress_label">Progress</string>
+    <string name="reader_go">Go</string>
+    <string name="reader_cancel">Cancel</string>
+    <string name="reader_contents_title">Book contents</string>
+    <string name="reader_contents_empty">This EPUB does not include a table of contents.</string>
+    <string name="reader_back">Back</string>
+    <string name="reader_tts_pause">Pause narration</string>
+    <string name="reader_tts_resume">Resume narration</string>
+    <string name="reader_tts_start">Read aloud</string>
+    <string name="reader_more_options">More reading options</string>
+    <string name="reader_search_book">Search in book</string>
+    <string name="reader_bookmarks_notes">Bookmarks and notes</string>
+    <string name="reader_appearance_title">Reading appearance</string>
+    <string name="reader_book_index">Book index</string>
+    <string name="reader_hide_controls">Hide controls</string>
+    <string name="reader_previous_page">Previous page</string>
+    <string name="reader_next_page">Next page</string>
+    <string name="reader_go_to_percent">Go to %1$d%%</string>
+
+    <!-- ReaderControls: TTS -->
+    <string name="reader_tts_book_narration">Book narration</string>
+    <string name="reader_tts_pause_voice">Pause voice</string>
+    <string name="reader_tts_continue_voice">Continue voice</string>
+    <string name="reader_language_spanish">Spanish</string>
+    <string name="reader_voice_spanish_mexico">Spanish (Mexico)</string>
+    <string name="reader_voice_spanish_spain">Spanish (Spain)</string>
+    <string name="reader_voice_spanish_argentina">Spanish (Argentina)</string>
+    <string name="reader_voice_spanish_colombia">Spanish (Colombia)</string>
+    <string name="reader_voice_spanish_us">Spanish (United States)</string>
+    <string name="reader_voice_automatic">Automatic (Spanish)</string>
+    <string name="reader_voice_none_local">No local Spanish voices</string>
+    <string name="reader_voice_manage_device">Manage device voices</string>
+    <string name="reader_voice_install_hint">Look for Spanish (Mexico) in Settings &gt; Accessibility &gt; Text-to-speech output.</string>
+    <string name="reader_timer">Timer</string>
+    <string name="reader_timer_minutes">%1$d min</string>
+    <string name="reader_tts_stop">Stop narration</string>
+
+    <!-- ReaderControls: appearance sheet -->
+    <string name="reader_theme_title">Theme</string>
+    <string name="reader_theme_light">Light</string>
+    <string name="reader_theme_sepia">Sepia</string>
+    <string name="reader_theme_dark">Dark</string>
+    <string name="reader_theme_oled">OLED</string>
+    <string name="reader_font_size">Font size · %1$d%%</string>
+    <string name="reader_text_style_title">Text style</string>
+    <string name="reader_text_style_publisher">Book style</string>
+    <string name="reader_text_style_app">Lee.pe settings</string>
+    <string name="reader_text_style_hint">Line spacing and alignment need Lee.pe settings to replace the formatting defined by the EPUB.</string>
+    <string name="reader_line_height">Line spacing · %1$d%%</string>
+    <string name="reader_margins">Side margins · %1$d%%</string>
+    <string name="reader_alignment_title">Alignment</string>
+    <string name="reader_align_start">Start</string>
+    <string name="reader_align_justify">Justified</string>
+    <string name="reader_align_center">Center</string>
+    <string name="reader_navigation_title">Navigation</string>
+    <string name="reader_navigation_paginated">Paged</string>
+    <string name="reader_navigation_scroll">Scrolling</string>
+    <string name="reader_while_reading_title">While reading</string>
+    <string name="reader_keep_screen_on">Keep screen on</string>
+    <string name="reader_keep_screen_on_hint">Prevents the screen from turning off while you read.</string>
+    <string name="reader_brightness_title">Screen brightness</string>
+    <string name="reader_brightness_system">Use system brightness</string>
+    <string name="reader_typography_title">Typography</string>
+    <string name="reader_font_original">Original</string>
+    <string name="reader_font_serif">Serif</string>
+    <string name="reader_font_sans">Sans</string>
+    <string name="reader_font_dyslexic">Dyslexic</string>
+</resources>

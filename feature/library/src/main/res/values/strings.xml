@@ -212,6 +212,8 @@
     <string name="book_status_audiobook">Audiolibro</string>
     <string name="book_status_finished">Terminado</string>
     <string name="book_progress_percent">%1$d%% leído</string>
+    <string name="book_continue_reading">Continuar leyendo  →</string>
+    <string name="book_continue">Continuar  →</string>
     <string name="book_status_to_read">Por leer</string>
     <string name="book_status_with_format">%1$s · %2$s</string>
     <string name="accessibility_favorite_book">Favorito</string>

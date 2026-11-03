@@ -2,9 +2,11 @@
 
 package pe.lee.app.ui.reader
 
+import android.content.Context
 import android.net.Uri
 import org.readium.navigator.media.tts.android.AndroidTtsEngine
 import org.readium.r2.shared.publication.Link
+import pe.lee.app.R
 
 internal const val NAVIGATOR_TAG = "lee_pe_epub_navigator"
 internal const val MENU_HIGHLIGHT = 1
@@ -19,16 +21,17 @@ internal fun AndroidTtsEngine.Voice.isLocalSpanishVoice(): Boolean {
     return languageCode.equals("es", ignoreCase = true)
 }
 
-internal fun spanishVoiceLabel(voice: AndroidTtsEngine.Voice): String {
+internal fun spanishVoiceLabel(context: Context, voice: AndroidTtsEngine.Voice): String {
     val tag = voice.language.toString().uppercase()
-    return when {
-        tag.contains("MX") -> "Español (México)"
-        tag.contains("ES") -> "Español (España)"
-        tag.contains("AR") -> "Español (Argentina)"
-        tag.contains("CO") -> "Español (Colombia)"
-        tag.contains("US") -> "Español (Estados Unidos)"
-        else -> "Español"
+    val label = when {
+        tag.contains("MX") -> R.string.reader_voice_spanish_mexico
+        tag.contains("ES") -> R.string.reader_voice_spanish_spain
+        tag.contains("AR") -> R.string.reader_voice_spanish_argentina
+        tag.contains("CO") -> R.string.reader_voice_spanish_colombia
+        tag.contains("US") -> R.string.reader_voice_spanish_us
+        else -> R.string.reader_language_spanish
     }
+    return context.getString(label)
 }
 
 internal const val TTS_DECORATION_GROUP = "lee_pe_tts"
