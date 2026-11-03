@@ -261,6 +261,8 @@ fun LibraryScreen(
         if (completed > 0) offlineRevision++
     }
 
+    val welcomeBookFailedMessage = androidx.compose.ui.res.stringResource(R.string.library_welcome_book_failed)
+
     LaunchedEffect(context, viewModel, settings) {
         migrateLegacyLibrary(context, viewModel)
         drainPendingBookCleanup()
@@ -273,7 +275,7 @@ fun LibraryScreen(
             )) {
             Toast.makeText(
                 context,
-                context.getString(R.string.library_welcome_book_failed),
+                welcomeBookFailedMessage,
                 Toast.LENGTH_LONG
             ).show()
         }
