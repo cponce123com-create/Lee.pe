@@ -12,9 +12,11 @@
     <application
         android:allowBackup="false"
         android:fullBackupContent="false"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:label="Lee.pe"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.NoActionBar">
+        android:theme="@style/LeePeAppTheme">
         <service
             android:name=".ui.audio.AudioPlaybackService"
             android:exported="true"

@@ -14,6 +14,10 @@ Las cubiertas EPUB se extraen del propio libro mediante Readium cuando la tarjet
 
 Consulta el [plan de trabajo](docs/PLAN_TRABAJO.md) para el orden de los siguientes módulos y sus criterios de salida. La [arquitectura offline-first](docs/ARQUITECTURA_OFFLINE_FIRST.md) describe cómo conectar en el futuro Render, Neon y Cloudinary sin depender de ellos para leer.
 
+## Identidad visual y apertura
+
+Lee.pe utiliza el logotipo de libro con audífonos como icono adaptativo de la aplicación. Al abrirla, Android muestra una pantalla de inicio con el logotipo sobre un fondo azul petróleo; en Android 12 y posteriores se utiliza la pantalla de inicio del sistema y en versiones anteriores se conserva el fondo de ventana de compatibilidad. El icono de inicio usa solo el símbolo para mantener legibles sus detalles al adaptarse a las máscaras del launcher. La comprobación visual en distintos launchers y versiones de Android queda pendiente en dispositivos reales.
+
 ## Tecnologías
 
 - Kotlin y Jetpack Compose para la app Android.
