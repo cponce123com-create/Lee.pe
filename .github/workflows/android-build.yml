@@ -62,6 +62,6 @@ jobs:
           name: lee-pe-debug
           path: |
             app/build/outputs/apk/debug/*.apk
-            app/schemas/*.json
+            app/schemas/**/*.json
           if-no-files-found: error
           retention-days: 14
