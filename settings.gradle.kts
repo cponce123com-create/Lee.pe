@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Lee.pe"
-include(":app", ":core:database", ":core:datastore", ":core:domain", ":core:ui", ":data", ":feature:library", ":feature:notes", ":library:readium")
+include(":app", ":core:database", ":core:datastore", ":core:domain", ":core:ui", ":data", ":feature:library", ":feature:notes", ":feature:sharecard", ":library:readium")

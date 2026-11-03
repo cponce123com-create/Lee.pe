@@ -12,6 +12,7 @@ media3 = "1.11.1"
 lifecycle = "2.9.4"
 junit = "4.13.2"
 coroutines = "1.10.2"
+coroutinesTest = "1.10.2"
 json = "20240303"
 
 [libraries]
@@ -34,6 +35,7 @@ media3-session = { group = "androidx.media3", name = "media3-session", version.r
 lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTest" }
 org-json = { group = "org.json", name = "json", version.ref = "json" }
 
 [plugins]

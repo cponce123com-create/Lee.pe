@@ -36,6 +36,7 @@ dependencies {
     implementation(project(":data"))
     implementation(project(":feature:notes"))
     implementation(project(":feature:library"))
+    implementation(project(":feature:sharecard"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.fragment.ktx)
