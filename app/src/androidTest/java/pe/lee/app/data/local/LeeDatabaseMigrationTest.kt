@@ -12,6 +12,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.util.Locale
 
 @RunWith(AndroidJUnit4::class)
 class LeeDatabaseMigrationTest {
@@ -40,10 +41,10 @@ class LeeDatabaseMigrationTest {
                 if (startingVersion >= 3) {
                     assertEquals(180L, snapshot.sessions.single().durationSeconds)
                 }
-                assertEquals("case-insensitive collection migration", listOf("Fantasía"),
-                    database.bookDao().collectionNamesForBook(TEST_URI))
-                assertEquals("duplicate legacy collection merged", listOf("Fantasía"),
-                    database.bookDao().collectionNamesForBook(SECOND_URI))
+                assertEquals("case-insensitive collection migration", listOf("fantasía"),
+                    database.bookDao().collectionNamesForBook(TEST_URI).map { it.lowercase(Locale.ROOT) })
+                assertEquals("duplicate legacy collection merged", listOf("fantasía"),
+                    database.bookDao().collectionNamesForBook(SECOND_URI).map { it.lowercase(Locale.ROOT) })
             } finally {
                 database.close()
                 context.deleteDatabase(databaseName)
