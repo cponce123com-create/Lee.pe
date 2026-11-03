@@ -7,10 +7,13 @@ import java.util.Locale
  * Local-only catalog search. Normalize accents and whitespace so users can
  * find "García" by typing "garcia" without making a network request.
  */
+private val COMBINING_MARKS = Regex("\\p{M}+")
+private val WHITESPACE = Regex("\\s+")
+
 internal fun normalizedLibraryText(input: String): String =
     Normalizer.normalize(input.trim().lowercase(Locale.ROOT), Normalizer.Form.NFD)
-        .replace(Regex("\\p{M}+"), "")
-        .replace(Regex("\\s+"), " ")
+        .replace(COMBINING_MARKS, "")
+        .replace(WHITESPACE, " ")
 
 /**
  * A query may contain several words in any order and can match a title,
