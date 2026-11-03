@@ -30,6 +30,9 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - La compilación de depuración instala y abre en emulador y teléfono.
 - No quedan nombres visibles de LumenReader ni referencias de paquete antiguo.
 
+- [x] Aplicar identidad visual Lee.pe al icono de launcher (adaptativo y legado) y a la pantalla de inicio de Android 12+; mantener fondo de apertura para API anteriores.
+- [ ] Validar recorte del icono en launchers de fabricantes, modo claro/oscuro y apertura en Android 7–15; revisar instalación limpia y actualización sobre una versión previa.
+
 ### Fase 1 — Biblioteca local e importación
 
 **Trabajo**

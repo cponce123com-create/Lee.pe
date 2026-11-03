@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="LeePeAppTheme" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowSplashScreenBackground">@color/leepe_splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/leepe_logo</item>
+        <item name="android:statusBarColor">@color/leepe_splash_background</item>
+        <item name="android:navigationBarColor">@color/leepe_splash_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+</resources>
