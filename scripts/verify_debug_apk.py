@@ -106,7 +106,10 @@ def verify_manifest(manifest: str) -> str:
                 raise RuntimeError("MainActivity must be exported for the launcher")
         elif name == "androidx.media3.session.BluetoothValidationActivity":
             if not _is_expected_media3_bluetooth_validation_activity(activity):
-                raise RuntimeError("Media3 Bluetooth validation activity is not safely configured")
+                raise RuntimeError(
+                    "Media3 Bluetooth validation activity is not safely configured: "
+                    + ET.tostring(activity, encoding="unicode")
+                )
         elif name.startswith("pe.lee.") and exported != "false":
             raise RuntimeError(f"App activity must be explicitly non-exported: {name}")
         elif exported == "true":
