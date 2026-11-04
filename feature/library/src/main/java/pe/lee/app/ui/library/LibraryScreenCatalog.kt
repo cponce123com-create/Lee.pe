@@ -1,7 +1,6 @@
 package pe.lee.app.ui.library
 
 import android.net.Uri
-import pe.lee.app.data.repository.SettingsRepository
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -10,6 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import pe.lee.app.data.repository.SettingsRepository
 
 /** Presents the catalog and runs cancellable filtering away from the UI thread. */
 @Composable
@@ -20,7 +20,6 @@ internal fun LibraryScreenCatalog(
     // The catalog pipeline runs on Dispatchers.Default: with 10 000 books it costs
     // hundreds of milliseconds and used to block the main thread on every Room
     // emission (menus, dialogs and stats updates kept it recomputed) (P-06).
-    val titleComparator = remember { libraryTitleComparator() }
     var catalog by remember {
         mutableStateOf(CatalogResult(emptyList(), emptyList(), emptyList()))
     }
@@ -33,10 +32,10 @@ internal fun LibraryScreenCatalog(
     LaunchedEffect(books) {
         indexedBooks = withContext(Dispatchers.Default) { books to librarySearchIndex(books) }
     }
-    LaunchedEffect(books, indexedBooks, query, selectedFilter, selectedCollection, sortMode, titleComparator) {
+    LaunchedEffect(books, indexedBooks, query, selectedFilter, selectedCollection, sortMode) {
         val index = indexedBooks?.takeIf { it.first == books }?.second ?: return@LaunchedEffect
         catalog = withContext(Dispatchers.Default) {
-            computeCatalog(books, query, selectedFilter, selectedCollection, sortMode, titleComparator, index)
+            computeCatalog(books, query, selectedFilter, selectedCollection, sortMode, libraryTitleComparator(), index)
         }
     }
     val visibleBooks = catalog.visible

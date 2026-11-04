@@ -81,12 +81,12 @@ class LibraryUseCasesTest {
     @Test
     fun backupAcceptsLegacyAndEncryptedPayloads() {
         val original = "{\"version\":2}".toByteArray()
-        val import = ImportBackupUseCase()
-        assertArrayEquals(original, import(original, null))
+        val restore = ImportBackupUseCase()
+        assertArrayEquals(original, restore(original, null))
         val encrypted = ExportBackupUseCase()(original, "password-test")
-        assertArrayEquals(original, import(encrypted, "password-test"))
-        assertThrows(IOException::class.java) { import(encrypted, null) }
-        assertThrows(IOException::class.java) { import(encrypted, "wrong-password") }
+        assertArrayEquals(original, restore(encrypted, "password-test"))
+        assertThrows(IOException::class.java) { restore(encrypted, null) }
+        assertThrows(IOException::class.java) { restore(encrypted, "wrong-password") }
         assertTrue(original.isNotEmpty())
     }
 }

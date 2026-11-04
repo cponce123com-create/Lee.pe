@@ -3,18 +3,11 @@ package pe.lee.app.ui.library
 import android.content.Context
 import android.net.Uri
 import android.widget.Toast
-import pe.lee.app.data.local.BookEntity
-import pe.lee.app.data.local.CollectionEntity
-import pe.lee.app.data.local.OfflineBookStore
-import pe.lee.app.data.repository.SettingsRepository
-import pe.lee.app.data.repository.LocalBackupRepository
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableIntState
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -23,18 +16,21 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import kotlinx.coroutines.delay
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import pe.lee.app.data.local.BookEntity
+import pe.lee.app.data.local.CollectionEntity
+import pe.lee.app.data.local.OfflineBookStore
+import pe.lee.app.data.repository.LocalBackupRepository
+import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.feature.library.R
-import java.time.LocalDate
-import java.time.ZoneId
-
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.MutableIntState
 
 private const val DEFAULT_DAILY_GOAL_MINUTES = 30
 private const val MIN_DAILY_GOAL_MINUTES = 5
@@ -95,33 +91,15 @@ internal fun rememberLibraryScreenState(
     backupRepository: LocalBackupRepository,
 ): LibraryScreenState {
     val context = LocalContext.current
-    val todayKeyState = remember { mutableStateOf(readingDayKey(System.currentTimeMillis())) }
-    val todayKey by todayKeyState
-    // "Today" was computed once per composition: leaving the app open past
-    // midnight kept showing yesterday's time and goal (A-37).
-    LaunchedEffect(todayKey) {
-        val now = System.currentTimeMillis()
-        val nextMidnight = LocalDate.now()
-            .plusDays(1)
-            .atStartOfDay(ZoneId.systemDefault())
-            .toInstant()
-            .toEpochMilli()
-        delay((nextMidnight - now).coerceAtLeast(1_000L))
-        todayKeyState.value = readingDayKey(System.currentTimeMillis())
-    }
-    // A fresh Flow instance per recomposition restarted the Room subscription on
-    // every keystroke (P-01); remember it for the lifetime of the day.
-    val todaySecondsFlow = remember(todayKey) { viewModel.observeDurationForDay(todayKey) }
-    val readingDayKeysFlow = remember { viewModel.observeReadingDayKeys() }
-    val todaySeconds by todaySecondsFlow.collectAsStateWithLifecycle(initialValue = 0L)
-    val readingDayKeys by readingDayKeysFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val reading = rememberLibraryReadingState(viewModel)
+    val todaySeconds = reading.todaySeconds
+    val readingDayKeys = reading.dayKeys
     val libraryState by viewModel.state.collectAsStateWithLifecycle()
     val storedBooks = libraryState.books
     val storedCollections = libraryState.collections
     var offlineCopyUris by remember { mutableStateOf<Map<String, Uri>>(emptyMap()) }
     var offlineRevision by remember { mutableIntStateOf(0) }
     val savingBookUriState = remember { mutableStateOf<String?>(null) }
-    var savingBookUri by savingBookUriState
     val bookUris = remember(storedBooks) { storedBooks.map { Uri.parse(it.uri) } }
     // A locator/progress update invalidates Room, but does not change the URI list.
     // Only rescan the private offline directory when membership/copies change.
@@ -143,19 +121,12 @@ internal fun rememberLibraryScreenState(
     val collections = remember(storedCollections) { storedCollections.map { it.name } }
     val coroutineScope = rememberCoroutineScope()
     val queryState = rememberSaveable { mutableStateOf("") }
-    var query by queryState
     val selectedFilterState = rememberSaveable { mutableStateOf(LibraryFilter.ALL) }
-    var selectedFilter by selectedFilterState
     val selectedCollectionState = rememberSaveable { mutableStateOf<String?>(null) }
-    var selectedCollection by selectedCollectionState
     val collectionMenuExpandedState = remember { mutableStateOf(false) }
-    var collectionMenuExpanded by collectionMenuExpandedState
     val showCollectionsManagerState = remember { mutableStateOf(false) }
-    var showCollectionsManager by showCollectionsManagerState
     val collectionBeingRenamedState = remember { mutableStateOf<CollectionEntity?>(null) }
-    var collectionBeingRenamed by collectionBeingRenamedState
     val collectionRenameDraftState = remember { mutableStateOf("") }
-    var collectionRenameDraft by collectionRenameDraftState
     val organizingBookIdState = rememberSaveable { mutableStateOf<String?>(null) }
     val organizingBookState = remember { mutableStateOf<LocalBook?>(null) }
     var organizingBook by organizingBookState
@@ -170,42 +141,29 @@ internal fun rememberLibraryScreenState(
         }
     }
     val collectionDraftState = remember { mutableStateOf("") }
-    var collectionDraft by collectionDraftState
     val showLibraryStatsState = remember { mutableStateOf(false) }
-    var showLibraryStats by showLibraryStatsState
     val showGoalEditorState = remember { mutableStateOf(false) }
-    var showGoalEditor by showGoalEditorState
     val showResetStatsDialogState = remember { mutableStateOf(false) }
-    var showResetStatsDialog by showResetStatsDialogState
     val goalDraftState = remember { mutableStateOf("") }
-    var goalDraft by goalDraftState
     val dailyGoalMinutesState = remember {
         mutableIntStateOf(
             settings.getInt(SettingsRepository.Store.READING_STATS, "daily_goal_minutes", DEFAULT_DAILY_GOAL_MINUTES)
                 .coerceIn(MIN_DAILY_GOAL_MINUTES, MAX_DAILY_GOAL_MINUTES)
         )
     }
-    var dailyGoalMinutes by dailyGoalMinutesState
     val pendingRemovalState = remember { mutableStateOf<LocalBook?>(null) }
-    var pendingRemoval by pendingRemovalState
     val editingBookState = remember { mutableStateOf<LocalBook?>(null) }
-    var editingBook by editingBookState
     val titleDraftState = remember { mutableStateOf("") }
-    var titleDraft by titleDraftState
     val sortMenuExpandedState = remember { mutableStateOf(false) }
-    var sortMenuExpanded by sortMenuExpandedState
     val sortModeState = rememberSaveable {
         val saved = settings.getString(SettingsRepository.Store.LIBRARY, BOOKSHELF_SORT_MODE_KEY)
         mutableStateOf(runCatching { LibrarySortMode.valueOf(saved.orEmpty()) }.getOrDefault(LibrarySortMode.TITLE_ASC))
     }
-    var sortMode by sortModeState
     // Persist only the stable book id; markdown is regenerated after the SAF picker returns.
     val pendingMarkdownState = rememberSaveable { mutableStateOf<String?>(null) }
     var pendingMarkdown by pendingMarkdownState
     val cleanupMutex = remember { Mutex() }
-    var libraryMenuExpanded by remember { mutableStateOf(false) }
     val showBackupOptionsState = remember { mutableStateOf(false) }
-    var showBackupOptions by showBackupOptionsState
     val backupPreviewState = remember { mutableStateOf<LocalBackupPreview?>(null) }
     var backupPreview by backupPreviewState
     val backupPasswordUriState = remember { mutableStateOf<Uri?>(null) }
