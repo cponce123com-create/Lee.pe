@@ -30,6 +30,35 @@ FORBIDDEN_PERMISSIONS = {
 }
 
 
+def _is_expected_media3_bluetooth_validation_activity(activity: ET.Element) -> bool:
+    """Allow Media3's hidden Android 16/17 Bluetooth validation entry point only."""
+    if (
+        activity.get(ANDROID + "exported") != "true"
+        or activity.get(ANDROID + "excludeFromRecents") != "true"
+        or activity.get(ANDROID + "noHistory") != "true"
+        or activity.get(ANDROID + "theme") != "@android:style/Theme.NoDisplay"
+    ):
+        return False
+    filters = activity.findall("intent-filter")
+    if len(filters) != 1:
+        return False
+    intent_filter = filters[0]
+    actions = {node.get(ANDROID + "name") for node in intent_filter.findall("action")}
+    if actions != {"android.intent.action.VIEW"} or intent_filter.findall("category"):
+        return False
+    actual_data = {
+        tuple(sorted(node.attrib.items()))
+        for node in intent_filter.findall("data")
+    }
+    expected_data = {
+        ((ANDROID + "scheme", "content"),),
+        ((ANDROID + "host", "media"),),
+        ((ANDROID + "pathPrefix", "/internal/audio/media/"),),
+        ((ANDROID + "mimeType", "audio/*"),),
+    }
+    return actual_data == expected_data
+
+
 def verify_manifest(manifest: str) -> str:
     """Validate app security invariants and return the package name."""
     root = ET.fromstring(manifest)
@@ -71,6 +100,9 @@ def verify_manifest(manifest: str) -> str:
         if name == main_activity:
             if exported != "true":
                 raise RuntimeError("MainActivity must be exported for the launcher")
+        elif name == "androidx.media3.session.BluetoothValidationActivity":
+            if not _is_expected_media3_bluetooth_validation_activity(activity):
+                raise RuntimeError("Media3 Bluetooth validation activity is not safely configured")
         elif name.startswith("pe.lee.") and exported != "false":
             raise RuntimeError(f"App activity must be explicitly non-exported: {name}")
         elif exported == "true":
