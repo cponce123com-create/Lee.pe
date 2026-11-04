@@ -17,7 +17,10 @@ PROFILE_INSTALL_ACTIONS = {
     "androidx.profileinstaller.action.SAVE_PROFILE",
     "androidx.profileinstaller.action.BENCHMARK_OPERATION",
 }
-COMPOSE_PREVIEW_ACTIVITY = "androidx.compose.ui.tooling.PreviewActivity"
+DEBUG_ONLY_ACTIVITIES = {
+    "androidx.compose.ui.tooling.PreviewActivity",
+    "androidx.activity.ComponentActivity",
+}
 FORBIDDEN_PERMISSIONS = {
     "android.permission.INTERNET",
     "android.permission.MANAGE_EXTERNAL_STORAGE",
@@ -97,8 +100,8 @@ def _is_expected_profile_install_receiver(receiver: ET.Element) -> bool:
     return len(actions) == len(PROFILE_INSTALL_ACTIONS) and set(actions) == PROFILE_INSTALL_ACTIONS
 
 
-def _is_expected_debug_compose_preview_activity(activity: ET.Element) -> bool:
-    """Allow only Compose's explicit, filterless preview entry point in debug APKs."""
+def _is_expected_debug_only_activity(activity: ET.Element) -> bool:
+    """Allow the filterless Compose preview/test hosts only in debug APKs."""
     return (
         activity.get(ANDROID + "exported") == "true"
         and activity.get(ANDROID + "permission") is None
@@ -153,11 +156,11 @@ def verify_manifest(manifest: str, variant: str = "release") -> str:
         elif name == "androidx.media3.session.BluetoothValidationActivity":
             if not _is_expected_media3_bluetooth_validation_activity(activity):
                 raise RuntimeError("Media3 Bluetooth validation activity is not safely configured")
-        elif name == COMPOSE_PREVIEW_ACTIVITY:
+        elif name in DEBUG_ONLY_ACTIVITIES:
             if variant != "debug":
-                raise RuntimeError("Compose PreviewActivity must not be packaged in release")
-            if not _is_expected_debug_compose_preview_activity(activity):
-                raise RuntimeError("Compose PreviewActivity is not safely configured for debug")
+                raise RuntimeError(f"Debug-only activity must not be packaged in release: {name}")
+            if not _is_expected_debug_only_activity(activity):
+                raise RuntimeError(f"Debug-only activity is not safely configured: {name}")
         elif name.startswith("pe.lee.") and exported != "false":
             raise RuntimeError(f"App activity must be explicitly non-exported: {name}")
         elif exported == "true":
