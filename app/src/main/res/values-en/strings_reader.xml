@@ -3,7 +3,6 @@
     <string name="epub_selection_highlight">Highlight</string>
     <string name="epub_selection_copy">Copy</string>
     <string name="epub_navigator_create_failed">Could not create the EPUB reader.</string>
-    <string name="epub_open_failed">Could not open this EPUB. Check the file and its permissions.</string>
     <string name="epub_search_not_supported">This EPUB does not support search.</string>
     <string name="epub_search_failed">Could not search this EPUB.</string>
     <string name="epub_preparing">The book is still being prepared.</string>
