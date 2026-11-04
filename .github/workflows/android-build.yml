@@ -79,9 +79,11 @@ jobs:
       - name: Build and smoke-check minified release APK
         run: |
           ./gradlew --no-daemon --stacktrace --max-workers=2 -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs=-Xmx4g assembleRelease
+          # Release verification rejects every debug-only Compose host.
           python scripts/verify_debug_apk.py app/build/outputs/apk/release/app-release-unsigned.apk --variant release
 
       - name: Verify packaged quote cards and permissions
+        # Debug verification allows only the two exact filterless Compose test hosts.
         run: python scripts/verify_debug_apk.py app/build/outputs/apk/debug/app-debug.apk --variant debug
 
       - name: Record APK provenance
