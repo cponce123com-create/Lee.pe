@@ -1,6 +1,19 @@
 package pe.lee.app.ui.library
 
 import android.net.Uri
+import android.graphics.Bitmap
+import java.io.File
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -34,6 +47,7 @@ class CoverShelfInteractionTest {
             }
         }
         repeat(9) { compose.onNodeWithTag("cover-book-b$it", useUnmergedTree = true).assertIsDisplayed() }
+        savePreview("covers.png")
         val width = compose.onNodeWithTag("cover-book-b0", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot.width
         compose.onNodeWithTag("cover-pager").performTouchInput { swipeLeft() }
         compose.waitForIdle()
@@ -68,5 +82,32 @@ class CoverShelfInteractionTest {
         compose.runOnIdle {
             assertEquals(listOf("b1", "b0") + (2..8).map { "b$it" }, committed)
         }
+    }
+
+    @Test
+    fun mixedShelfRendersBooksAndTransparentOrnamentsOnSupportedRows() {
+        val catalog = books(8)
+        val layout = BookshelfLayout.automatic(catalog.map { it.id })
+            .addDecoration(ShelfDecorationType.PLANT, 0, 2)
+            .addDecoration(ShelfDecorationType.LAVENDER, 1, 1)
+            .addDecoration(ShelfDecorationType.GLOBE, 1, 3)
+        val shelves = buildShelfDisplay(catalog, layout, true)
+        compose.setContent {
+            LibraryShelfTheme {
+                Box(Modifier.fillMaxWidth().height(450.dp).background(MaterialTheme.colorScheme.background)) {
+                    InteractiveMixedShelf(layout, shelves, catalog.associateBy { it.id }, 450.dp, {}, {}, {})
+                }
+            }
+        }
+        compose.onNodeWithContentDescription(catalog.first().title).assertIsDisplayed()
+        savePreview("mixed.png")
+    }
+
+    private fun savePreview(name: String) {
+        compose.waitForIdle()
+        val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
+        val directory = File(InstrumentationRegistry.getInstrumentation().targetContext.filesDir, "leepe-ui-preview")
+        directory.mkdirs()
+        File(directory, name).outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 }
