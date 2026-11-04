@@ -75,7 +75,7 @@ interface BookDao {
         JOIN collections ON collections.id = book_collections.collectionId
         ORDER BY collections.sortOrder, collections.name COLLATE NOCASE
     """)
-    fun observeBookCollectionNames(): Flow<List<BookCollectionName>>
+    fun observeBookCollectionNames(): Flow<List<BookCollectionAssignment>>
 
     @Query("SELECT * FROM collections ORDER BY sortOrder ASC, name COLLATE NOCASE ASC")
     suspend fun getCollections(): List<CollectionEntity>

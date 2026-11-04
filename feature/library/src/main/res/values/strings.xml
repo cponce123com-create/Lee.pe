@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="library_uri_permission_limit">Hay %1$d permisos de archivos guardados; Android permite aproximadamente %2$d. Revoca permisos que ya no uses desde los detalles de los libros.</string>
     <string name="app_name">Lee.pe</string>
     <string name="accessibility_leepe_logo">Logotipo de Lee.pe</string>
     <string name="accessibility_reading_statistics">Estadísticas de lectura</string>
