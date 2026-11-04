@@ -22,4 +22,3 @@
 # --- Kotlin / coroutines ---------------------------------------------------
 -dontwarn kotlinx.coroutines.**
 -dontwarn org.jetbrains.annotations.**
-
