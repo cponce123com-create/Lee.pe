@@ -62,6 +62,7 @@ import pe.lee.feature.library.R
 @Composable
 internal fun BookshelfCustomizerDialog(
     viewMode: LibraryViewMode,
+    decorationCount: Int,
     onViewModeChange: (LibraryViewMode) -> Unit,
     coverRows: List<List<LocalBook>>,
     shelves: List<ShelfDisplay>,
@@ -170,7 +171,7 @@ internal fun BookshelfCustomizerDialog(
                         TextButton(onClick = onReset) { Text(stringResource(R.string.shelf_reset)) }
                     }
                     Text(
-                        stringResource(R.string.shelf_decoration_count, shelves.flatMap { it.objects }.filterIsInstance<ShelfObject.Decor>().size),
+                        stringResource(R.string.shelf_decoration_count, decorationCount),
                         color = dialogInk,
                     )
                     Text(
@@ -241,7 +242,7 @@ internal fun BookshelfCustomizerDialog(
                             selectedDecorationName = null
                         },
                         enabled = selectedDecoration != null &&
-                            (decorationToReplaceId != null || shelves.flatMap { it.objects }.filterIsInstance<ShelfObject.Decor>().size < MAX_SHELF_DECORATIONS),
+                            (decorationToReplaceId != null || decorationCount < MAX_SHELF_DECORATIONS),
                         modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00695F), contentColor = Color.White),
                     ) {

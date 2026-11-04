@@ -342,4 +342,5 @@
     <string name="shelf_decoration_limit">Puedes colocar hasta 10 adornos.</string>
     <string name="shelf_drag_hint">Mantén pulsado y arrastra para ordenar. Doble toque para girar un libro.</string>
     <string name="shelf_book_count">%1$d libros</string>
+    <string name="shelf_drop_here">Suelta aquí para crear una repisa</string>
 </resources>

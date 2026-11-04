@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -100,7 +101,7 @@ internal fun CoverShelfPager(
             HorizontalPager(
                 state = pager,
                 userScrollEnabled = drag.activeKey == null,
-                modifier = Modifier.weight(1f).fillMaxWidth(),
+                modifier = Modifier.weight(1f).fillMaxWidth().testTag("cover-pager"),
             ) { page ->
                 Column(
                     Modifier.fillMaxSize().shadow(5.dp, RoundedCornerShape(10.dp))
@@ -122,7 +123,7 @@ internal fun CoverShelfPager(
                                         key(book.id) {
                                             Box(
                                                 Modifier.weight(1f).fillMaxHeight()
-                                                    .then(drag.itemModifier("book:${book.id}")),
+                                                    .then(drag.itemModifier("book:${book.id}")).testTag("cover-book-${book.id}"),
                                             ) {
                                                 ShelfCoverArt(
                                                     book,

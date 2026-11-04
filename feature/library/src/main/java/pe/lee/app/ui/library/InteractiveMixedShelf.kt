@@ -113,22 +113,35 @@ internal fun InteractiveMixedShelf(
         }
     }
     BoxWithConstraints(Modifier.fillMaxWidth().height(height)) {
-        val capacity = ((maxWidth.value - 16f) / 48f).coerceAtLeast(2f)
+        val availableWidth = maxWidth.value
+        val capacity = ((availableWidth - 16f) / 48f).coerceAtLeast(2f)
         val shown = (0 until draft.shelfCount()).mapNotNull { shelf ->
             val objects = draft.objectsOnShelf(shelf).filter { it !is ShelfObject.Book || it.placement.bookId in visibleIds }
             objects.takeIf { it.isNotEmpty() }?.let { ShelfDisplay(shelf, it) }
         }
-        val lines = packMixedShelves(shown, capacity)
+        val lines = packMixedShelves(shown, capacity).let { packed ->
+            val emptyShelf = beforeDrag.shelfCount()
+            if (drag.activeKey != null && shown.none { it.index == emptyShelf }) {
+                packed + MixedShelfLine(emptyShelf, emptyList())
+            } else {
+                packed
+            }
+        }
         ShelfDragSurface(
             state = drag,
             modifier = Modifier.fillMaxSize().onGloballyPositioned { viewportHeight = it.size.height.toFloat() },
             onStart = { beforeDrag = draft },
             onHover = { moving, target ->
-                val destination = (0 until draft.shelfCount()).firstOrNull { shelf ->
-                    draft.objectsOnShelf(shelf).any { it.stableKey == target }
+                val destination = if (target.startsWith("zone:")) {
+                    target.substringAfter("zone:").substringBefore(':').toIntOrNull()
+                } else {
+                    (0 until draft.shelfCount()).firstOrNull { shelf ->
+                        draft.objectsOnShelf(shelf).any { it.stableKey == target }
+                    }
                 }
                 if (destination != null) {
-                    val index = draft.objectsOnShelf(destination).indexOfFirst { it.stableKey == target }
+                    val objects = draft.objectsOnShelf(destination)
+                    val index = if (target.startsWith("zone:")) objects.size else objects.indexOfFirst { it.stableKey == target }
                     draft = draft.moveObject(moving, destination, index)
                 }
             },
@@ -153,9 +166,9 @@ internal fun InteractiveMixedShelf(
                 userScrollEnabled = drag.activeKey == null,
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                itemsIndexed(lines, key = { index, _ -> index }) { _, line ->
+                itemsIndexed(lines, key = { index, _ -> index }) { lineIndex, line ->
                     Column(
-                        Modifier.fillMaxWidth().background(
+                        Modifier.fillMaxWidth().then(drag.targetModifier("zone:${line.logicalShelf}:$lineIndex")).background(
                             Brush.verticalGradient(listOf(Color(0xFFFFF8EF), Color(0xFFF1DFC3))),
                             RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp),
                         ).padding(top = 10.dp),
@@ -165,8 +178,15 @@ internal fun InteractiveMixedShelf(
                             horizontalArrangement = Arrangement.spacedBy(3.dp),
                             verticalAlignment = Alignment.Bottom,
                         ) {
-                            val unit = ((maxWidth.value - 16f - line.groups.size * 3f) /
-                                line.groups.sumOf { it.units.toDouble() }.toFloat()).coerceAtMost(48f)
+                            val unit = ((availableWidth - 16f - line.groups.size * 3f) /
+                                line.groups.sumOf { it.units.toDouble() }.toFloat().coerceAtLeast(1f)).coerceAtMost(48f)
+                            if (line.groups.isEmpty()) {
+                                Text(
+                                    androidx.compose.ui.res.stringResource(pe.lee.feature.library.R.string.shelf_drop_here),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.align(Alignment.CenterVertically).padding(12.dp),
+                                )
+                            }
                             line.groups.forEach { group ->
                                 Column(Modifier.width((group.units * unit).dp), verticalArrangement = Arrangement.Bottom) {
                                     group.objects.asReversed().forEachIndexed { index, item ->

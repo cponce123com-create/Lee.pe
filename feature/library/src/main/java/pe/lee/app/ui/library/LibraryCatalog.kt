@@ -389,6 +389,7 @@ internal fun LibraryCatalog(
 
     if (showBookshelfCustomizer) {
         BookshelfCustomizerDialog(
+            decorationCount = bookshelfLayout.decorations.size,
             viewMode = viewMode.value,
             onViewModeChange = onViewModeChange,
             coverRows = coverRows,

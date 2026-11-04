@@ -42,7 +42,7 @@ internal class ShelfDragState {
 
     fun start(localPoint: Offset) {
         val rootPoint = localPoint + origin
-        val target = bounds.entries.firstOrNull { it.value.contains(rootPoint) } ?: return
+        val target = bounds.entries.firstOrNull { !it.key.startsWith("zone:") && it.value.contains(rootPoint) } ?: return
         activeKey = target.key
         initialBounds = target.value
         delta = Offset.Zero
@@ -52,7 +52,8 @@ internal class ShelfDragState {
     fun move(change: Offset, onHover: (String, String) -> Unit) {
         val active = activeKey ?: return
         delta += change
-        val target = bounds.entries.firstOrNull { it.key != active && it.value.contains(center) }?.key
+        val target = bounds.entries.filter { it.key != active && it.value.contains(center) }
+            .minByOrNull { it.value.width * it.value.height }?.key
         if (target != null && target != lastTarget) onHover(active, target)
         lastTarget = target
     }
@@ -69,6 +70,12 @@ internal fun ShelfDragState.itemModifier(key: String): Modifier {
     DisposableEffect(this, key) { onDispose { bounds.remove(key) } }
     return Modifier.onGloballyPositioned { bounds[key] = it.boundsInRoot() }
         .graphicsLayer { alpha = if (activeKey == key) 0f else 1f }
+}
+
+@Composable
+internal fun ShelfDragState.targetModifier(key: String): Modifier {
+    DisposableEffect(this, key) { onDispose { bounds.remove(key) } }
+    return Modifier.onGloballyPositioned { bounds[key] = it.boundsInRoot() }
 }
 
 @Composable
