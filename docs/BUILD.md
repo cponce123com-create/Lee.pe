@@ -82,3 +82,20 @@ app/build/outputs/apk/debug/app-debug.apk   (~31 MB, sin R8)
 ```
 
 El APK de depuración ronda los 30-32 MB porque no pasa por R8 ni por compresión de recursos de release. El tamaño de release se mide en la Fase 5 del plan.
+
+## Diagnóstico del CI (4 de noviembre de 2026)
+
+La compilación y las pruebas instrumentadas se ejecutan en jobs independientes.
+API 26 y 35 tienen un límite de 35 minutos cada una y hasta 600 segundos para
+arrancar el emulador. `scripts/run_instrumentation.sh` conserva el código de fallo
+y recoge logcat, estado de actividades y captura antes de cerrar el emulador.
+Los artefactos se llaman `instrumentation-api-26` y `instrumentation-api-35`.
+El APK puede estar disponible aunque falle un job instrumentado: descarga no
+significa validación completa; revisa todos los checks del commit.
+
+En tags `v*`, release.yml genera notas por categorías y publica APK/AAB solo si
+existe el keystore configurado. Una ejecución manual compila sin publicar una release.
+Sin firma se conserva el AAB de CI, pero no se publica como instalable.
+
+Kover, detekt, ktlint y Macrobenchmark siguen pendientes de integración y validación
+con el toolchain actual. No hay porcentajes de cobertura verificados todavía.

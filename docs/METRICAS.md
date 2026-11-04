@@ -2,7 +2,7 @@
 
 Registro de las cifras medidas durante la ejecución del plan de mejora. Cada número indica **cómo se obtuvo**; no se incluyen estimaciones sin medir.
 
-Última actualización: 3 de noviembre de 2026 (lote 12).
+Última revisión documental: 4 de noviembre de 2026. Las mediciones siguientes son históricas del 3 de noviembre; no representan una nueva ejecución.
 
 ## Entorno de medición
 
@@ -65,3 +65,11 @@ Medición con `LibraryScaleTest` (JVM de escritorio, 10 000 títulos con acentos
 - Memoria pico al leer un EPUB/PDF grande en gama baja.
 - Tiempo de restauración de un respaldo con 2 000 libros.
 - Tamaño del AAB de release tras R8 (Fase 5).
+
+## Nuevas mediciones pendientes
+
+- Exportar/importar respaldo cifrado: medir duración con 100, 1.000 y 2.000 libros,
+  incluyendo derivación de clave y restauración transaccional; indicar dispositivo.
+- Estantería 3D: medir frames lentos, FPS y memoria al desplazar y mover adornos.
+- Recontar pruebas a partir de XML JUnit del commit validado. El conteo histórico
+  de 64 no se aumenta por estimación ni se considera cobertura.

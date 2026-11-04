@@ -46,8 +46,19 @@ El JSON interno conserva el esquema v1/v2 y no acepta versiones desconocidas. El
 
 - Exportar, modificar una nota y restaurar; comprobar que la nota nueva no se reemplaza.
 - Desinstalar/reinstalar: importar libros de nuevo, restaurar JSON, comprobar que no hay entradas rotas ni pérdida de anotaciones vinculadas.
-- Probar duplicados de título, ediciones diferentes, EPUB frente a PDF, URI revocada, archivo JSON inválido, JSON mayor de 16 MiB y cancelación del selector.
+- Probar duplicados de título, ediciones diferentes, EPUB frente a PDF, URI revocada, archivo JSON inválido, archivo mayor de 64 MiB y cancelación del selector.
 - Probar una exportación cifrada, cancelar el selector de destino, importar con contraseña correcta/incorrecta, alterar el archivo y comprobar el error; confirmar que un JSON v1/v2 anterior sigue restaurándose. Probar más de 1.000 libros: tiempo de vista previa, CPU, memoria y duración de transacción.
 - Abrir EPUB, PDF y audio restaurados; comprobar progreso, voz, temporizador y preferencias.
 
 **Limitación importante:** aún no se recuperan archivos ausentes automáticamente; no es un gestor de almacenamiento de libros ni una sincronización en la nube.
+
+## Contraseña y preguntas frecuentes
+
+La exportación exige al menos **8 caracteres**, con confirmación. AES-256-GCM
+usa un tag de autenticación de 128 bits. La contraseña solo permanece en memoria
+durante la operación; no se guarda en preferencias ni en el respaldo.
+
+- **¿Puedo abrir `.leepebackup` en un editor de texto?** No: es un sobre binario cifrado.
+- **¿Qué pasa si olvido la contraseña?** No existe recuperación de contraseña.
+- **¿Funcionan los JSON v1/v2 anteriores?** Sí; se detectan automáticamente. Después de restaurarlos, conviene exportar un respaldo cifrado y custodiar o eliminar de forma segura el JSON anterior.
+- **¿Se cifran también los libros originales?** No: el respaldo contiene metadatos y anotaciones, no los archivos EPUB/PDF/audio.

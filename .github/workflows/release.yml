@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   bundle:
@@ -55,7 +55,7 @@ jobs:
           echo "LEE_PE_KEY_PASSWORD=$LEE_PE_KEY_PASSWORD" >> "$GITHUB_ENV"
 
       - name: Run tests and build the bundle
-        run: ./gradlew --no-daemon --stacktrace testDebugUnitTest :core:domain:test bundleRelease
+        run: ./gradlew --no-daemon --stacktrace testDebugUnitTest :core:domain:test bundleRelease assembleRelease
 
       - name: Remove the keystore
         if: always()
@@ -68,3 +68,15 @@ jobs:
           path: app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 30
+
+      - name: Create signed GitHub release
+        if: startsWith(github.ref, 'refs/tags/') && env.HAS_KEYSTORE == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" app/build/outputs/apk/release/*.apk app/build/outputs/bundle/release/*.aab --clobber
+          else
+            gh release create "$RELEASE_TAG" --verify-tag --generate-notes --title "Lee.pe $RELEASE_TAG" app/build/outputs/apk/release/*.apk app/build/outputs/bundle/release/*.aab
+          fi

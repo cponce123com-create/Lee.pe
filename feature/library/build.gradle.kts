@@ -12,6 +12,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    sourceSets.getByName("androidTest").assets.srcDir("../../core/database/schemas")
+
     buildFeatures {
         compose = true
     }
