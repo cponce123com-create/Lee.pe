@@ -49,25 +49,29 @@ class VerifyApkManifestTest(unittest.TestCase):
             verify_manifest(manifest)
 
     def test_compose_preview_activity_is_allowed_only_in_debug_and_without_filters(self):
-        activity = """        <activity android:name="androidx.compose.ui.tooling.PreviewActivity"
-            android:exported="true" />
-"""
-        manifest = BASE_MANIFEST.replace(
-            "    </application>", activity + "    </application>"
-        )
-        self.assertEqual("pe.lee.app", verify_manifest(manifest, variant="debug"))
-        with self.assertRaisesRegex(RuntimeError, "must not be packaged in release"):
-            verify_manifest(manifest, variant="release")
+        for name in (
+            "androidx.compose.ui.tooling.PreviewActivity",
+            "androidx.activity.ComponentActivity",
+        ):
+            with self.subTest(name=name):
+                activity = f'''        <activity android:name="{name}" android:exported="true" />
+'''
+                manifest = BASE_MANIFEST.replace(
+                    "    </application>", activity + "    </application>"
+                )
+                self.assertEqual("pe.lee.app", verify_manifest(manifest, variant="debug"))
+                with self.assertRaisesRegex(RuntimeError, "must not be packaged in release"):
+                    verify_manifest(manifest, variant="release")
 
-        broad_activity = activity.replace(
-            'android:exported="true" />',
-            'android:exported="true"><intent-filter><action android:name="android.intent.action.VIEW" /></intent-filter></activity>',
-        )
-        broad_manifest = BASE_MANIFEST.replace(
-            "    </application>", broad_activity + "    </application>"
-        )
-        with self.assertRaisesRegex(RuntimeError, "not safely configured"):
-            verify_manifest(broad_manifest, variant="debug")
+                broad_activity = activity.replace(
+                    'android:exported="true" />',
+                    'android:exported="true"><intent-filter><action android:name="android.intent.action.VIEW" /></intent-filter></activity>',
+                )
+                broad_manifest = BASE_MANIFEST.replace(
+                    "    </application>", broad_activity + "    </application>"
+                )
+                with self.assertRaisesRegex(RuntimeError, "not safely configured"):
+                    verify_manifest(broad_manifest, variant="debug")
 
     def test_allows_only_the_documented_hidden_media3_bluetooth_activity(self):
         activity = """        <activity
