@@ -13,8 +13,6 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    sourceSets.getByName("androidTest").assets.srcDir("../../core/database/schemas")
-
     buildFeatures {
         compose = true
     }
@@ -48,4 +46,11 @@ dependencies {
     androidTestImplementation(libs.androidx.test.runner)
     testImplementation(libs.junit)
     testImplementation(libs.org.json)
+}
+
+// Use the public variant API: the legacy sourceSets accessor crashes under AGP 9.
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.androidTest?.sources?.assets?.addStaticSourceDirectory("../../core/database/schemas")
+    }
 }
