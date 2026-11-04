@@ -64,4 +64,65 @@ class BookshelfLayoutTest {
         assertEquals(layout.decorations, restored?.decorations)
         assertEquals(layout.hiddenBookIds, restored?.hiddenBookIds)
     }
+
+    @Test
+    fun savingMixedOrderDoesNotMoveTheDecorationToTheEnd() {
+        val initial = BookshelfLayout().reconcile(listOf("a", "b"))
+            .addDecoration(ShelfDecorationType.PLANT, 0, 2)
+        val id = initial.decorations.single().id
+        val edited = initial.moveDecoration(id, orderDelta = -1)
+        val restored = BookshelfLayout.decode(BookshelfLayout.encode(edited))!!.reconcile(listOf("a", "b"))
+        assertEquals(listOf("book:a", "decor:$id", "book:b"), restored.objectsOnShelf(0).map { it.stableKey })
+    }
+
+    @Test
+    fun bookAndDecorationUseTheSameMovementSlots() {
+        val initial = BookshelfLayout().reconcile(listOf("a", "b"))
+            .addDecoration(ShelfDecorationType.PLANT, 0, 2)
+        val id = initial.decorations.single().id
+        val mixed = initial.moveDecoration(id, orderDelta = -1)
+        val moved = mixed.moveBook("a", orderDelta = 1).reconcile(listOf("a", "b"))
+        assertEquals(listOf("decor:$id", "book:a", "book:b"), moved.objectsOnShelf(0).map { it.stableKey })
+    }
+
+    @Test
+    fun tenOrnamentsCanBeAddedButEleventhDoesNotChangeTheLayout() {
+        var layout = BookshelfLayout()
+        repeat(10) { layout = layout.addDecoration(ShelfDecorationType.PLANT, 0, it) }
+        assertEquals(10, layout.decorations.size)
+        assertEquals(layout, layout.addDecoration(ShelfDecorationType.MUG, 0, 10))
+        val replaced = layout.replaceDecoration(layout.decorations.first().id, ShelfDecorationType.MUG)
+        assertEquals(10, replaced.decorations.size)
+        assertEquals(ShelfDecorationType.MUG, replaced.decorations.first().type)
+    }
+
+    @Test
+    fun filteredCoverReorderPreservesOtherBooksAndOrnaments() {
+        val initial = BookshelfLayout().reconcile(listOf("a", "b", "c"))
+            .addDecoration(ShelfDecorationType.PLANT, 0, 3)
+        val moved = initial.reorderBooks(listOf("c", "a"))
+        assertEquals(listOf("c", "b", "a"), moved.books.sortedBy { it.order }.map { it.bookId })
+        assertEquals(initial.decorations, moved.decorations)
+    }
+
+    @Test
+    fun draggingAcrossShelvesRetainsEveryObjectAndSurvivesReconciliation() {
+        val initial = BookshelfLayout().reconcile(listOf("a", "b", "c", "d", "e", "f"))
+            .addDecoration(ShelfDecorationType.LAMP, 0, 5)
+        val key = "decor:${initial.decorations.single().id}"
+        val moved = initial.moveObject(key, 1, 0).reconcile(listOf("a", "b", "c", "d", "e", "f"))
+        assertEquals(key, moved.objectsOnShelf(1).first().stableKey)
+        assertEquals(6, moved.books.map { it.bookId }.distinct().size)
+        assertEquals(1, moved.decorations.size)
+    }
+
+    @Test
+    fun packedRowsHaveAPlankForEveryOverflowLineAndKeepAllObjects() {
+        val layout = BookshelfLayout().reconcile(listOf("a", "b", "c", "d", "e"))
+        val objects = layout.objectsOnShelf(0)
+        val rows = packMixedShelves(listOf(ShelfDisplay(0, objects)), 2f)
+        assertEquals(3, rows.size)
+        assertEquals(objects.map { it.stableKey }, rows.flatMap { it.groups }.flatMap { it.objects }.map { it.stableKey })
+        org.junit.Assert.assertTrue(rows.all { row -> row.groups.sumOf { it.units.toDouble() } <= 2.0 })
+    }
 }

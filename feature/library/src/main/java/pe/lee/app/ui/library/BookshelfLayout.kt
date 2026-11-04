@@ -148,22 +148,31 @@ internal data class BookshelfLayout(
             additions += BookshelfBookPlacement(id, shelf, order, BookOrientation.UPRIGHT)
         }
         return copy(
-            books = (keptBooks + additions).normalizedOrders(),
-            decorations = decorations.filter { it.shelf >= 0 },
+            books = keptBooks.filterNot { it.bookId in retainedHidden }.distinctBy { it.bookId } + additions,
+            decorations = decorations.filter { it.shelf >= 0 }.distinctBy { it.id },
             hiddenBookIds = retainedHidden,
-        )
+        ).normalizedObjectOrders()
     }
 
     fun moveBook(bookId: String, shelfDelta: Int = 0, orderDelta: Int = 0): BookshelfLayout {
         val current = books.firstOrNull { it.bookId == bookId } ?: return this
-        val targetShelf = (current.shelf + shelfDelta).coerceAtLeast(0)
-        val targetOrder = (current.order + orderDelta).coerceAtLeast(0)
-        val remaining = books.filterNot { it.bookId == bookId }.toMutableList()
-        val sameShelf = remaining.filter { it.shelf == targetShelf }.sortedBy { it.order }.toMutableList()
-        sameShelf.add(targetOrder.coerceAtMost(sameShelf.size), current.copy(shelf = targetShelf, order = targetOrder))
-        val renumberedShelf = sameShelf.mapIndexed { index, item -> item.copy(shelf = targetShelf, order = index) }
-        val all = (remaining.filterNot { it.shelf == targetShelf } + renumberedShelf).normalizedOrders()
-        return copy(books = all, hiddenBookIds = hiddenBookIds - bookId)
+        val sourceIndex = objectsOnShelf(current.shelf).indexOfFirst { it.stableKey == "book:$bookId" }
+        return moveObject("book:$bookId", current.shelf + shelfDelta, sourceIndex + orderDelta)
+    }
+
+    /** Reorders cover slots while preserving ornaments and books outside the active filter. */
+    fun reorderBooks(ids: List<String>): BookshelfLayout {
+        val byId = books.associateBy { it.bookId }
+        val ordered = ids.distinct().mapNotNull(byId::get).iterator()
+        val selected = ids.toSet()
+        val slots = books.sortedWith(compareBy({ it.shelf }, { it.order }))
+        return copy(books = slots.map { slot ->
+            if (slot.bookId in selected && ordered.hasNext()) {
+                ordered.next().copy(shelf = slot.shelf, order = slot.order)
+            } else {
+                slot
+            }
+        }).normalizedObjectOrders()
     }
 
     fun toggleOrientation(bookId: String): BookshelfLayout = copy(
@@ -185,56 +194,44 @@ internal data class BookshelfLayout(
     )
 
     fun removeFromShelf(bookId: String): BookshelfLayout = copy(
-        books = books.filterNot { it.bookId == bookId }.normalizedOrders(),
+        books = books.filterNot { it.bookId == bookId },
         hiddenBookIds = hiddenBookIds + bookId,
-    )
+    ).normalizedObjectOrders()
 
     fun addToShelf(bookId: String, shelf: Int = 0): BookshelfLayout {
         if (books.any { it.bookId == bookId }) return copy(hiddenBookIds = hiddenBookIds - bookId)
-        val order = (books.filter { it.shelf == shelf }.maxOfOrNull { it.order } ?: -1) + 1
+        val order = (objectsOnShelf(shelf).maxOfOrNull { it.order } ?: -1) + 1
         return copy(
-            books = (books + BookshelfBookPlacement(bookId, shelf, order, BookOrientation.UPRIGHT)).normalizedOrders(),
+            books = books + BookshelfBookPlacement(bookId, shelf, order, BookOrientation.UPRIGHT),
             hiddenBookIds = hiddenBookIds - bookId,
-        )
+        ).normalizedObjectOrders()
     }
 
     fun addDecoration(type: ShelfDecorationType, shelf: Int, order: Int): BookshelfLayout {
+        if (decorations.size >= MAX_SHELF_DECORATIONS) return this
         val decoration = ShelfDecoration(UUID.randomUUID().toString(), type, shelf.coerceAtLeast(0), order.coerceAtLeast(0))
-        return copy(decorations = decorations + decoration)
+        return copy(decorations = decorations + decoration).normalizedObjectOrders()
     }
 
     fun moveDecoration(id: String, shelfDelta: Int = 0, orderDelta: Int = 0): BookshelfLayout {
-        val decoration = decorations.firstOrNull { it.id == id } ?: return this
-        val sourceShelf = decoration.shelf
-        val targetShelf = (sourceShelf + shelfDelta).coerceAtLeast(0)
-        val sourceObjects = objectsOnShelf(sourceShelf).toMutableList()
-        val sourceIndex = sourceObjects.indexOfFirst { it is ShelfObject.Decor && it.decoration.id == id }
-        if (sourceIndex < 0) return this
+        val current = decorations.firstOrNull { it.id == id } ?: return this
+        val sourceIndex = objectsOnShelf(current.shelf).indexOfFirst { it.stableKey == "decor:$id" }
+        return moveObject("decor:$id", current.shelf + shelfDelta, sourceIndex + orderDelta)
+    }
 
-        val moving = sourceObjects.removeAt(sourceIndex)
-        val targetObjects = if (targetShelf == sourceShelf) sourceObjects else objectsOnShelf(targetShelf).toMutableList()
-        val targetIndex = (sourceIndex + orderDelta).coerceIn(0, targetObjects.size)
-        targetObjects.add(targetIndex, moving)
-
-        val changedShelves = if (targetShelf == sourceShelf) {
-            mapOf(sourceShelf to targetObjects)
-        } else {
-            mapOf(sourceShelf to sourceObjects, targetShelf to targetObjects)
-        }
-        val changedBooks = changedShelves.flatMap { (shelf, objects) ->
-            objects.mapIndexedNotNull { index, item ->
-                (item as? ShelfObject.Book)?.placement?.copy(shelf = shelf, order = index)
-            }
-        }
-        val changedDecorations = changedShelves.flatMap { (shelf, objects) ->
-            objects.mapIndexedNotNull { index, item ->
-                (item as? ShelfObject.Decor)?.decoration?.copy(shelf = shelf, order = index)
-            }
-        }
-        val shelfIds = changedShelves.keys
-        return copy(
-            books = books.filterNot { it.shelf in shelfIds } + changedBooks,
-            decorations = decorations.filterNot { it.shelf in shelfIds } + changedDecorations,
+    /** Both object types share one insertion order, including during a drag preview. */
+    fun moveObject(key: String, targetShelf: Int, targetIndex: Int): BookshelfLayout {
+        val sourceShelf = (0 until shelfCount()).firstOrNull { shelf ->
+            objectsOnShelf(shelf).any { it.stableKey == key }
+        } ?: return this
+        val destination = targetShelf.coerceAtLeast(0)
+        val source = objectsOnShelf(sourceShelf).toMutableList()
+        val moving = source.firstOrNull { it.stableKey == key } ?: return this
+        source.remove(moving)
+        val target = if (destination == sourceShelf) source else objectsOnShelf(destination).toMutableList()
+        target.add(targetIndex.coerceIn(0, target.size), moving)
+        return withShelfObjects(
+            if (destination == sourceShelf) mapOf(sourceShelf to target) else mapOf(sourceShelf to source, destination to target),
         )
     }
 
@@ -259,10 +256,21 @@ internal data class BookshelfLayout(
         1,
     )
 
-    private fun List<BookshelfBookPlacement>.normalizedOrders(): List<BookshelfBookPlacement> =
-        groupBy { it.shelf }.toSortedMap().values.flatMap { group ->
-            group.sortedBy { it.order }.mapIndexed { index, item -> item.copy(order = index) }
-        }
+    private fun normalizedObjectOrders(): BookshelfLayout =
+        withShelfObjects((books.map { it.shelf } + decorations.map { it.shelf }).distinct().associateWith(::objectsOnShelf))
+
+    private fun withShelfObjects(shelves: Map<Int, List<ShelfObject>>): BookshelfLayout = copy(
+        books = books.filterNot { it.shelf in shelves } + shelves.flatMap { (shelf, objects) ->
+            objects.mapIndexedNotNull { index, item ->
+                (item as? ShelfObject.Book)?.placement?.copy(shelf = shelf, order = index)
+            }
+        },
+        decorations = decorations.filterNot { it.shelf in shelves } + shelves.flatMap { (shelf, objects) ->
+            objects.mapIndexedNotNull { index, item ->
+                (item as? ShelfObject.Decor)?.decoration?.copy(shelf = shelf, order = index)
+            }
+        },
+    )
 
     companion object {
         private const val INITIAL_BOOKS_PER_SHELF = 5
@@ -346,3 +354,12 @@ internal sealed interface ShelfObject {
 internal const val BOOKSHELF_LAYOUT_KEY = "bookshelf_layout_v1"
 internal const val BOOKSHELF_VIEW_MODE_KEY = "bookshelf_view_mode"
 internal const val BOOKSHELF_SORT_MODE_KEY = "bookshelf_sort_mode"
+
+/** Stable gesture identity, independent of a URI, page or shelf position. */
+internal val ShelfObject.stableKey: String
+    get() = when (this) {
+        is ShelfObject.Book -> "book:${placement.bookId}"
+        is ShelfObject.Decor -> "decor:${decoration.id}"
+    }
+
+internal const val MAX_SHELF_DECORATIONS = 10

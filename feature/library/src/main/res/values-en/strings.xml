@@ -81,7 +81,7 @@
     <string name="shelf_decor_sculpture">Sculpture</string>
     <string name="shelf_customizer_title">Customize bookshelf</string>
     <string name="shelf_save">Save</string>
-    <string name="shelf_customizer_hint">Decorations are optional. Choose an item, then use its menu to move it, change its orientation, or remove it.</string>
+    <string name="shelf_customizer_hint">Choose an ornament to add it. On the shelf, hold and drag to position it.</string>
     <string name="shelf_gallery_heading">Choose your decorations</string>
     <string name="shelf_add_selected">Add to bookshelf</string>
     <string name="shelf_replace_selected">Change decoration</string>
@@ -337,4 +337,9 @@
     <string name="backup_password_confirm_label">Confirm password</string>
     <string name="backup_password_mismatch">The passwords do not match.</string>
     <string name="backup_unlock">Unlock</string>
+    <string name="shelf_page_position">Page %1$d of %2$d</string>
+    <string name="shelf_decoration_count">Ornaments: %1$d/10</string>
+    <string name="shelf_decoration_limit">You can place up to 10 ornaments.</string>
+    <string name="shelf_drag_hint">Hold and drag to arrange. Double-tap to rotate a book.</string>
+    <string name="shelf_book_count">%1$d books</string>
 </resources>

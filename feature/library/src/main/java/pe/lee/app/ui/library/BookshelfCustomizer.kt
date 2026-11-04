@@ -169,23 +169,10 @@ internal fun BookshelfCustomizerDialog(
                         Spacer(Modifier.weight(1f))
                         TextButton(onClick = onReset) { Text(stringResource(R.string.shelf_reset)) }
                     }
-                    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                        shelves.forEach { shelf ->
-                            BookshelfRow(
-                                shelf = shelf,
-                                booksById = booksById,
-                                savingBookUri = savingBookUri,
-                                onBookAction = onBookAction,
-                                onMoveBook = onMoveBook,
-                                onToggleOrientation = onToggleOrientation,
-                                onRemoveBook = onRemoveBook,
-                                onMoveDecoration = onMoveDecoration,
-                                onReplaceDecoration = { id -> decorationToReplaceId = id },
-                                onRemoveDecoration = onRemoveDecoration,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
-                    }
+                    Text(
+                        stringResource(R.string.shelf_decoration_count, shelves.flatMap { it.objects }.filterIsInstance<ShelfObject.Decor>().size),
+                        color = dialogInk,
+                    )
                     Text(
                         stringResource(R.string.shelf_gallery_heading),
                         style = MaterialTheme.typography.titleMedium,
@@ -253,7 +240,8 @@ internal fun BookshelfCustomizerDialog(
                             decorationToReplaceId = null
                             selectedDecorationName = null
                         },
-                        enabled = selectedDecoration != null,
+                        enabled = selectedDecoration != null &&
+                            (decorationToReplaceId != null || shelves.flatMap { it.objects }.filterIsInstance<ShelfObject.Decor>().size < MAX_SHELF_DECORATIONS),
                         modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00695F), contentColor = Color.White),
                     ) {
