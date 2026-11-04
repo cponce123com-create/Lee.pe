@@ -45,6 +45,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -62,6 +64,7 @@ import pe.lee.feature.library.R
 
 private val ShelfPage = Color(0xFFFFF8EF)
 
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 internal fun LibraryCatalog(
     books: List<LocalBook>,
@@ -182,6 +185,8 @@ internal fun LibraryCatalog(
     val shelves = remember(shelfBooks, bookshelfLayout, customOrder) { buildShelfDisplay(shelfBooks, bookshelfLayout, customOrder) }
     LazyColumn(
         modifier = Modifier.fillMaxSize()
+            .semantics { testTagsAsResourceId = true }
+            .testTag("library_catalog")
             .background(if (darkTheme) colors.background else ShelfPage)
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .padding(horizontal = 16.dp),

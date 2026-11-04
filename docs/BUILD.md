@@ -97,5 +97,6 @@ En tags `v*`, release.yml genera notas por categorías y publica APK/AAB solo si
 existe el keystore configurado. Una ejecución manual compila sin publicar una release.
 Sin firma se conserva el AAB de CI, pero no se publica como instalable.
 
-Kover, detekt, ktlint y Macrobenchmark siguen pendientes de integración y validación
-con el toolchain actual. No hay porcentajes de cobertura verificados todavía.
+Kover, detekt, ktlint y Macrobenchmark tienen configuración de CI. Su ejecución y los porcentajes de cobertura deben verificarse por commit.
+
+Los comandos de análisis estático, cobertura, documentación, seguridad y benchmarks están en [QUALITY.md](QUALITY.md).

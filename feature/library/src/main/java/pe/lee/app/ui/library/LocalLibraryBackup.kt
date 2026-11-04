@@ -129,8 +129,11 @@ internal object LocalLibraryBackup {
         }
         // Never write an archive that our own importer cannot read.
         parse(bytes.toString(Charsets.UTF_8))
-        val encrypted = ExportBackupUseCase()(bytes, password)
-        bytes.fill(0)
+        val encrypted = try {
+            ExportBackupUseCase()(bytes, password)
+        } finally {
+            bytes.fill(0)
+        }
         try {
             val output = context.contentResolver.openOutputStream(uri, "wt")
                 ?: throw IOException("No se pudo abrir el destino del respaldo.")

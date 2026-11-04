@@ -59,3 +59,10 @@ Readium Kotlin Toolkit se distribuye bajo BSD-3-Clause. Conserva sus avisos de l
 En EPUB, mantén pulsada una frase y selecciona **Compartir como imagen** (en algunos dispositivos está en los tres puntos del menú de selección). La versión 0.3.0 incluye seis plantillas, fuente configurable y PNG en formato Historia/Cuadrada con título, autor y marca Lee.pe. Todo se prepara en el dispositivo. Consulta [Tarjetas](docs/COMPARTIR_TARJETAS.md) y [auditoría y validación](docs/AUDITORIA_INTEGRACION.md). La aceptación en apps receptoras sigue pendiente de prueba física.
 
 El artefacto de CI incluye `commit.txt`, `version.properties` y `SHA256SUMS` para identificar la APK. No instalar un APK de origen desconocido sobre una biblioteca sin respaldo; una firma diferente no permite actualizar conservando los datos de forma automática.
+
+## Respaldo local y calidad
+
+Los respaldos `.leepebackup` cifran metadatos, progreso y anotaciones con AES-256-GCM;
+no incluyen los libros originales. Consulta [respaldo local](docs/RESPALDO_LOCAL.md),
+[calidad y comandos](docs/QUALITY.md), [estantería](docs/LIBRARY_3D.md) y
+[tarjetas de citas](docs/SHARECARD.md).

@@ -56,6 +56,15 @@ android {
         }
     }
 
+    if (providers.gradleProperty("enableBenchmarks").orNull == "true") {
+        buildTypes.create("benchmark") {
+            initWith(buildTypes.getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+            isDebuggable = false
+        }
+    }
+
     buildFeatures {
         compose = true
     }

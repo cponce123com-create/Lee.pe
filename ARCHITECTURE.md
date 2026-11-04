@@ -30,5 +30,18 @@ una cola persistente para completar la limpieza de archivos y preferencias cuand
 el almacenamiento vuelve a estar disponible. Los respaldos restauran metadatos
 sobre libros existentes; no conceden permisos SAF ni incluyen archivos originales.
 
-La separación en casos de uso y ViewModels especializados todavía no está completa;
-no debe interpretarse esta descripción como una refactorización ya finalizada.
+El dominio contiene casos de uso de importación, borrado, progreso, búsqueda y
+codificación/decodificación de respaldos, conectados a las rutas existentes.
+LibraryScreen compone estado, catálogo y diálogos. Los selectores SAF conservan
+su ciclo de vida Compose; no se crean ViewModels mediante `remember`.
+
+```mermaid
+flowchart TD
+    UI[Compose] --> VM[LibraryViewModel]
+    VM --> UC[Casos de uso]
+    UC --> REPO[Repositorios]
+    REPO --> DB[Room y archivos locales]
+```
+
+La sincronización opcional, KMP y Paging 3 son posibles evoluciones, no capacidades
+implementadas ni requisitos para usar el lector offline.
