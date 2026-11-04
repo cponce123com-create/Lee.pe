@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -158,7 +159,16 @@ internal fun CoverShelfPager(
 
 /** One paper-backed cover, without a metadata card or synthetic purple frame. */
 @Composable
-internal fun ShelfCoverArt(book: LocalBook, modifier: Modifier = Modifier) {
+internal fun ShelfCoverArt(book: LocalBook, modifier: Modifier = Modifier, portrait: Boolean = true) {
+    BoxWithConstraints(modifier, contentAlignment = Alignment.BottomCenter) {
+        val width = if (portrait) minOf(maxWidth.value, maxHeight.value * .68f) else maxWidth.value
+        val height = if (portrait) width / .68f else maxHeight.value
+        ShelfCoverFace(book, Modifier.size(width.dp, height.dp))
+    }
+}
+
+@Composable
+private fun ShelfCoverFace(book: LocalBook, modifier: Modifier) {
     Box(
         modifier.padding(start = 2.dp, end = 3.dp, top = 3.dp, bottom = 2.dp)
             .semantics { contentDescription = book.title }

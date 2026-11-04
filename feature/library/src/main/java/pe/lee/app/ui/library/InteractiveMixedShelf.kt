@@ -71,7 +71,7 @@ internal fun packMixedShelves(shelves: List<ShelfDisplay>, capacity: Float): Lis
                 }) {
                 groups[groups.lastIndex] = previous.copy(objects = previous.objects + item)
             } else {
-                groups += MixedShelfGroup(listOf(item), if (stacked) 2f else if (item is ShelfObject.Decor) 1.2f else .82f)
+                groups += MixedShelfGroup(listOf(item), if (stacked) 2f else if (item is ShelfObject.Decor) 1.7f else .82f)
             }
         }
         var line = mutableListOf<MixedShelfGroup>()
@@ -291,7 +291,7 @@ private fun MixedShelfObject(
                                 rotationX = 50f
                                 cameraDistance = 18f * density
                                 transformOrigin = TransformOrigin(.5f, 1f)
-                            })
+                            }, portrait = false)
                         }
                         Text(
                             book.title,
