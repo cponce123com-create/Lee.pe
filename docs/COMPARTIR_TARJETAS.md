@@ -19,13 +19,13 @@ flowchart LR
 - `ShareCardSharer` escribe el PNG en `cacheDir/quotecards` y abre el Share Sheet con `ACTION_SEND`, tipo `image/png` y permiso temporal de lectura.
 - `ShareCardArgs` transporta texto, identificador local del libro, título, autor y Locator JSON cuando el lector lo conoce.
 
-## Temas incluidos
+## Plantillas incluidas
 
-1. **Papel:** crema y tipografía serif.
-2. **Noche:** negro OLED y texto claro.
-3. **Acento:** degradado cálido con texto oscuro.
+La galería incluye 40 opciones editables, organizadas con los nombres de las referencias: marfil editorial, noche literaria, papel y tinta, subrayado, bosque, mar en calma, atardecer, lluvia, acuarela, botánica, flores secas, cielo nocturno, tipografía protagonista, revista, degradado, geometría, Polaroid, carta, página de libro, biblioteca, libro antiguo, papiro, piedra tallada, mármol y oro, arcilla, pergamino real, tinta japonesa, cianotipo, cristal, cromo, aura, recortes, grabado en madera, bordado, azulejos, cartel retro, museo, jardín de musgo, arena y relieve blanco.
 
-Para añadir un tema, agrega un identificador a `QuoteCardThemeId`, define su paleta en `ui/theme/QuoteCardTheme.kt`, incorpora una etiqueta en `res/values/strings.xml` y cubre su selección en la prueba de pantalla. Revisa que el contraste siga siendo legible.
+Las variaciones se dibujan en Compose con paletas, marcos, líneas, figuras y texturas vectoriales. El texto y el pie se generan en tiempo de ejecución, así que las frases del lector no quedan pegadas a una imagen de muestra. No se descargan recursos ni se envían datos a internet.
+
+Para añadir una plantilla, agrega su identificador a `QuoteCardThemeId`, define su paleta y patrón en `ui/theme/QuoteCardTheme.kt`, incorpora el nombre en `values/strings.xml` y `values-en/strings.xml`, y añade la etiqueta a `ThemeSelector`. Revisa contraste y ajuste de frases largas.
 
 ## Formatos
 
@@ -36,7 +36,7 @@ Para añadir otro formato, agrégalo a `QuoteCardFormat`, añade su selector y a
 
 ## Limitaciones conocidas
 
-- El autor se obtiene de los metadatos de publicación EPUB cuando Readium lo proporciona. El visor PDF actual no expone autor; el usuario puede completar o corregir ese campo en “Editar frase”.
+- La imagen exportada muestra únicamente la frase, el autor y la marca Lee.pe. El título del libro no aparece en la tarjeta. El autor se obtiene de los metadatos EPUB cuando Readium lo proporciona; en PDF el usuario puede completarlo o corregirlo en “Editar frase”.
 - En PDF escaneados sin capa de texto no habrá selección disponible; OCR no forma parte de esta función.
 - Las tarjetas aún no se guardan en galería ni en Room. La primera versión solo genera una copia temporal para compartir; los PNG temporales antiguos se limpian al crear otra tarjeta.
 - La pantalla actual de lectura está en `app`; la acción se integra allí sin mover el lector a `feature:reader`.
@@ -50,7 +50,7 @@ Para añadir otro formato, agrégalo a `QuoteCardFormat`, añade su selector y a
 ./gradlew lintDebug testDebugUnitTest assembleDebug
 ```
 
-En un teléfono, validar selección y creación desde EPUB y PDF con texto, los tres temas, ambos formatos, cancelación del Share Sheet, envío por WhatsApp/otra app y permiso de lectura del PNG compartido.
+En un teléfono, validar selección y creación desde EPUB y PDF con texto, las 40 plantillas, ambos formatos, cancelación del Share Sheet, envío por WhatsApp/otra app y permiso de lectura del PNG compartido.
 
 ## Estabilización previa a distribución (2026-11-03)
 
@@ -64,10 +64,8 @@ Pendiente en dispositivo: compartir y volver desde el selector de apps, pulsar r
 
 Limitaciones pendientes de corregir antes de producción: las citas largas pueden mostrar puntos suspensivos; el raster de vista previa se escala a 1080 píxeles, por lo que la nitidez depende de la pantalla. No se considera validada la exportación de citas extensas ni el rendimiento en dispositivos con poca memoria.
 
-## Plantillas y exportación 0.3.0
+## Plantillas y exportación
 
-Se ofrecen Minimalista, Editorial clásica, Oscura elegante, Papel antiguo, Degradado moderno y Literaria premium. El usuario elige la paleta y puede conservar la fuente de la plantilla o elegir Clásica/Moderna. Las fuentes son del sistema, sin nuevas licencias ni descargas.
-
-La tarjeta se compone a 1080 píxeles de ancho. La vista en pantalla se escala, pero la captura conserva los píxeles originales. El texto se mide y reduce hasta 12 sp; si aun así no cabe, Compartir queda deshabilitado y se pide cambiar a Historia o editar la frase. El pie bibliográfico se mide por separado. Esta regla sustituye la limitación de elipsis y ampliación descrita en la sección histórica anterior.
+La tarjeta se compone a 1080 píxeles de ancho. La vista en pantalla se escala, pero la captura conserva los píxeles originales. La frase y el nombre del autor se miden por separado y reducen su tipografía hasta el mínimo legible configurado; si el contenido todavía no cabe, Compartir queda deshabilitado y se pide cambiar a Historia o editar la frase. El título se conserva como metadato interno, pero no se dibuja.
 
 La opción del lector se llama **Compartir como imagen**. Mantén pulsado un fragmento del EPUB; según el menú del sistema puede aparecer directamente o dentro de los tres puntos. Los colores se personalizan eligiendo plantilla; no se incluye un selector libre de colores.

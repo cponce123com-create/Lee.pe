@@ -6,11 +6,11 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import pe.lee.feature.sharecard.R
 import pe.lee.feature.sharecard.domain.model.QuoteCardThemeId
 
@@ -20,22 +20,62 @@ internal fun ThemeSelector(
     onThemeSelected: (QuoteCardThemeId) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    FlowRow(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
         QuoteCardThemeId.entries.forEach { theme ->
-            val label = when (theme) {
-                QuoteCardThemeId.MINIMAL -> stringResource(R.string.share_card_theme_minimal)
-                QuoteCardThemeId.EDITORIAL -> stringResource(R.string.share_card_theme_editorial)
-                QuoteCardThemeId.PREMIUM -> stringResource(R.string.share_card_theme_premium)
-                QuoteCardThemeId.PAPER -> stringResource(R.string.share_card_theme_paper)
-                QuoteCardThemeId.DARK_OLED -> stringResource(R.string.share_card_theme_night)
-                QuoteCardThemeId.ACCENT -> stringResource(R.string.share_card_theme_accent)
-            }
             FilterChip(
                 selected = selected == theme,
                 onClick = { onThemeSelected(theme) },
-                label = { Text(label) },
+                label = { Text(stringResource(theme.labelRes), maxLines = 1) },
                 modifier = Modifier.semantics { role = Role.RadioButton }
             )
         }
     }
 }
+
+private val QuoteCardThemeId.labelRes: Int
+    get() = when (this) {
+        QuoteCardThemeId.EDITORIAL -> R.string.share_card_theme_editorial
+        QuoteCardThemeId.DARK_OLED -> R.string.share_card_theme_night
+        QuoteCardThemeId.PAPER -> R.string.share_card_theme_paper
+        QuoteCardThemeId.MINIMAL -> R.string.share_card_theme_minimal
+        QuoteCardThemeId.PREMIUM -> R.string.share_card_theme_premium
+        QuoteCardThemeId.ACCENT -> R.string.share_card_theme_accent
+        QuoteCardThemeId.FOREST -> R.string.share_card_theme_forest
+        QuoteCardThemeId.CALM_SEA -> R.string.share_card_theme_calm_sea
+        QuoteCardThemeId.SUNSET -> R.string.share_card_theme_sunset
+        QuoteCardThemeId.RAIN -> R.string.share_card_theme_rain
+        QuoteCardThemeId.WATERCOLOR -> R.string.share_card_theme_watercolor
+        QuoteCardThemeId.BOTANICAL -> R.string.share_card_theme_botanical
+        QuoteCardThemeId.DRIED_FLOWERS -> R.string.share_card_theme_dried_flowers
+        QuoteCardThemeId.NIGHT_SKY -> R.string.share_card_theme_night_sky
+        QuoteCardThemeId.PROTAGONIST -> R.string.share_card_theme_protagonist
+        QuoteCardThemeId.MAGAZINE -> R.string.share_card_theme_magazine
+        QuoteCardThemeId.GEOMETRY -> R.string.share_card_theme_geometry
+        QuoteCardThemeId.POLAROID -> R.string.share_card_theme_polaroid
+        QuoteCardThemeId.LETTER -> R.string.share_card_theme_letter
+        QuoteCardThemeId.BOOK_PAGE -> R.string.share_card_theme_book_page
+        QuoteCardThemeId.LIBRARY -> R.string.share_card_theme_library
+        QuoteCardThemeId.OLD_BOOK -> R.string.share_card_theme_old_book
+        QuoteCardThemeId.PAPYRUS -> R.string.share_card_theme_papyrus
+        QuoteCardThemeId.CARVED_STONE -> R.string.share_card_theme_carved_stone
+        QuoteCardThemeId.MARBLE_GOLD -> R.string.share_card_theme_marble_gold
+        QuoteCardThemeId.CLAY -> R.string.share_card_theme_clay
+        QuoteCardThemeId.REAL_PARCHMENT -> R.string.share_card_theme_real_parchment
+        QuoteCardThemeId.JAPANESE_INK -> R.string.share_card_theme_japanese_ink
+        QuoteCardThemeId.CYANOTYPE -> R.string.share_card_theme_cyanotype
+        QuoteCardThemeId.CRYSTAL -> R.string.share_card_theme_crystal
+        QuoteCardThemeId.CHROME -> R.string.share_card_theme_chrome
+        QuoteCardThemeId.AURA -> R.string.share_card_theme_aura
+        QuoteCardThemeId.TORN_PAPER -> R.string.share_card_theme_torn_paper
+        QuoteCardThemeId.WOOD_ENGRAVING -> R.string.share_card_theme_wood_engraving
+        QuoteCardThemeId.EMBROIDERY -> R.string.share_card_theme_embroidery
+        QuoteCardThemeId.AZULEJOS -> R.string.share_card_theme_azulejos
+        QuoteCardThemeId.RETRO_POSTER -> R.string.share_card_theme_retro_poster
+        QuoteCardThemeId.MOSS_GARDEN -> R.string.share_card_theme_moss_garden
+        QuoteCardThemeId.SAND -> R.string.share_card_theme_sand
+        QuoteCardThemeId.WHITE_RELIEF -> R.string.share_card_theme_white_relief
+    }
