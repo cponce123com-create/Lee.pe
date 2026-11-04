@@ -8,6 +8,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -17,6 +18,7 @@ import pe.lee.feature.sharecard.domain.ShareCardSharer
 import pe.lee.feature.sharecard.domain.model.QuoteCard
 import pe.lee.feature.sharecard.domain.model.QuoteCardThemeId
 import pe.lee.feature.sharecard.domain.model.QuoteCardRaster
+import pe.lee.feature.sharecard.R
 import java.util.concurrent.atomic.AtomicReference
 
 class ShareCardScreenTest {
@@ -29,13 +31,17 @@ class ShareCardScreenTest {
         composeRule.setContent { ShareCardScreen(viewModel = viewModel, onBack = {}) }
 
         composeRule.onNodeWithText("Cita de prueba").assertExists()
-        composeRule.onNodeWithText("Minimalista").assertExists()
-        composeRule.onNodeWithText("Editorial clásica").assertExists()
-        composeRule.onNodeWithText("Literaria premium").assertExists()
-        composeRule.onNodeWithText("Papel antiguo").assertExists()
-        composeRule.onNodeWithText("Oscura elegante").assertExists()
-        composeRule.onNodeWithText("Degradado moderno").assertExists()
-        composeRule.onNodeWithText("Compartir").assertExists()
+        listOf(
+            R.string.share_card_theme_minimal,
+            R.string.share_card_theme_editorial,
+            R.string.share_card_theme_premium,
+            R.string.share_card_theme_paper,
+            R.string.share_card_theme_night,
+            R.string.share_card_theme_accent
+        ).forEach { resourceId ->
+            composeRule.onNodeWithText(text(resourceId)).assertExists()
+        }
+        composeRule.onNodeWithText(text(R.string.share_card_share)).assertExists()
     }
 
     @Test
@@ -43,8 +49,12 @@ class ShareCardScreenTest {
         val viewModel = createViewModel(QuoteCard("   ", "Libro", "Autora"))
         composeRule.setContent { ShareCardScreen(viewModel = viewModel, onBack = {}) }
 
-        composeRule.onNodeWithText("Compartir").assertIsNotEnabled()
-        composeRule.onNodeWithText("Oscura elegante").performScrollTo().assertIsNotSelected().performClick().assertIsSelected()
+        composeRule.onNodeWithText(text(R.string.share_card_share)).assertIsNotEnabled()
+        composeRule.onNodeWithText(text(R.string.share_card_theme_night))
+            .performScrollTo()
+            .assertIsNotSelected()
+            .performClick()
+            .assertIsSelected()
         composeRule.runOnIdle { assertEquals(QuoteCardThemeId.DARK_OLED, viewModel.state.value.card.themeId) }
     }
 
@@ -63,7 +73,10 @@ class ShareCardScreenTest {
         composeRule.setContent { ShareCardScreen(viewModel = viewModel, onBack = {}) }
 
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Compartir").performScrollTo().assertIsEnabled().performClick()
+        composeRule.onNodeWithText(text(R.string.share_card_share))
+            .performScrollTo()
+            .assertIsEnabled()
+            .performClick()
         composeRule.waitUntil(30_000) { viewModel.state.value.status == ShareCardStatus.Ready || viewModel.state.value.status is ShareCardStatus.Error }
 
         assertEquals(ShareCardStatus.Ready, viewModel.state.value.status)
@@ -77,4 +90,7 @@ class ShareCardScreenTest {
         generator = ShareCardGenerator { _, _, _ -> byteArrayOf(1) },
         sharer = ShareCardSharer { }
     )
+
+    private fun text(resourceId: Int): String =
+        InstrumentationRegistry.getInstrumentation().targetContext.getString(resourceId)
 }
