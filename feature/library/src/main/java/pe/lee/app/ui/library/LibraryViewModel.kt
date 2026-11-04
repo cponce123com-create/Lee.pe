@@ -50,6 +50,7 @@ class LibraryViewModel(
     fun observeDurationForDay(day: String) = statsRepository.observeDurationForDay(day)
     fun observeReadingDayKeys() = statsRepository.observeReadingDayKeys()
     suspend fun findBook(uri: String) = booksRepository.findByUri(uri)
+    suspend fun findBookById(id: String) = booksRepository.findById(id)
     suspend fun insertBook(book: BookEntity) = booksRepository.insertBooks(listOf(book))
     suspend fun insertBooks(books: List<BookEntity>) = booksRepository.insertBooks(books)
     suspend fun rebindUri(bookId: String, uri: String) = booksRepository.rebindUri(bookId, uri)

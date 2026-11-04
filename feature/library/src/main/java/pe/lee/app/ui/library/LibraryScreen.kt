@@ -200,8 +200,19 @@ fun LibraryScreen(
     var collectionBeingRenamed by collectionBeingRenamedState
     val collectionRenameDraftState = remember { mutableStateOf("") }
     var collectionRenameDraft by collectionRenameDraftState
+    val organizingBookIdState = rememberSaveable { mutableStateOf<String?>(null) }
     val organizingBookState = remember { mutableStateOf<LocalBook?>(null) }
     var organizingBook by organizingBookState
+    LaunchedEffect(organizingBook, organizingBookIdState.value, books) {
+        val selectedId = organizingBookIdState.value
+        if (organizingBook == null && selectedId != null) {
+            organizingBook = books.firstOrNull { it.id == selectedId }
+        } else if (organizingBook != null && selectedId != organizingBook?.id) {
+            organizingBookIdState.value = organizingBook?.id
+        } else if (organizingBook == null && selectedId != null && books.any { it.id == selectedId }) {
+            organizingBookIdState.value = null
+        }
+    }
     val collectionDraftState = remember { mutableStateOf("") }
     var collectionDraft by collectionDraftState
     val showLibraryStatsState = remember { mutableStateOf(false) }
@@ -229,7 +240,8 @@ fun LibraryScreen(
     var sortMenuExpanded by sortMenuExpandedState
     val sortModeState = rememberSaveable { mutableStateOf(LibrarySortMode.TITLE_ASC) }
     var sortMode by sortModeState
-    val pendingMarkdownState = remember { mutableStateOf<String?>(null) }
+    // Persist only the stable book id; markdown is regenerated after the SAF picker returns.
+    val pendingMarkdownState = rememberSaveable { mutableStateOf<String?>(null) }
     var pendingMarkdown by pendingMarkdownState
     val cleanupMutex = remember { Mutex() }
     var libraryMenuExpanded by remember { mutableStateOf(false) }

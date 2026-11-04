@@ -355,11 +355,7 @@ internal fun LibraryCatalog(
                                         if (annotations.isEmpty()) {
                                             Toast.makeText(context, context.getString(R.string.library_no_annotations), Toast.LENGTH_SHORT).show()
                                         } else {
-                                            pendingMarkdown.value = AnnotationMarkdownExporter.toMarkdown(
-                                                bookTitle = book.title,
-                                                format = book.format,
-                                                annotations = annotations
-                                            )
+                                            pendingMarkdown.value = book.id
                                             onExportAnnotationsFile(annotationExportFileName(book.title))
                                         }
                                     } catch (cancelled: CancellationException) {

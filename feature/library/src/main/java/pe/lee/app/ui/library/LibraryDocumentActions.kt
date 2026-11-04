@@ -55,11 +55,19 @@ internal fun rememberLibraryDocumentActions(
     val exportAnnotationsLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/plain")
     ) { uri ->
-        val markdown = pendingMarkdown.value
+        val bookId = pendingMarkdown.value
         pendingMarkdown.value = null
-        if (uri != null && markdown != null) {
+        if (uri != null && bookId != null) {
             coroutineScope.launch {
                 try {
+                    val book = viewModel.findBookById(bookId)
+                        ?: throw IOException(context.getString(R.string.library_export_annotations_failed))
+                    val annotations = viewModel.annotationsForBook(book.uri)
+                    val markdown = AnnotationMarkdownExporter.toMarkdown(
+                        bookTitle = book.title,
+                        format = book.format,
+                        annotations = annotations
+                    )
                     withContext(Dispatchers.IO) {
                         val output = context.contentResolver.openOutputStream(uri, "wt")
                             ?: throw IOException(context.getString(R.string.library_export_file_failed))
