@@ -45,7 +45,7 @@ class VerifyApkManifestTest(unittest.TestCase):
             'android:name="pe.lee.feature.sharecard.navigation.ShareCardActivity"\n            android:exported="false"',
             'android:name="pe.lee.feature.sharecard.navigation.ShareCardActivity"\n            android:exported="true"',
         )
-        with self.assertRaisesRegex(RuntimeError, "exported activity"):
+        with self.assertRaisesRegex(RuntimeError, "non-exported"):
             verify_manifest(manifest)
 
     def test_rejects_exported_receiver(self):
