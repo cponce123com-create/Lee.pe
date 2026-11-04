@@ -22,14 +22,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.MonotonicFrameClock
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -41,7 +38,6 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.withContext
 import pe.lee.app.ui.theme.LeePeTheme
 import pe.lee.feature.sharecard.R
 import pe.lee.feature.sharecard.domain.model.QuoteCardFormat
@@ -60,10 +56,6 @@ fun ShareCardScreen(
     LeePeTheme {
         val state by viewModel.state.collectAsStateWithLifecycle()
         val layer = rememberGraphicsLayer()
-        // Not every host provides a MonotonicFrameClock (previews, tests, custom
-        // Recomposers). Failing hard here crashed the whole screen, so fall back to
-        // the current context and let the capture itself decide (A-22).
-        val frameClock = rememberCoroutineScope().coroutineContext[MonotonicFrameClock]
         var editingQuote by remember { mutableStateOf(false) }
         var contentFits by remember(state.card) { mutableStateOf(false) }
         val storyFormat = state.card.format == QuoteCardFormat.STORY
@@ -164,11 +156,11 @@ fun ShareCardScreen(
                     enabled = contentFits && state.card.text.isNotBlank() && state.status !is ShareCardStatus.Generating,
                     onClick = {
                         viewModel.shareCapturedImage {
-                            // viewModelScope has no Compose frame clock; retain it for capture.
-                            withContext(frameClock ?: kotlin.coroutines.EmptyCoroutineContext) {
-                                withFrameNanos { }
-                                layer.toImageBitmap()
-                            }
+                            // The layer was recorded by drawWithContent during the
+                            // latest composed frame. Reading it directly also works
+                            // from viewModelScope and in Compose instrumentation tests,
+                            // where no MonotonicFrameClock is attached.
+                            layer.toImageBitmap()
                         }
                     },
                     modifier = Modifier.fillMaxWidth()
