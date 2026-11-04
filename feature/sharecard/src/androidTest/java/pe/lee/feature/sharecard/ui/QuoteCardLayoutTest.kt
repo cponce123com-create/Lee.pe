@@ -1,6 +1,6 @@
 package pe.lee.feature.sharecard.ui
 
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -20,7 +20,12 @@ class QuoteCardLayoutTest {
         val text = "Leer nos permite descubrir otras vidas, recordar y mirar el mundo con nuevos ojos. ".repeat(5)
         val fits = AtomicReference<Boolean?>(null)
         compose.setContent {
-            QuoteCardCanvas(QuoteCard(text, "Título del libro", "Autora"), Modifier.fillMaxSize(), { fits.set(it) })
+            QuoteCardCanvas(
+                card = QuoteCard(text, "Título del libro", "Autora"),
+                captureModifier = Modifier,
+                onFitsChanged = { fits.set(it) },
+                modifier = Modifier.fillMaxWidth()
+            )
         }
         compose.waitForIdle()
         assertEquals(true, fits.get())
@@ -32,9 +37,10 @@ class QuoteCardLayoutTest {
         val fits = AtomicReference<Boolean?>(null)
         compose.setContent {
             QuoteCardCanvas(
-                QuoteCard("Texto extenso. ".repeat(1000), "Libro", "Autor", format = QuoteCardFormat.SQUARE),
-                Modifier.fillMaxSize(),
-                { fits.set(it) }
+                card = QuoteCard("Texto extenso. ".repeat(1000), "Libro", "Autor", format = QuoteCardFormat.SQUARE),
+                captureModifier = Modifier,
+                onFitsChanged = { fits.set(it) },
+                modifier = Modifier.fillMaxWidth()
             )
         }
         compose.waitForIdle()

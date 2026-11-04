@@ -36,7 +36,10 @@ fun QuoteCardPreview(
 ) {
     var quoteFits by remember(card) { mutableStateOf(false) }
     var metadataFits by remember(card) { mutableStateOf(false) }
-    SideEffect { onFitsChanged(quoteFits && metadataFits) }
+    // Read the snapshot state during composition so child measurement updates
+    // schedule a recomposition before reporting the combined result.
+    val cardFits = quoteFits && metadataFits
+    SideEffect { onFitsChanged(cardFits) }
     val palette = quoteCardPalette(card.themeId)
     val family = when (card.font) {
         QuoteCardFont.TEMPLATE -> palette.fontFamily
