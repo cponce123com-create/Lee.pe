@@ -165,7 +165,7 @@ internal object LocalLibraryBackup {
             payload
         }
         val archive = try {
-            parse(jsonBytes.toString(Charsets.UTF_8.name()))
+            parse(jsonBytes.toString(Charsets.UTF_8))
         } finally {
             jsonBytes.fill(0)
             if (jsonBytes !== payload) payload.fill(0)
