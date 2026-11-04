@@ -205,7 +205,7 @@
     <string name="backup_local_title">Respaldo local de Lee.pe</string>
     <string name="backup_description">Exporta o recupera tu biblioteca, ubicaciones, notas, marcadores y estadísticas.</string>
     <string name="backup_books_not_included">Los archivos EPUB, PDF y audio no se incluyen. En otro teléfono, primero importa los libros y después recupera los datos. Las coincidencias por título pueden variar entre ediciones.</string>
-    <string name="backup_privacy_notice">El respaldo JSON contiene notas y datos de lectura sin cifrar. Guárdalo en un lugar privado. Nunca se envía a Lee.pe.</string>
+    <string name="backup_privacy_notice">Los respaldos nuevos se cifran en este dispositivo. Los JSON antiguos no están cifrados y pueden exponer tus notas y datos de lectura; guárdalos en un lugar privado.</string>
     <string name="backup_export">Exportar</string>
     <string name="backup_restore">Restaurar</string>
     <string name="backup_confirm_restore_title">Confirmar restauración</string>
@@ -330,4 +330,11 @@
     <string name="shelf_category_adventure">Aventura</string>
     <string name="shelf_category_home">Hogar</string>
     <string name="shelf_category_coffee">Café</string>
+    <string name="backup_password_export_title">Cifrar respaldo</string>
+    <string name="backup_password_import_title">Abrir respaldo cifrado</string>
+    <string name="backup_password_guidance">Usa una contraseña de al menos 8 caracteres y guárdala en un lugar seguro. Lee.pe no puede recuperarla.</string>
+    <string name="backup_password_label">Contraseña</string>
+    <string name="backup_password_confirm_label">Repite la contraseña</string>
+    <string name="backup_password_mismatch">Las contraseñas no coinciden.</string>
+    <string name="backup_unlock">Desbloquear</string>
 </resources>
