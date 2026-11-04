@@ -101,6 +101,15 @@ jobs:
           profile: pixel_2
           script: ./gradlew --no-daemon --max-workers=2 -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs=-Xmx4g connectedDebugAndroidTest
 
+      - name: Run instrumentation tests on Android 26
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
+        with:
+          api-level: 26
+          target: default
+          arch: x86
+          profile: pixel_2
+          script: ./gradlew --no-daemon --max-workers=2 -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs=-Xmx4g connectedDebugAndroidTest
+
       - name: Upload validation reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
