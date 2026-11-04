@@ -188,7 +188,7 @@ internal fun EpubAnnotationSheets(
             text = {
                 OutlinedTextField(
                     value = noteDraft.value,
-                    onValueChange = { noteDraft.value = it },
+                    onValueChange = { noteDraft.value = it.take(12_000) },
                     label = { Text(stringResource(R.string.annotation_note_label)) },
                     minLines = 3,
                     maxLines = 6

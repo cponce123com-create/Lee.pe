@@ -85,8 +85,13 @@ internal fun rememberLibraryDocumentActions(
         if (destination != null) coroutineScope.launch {
             backupBusy.value = true
             try {
-                LocalLibraryBackup.save(context, destination, backupRepository)
-                Toast.makeText(context, context.getString(R.string.library_export_backup_done), Toast.LENGTH_LONG).show()
+                val adjustedRecords = LocalLibraryBackup.save(context, destination, backupRepository)
+                val message = if (adjustedRecords == 0) {
+                    context.getString(R.string.library_export_backup_done)
+                } else {
+                    context.getString(R.string.library_export_backup_adjusted, adjustedRecords)
+                }
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (e: Exception) {

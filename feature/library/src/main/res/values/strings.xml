@@ -56,6 +56,7 @@
     <string name="library_export_annotations_failed">No se pudo exportar las anotaciones</string>
     <string name="library_export_backup_done">Respaldo local exportado correctamente</string>
     <string name="library_export_backup_failed">No se pudo exportar el respaldo</string>
+    <string name="library_export_backup_adjusted">Respaldo exportado. Se ajustaron u omitieron %1$d registros demasiado grandes.</string>
     <string name="library_backup_invalid">Respaldo no válido</string>
     <string name="library_import_summary">Archivos incorporados: %1$d. Ya existentes: %2$d. No compatibles: %3$d. Sin permiso persistente: %4$d.</string>
     <string name="library_import_failed">No se pudo completar la importación.</string>

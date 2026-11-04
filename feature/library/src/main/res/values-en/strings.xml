@@ -56,6 +56,7 @@
     <string name="library_export_annotations_failed">The annotations could not be exported</string>
     <string name="library_export_backup_done">Local backup exported successfully</string>
     <string name="library_export_backup_failed">The backup could not be exported</string>
+    <string name="library_export_backup_adjusted">Backup exported. %1$d oversized records were shortened or omitted.</string>
     <string name="library_backup_invalid">Invalid backup</string>
     <string name="library_import_summary">Files added: %1$d. Already present: %2$d. Unsupported: %3$d. Without persistent permission: %4$d.</string>
     <string name="library_import_failed">The import could not be completed.</string>

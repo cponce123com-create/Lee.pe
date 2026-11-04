@@ -190,7 +190,7 @@ internal fun EpubReaderSessionEffects(
                                     bookUri = uri.toString(),
                                     kind = "HIGHLIGHT",
                                     locatorJson = selectedLocator.toJSON().toString(),
-                                    selectedText = selectedLocator.text.highlight,
+                                    selectedText = selectedLocator.text.highlight?.take(12_000),
                                     colorArgb = DEFAULT_HIGHLIGHT_COLOR,
                                     createdAt = now
                                 )

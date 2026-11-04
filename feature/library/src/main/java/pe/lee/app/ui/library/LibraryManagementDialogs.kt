@@ -138,7 +138,7 @@ internal fun LibraryManagementDialogs(
                     }
                     OutlinedTextField(
                         value = collectionDraft.value,
-                        onValueChange = { collectionDraft.value = it },
+                        onValueChange = { collectionDraft.value = it.take(120) },
                         label = { Text(stringResource(R.string.library_create_or_use_collection)) },
                         placeholder = { Text(stringResource(R.string.library_collection_examples)) },
                         singleLine = true
@@ -305,7 +305,7 @@ internal fun LibraryManagementDialogs(
             text = {
                 OutlinedTextField(
                     value = titleDraft.value,
-                    onValueChange = { titleDraft.value = it },
+                    onValueChange = { titleDraft.value = it.take(500) },
                     label = { Text(stringResource(R.string.library_book_title)) },
                     singleLine = true
                 )

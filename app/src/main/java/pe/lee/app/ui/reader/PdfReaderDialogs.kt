@@ -333,7 +333,7 @@ internal fun PdfReaderDialogs(
             text = {
                 OutlinedTextField(
                     value = noteDraft,
-                    onValueChange = { noteDraft = it },
+                    onValueChange = { noteDraft = it.take(12_000) },
                     label = { Text(stringResource(R.string.pdf_note_page_label)) },
                     minLines = 3,
                     maxLines = 6
@@ -351,7 +351,7 @@ internal fun PdfReaderDialogs(
                                     bookUri = uri.toString(),
                                     kind = "NOTE",
                                     locatorJson = pdfPageLocator(quoteForNote?.let { selectedPdfPage } ?: pageIndex),
-                                    selectedText = quoteForNote,
+                                    selectedText = quoteForNote?.take(12_000),
                                     noteText = noteDraft.trim(),
                                     createdAt = now
                                 )
@@ -394,7 +394,7 @@ internal fun PdfReaderDialogs(
                                         bookUri = uri.toString(),
                                         kind = "HIGHLIGHT",
                                         locatorJson = pdfTextLocator(selectedPdfPage, selectedPdfRects),
-                                        selectedText = selectedPdfText,
+                                    selectedText = selectedPdfText?.take(12_000),
                                         colorArgb = DEFAULT_PDF_HIGHLIGHT_COLOR,
                                         createdAt = now
                                     )
