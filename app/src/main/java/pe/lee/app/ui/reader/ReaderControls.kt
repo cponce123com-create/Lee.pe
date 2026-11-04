@@ -84,6 +84,7 @@ internal fun TtsControls(
     var voiceMenuExpanded by remember { mutableStateOf(false) }
     val selectedVoice = voices.firstOrNull { it.id.value == selectedVoiceId }
     val narrationFallback = stringResource(R.string.reader_tts_book_narration)
+    val voiceInstallHint = stringResource(R.string.reader_voice_install_hint)
     Surface(
         modifier = modifier.fillMaxWidth().padding(horizontal = 12.dp),
         color = Color(0xF20A1423),
@@ -166,7 +167,7 @@ internal fun TtsControls(
                                 } catch (_: Exception) {
                                     Toast.makeText(
                                         context,
-                                        context.getString(R.string.reader_voice_install_hint),
+                                        voiceInstallHint,
                                         Toast.LENGTH_LONG
                                     ).show()
                                 }
