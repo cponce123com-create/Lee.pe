@@ -24,7 +24,8 @@ import kotlinx.coroutines.launch
 data class LibraryState(
     val books: List<BookEntity> = emptyList(),
     val collections: List<CollectionEntity> = emptyList(),
-    val bookCollectionNames: Map<String, List<String>> = emptyMap()
+    val bookCollectionNames: Map<String, List<String>> = emptyMap(),
+    val isLoaded: Boolean = false
 )
 
 /** State of the SAF folder scan, owned by the ViewModel so a rotation cannot cancel it (A-36). */
@@ -51,7 +52,8 @@ class LibraryViewModel(
         LibraryState(
             books = books,
             collections = collections,
-            bookCollectionNames = assignments.groupBy({ it.bookId }, { it.collectionName })
+            bookCollectionNames = assignments.groupBy({ it.bookId }, { it.collectionName }),
+            isLoaded = true
         )
     }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LibraryState())
