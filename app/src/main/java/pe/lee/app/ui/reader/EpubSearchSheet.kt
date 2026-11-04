@@ -34,7 +34,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.platform.LocalContext
 import pe.lee.app.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -66,7 +65,9 @@ internal fun EpubSearchSheet(
     onSelectResult: (Locator) -> Unit
 ) {
     val searchScope = rememberCoroutineScope()
-    val context = LocalContext.current
+    val searchNotSupportedMessage = stringResource(R.string.epub_search_not_supported)
+    val searchFailedMessage = stringResource(R.string.epub_search_failed)
+    val preparingMessage = stringResource(R.string.epub_preparing)
     ModalBottomSheet(onDismissRequest = onDismiss) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
@@ -109,14 +110,14 @@ internal fun EpubSearchSheet(
                                                     caseSensitive = false,
                                                     diacriticSensitive = false
                                                 )
-                                            ) ?: throw IOException(context.getString(R.string.epub_search_not_supported))
+                                            ) ?: throw IOException(searchNotSupportedMessage)
                                             val locators = mutableListOf<Locator>()
                                             var pagesRead = 0
                                             var limitReached = false
                                             try {
                                                 while (locators.size < 100 && pagesRead < 20) {
                                                     val page = iterator.next().getOrElse { error ->
-                                                        throw IOException(context.getString(R.string.epub_search_failed))
+                                                        throw IOException(searchFailedMessage)
                                                     } ?: break
                                                     pagesRead++
                                                     locators += page.locators.take(100 - locators.size)
@@ -134,13 +135,13 @@ internal fun EpubSearchSheet(
                                     } catch (cancelled: CancellationException) {
                                         throw cancelled
                                     } catch (error: Exception) {
-                                        searchError.value = context.getString(R.string.epub_search_failed)
+                                        searchError.value = searchFailedMessage
                                     } finally {
                                         searching.value = false
                                     }
                                 }
                             } else if (targetPublication == null) {
-                                searchError.value = context.getString(R.string.epub_preparing)
+                                searchError.value = preparingMessage
                             }
                         }
                     ) {
