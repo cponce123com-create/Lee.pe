@@ -1,5 +1,6 @@
 """Verify offline permissions, component exposure, app backup policy, and quote cards."""
 import os
+import argparse
 from pathlib import Path
 import subprocess
 import sys
@@ -16,6 +17,7 @@ PROFILE_INSTALL_ACTIONS = {
     "androidx.profileinstaller.action.SAVE_PROFILE",
     "androidx.profileinstaller.action.BENCHMARK_OPERATION",
 }
+COMPOSE_PREVIEW_ACTIVITY = "androidx.compose.ui.tooling.PreviewActivity"
 FORBIDDEN_PERMISSIONS = {
     "android.permission.INTERNET",
     "android.permission.MANAGE_EXTERNAL_STORAGE",
@@ -95,8 +97,20 @@ def _is_expected_profile_install_receiver(receiver: ET.Element) -> bool:
     return len(actions) == len(PROFILE_INSTALL_ACTIONS) and set(actions) == PROFILE_INSTALL_ACTIONS
 
 
-def verify_manifest(manifest: str) -> str:
+def _is_expected_debug_compose_preview_activity(activity: ET.Element) -> bool:
+    """Allow only Compose's explicit, filterless preview entry point in debug APKs."""
+    return (
+        activity.get(ANDROID + "exported") == "true"
+        and activity.get(ANDROID + "permission") is None
+        and activity.get(ANDROID + "enabled") in (None, "true")
+        and not activity.findall("intent-filter")
+    )
+
+
+def verify_manifest(manifest: str, variant: str = "release") -> str:
     """Validate app security invariants and return the package name."""
+    if variant not in {"debug", "release"}:
+        raise ValueError("variant must be 'debug' or 'release'")
     root = ET.fromstring(manifest)
     package = root.attrib.get("package")
     if not package:
@@ -139,6 +153,11 @@ def verify_manifest(manifest: str) -> str:
         elif name == "androidx.media3.session.BluetoothValidationActivity":
             if not _is_expected_media3_bluetooth_validation_activity(activity):
                 raise RuntimeError("Media3 Bluetooth validation activity is not safely configured")
+        elif name == COMPOSE_PREVIEW_ACTIVITY:
+            if variant != "debug":
+                raise RuntimeError("Compose PreviewActivity must not be packaged in release")
+            if not _is_expected_debug_compose_preview_activity(activity):
+                raise RuntimeError("Compose PreviewActivity is not safely configured for debug")
         elif name.startswith("pe.lee.") and exported != "false":
             raise RuntimeError(f"App activity must be explicitly non-exported: {name}")
         elif exported == "true":
@@ -201,13 +220,13 @@ def verify_manifest(manifest: str) -> str:
     return package
 
 
-def verify(apk: Path) -> None:
+def verify(apk: Path, variant: str) -> None:
     sdk = Path(os.environ["ANDROID_HOME"])
     analyzer = sdk / "cmdline-tools/latest/bin/apkanalyzer"
     manifest = subprocess.check_output(
         [str(analyzer), "manifest", "print", str(apk)], text=True
     )
-    package = verify_manifest(manifest)
+    package = verify_manifest(manifest, variant)
 
     with zipfile.ZipFile(apk) as archive:
         marker = b"Lpe/lee/feature/sharecard/navigation/ShareCardActivity;"
@@ -224,4 +243,8 @@ def verify(apk: Path) -> None:
 
 
 if __name__ == "__main__":
-    verify(Path(sys.argv[1]))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("apk", type=Path)
+    parser.add_argument("--variant", choices=("debug", "release"), required=True)
+    arguments = parser.parse_args()
+    verify(arguments.apk, arguments.variant)
