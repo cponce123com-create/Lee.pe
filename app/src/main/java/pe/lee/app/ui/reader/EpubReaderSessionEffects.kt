@@ -13,6 +13,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.commitNow
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.CancellationException
@@ -362,7 +366,8 @@ internal fun EpubReaderSessionEffects(
         val reader = session.navigator.value ?: return@LaunchedEffect
         // Scroll mode emits a locator several times per second. Persisting each
         // one wrote to Room and SharedPreferences on every frame; throttle to one
-        // write every two seconds and rely on onPause for the final position.
+        // write every two seconds. A lifecycle observer below persists the final
+        // current locator when the activity pauses.
         var lastSavedAt = 0L
         reader.currentLocator.collect { locator ->
             val now = System.currentTimeMillis()
@@ -381,6 +386,33 @@ internal fun EpubReaderSessionEffects(
                 openedAt = System.currentTimeMillis()
             )
         }
+    }
+
+    DisposableEffect(activity, uri, session.navigator.value) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE) {
+                val locator = session.navigator.value?.currentLocator?.value ?: return@LifecycleEventObserver
+                coroutineScope.launch {
+                    val locatorJson = locator.toJSON().toString()
+                    val progress = locator.locations.totalProgression?.toFloat()
+                        ?.coerceIn(0f, 1f) ?: session.progress.value
+                    session.progress.value = progress
+                    withContext(Dispatchers.IO) {
+                        settings.apply(SettingsRepository.Store.LIBRARY) {
+                            putString(ReaderActivity.locatorPreferenceKey(uri), locatorJson)
+                        }
+                        viewModel.saveProgress(
+                            uri = uri.toString(),
+                            locatorJson = locatorJson,
+                            progress = progress,
+                            openedAt = System.currentTimeMillis()
+                        )
+                    }
+                }
+            }
+        }
+        activity.lifecycle.addObserver(observer)
+        onDispose { activity.lifecycle.removeObserver(observer) }
     }
 
     return buildEpubReaderSessionActions(
