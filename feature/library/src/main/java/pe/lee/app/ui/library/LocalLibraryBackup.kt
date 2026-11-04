@@ -17,6 +17,7 @@ import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.app.data.repository.AudioProgressStore
 import pe.lee.app.data.repository.LocalBackupRepository
 import pe.lee.core.domain.LocalTextLimits
+import pe.lee.core.domain.LocalBackupCipher
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.util.Locale
@@ -29,6 +30,8 @@ private const val MAX_BOOKS = 20000
 private const val MAX_ANNOTATIONS = 60000
 private const val MAX_SESSIONS = 100000
 private const val MAX_COLLECTIONS = 2000
+
+internal class BackupPasswordRequiredException : IOException("Este respaldo está cifrado. Ingresa su contraseña para continuar.")
 
 internal data class LocalBackupArchive(
     val snapshot: LocalBackupSnapshot,
@@ -46,7 +49,7 @@ internal data class LocalBackupPreview(
 internal data class SanitizedBackupSnapshot(val snapshot: LocalBackupSnapshot, val adjustedRecords: Int)
 
 internal object LocalLibraryBackup {
-    suspend fun save(context: Context, uri: Uri, backupRepository: LocalBackupRepository) = withContext(Dispatchers.IO) {
+    suspend fun save(context: Context, uri: Uri, backupRepository: LocalBackupRepository, password: String) = withContext(Dispatchers.IO) {
         val sanitized = sanitizeSnapshot(backupRepository.snapshot())
         val snapshot = sanitized.snapshot
         val settingsRepository = SettingsRepository(context)
@@ -122,16 +125,23 @@ internal object LocalLibraryBackup {
         }
         // Never write an archive that our own importer cannot read.
         parse(bytes.toString(Charsets.UTF_8))
+        val encrypted = LocalBackupCipher.encrypt(bytes, password)
+        bytes.fill(0)
         val output = context.contentResolver.openOutputStream(uri, "wt")
             ?: throw IOException("No se pudo abrir el destino del respaldo.")
-        output.use { it.write(bytes) }
+        try {
+            output.use { it.write(encrypted) }
+        } finally {
+            encrypted.fill(0)
+        }
         sanitized.adjustedRecords
     }
 
     suspend fun preview(
         context: Context,
         uri: Uri,
-        backupRepository: LocalBackupRepository
+        backupRepository: LocalBackupRepository,
+        password: String? = null
     ): LocalBackupPreview = withContext(Dispatchers.IO) {
         val input = context.contentResolver.openInputStream(uri)
             ?: throw IOException("No se pudo abrir el respaldo.")
@@ -145,7 +155,19 @@ internal object LocalLibraryBackup {
                 buffer.write(chunk, 0, n)
             }
         }
-        val archive = parse(buffer.toString(Charsets.UTF_8.name()))
+        val payload = buffer.toByteArray()
+        val jsonBytes = if (LocalBackupCipher.isEncrypted(payload)) {
+            val suppliedPassword = password ?: throw BackupPasswordRequiredException()
+            LocalBackupCipher.decrypt(payload, suppliedPassword)
+        } else {
+            payload
+        }
+        val archive = try {
+            parse(jsonBytes.toString(Charsets.UTF_8.name()))
+        } finally {
+            jsonBytes.fill(0)
+            if (jsonBytes !== payload) payload.fill(0)
+        }
         val current = backupRepository.allBooks()
         val matcher = LocalBackupMatcher(current)
         val used = HashSet<String>()
