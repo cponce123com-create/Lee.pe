@@ -40,7 +40,7 @@ class BookshelfLayoutTest {
                     is ShelfObject.Book -> item.placement.bookId
                     is ShelfObject.Decor -> item.decoration.id
                 }
-            }
+            },
         )
 
         val movedUp = movedLeft.moveDecoration(decoration.id, shelfDelta = 1)

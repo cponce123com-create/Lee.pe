@@ -1,11 +1,11 @@
 package pe.lee.app.data.repository
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import pe.lee.app.data.local.ReadingAnnotationDao
 import pe.lee.app.data.local.ReadingAnnotationEntity
 import pe.lee.core.domain.ReaderAnnotation
 import pe.lee.core.domain.ReaderAnnotationRepository
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 
 class AnnotationRepository(private val dao: ReadingAnnotationDao) : ReaderAnnotationRepository {
     fun observeForBook(uri: String): Flow<List<ReadingAnnotationEntity>> = dao.observeByBook(uri)
@@ -23,11 +23,9 @@ class AnnotationRepository(private val dao: ReadingAnnotationDao) : ReaderAnnota
 
     override suspend fun saveReaderAnnotation(annotation: ReaderAnnotation) = dao.upsert(annotation.toEntity())
 
-    override suspend fun updateReaderAnnotationNote(id: String, note: String?, at: Long) =
-        dao.updateNote(id, note, at)
+    override suspend fun updateReaderAnnotationNote(id: String, note: String?, at: Long) = dao.updateNote(id, note, at)
 
-    override suspend fun updateReaderAnnotationColor(id: String, color: Int, at: Long) =
-        dao.updateColor(id, color, at)
+    override suspend fun updateReaderAnnotationColor(id: String, color: Int, at: Long) = dao.updateColor(id, color, at)
 
     override suspend fun deleteReaderAnnotation(id: String) = dao.deleteById(id)
 }
@@ -41,7 +39,7 @@ private fun ReadingAnnotationEntity.toDomain() = ReaderAnnotation(
     noteText = noteText,
     colorArgb = colorArgb,
     createdAt = createdAt,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
 )
 
 private fun ReaderAnnotation.toEntity() = ReadingAnnotationEntity(
@@ -53,5 +51,5 @@ private fun ReaderAnnotation.toEntity() = ReadingAnnotationEntity(
     noteText = noteText,
     colorArgb = colorArgb,
     createdAt = createdAt,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
 )

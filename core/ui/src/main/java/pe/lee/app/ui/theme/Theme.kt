@@ -29,7 +29,7 @@ private val LeePeDarkColors = darkColorScheme(
     onBackground = Color(0xFFF5F3FF),
     onSurface = Color(0xFFF5F3FF),
     onSurfaceVariant = Color(0xFFB7C2D8),
-    outline = Color(0xFF304666)
+    outline = Color(0xFF304666),
 )
 
 /**
@@ -47,16 +47,13 @@ private val LeePeLightColors = lightColorScheme(
     onBackground = Color(0xFF1B1428),
     onSurface = Color(0xFF1B1428),
     onSurfaceVariant = Color(0xFF4E4860),
-    outline = Color(0xFF9A93AD)
+    outline = Color(0xFF9A93AD),
 )
 
 @Composable
-fun LeePeTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
-) {
+fun LeePeTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = if (darkTheme) LeePeDarkColors else LeePeLightColors,
-        content = content
+        content = content,
     )
 }

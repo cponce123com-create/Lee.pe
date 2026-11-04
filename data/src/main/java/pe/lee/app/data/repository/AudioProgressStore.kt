@@ -1,15 +1,14 @@
 package pe.lee.app.data.repository
 
 import android.content.Context
-import pe.lee.app.data.repository.SettingsRepository
 import java.security.MessageDigest
+import pe.lee.app.data.repository.SettingsRepository
 
 object AudioProgressStore {
     private val store = SettingsRepository.Store.AUDIO_PROGRESS
 
-    fun get(context: Context, mediaId: String): Long =
-        SettingsRepository(context).getLong(store, key(mediaId), 0L)
-            .coerceAtLeast(0L)
+    fun get(context: Context, mediaId: String): Long = SettingsRepository(context).getLong(store, key(mediaId), 0L)
+        .coerceAtLeast(0L)
 
     fun put(context: Context, mediaId: String, positionMs: Long) {
         SettingsRepository(context).apply(store) {
@@ -17,8 +16,7 @@ object AudioProgressStore {
         }
     }
 
-    fun remove(context: Context, mediaId: String): Boolean =
-        SettingsRepository(context).update(store) { remove(key(mediaId)) }
+    fun remove(context: Context, mediaId: String): Boolean = SettingsRepository(context).update(store) { remove(key(mediaId)) }
 
     /**
      * Stable preference key for a media id. Exposed so the backup exporter can

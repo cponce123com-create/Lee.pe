@@ -6,52 +6,52 @@ import android.net.Uri
 import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.ui.platform.LocalDensity
-import pe.lee.app.R
-import pe.lee.app.data.repository.SettingsRepository
-import pe.lee.app.ui.reader.PdfReaderViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlin.math.roundToInt
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.collect
-import androidx.compose.runtime.snapshotFlow
-import kotlin.math.roundToInt
+import kotlinx.coroutines.withContext
+import pe.lee.app.R
+import pe.lee.app.data.repository.SettingsRepository
+import pe.lee.app.ui.reader.PdfReaderViewModel
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,7 +62,7 @@ internal fun PdfReaderScreen(
     viewModel: PdfReaderViewModel,
     settings: SettingsRepository,
     onReadingVisibilityChange: (Boolean) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     val context = LocalContext.current
     val annotations by viewModel.annotationState.collectAsStateWithLifecycle()
@@ -110,7 +110,6 @@ internal fun PdfReaderScreen(
     val pdfSearchInProgressMessage = stringResource(R.string.pdf_search_in_progress_document)
     val pdfSearchCancelledMessage = stringResource(R.string.pdf_search_cancelled)
     val pdfSearchFailedMessage = stringResource(R.string.pdf_search_failed)
-
 
     LaunchedEffect(viewModel, uri) { viewModel.openBook(uri.toString()) }
 
@@ -189,7 +188,7 @@ internal fun PdfReaderScreen(
                             page.width,
                             page.height,
                             maxWidthPx,
-                            maxPixels = pdfPixelBudget(context.applicationContext)
+                            maxPixels = pdfPixelBudget(context.applicationContext),
                         )
                         Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888).also {
                             it.eraseColor(android.graphics.Color.WHITE)
@@ -207,7 +206,7 @@ internal fun PdfReaderScreen(
                 uri = uri.toString(),
                 pageIndex = pageIndex,
                 progress = progress,
-                openedAt = System.currentTimeMillis()
+                openedAt = System.currentTimeMillis(),
             )
         } catch (cancelled: CancellationException) {
             throw cancelled
@@ -233,7 +232,7 @@ internal fun PdfReaderScreen(
                     uri = uri.toString(),
                     pageIndex = currentPage,
                     progress = currentProgress,
-                    openedAt = System.currentTimeMillis()
+                    openedAt = System.currentTimeMillis(),
                 )
             }
     }
@@ -270,7 +269,7 @@ internal fun PdfReaderScreen(
                     pageCount,
                     term,
                     renderMutex,
-                    context.resources
+                    context.resources,
                 )
                 pdfSearchResults = outcome.results
                 pdfSearchMessage = outcome.message
@@ -289,7 +288,7 @@ internal fun PdfReaderScreen(
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF07111F))
+            .background(Color(0xFF07111F)),
     ) {
         val availableWidth = with(density) { maxWidth.roundToPx() - 32.dp.roundToPx() }
 
@@ -302,7 +301,7 @@ internal fun PdfReaderScreen(
                 onBack = onBack,
                 onSearch = { showPdfSearch = true },
                 onAnnotations = { showAnnotations = true },
-                onHideControls = { readerControlsVisible = false }
+                onHideControls = { readerControlsVisible = false },
             )
 
             PdfPageViewport(
@@ -313,7 +312,7 @@ internal fun PdfReaderScreen(
                 coroutineScope = coroutineScope,
                 context = context,
                 annotations = annotations,
-                availableWidth = availableWidth
+                availableWidth = availableWidth,
             )
 
             PdfReaderBottomControls(
@@ -341,23 +340,35 @@ internal fun PdfReaderScreen(
                 },
                 onSliderChange = { sliderPage = it },
                 onSliderFinished = { moveToPage(sliderPage.roundToInt()) },
-                onZoomOut = { zoomScale = (zoomScale - 0.25f).coerceAtLeast(1f); panOffset = Offset.Zero },
-                onZoomReset = { zoomScale = 1f; panOffset = Offset.Zero },
-                onZoomIn = { zoomScale = (zoomScale + 0.25f).coerceAtMost(3f); panOffset = Offset.Zero },
-                onRotate = { rotationDegrees = (rotationDegrees + 90) % 360; panOffset = Offset.Zero },
+                onZoomOut = {
+                    zoomScale = (zoomScale - 0.25f).coerceAtLeast(1f)
+                    panOffset = Offset.Zero
+                },
+                onZoomReset = {
+                    zoomScale = 1f
+                    panOffset = Offset.Zero
+                },
+                onZoomIn = {
+                    zoomScale = (zoomScale + 0.25f).coerceAtMost(3f)
+                    panOffset = Offset.Zero
+                },
+                onRotate = {
+                    rotationDegrees = (rotationDegrees + 90) % 360
+                    panOffset = Offset.Zero
+                },
                 onPrevious = { moveToPage(pageIndex - 1) },
                 onRequestPage = {
                     requestedPage = (pageIndex + 1).toString()
                     showPageDialog = true
                 },
-                onNext = { moveToPage(pageIndex + 1) }
+                onNext = { moveToPage(pageIndex + 1) },
             )
         }
 
         PdfReaderRestoreControls(
             visible = readerControlsVisible,
             onShowControls = { readerControlsVisible = true },
-            modifier = Modifier.align(Alignment.TopEnd)
+            modifier = Modifier.align(Alignment.TopEnd),
         )
 
         PdfReaderDialogs(
@@ -371,7 +382,7 @@ internal fun PdfReaderScreen(
             viewModel = viewModel,
             coroutineScope = coroutineScope,
             moveToPage = ::moveToPage,
-            searchPdf = ::searchPdf
+            searchPdf = ::searchPdf,
         )
 
         errorMessage?.let { message ->
@@ -380,19 +391,23 @@ internal fun PdfReaderScreen(
                     .align(Alignment.Center)
                     .padding(24.dp),
                 color = Color(0xFF15253A),
-                shape = RoundedCornerShape(22.dp)
+                shape = RoundedCornerShape(22.dp),
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text(stringResource(R.string.pdf_open_failed_title), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 19.sp)
+                    Text(
+                        stringResource(R.string.pdf_open_failed_title),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 19.sp,
+                    )
                     Text(message, color = Color(0xFFD3DCEC))
                     Button(onClick = onBack) { Text(stringResource(R.string.pdf_back_to_library)) }
                 }
             }
         }
-
     }
 }

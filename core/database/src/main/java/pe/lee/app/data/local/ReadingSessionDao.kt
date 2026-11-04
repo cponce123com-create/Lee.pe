@@ -23,8 +23,8 @@ interface ReadingSessionDao {
             ReadingSessionEntity(
                 dayKey = dayKey,
                 bookUri = bookUri,
-                durationSeconds = (current?.durationSeconds ?: 0L) + seconds
-            )
+                durationSeconds = (current?.durationSeconds ?: 0L) + seconds,
+            ),
         )
     }
 

@@ -2,8 +2,6 @@ package pe.lee.app.ui.reader
 
 import android.Manifest
 import android.app.Application
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -29,7 +27,7 @@ internal data class EpubReaderSessionActions(
      * Stops narration before an explicit jump. Otherwise the TTS location
      * collector moves the page back to where it was speaking (A-32).
      */
-    val pauseTtsForNavigation: () -> Unit
+    val pauseTtsForNavigation: () -> Unit,
 )
 
 @OptIn(ExperimentalReadiumApi::class)
@@ -40,9 +38,15 @@ internal fun buildEpubReaderSessionActions(
     title: String,
     settings: SettingsRepository,
     session: EpubReaderSessionState,
-    onRequestNotificationPermission: () -> Unit
+    onRequestNotificationPermission: () -> Unit,
 ): EpubReaderSessionActions = createEpubReaderSessionActions(
-    scope, context, uri, title, settings, session, onRequestNotificationPermission
+    scope,
+    context,
+    uri,
+    title,
+    settings,
+    session,
+    onRequestNotificationPermission,
 )
 
 @OptIn(ExperimentalReadiumApi::class)
@@ -53,7 +57,7 @@ private fun createEpubReaderSessionActions(
     title: String,
     settings: SettingsRepository,
     session: EpubReaderSessionState,
-    onRequestNotificationPermission: () -> Unit
+    onRequestNotificationPermission: () -> Unit,
 ): EpubReaderSessionActions {
     fun stopTts() {
         val binding = session.ttsServiceBinding.value
@@ -111,7 +115,7 @@ private fun createEpubReaderSessionActions(
             }
             val factory = AndroidTtsNavigatorFactory(
                 context.applicationContext as Application,
-                activePublication
+                activePublication,
             )
             if (factory == null) {
                 session.ttsError.value = context.getString(R.string.tts_not_supported)
@@ -129,7 +133,7 @@ private fun createEpubReaderSessionActions(
                 },
                 initialLocator = (session.navigator.value as? VisualNavigator)?.firstVisibleElementLocator()
                     ?: session.navigator.value?.currentLocator?.value,
-                initialPreferences = AndroidTtsPreferences(speed = session.ttsSpeed.value.toDouble())
+                initialPreferences = AndroidTtsPreferences(speed = session.ttsSpeed.value.toDouble()),
             ).getOrElse { failure ->
                 session.ttsError.value = context.getString(R.string.tts_prepare_failed)
                 return@launch
@@ -149,8 +153,8 @@ private fun createEpubReaderSessionActions(
                 speech.submitPreferences(
                     AndroidTtsPreferences(
                         speed = session.ttsSpeed.value.toDouble(),
-                        voices = mapOf(savedVoice.language to savedVoice.id)
-                    )
+                        voices = mapOf(savedVoice.language to savedVoice.id),
+                    ),
                 )
             }
             val publication = session.publication.value ?: run {

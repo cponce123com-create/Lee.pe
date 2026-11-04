@@ -1,17 +1,12 @@
 package pe.lee.app.ui.library
 
+import java.util.UUID
 import org.json.JSONArray
 import org.json.JSONObject
 import pe.lee.feature.library.R
-import java.util.UUID
 
 /** Stored with the library preferences; book IDs are stable Room IDs, never file paths. */
-internal data class BookshelfBookPlacement(
-    val bookId: String,
-    val shelf: Int,
-    val order: Int,
-    val orientation: BookOrientation
-)
+internal data class BookshelfBookPlacement(val bookId: String, val shelf: Int, val order: Int, val orientation: BookOrientation)
 
 internal enum class BookOrientation { UPRIGHT, STACKED }
 
@@ -55,7 +50,7 @@ internal enum class ShelfDecorationType(val labelRes: Int, val drawableRes: Int)
     // Keep legacy values readable so existing saved shelf layouts retain their ornaments.
     VASE(R.string.shelf_decor_vase, R.drawable.shelf_ornament_vase),
     FIGURE(R.string.shelf_decor_figure, R.drawable.shelf_ornament_figure),
-    SCULPTURE(R.string.shelf_decor_sculpture, R.drawable.shelf_ornament_figure)
+    SCULPTURE(R.string.shelf_decor_sculpture, R.drawable.shelf_ornament_figure),
 }
 
 internal val SHELF_DECORATION_GALLERY_TYPES = ShelfDecorationType.entries.filterNot {
@@ -71,32 +66,73 @@ internal enum class ShelfDecorationCategory(val labelRes: Int) {
     ADVENTURE(R.string.shelf_category_adventure),
     HOME(R.string.shelf_category_home),
     COFFEE(R.string.shelf_category_coffee),
-    SEPARATORS(R.string.shelf_category_separators)
+    SEPARATORS(R.string.shelf_category_separators),
 }
 
 internal fun ShelfDecorationType.belongsTo(category: ShelfDecorationCategory): Boolean = when (category) {
     ShelfDecorationCategory.ALL -> true
-    ShelfDecorationCategory.NATURE -> this in setOf(ShelfDecorationType.PLANT, ShelfDecorationType.LAVENDER, ShelfDecorationType.BONSAI, ShelfDecorationType.IVY)
-    ShelfDecorationCategory.MASCOTS -> this in setOf(ShelfDecorationType.CAT, ShelfDecorationType.DOG, ShelfDecorationType.FOREST_SPIRIT, ShelfDecorationType.FOX, ShelfDecorationType.SOOT_CREATURE)
-    ShelfDecorationCategory.READING -> this in setOf(ShelfDecorationType.MUG, ShelfDecorationType.GLOBE, ShelfDecorationType.TYPEWRITER, ShelfDecorationType.HEADPHONES, ShelfDecorationType.GLOWING_BOOK, ShelfDecorationType.QUILL)
-    ShelfDecorationCategory.FANTASY -> this in setOf(ShelfDecorationType.ORB, ShelfDecorationType.FOREST_SPIRIT, ShelfDecorationType.FAIRY, ShelfDecorationType.DRAGON, ShelfDecorationType.MOON_STARS, ShelfDecorationType.SNOW_GLOBE, ShelfDecorationType.CASTLE, ShelfDecorationType.SOOT_CREATURE)
-    ShelfDecorationCategory.ADVENTURE -> this in setOf(ShelfDecorationType.ASTRONAUT, ShelfDecorationType.LIGHTHOUSE, ShelfDecorationType.ARCH, ShelfDecorationType.AIRSHIP, ShelfDecorationType.GLOBE)
-    ShelfDecorationCategory.HOME -> this in setOf(ShelfDecorationType.LAMP, ShelfDecorationType.CANDLE, ShelfDecorationType.HOURGLASS, ShelfDecorationType.LANTERN, ShelfDecorationType.CAT_BOX)
+    ShelfDecorationCategory.NATURE ->
+        this in
+            setOf(ShelfDecorationType.PLANT, ShelfDecorationType.LAVENDER, ShelfDecorationType.BONSAI, ShelfDecorationType.IVY)
+    ShelfDecorationCategory.MASCOTS ->
+        this in
+            setOf(
+                ShelfDecorationType.CAT,
+                ShelfDecorationType.DOG,
+                ShelfDecorationType.FOREST_SPIRIT,
+                ShelfDecorationType.FOX,
+                ShelfDecorationType.SOOT_CREATURE,
+            )
+    ShelfDecorationCategory.READING ->
+        this in
+            setOf(
+                ShelfDecorationType.MUG,
+                ShelfDecorationType.GLOBE,
+                ShelfDecorationType.TYPEWRITER,
+                ShelfDecorationType.HEADPHONES,
+                ShelfDecorationType.GLOWING_BOOK,
+                ShelfDecorationType.QUILL,
+            )
+    ShelfDecorationCategory.FANTASY ->
+        this in
+            setOf(
+                ShelfDecorationType.ORB,
+                ShelfDecorationType.FOREST_SPIRIT,
+                ShelfDecorationType.FAIRY,
+                ShelfDecorationType.DRAGON,
+                ShelfDecorationType.MOON_STARS,
+                ShelfDecorationType.SNOW_GLOBE,
+                ShelfDecorationType.CASTLE,
+                ShelfDecorationType.SOOT_CREATURE,
+            )
+    ShelfDecorationCategory.ADVENTURE ->
+        this in
+            setOf(
+                ShelfDecorationType.ASTRONAUT,
+                ShelfDecorationType.LIGHTHOUSE,
+                ShelfDecorationType.ARCH,
+                ShelfDecorationType.AIRSHIP,
+                ShelfDecorationType.GLOBE,
+            )
+    ShelfDecorationCategory.HOME ->
+        this in
+            setOf(
+                ShelfDecorationType.LAMP,
+                ShelfDecorationType.CANDLE,
+                ShelfDecorationType.HOURGLASS,
+                ShelfDecorationType.LANTERN,
+                ShelfDecorationType.CAT_BOX,
+            )
     ShelfDecorationCategory.COFFEE -> this in setOf(ShelfDecorationType.MUG, ShelfDecorationType.COFFEE_SETUP, ShelfDecorationType.CANDLE)
     ShelfDecorationCategory.SEPARATORS -> this in setOf(ShelfDecorationType.BOOKEND, ShelfDecorationType.DIVIDER, ShelfDecorationType.ARCH)
 }
 
-internal data class ShelfDecoration(
-    val id: String,
-    val type: ShelfDecorationType,
-    val shelf: Int,
-    val order: Int
-)
+internal data class ShelfDecoration(val id: String, val type: ShelfDecorationType, val shelf: Int, val order: Int)
 
 internal data class BookshelfLayout(
     val books: List<BookshelfBookPlacement> = emptyList(),
     val decorations: List<ShelfDecoration> = emptyList(),
-    val hiddenBookIds: Set<String> = emptySet()
+    val hiddenBookIds: Set<String> = emptySet(),
 ) {
     fun reconcile(bookIds: List<String>): BookshelfLayout {
         val currentIds = bookIds.toSet()
@@ -114,7 +150,7 @@ internal data class BookshelfLayout(
         return copy(
             books = (keptBooks + additions).normalizedOrders(),
             decorations = decorations.filter { it.shelf >= 0 },
-            hiddenBookIds = retainedHidden
+            hiddenBookIds = retainedHidden,
         )
     }
 
@@ -132,15 +168,25 @@ internal data class BookshelfLayout(
 
     fun toggleOrientation(bookId: String): BookshelfLayout = copy(
         books = books.map { placement ->
-            if (placement.bookId != bookId) placement else placement.copy(
-                orientation = if (placement.orientation == BookOrientation.UPRIGHT) BookOrientation.STACKED else BookOrientation.UPRIGHT
-            )
-        }
+            if (placement.bookId != bookId) {
+                placement
+            } else {
+                placement.copy(
+                    orientation = if (placement.orientation ==
+                        BookOrientation.UPRIGHT
+                    ) {
+                        BookOrientation.STACKED
+                    } else {
+                        BookOrientation.UPRIGHT
+                    },
+                )
+            }
+        },
     )
 
     fun removeFromShelf(bookId: String): BookshelfLayout = copy(
         books = books.filterNot { it.bookId == bookId }.normalizedOrders(),
-        hiddenBookIds = hiddenBookIds + bookId
+        hiddenBookIds = hiddenBookIds + bookId,
     )
 
     fun addToShelf(bookId: String, shelf: Int = 0): BookshelfLayout {
@@ -148,7 +194,7 @@ internal data class BookshelfLayout(
         val order = (books.filter { it.shelf == shelf }.maxOfOrNull { it.order } ?: -1) + 1
         return copy(
             books = (books + BookshelfBookPlacement(bookId, shelf, order, BookOrientation.UPRIGHT)).normalizedOrders(),
-            hiddenBookIds = hiddenBookIds - bookId
+            hiddenBookIds = hiddenBookIds - bookId,
         )
     }
 
@@ -188,7 +234,7 @@ internal data class BookshelfLayout(
         val shelfIds = changedShelves.keys
         return copy(
             books = books.filterNot { it.shelf in shelfIds } + changedBooks,
-            decorations = decorations.filterNot { it.shelf in shelfIds } + changedDecorations
+            decorations = decorations.filterNot { it.shelf in shelfIds } + changedDecorations,
         )
     }
 
@@ -197,7 +243,7 @@ internal data class BookshelfLayout(
     fun replaceDecoration(id: String, type: ShelfDecorationType): BookshelfLayout = copy(
         decorations = decorations.map { decoration ->
             if (decoration.id == id) decoration.copy(type = type) else decoration
-        }
+        },
     )
 
     fun objectsOnShelf(shelf: Int): List<ShelfObject> = buildList {
@@ -210,7 +256,7 @@ internal data class BookshelfLayout(
     fun shelfCount(): Int = maxOf(
         books.filterNot { it.bookId in hiddenBookIds }.maxOfOrNull { it.shelf + 1 } ?: 0,
         decorations.maxOfOrNull { it.shelf + 1 } ?: 0,
-        1
+        1,
     )
 
     private fun List<BookshelfBookPlacement>.normalizedOrders(): List<BookshelfBookPlacement> =
@@ -222,9 +268,11 @@ internal data class BookshelfLayout(
         private const val INITIAL_BOOKS_PER_SHELF = 5
 
         fun automatic(bookIds: List<String>): BookshelfLayout = BookshelfLayout().reconcile(bookIds).let { layout ->
-            layout.copy(books = layout.books.mapIndexed { index, placement ->
-                if (index % 4 == 2) placement.copy(orientation = BookOrientation.STACKED) else placement
-            })
+            layout.copy(
+                books = layout.books.mapIndexed { index, placement ->
+                    if (index % 4 == 2) placement.copy(orientation = BookOrientation.STACKED) else placement
+                },
+            )
         }
 
         fun decode(raw: String?): BookshelfLayout? {
@@ -237,7 +285,9 @@ internal data class BookshelfLayout(
                         bookId = id,
                         shelf = obj.optInt("shelf", 0).coerceAtLeast(0),
                         order = obj.optInt("order", 0).coerceAtLeast(0),
-                        orientation = runCatching { BookOrientation.valueOf(obj.optString("orientation")) }.getOrDefault(BookOrientation.UPRIGHT)
+                        orientation = runCatching {
+                            BookOrientation.valueOf(obj.optString("orientation"))
+                        }.getOrDefault(BookOrientation.UPRIGHT),
                     )
                 }
                 val decorations = root.optJSONArray("decorations").toObjectList().mapNotNull { obj ->
@@ -252,16 +302,27 @@ internal data class BookshelfLayout(
 
         fun encode(layout: BookshelfLayout): String = JSONObject().apply {
             put("version", 1)
-            put("books", JSONArray().apply {
-                layout.books.sortedWith(compareBy({ it.shelf }, { it.order })).forEach { item ->
-                    put(JSONObject().put("id", item.bookId).put("shelf", item.shelf).put("order", item.order).put("orientation", item.orientation.name))
-                }
-            })
-            put("decorations", JSONArray().apply {
-                layout.decorations.forEach { item ->
-                    put(JSONObject().put("id", item.id).put("type", item.type.name).put("shelf", item.shelf).put("order", item.order))
-                }
-            })
+            put(
+                "books",
+                JSONArray().apply {
+                    layout.books.sortedWith(compareBy({ it.shelf }, { it.order })).forEach { item ->
+                        put(
+                            JSONObject().put(
+                                "id",
+                                item.bookId,
+                            ).put("shelf", item.shelf).put("order", item.order).put("orientation", item.orientation.name),
+                        )
+                    }
+                },
+            )
+            put(
+                "decorations",
+                JSONArray().apply {
+                    layout.decorations.forEach { item ->
+                        put(JSONObject().put("id", item.id).put("type", item.type.name).put("shelf", item.shelf).put("order", item.order))
+                    }
+                },
+            )
             put("hidden", JSONArray().apply { layout.hiddenBookIds.forEach { put(JSONObject().put("id", it)) } })
         }.toString()
 
@@ -274,8 +335,12 @@ internal data class BookshelfLayout(
 
 internal sealed interface ShelfObject {
     val order: Int
-    data class Book(val placement: BookshelfBookPlacement) : ShelfObject { override val order get() = placement.order }
-    data class Decor(val decoration: ShelfDecoration) : ShelfObject { override val order get() = decoration.order }
+    data class Book(val placement: BookshelfBookPlacement) : ShelfObject {
+        override val order get() = placement.order
+    }
+    data class Decor(val decoration: ShelfDecoration) : ShelfObject {
+        override val order get() = decoration.order
+    }
 }
 
 internal const val BOOKSHELF_LAYOUT_KEY = "bookshelf_layout_v1"

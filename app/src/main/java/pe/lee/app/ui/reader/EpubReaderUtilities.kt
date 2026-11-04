@@ -39,16 +39,11 @@ internal fun ttsSpeedPreferenceKey(uri: Uri): String = "tts-speed:$uri"
 internal fun ttsVoicePreferenceKey(uri: Uri): String = "tts-voice:$uri"
 internal const val DEFAULT_HIGHLIGHT_COLOR = 0xFFFFD54F.toInt()
 
-internal data class TocEntry(
-    val title: String,
-    val link: Link,
-    val depth: Int
-)
+internal data class TocEntry(val title: String, val link: Link, val depth: Int)
 
-internal fun flattenContents(links: List<Link>, depth: Int = 0): List<TocEntry> =
-    buildList {
-        links.forEach { link ->
-            add(TocEntry(link.title?.takeIf { it.isNotBlank() } ?: link.href.toString(), link, depth))
-            addAll(flattenContents(link.children, depth + 1))
-        }
+internal fun flattenContents(links: List<Link>, depth: Int = 0): List<TocEntry> = buildList {
+    links.forEach { link ->
+        add(TocEntry(link.title?.takeIf { it.isNotBlank() } ?: link.href.toString(), link, depth))
+        addAll(flattenContents(link.children, depth + 1))
     }
+}

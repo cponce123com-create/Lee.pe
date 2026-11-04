@@ -22,7 +22,10 @@ class LibraryUseCasesTest {
     @Test
     fun searchBuildsIndexOnceAndKeepsInputOrder() {
         var indexed = 0
-        val search = SearchBooksUseCase(listOf("Zeta", "Alfa")) { indexed++; it }
+        val search = SearchBooksUseCase(listOf("Zeta", "Alfa")) {
+            indexed++
+            it
+        }
         assertEquals(listOf("Zeta", "Alfa"), search(""))
         search("alfa")
         search("zeta")
@@ -56,7 +59,10 @@ class LibraryUseCasesTest {
     @Test
     fun deletePreservesIdentityAndPropagatesStorageFailures() {
         var deleted = ""
-        val useCase = DeleteBookUseCase { deleted = it; throw IOException("locked") }
+        val useCase = DeleteBookUseCase {
+            deleted = it
+            throw IOException("locked")
+        }
         assertThrows(IOException::class.java) { runBlocking { useCase("content://book/1") } }
         assertEquals("content://book/1", deleted)
     }

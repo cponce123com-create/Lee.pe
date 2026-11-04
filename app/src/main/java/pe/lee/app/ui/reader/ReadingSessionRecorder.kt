@@ -4,28 +4,26 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
-import pe.lee.core.domain.ReadingStatisticsRepository
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import pe.lee.core.domain.ReadingStatisticsRepository
 
-internal class ReadingSessionRecorder(
-    private val bookUri: String,
-    private val repository: ReadingStatisticsRepository
-) {
+internal class ReadingSessionRecorder(private val bookUri: String, private val repository: ReadingStatisticsRepository) {
     // Each reader owns its short-lived persistence scope; there is no process-wide scope.
     private val persistenceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val handler = Handler(Looper.getMainLooper())
     private var checkpointElapsedMs: Long? = null
     private var checkpointWallMs: Long? = null
+
     @Volatile private var closed = false
     private val pendingWrites = AtomicInteger(0)
 
@@ -72,7 +70,7 @@ internal class ReadingSessionRecorder(
         val dailyDurations = splitSecondsByLocalDay(
             startEpochMillis = startedWallMs,
             durationSeconds = seconds,
-            zoneId = ZoneId.systemDefault()
+            zoneId = ZoneId.systemDefault(),
         )
         pendingWrites.incrementAndGet()
         persistenceScope.launch {
@@ -94,11 +92,7 @@ internal class ReadingSessionRecorder(
     }
 }
 
-internal fun splitSecondsByLocalDay(
-    startEpochMillis: Long,
-    durationSeconds: Long,
-    zoneId: ZoneId
-): List<Pair<String, Long>> {
+internal fun splitSecondsByLocalDay(startEpochMillis: Long, durationSeconds: Long, zoneId: ZoneId): List<Pair<String, Long>> {
     if (durationSeconds <= 0L) return emptyList()
     val dayFormatter = DateTimeFormatter.ISO_LOCAL_DATE.withLocale(Locale.ROOT)
     var cursor = Instant.ofEpochMilli(startEpochMillis)
@@ -109,8 +103,11 @@ internal fun splitSecondsByLocalDay(
         val localStart = cursor.atZone(zoneId)
         val nextMidnight = localStart.toLocalDate().plusDays(1).atStartOfDay(zoneId).toInstant()
         val millisUntilMidnight = Duration.between(cursor, nextMidnight).toMillis()
-        val secondsUntilMidnight = if (millisUntilMidnight <= 0L) 0L
-            else (millisUntilMidnight + 999L) / 1_000L
+        val secondsUntilMidnight = if (millisUntilMidnight <= 0L) {
+            0L
+        } else {
+            (millisUntilMidnight + 999L) / 1_000L
+        }
         val segmentSeconds = if (secondsUntilMidnight <= 0L) {
             remainingSeconds
         } else {

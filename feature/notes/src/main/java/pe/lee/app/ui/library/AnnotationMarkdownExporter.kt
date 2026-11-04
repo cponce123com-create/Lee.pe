@@ -1,10 +1,10 @@
 package pe.lee.app.ui.library
 
-import org.json.JSONObject
-import pe.lee.core.domain.ReaderAnnotation
 import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
+import org.json.JSONObject
+import pe.lee.core.domain.ReaderAnnotation
 
 /**
  * Creates a readable local Markdown export without including the book file or its private URI.
@@ -15,7 +15,7 @@ object AnnotationMarkdownExporter {
         format: String,
         annotations: List<ReaderAnnotation>,
         exportedAt: Long = System.currentTimeMillis(),
-        pageLabel: (Int) -> String = { "Página $it" }
+        pageLabel: (Int) -> String = { "Página $it" },
     ): String = buildString {
         appendLine("# Anotaciones: ${bookTitle.asSingleLine()}")
         appendLine()
@@ -54,8 +54,7 @@ object AnnotationMarkdownExporter {
         }
     }
 
-    private fun String.asSingleLine(): String =
-        replace('\n', ' ').replace('\r', ' ').trim()
+    private fun String.asSingleLine(): String = replace('\n', ' ').replace('\r', ' ').trim()
 
     private fun String.toReadableLabel(): String = when (uppercase(Locale.ROOT)) {
         "BOOKMARK" -> "Marcador"
@@ -65,22 +64,21 @@ object AnnotationMarkdownExporter {
             .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
     }
 
-    private fun ReaderAnnotation.locationDescription(pageLabel: (Int) -> String): String? =
-        runCatching {
-            val locator = JSONObject(locatorJson)
-            val pageIndex = locator.optInt("pageIndex", -1)
-            if (pageIndex >= 0) {
-                pageLabel(pageIndex + 1)
-            } else {
-                val locations = locator.optJSONObject("locations")
-                val href = locator.optString("href").takeIf { it.isNotBlank() }
-                    ?: locator.optString("resource").takeIf { it.isNotBlank() }
-                val progression = locations?.optDouble("totalProgression", Double.NaN)
-                    ?.takeIf { !it.isNaN() }
-                    ?.let { "${(it.coerceIn(0.0, 1.0) * 100).toInt()}%" }
-                listOfNotNull(href, progression).joinToString(" · ").takeIf { it.isNotBlank() }
-            }
-        }.getOrNull()
+    private fun ReaderAnnotation.locationDescription(pageLabel: (Int) -> String): String? = runCatching {
+        val locator = JSONObject(locatorJson)
+        val pageIndex = locator.optInt("pageIndex", -1)
+        if (pageIndex >= 0) {
+            pageLabel(pageIndex + 1)
+        } else {
+            val locations = locator.optJSONObject("locations")
+            val href = locator.optString("href").takeIf { it.isNotBlank() }
+                ?: locator.optString("resource").takeIf { it.isNotBlank() }
+            val progression = locations?.optDouble("totalProgression", Double.NaN)
+                ?.takeIf { !it.isNaN() }
+                ?.let { "${(it.coerceIn(0.0, 1.0) * 100).toInt()}%" }
+            listOfNotNull(href, progression).joinToString(" · ").takeIf { it.isNotBlank() }
+        }
+    }.getOrNull()
 }
 
 fun annotationExportFileName(title: String, fallbackBookLabel: String = "libro"): String {

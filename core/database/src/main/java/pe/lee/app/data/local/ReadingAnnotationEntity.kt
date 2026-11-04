@@ -6,7 +6,7 @@ import androidx.room3.PrimaryKey
 
 @Entity(
     tableName = "reading_annotations",
-    indices = [Index(value = ["bookUri", "createdAt"])]
+    indices = [Index(value = ["bookUri", "createdAt"])],
 )
 data class ReadingAnnotationEntity(
     @PrimaryKey
@@ -18,5 +18,5 @@ data class ReadingAnnotationEntity(
     val noteText: String? = null,
     val colorArgb: Int? = null,
     val createdAt: Long,
-    val updatedAt: Long = createdAt
+    val updatedAt: Long = createdAt,
 )

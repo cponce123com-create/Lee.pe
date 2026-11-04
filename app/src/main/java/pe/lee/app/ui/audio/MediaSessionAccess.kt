@@ -12,14 +12,10 @@ import androidx.media3.session.MediaSession
  */
 internal object MediaSessionAccess {
     @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
-    fun isTrusted(context: Context, controller: MediaSession.ControllerInfo): Boolean {
-        return controller.packageName == context.packageName || controller.isTrusted
-    }
+    fun isTrusted(context: Context, controller: MediaSession.ControllerInfo): Boolean =
+        controller.packageName == context.packageName || controller.isTrusted
 
     /** Returns the session only for trusted controllers; `null` aborts their connection. */
-    fun sessionFor(
-        context: Context,
-        controller: MediaSession.ControllerInfo,
-        session: MediaSession?
-    ): MediaSession? = session?.takeIf { isTrusted(context, controller) }
+    fun sessionFor(context: Context, controller: MediaSession.ControllerInfo, session: MediaSession?): MediaSession? =
+        session?.takeIf { isTrusted(context, controller) }
 }

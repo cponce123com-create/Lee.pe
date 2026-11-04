@@ -1,9 +1,11 @@
 package pe.lee.app.ui.reader
 
+import android.app.Application
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
-import android.app.Application
 import android.view.ActionMode
 import android.view.Menu
 import android.view.MenuItem
@@ -11,47 +13,42 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.commitNow
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
+import java.util.UUID
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import java.util.UUID
-import android.content.ClipData
-import android.content.ClipboardManager
-import pe.lee.app.R
-import pe.lee.app.data.repository.SettingsRepository
-import pe.lee.app.ui.audio.TtsPlaybackService
-import pe.lee.core.domain.ReaderAnnotation
-import pe.lee.feature.sharecard.navigation.ShareCardArgs
-import pe.lee.feature.sharecard.navigation.shareCardIntent
-import pe.lee.feature.sharecard.R as ShareCardR
 import org.readium.navigator.media.tts.TtsNavigator
 import org.readium.r2.navigator.Decoration
-import org.readium.r2.navigator.VisualNavigator
 import org.readium.r2.navigator.epub.EpubNavigatorFactory
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.EpubPreferences
 import org.readium.r2.navigator.epub.EpubPreferencesSerializer
 import org.readium.r2.navigator.input.InputListener
-import org.readium.r2.navigator.util.BaseActionModeCallback
 import org.readium.r2.navigator.input.TapEvent
+import org.readium.r2.navigator.util.BaseActionModeCallback
 import org.readium.r2.navigator.util.DirectionalNavigationAdapter
 import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
+import pe.lee.app.R
+import pe.lee.app.data.repository.SettingsRepository
+import pe.lee.app.ui.audio.TtsPlaybackService
+import pe.lee.core.domain.ReaderAnnotation
+import pe.lee.feature.sharecard.R as ShareCardR
+import pe.lee.feature.sharecard.navigation.ShareCardArgs
+import pe.lee.feature.sharecard.navigation.shareCardIntent
 
 /** Minimum interval between locator persists; scroll mode emits continuously. */
 private const val LOCATOR_SAVE_INTERVAL_MS = 2_000L
-
-
 
 @OptIn(ExperimentalReadiumApi::class)
 @Composable
@@ -66,7 +63,7 @@ internal fun EpubReaderSessionEffects(
     annotations: List<ReaderAnnotation>,
     session: EpubReaderSessionState,
     openPublication: suspend () -> Publication,
-    onRequestNotificationPermission: () -> Unit
+    onRequestNotificationPermission: () -> Unit,
 ): EpubReaderSessionActions {
     val coroutineScope = rememberCoroutineScope()
     LaunchedEffect(viewModel, uri) { viewModel.openBook(uri.toString()) }
@@ -117,14 +114,20 @@ internal fun EpubReaderSessionEffects(
         val originallyKeptAwake = activity.window.attributes.flags and android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON != 0
         onDispose {
             activity.window.attributes = activity.window.attributes.apply { screenBrightness = originalBrightness }
-            if (originallyKeptAwake) activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            else activity.window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            if (originallyKeptAwake) {
+                activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            } else {
+                activity.window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
         }
     }
 
     LaunchedEffect(session.keepScreenOn.value) {
-        if (session.keepScreenOn.value) activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        else activity.window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        if (session.keepScreenOn.value) {
+            activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            activity.window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
     }
 
     LaunchedEffect(session.readerBrightness.value) {
@@ -165,7 +168,7 @@ internal fun EpubReaderSessionEffects(
                     uri = uri.toString(),
                     locatorJson = legacyLocatorJson,
                     progress = session.progress.value,
-                    openedAt = System.currentTimeMillis()
+                    openedAt = System.currentTimeMillis(),
                 )
             }
 
@@ -192,8 +195,8 @@ internal fun EpubReaderSessionEffects(
                                     locatorJson = selectedLocator.toJSON().toString(),
                                     selectedText = selectedLocator.text.highlight?.take(12_000),
                                     colorArgb = DEFAULT_HIGHLIGHT_COLOR,
-                                    createdAt = now
-                                )
+                                    createdAt = now,
+                                ),
                             )
                         } else if (item.itemId == MENU_COPY_SELECTION) {
                             selectedLocator?.text?.highlight?.let { selectedText ->
@@ -201,8 +204,8 @@ internal fun EpubReaderSessionEffects(
                                 clipboard?.setPrimaryClip(
                                     ClipData.newPlainText(
                                         context.getString(R.string.epub_selection_clip_label),
-                                        selectedText
-                                    )
+                                        selectedText,
+                                    ),
                                 )
                             }
                         } else if (item.itemId == MENU_SHARE_SELECTION) {
@@ -220,9 +223,9 @@ internal fun EpubReaderSessionEffects(
                                             bookId = uri.toString(),
                                             bookTitle = title,
                                             author = author,
-                                            locatorJson = selectedLocator?.toJSON()?.toString()
-                                        )
-                                    )
+                                            locatorJson = selectedLocator?.toJSON()?.toString(),
+                                        ),
+                                    ),
                                 )
                             }
                         }
@@ -236,8 +239,8 @@ internal fun EpubReaderSessionEffects(
                 initialLocator = initialLocator,
                 initialPreferences = session.epubPreferences.value,
                 configuration = EpubNavigatorFragment.Configuration(
-                    selectionActionModeCallback = selectionActionCallback
-                )
+                    selectionActionModeCallback = selectionActionCallback,
+                ),
             )
             activity.supportFragmentManager.commitNow {
                 setReorderingAllowed(true)
@@ -247,7 +250,7 @@ internal fun EpubReaderSessionEffects(
                 .findFragmentByTag(NAVIGATOR_TAG) as? EpubNavigatorFragment
                 ?: error(context.getString(R.string.epub_navigator_create_failed))
             epubNavigator.addInputListener(
-                DirectionalNavigationAdapter(epubNavigator, animatedTransition = true)
+                DirectionalNavigationAdapter(epubNavigator, animatedTransition = true),
             )
             epubNavigator.addInputListener(object : InputListener {
                 override fun onTap(event: TapEvent): Boolean {
@@ -301,8 +304,8 @@ internal fun EpubReaderSessionEffects(
                     id = annotation.id,
                     locator = locator,
                     style = Decoration.Style.Highlight(
-                        tint = annotation.colorArgb ?: DEFAULT_HIGHLIGHT_COLOR
-                    )
+                        tint = annotation.colorArgb ?: DEFAULT_HIGHLIGHT_COLOR,
+                    ),
                 )
             }
         reader.applyDecorations(highlights, ANNOTATION_DECORATION_GROUP)
@@ -318,10 +321,10 @@ internal fun EpubReaderSessionEffects(
                     Decoration(
                         id = "tts-current-utterance",
                         locator = location.utteranceLocator,
-                        style = Decoration.Style.Highlight(tint = 0xFF56D7FF.toInt())
-                    )
+                        style = Decoration.Style.Highlight(tint = 0xFF56D7FF.toInt()),
+                    ),
                 ),
-                TTS_DECORATION_GROUP
+                TTS_DECORATION_GROUP,
             )
             reader.go(location.utteranceLocator, animated = false)
         }
@@ -383,7 +386,7 @@ internal fun EpubReaderSessionEffects(
                 uri = uri.toString(),
                 locatorJson = locatorJson,
                 progress = totalProgression?.toFloat() ?: session.progress.value,
-                openedAt = System.currentTimeMillis()
+                openedAt = System.currentTimeMillis(),
             )
         }
     }
@@ -405,7 +408,7 @@ internal fun EpubReaderSessionEffects(
                             uri = uri.toString(),
                             locatorJson = locatorJson,
                             progress = progress,
-                            openedAt = System.currentTimeMillis()
+                            openedAt = System.currentTimeMillis(),
                         )
                     }
                 }
@@ -416,6 +419,12 @@ internal fun EpubReaderSessionEffects(
     }
 
     return buildEpubReaderSessionActions(
-        coroutineScope, context, uri, title, settings, session, onRequestNotificationPermission
+        coroutineScope,
+        context,
+        uri,
+        title,
+        settings,
+        session,
+        onRequestNotificationPermission,
     )
 }

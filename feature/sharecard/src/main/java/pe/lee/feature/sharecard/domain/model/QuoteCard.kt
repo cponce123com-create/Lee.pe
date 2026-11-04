@@ -9,13 +9,13 @@ data class QuoteCard(
     val locatorJson: String? = null,
     val themeId: QuoteCardThemeId = QuoteCardThemeId.PAPER,
     val format: QuoteCardFormat = QuoteCardFormat.STORY,
-    val font: QuoteCardFont = QuoteCardFont.TEMPLATE
+    val font: QuoteCardFont = QuoteCardFont.TEMPLATE,
 )
 
 /** Output proportions supported by the first version of the card editor. */
 enum class QuoteCardFormat(val widthPx: Int, val heightPx: Int) {
     STORY(widthPx = 1080, heightPx = 1920),
-    SQUARE(widthPx = 1080, heightPx = 1080)
+    SQUARE(widthPx = 1080, heightPx = 1080),
 }
 
 /** Optional system font overrides; no font downloads are needed. */

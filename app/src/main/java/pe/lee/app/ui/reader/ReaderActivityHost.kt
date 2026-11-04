@@ -1,22 +1,14 @@
 package pe.lee.app.ui.reader
 
-import android.app.Application
-import android.content.Context
 import android.net.Uri
 import android.os.Bundle
-import android.view.View
 import androidx.activity.compose.setContent
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.ui.unit.sp
-import androidx.fragment.app.FragmentActivity
 import androidx.core.view.WindowCompat
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.ViewModelProvider
+import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import androidx.lifecycle.ViewModelProvider
-import pe.lee.app.LeePeApplication
-import pe.lee.app.R
-import pe.lee.app.data.local.OfflineBookStore
-import pe.lee.app.ui.reader.EpubReaderViewModel
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.util.AbsoluteUrl
 import org.readium.r2.shared.util.asset.AssetRetriever
@@ -25,8 +17,11 @@ import org.readium.r2.shared.util.http.DefaultHttpClient
 import org.readium.r2.shared.util.toAbsoluteUrl
 import org.readium.r2.streamer.PublicationOpener
 import org.readium.r2.streamer.parser.DefaultPublicationParser
+import pe.lee.app.LeePeApplication
+import pe.lee.app.R
+import pe.lee.app.data.local.OfflineBookStore
+import pe.lee.app.ui.reader.EpubReaderViewModel
 import pe.lee.app.ui.theme.LeePeTheme
-import java.io.IOException
 
 class ReaderActivity : FragmentActivity() {
     private var readingSessionRecorder: ReadingSessionRecorder? = null
@@ -50,7 +45,7 @@ class ReaderActivity : FragmentActivity() {
 
         readingSessionRecorder = ReadingSessionRecorder(
             bookUri = uri.toString(),
-            repository = container.readingStats
+            repository = container.readingStats,
         )
         val offlineCopyUri = intent.getStringExtra(OfflineBookStore.EXTRA_COPY_URI)?.let(Uri::parse)
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "Lee.pe"
@@ -65,10 +60,13 @@ class ReaderActivity : FragmentActivity() {
                     settings = container.settings,
                     openPublication = { openPublication(uri, offlineCopyUri) },
                     onReadingVisibilityChange = { active ->
-                        if (active) readingSessionRecorder?.onResume()
-                        else readingSessionRecorder?.onPause()
+                        if (active) {
+                            readingSessionRecorder?.onResume()
+                        } else {
+                            readingSessionRecorder?.onPause()
+                        }
                     },
-                    onBack = { finish() }
+                    onBack = { finish() },
                 )
             }
         }
@@ -105,7 +103,7 @@ class ReaderActivity : FragmentActivity() {
                 context = this@ReaderActivity,
                 httpClient = httpClient,
                 assetRetriever = assetRetriever,
-                pdfFactory = null
+                pdfFactory = null,
             )
             return PublicationOpener(parser).open(asset, allowUserInteraction = false).getOrElse {
                 asset.close()

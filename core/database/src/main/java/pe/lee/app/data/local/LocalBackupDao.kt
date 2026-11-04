@@ -15,14 +15,11 @@ data class LocalBackupSnapshot(
     /** All collections, including empty ones, so a restore keeps the user's shelves. */
     val collections: List<CollectionEntity> = emptyList(),
     /** Book URI in the backup -> names of every collection it belongs to. */
-    val bookCollectionNames: Map<String, List<String>> = emptyMap()
+    val bookCollectionNames: Map<String, List<String>> = emptyMap(),
 )
 
 /** Projection used to rebuild [LocalBackupSnapshot.bookCollectionNames] in one query. */
-data class BookCollectionName(
-    val bookUri: String,
-    val collectionName: String
-)
+data class BookCollectionName(val bookUri: String, val collectionName: String)
 
 data class LocalBackupMergeReport(
     val linkedBooks: Int,
@@ -30,7 +27,7 @@ data class LocalBackupMergeReport(
     val linkedByTitle: Int,
     val addedAnnotations: Int,
     val restoredSessionDays: Int,
-    val uriMap: Map<String, String>
+    val uriMap: Map<String, String>,
 )
 
 @Dao
@@ -47,13 +44,15 @@ interface LocalBackupDao {
     @Query("SELECT * FROM collections ORDER BY sortOrder, name COLLATE NOCASE")
     suspend fun allCollections(): List<CollectionEntity>
 
-    @Query("""
+    @Query(
+        """
         SELECT library_books.uri AS bookUri, collections.name AS collectionName
         FROM book_collections
         JOIN library_books ON library_books.id = book_collections.bookId
         JOIN collections ON collections.id = book_collections.collectionId
         ORDER BY library_books.uri, collections.sortOrder, collections.name COLLATE NOCASE
-    """)
+    """,
+    )
     suspend fun allBookCollectionNames(): List<BookCollectionName>
 
     @Transaction
@@ -63,23 +62,23 @@ interface LocalBackupDao {
         sessions = allSessions(),
         collections = allCollections(),
         bookCollectionNames = allBookCollectionNames()
-            .groupBy({ it.bookUri }, { it.collectionName })
+            .groupBy({ it.bookUri }, { it.collectionName }),
     )
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAnnotationIfMissing(item: ReadingAnnotationEntity): Long
 
-    @Query("""
+    @Query(
+        """
         UPDATE library_books
         SET epubLocator = :locator,
             pdfPageIndex = :pdfPage,
             readProgress = :progress,
             lastOpenedAt = :lastOpened
         WHERE uri = :uri
-    """)
-    suspend fun updateReadingPosition(
-        uri: String, locator: String?, pdfPage: Int, progress: Float, lastOpened: Long?
+    """,
     )
+    suspend fun updateReadingPosition(uri: String, locator: String?, pdfPage: Int, progress: Float, lastOpened: Long?)
 
     @Query("UPDATE library_books SET isFavorite = :favorite WHERE uri = :uri")
     suspend fun updateRestoredFavorite(uri: String, favorite: Boolean)
@@ -111,11 +110,7 @@ interface LocalBackupDao {
      * that belonged to "Novela" and "Perú" comes back on both shelves.
      */
     @Transaction
-    suspend fun updateRestoredOrganization(
-        uri: String,
-        favorite: Boolean,
-        collections: List<String>
-    ) {
+    suspend fun updateRestoredOrganization(uri: String, favorite: Boolean, collections: List<String>) {
         updateRestoredFavorite(uri, favorite)
         val bookId = bookIdForUri(uri) ?: return
         val hasExistingCollections = linkedCollectionNames(bookId).isNotEmpty()
@@ -127,7 +122,7 @@ interface LocalBackupDao {
             val normalizedName = displayName.lowercase(Locale.ROOT)
             val insertedId = findCollectionId(normalizedName)
                 ?: insertCollection(
-                    CollectionEntity(name = displayName, normalizedName = normalizedName)
+                    CollectionEntity(name = displayName, normalizedName = normalizedName),
                 )
             val resolvedId = if (insertedId == -1L) findCollectionId(normalizedName) else insertedId
             if (resolvedId != null) {
@@ -141,7 +136,9 @@ interface LocalBackupDao {
         }
     }
 
-    @Query("SELECT collections.name FROM collections JOIN book_collections ON collections.id = book_collections.collectionId WHERE book_collections.bookId = :bookId")
+    @Query(
+        "SELECT collections.name FROM collections JOIN book_collections ON collections.id = book_collections.collectionId WHERE book_collections.bookId = :bookId",
+    )
     suspend fun linkedCollectionNames(bookId: String): List<String>
 
     @Query("SELECT * FROM reading_sessions WHERE dayKey = :day AND bookUri = :uri LIMIT 1")
@@ -171,8 +168,11 @@ interface LocalBackupDao {
                 (match.readProgress == 0f && book.readProgress > 0f && match.lastOpenedAt == null)
             ) {
                 updateReadingPosition(
-                    match.uri, book.epubLocator, book.pdfPageIndex,
-                    book.readProgress.coerceIn(0f, 1f), book.lastOpenedAt
+                    match.uri,
+                    book.epubLocator,
+                    book.pdfPageIndex,
+                    book.readProgress.coerceIn(0f, 1f),
+                    book.lastOpenedAt,
                 )
             }
             // Version 2 archives carry every shelf of the book; version 1 only
@@ -182,7 +182,7 @@ interface LocalBackupDao {
             updateRestoredOrganization(
                 match.uri,
                 match.isFavorite || book.isFavorite,
-                restoredCollections
+                restoredCollections,
             )
         }
         // Recreate shelves that had no books, so an empty collection survives a
@@ -193,7 +193,7 @@ interface LocalBackupDao {
             if (normalizedName.isEmpty()) continue
             if (findCollectionId(normalizedName) == null) {
                 insertCollection(
-                    CollectionEntity(name = displayName, normalizedName = normalizedName)
+                    CollectionEntity(name = displayName, normalizedName = normalizedName),
                 )
             }
         }
@@ -221,7 +221,7 @@ interface LocalBackupDao {
             linkedByTitle = byTitle,
             addedAnnotations = annotationCount,
             restoredSessionDays = sessionCount,
-            uriMap = mapped
+            uriMap = mapped,
         )
     }
 }
@@ -237,20 +237,14 @@ class LocalBackupMatcher(current: List<BookEntity>) {
             it.format.trim().lowercase(java.util.Locale.ROOT)
     }
 
-    fun find(saved: BookEntity): BookEntity? =
-        byUri[saved.uri] ?: byTitleAndFormat[
-            saved.title.trim().lowercase(java.util.Locale.ROOT) to
-                saved.format.trim().lowercase(java.util.Locale.ROOT)
-        ]?.singleOrNull()
+    fun find(saved: BookEntity): BookEntity? = byUri[saved.uri] ?: byTitleAndFormat[
+        saved.title.trim().lowercase(java.util.Locale.ROOT) to
+            saved.format.trim().lowercase(java.util.Locale.ROOT),
+    ]?.singleOrNull()
 }
 
 /**
  * Exact URI first. The fallback requires a unique local title and format
  * match; never guess when there are multiple editions with identical titles.
  */
-fun findBackupMatch(
-    saved: BookEntity,
-    current: List<BookEntity>
-): BookEntity? {
-    return LocalBackupMatcher(current).find(saved)
-}
+fun findBackupMatch(saved: BookEntity, current: List<BookEntity>): BookEntity? = LocalBackupMatcher(current).find(saved)

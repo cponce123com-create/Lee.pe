@@ -3,8 +3,10 @@ package pe.lee.app.ui.library
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -12,9 +14,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -32,7 +34,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -42,18 +43,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.testTagsAsResourceId
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.height
-import androidx.compose.ui.draw.clip
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -103,7 +102,7 @@ internal fun LibraryCatalog(
     onBackup: () -> Unit,
     onOpen: (LocalBook) -> Unit,
     onOfflineBooksChanged: () -> Unit,
-    onExportAnnotationsFile: (String) -> Unit
+    onExportAnnotationsFile: (String) -> Unit,
 ) {
     val pendingOfflineCopyRemoval = remember { mutableStateOf<LocalBook?>(null) }
     var showBookshelfCustomizer by rememberSaveable { mutableStateOf(false) }
@@ -148,8 +147,8 @@ internal fun LibraryCatalog(
                         onExportAnnotationsFile(
                             annotationExportFileName(
                                 book.title,
-                                context.getString(pe.lee.feature.notes.R.string.annotation_default_book)
-                            )
+                                context.getString(pe.lee.feature.notes.R.string.annotation_default_book),
+                            ),
                         )
                     }
                 } catch (cancelled: CancellationException) {
@@ -191,7 +190,7 @@ internal fun LibraryCatalog(
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .padding(horizontal = 16.dp),
         contentPadding = PaddingValues(bottom = 22.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item(key = "dashboard") {
             LibraryDashboardHeader(
@@ -200,14 +199,14 @@ internal fun LibraryCatalog(
                 onImport = onImport,
                 onScan = onScan,
                 onStats = onStats,
-                onBackup = onBackup
+                onBackup = onBackup,
             )
         }
         item(key = "search") {
             Row(
                 modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
                     .background(if (darkTheme) colors.surfaceVariant else Color(0xFFFFFBF5)).padding(horizontal = 13.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(Icons.Default.Search, contentDescription = context.getString(R.string.accessibility_search), tint = colors.primary)
                 Spacer(Modifier.width(9.dp))
@@ -220,13 +219,22 @@ internal fun LibraryCatalog(
                     },
                     textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.onSurface),
                     decorationBox = { inner ->
-                        if (query.value.isEmpty()) Text(stringResource(R.string.library_search_placeholder), color = colors.onSurfaceVariant)
+                        if (query.value.isEmpty()) {
+                            Text(
+                                stringResource(R.string.library_search_placeholder),
+                                color = colors.onSurfaceVariant,
+                            )
+                        }
                         inner()
-                    }
+                    },
                 )
                 if (query.value.isNotBlank()) {
                     IconButton(onClick = { query.value = "" }, modifier = Modifier.size(36.dp)) {
-                        Icon(Icons.Default.Close, contentDescription = context.getString(R.string.accessibility_clear_search), tint = colors.primary)
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = context.getString(R.string.accessibility_clear_search),
+                            tint = colors.primary,
+                        )
                     }
                 }
             }
@@ -238,7 +246,7 @@ internal fun LibraryCatalog(
                         selected = selectedFilter.value == filter,
                         onClick = { selectedFilter.value = filter },
                         label = { Text(stringResource(filter.labelRes), maxLines = 1) },
-                        shape = RoundedCornerShape(18.dp)
+                        shape = RoundedCornerShape(18.dp),
                     )
                 }
             }
@@ -247,7 +255,7 @@ internal fun LibraryCatalog(
             LibraryViewModeSelector(
                 viewMode = viewMode.value,
                 onModeChange = onViewModeChange,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
         }
         item(key = "toolbar") {
@@ -268,19 +276,26 @@ internal fun LibraryCatalog(
                 if (collections.isNotEmpty()) {
                     Box {
                         TextButton(onClick = { collectionMenuExpanded.value = true }, contentPadding = PaddingValues(horizontal = 5.dp)) {
-                            Text(selectedCollection.value ?: stringResource(R.string.library_collection), color = colors.primary, maxLines = 1)
+                            Text(
+                                selectedCollection.value ?: stringResource(R.string.library_collection),
+                                color = colors.primary,
+                                maxLines = 1,
+                            )
                         }
                         DropdownMenu(expanded = collectionMenuExpanded.value, onDismissRequest = { collectionMenuExpanded.value = false }) {
                             DropdownMenuItem(text = { Text(stringResource(R.string.library_all_collections)) }, onClick = {
-                                selectedCollection.value = null; collectionMenuExpanded.value = false
+                                selectedCollection.value = null
+                                collectionMenuExpanded.value = false
                             })
                             collections.forEach { collection ->
                                 DropdownMenuItem(text = { Text(collection) }, onClick = {
-                                    selectedCollection.value = collection; collectionMenuExpanded.value = false
+                                    selectedCollection.value = collection
+                                    collectionMenuExpanded.value = false
                                 })
                             }
                             DropdownMenuItem(text = { Text(stringResource(R.string.library_manage_collections)) }, onClick = {
-                                showCollectionsManager.value = true; collectionMenuExpanded.value = false
+                                showCollectionsManager.value = true
+                                collectionMenuExpanded.value = false
                             })
                         }
                     }
@@ -292,7 +307,11 @@ internal fun LibraryCatalog(
                 }
             }
             if (viewMode.value == LibraryViewMode.MIXED_BOOKSHELF) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     TextButton(onClick = { showHiddenBooks = true }, contentPadding = PaddingValues(horizontal = 5.dp)) {
                         Text(stringResource(R.string.shelf_add_books), color = colors.primary)
                     }
@@ -315,7 +334,7 @@ internal fun LibraryCatalog(
                 CoverShelfRow(
                     books = row,
                     savingBookUri = savingBookUri.value,
-                    onBookAction = ::handleBookAction
+                    onBookAction = ::handleBookAction,
                 )
             }
         } else if (shelves.isEmpty()) {
@@ -353,12 +372,17 @@ internal fun LibraryCatalog(
                         onBookshelfLayoutChange(bookshelfLayout.removeDecoration(id))
                         onCustomLayoutSelected()
                     },
-                    modifier = Modifier.fillMaxWidth().padding(top = 3.dp, bottom = 4.dp)
+                    modifier = Modifier.fillMaxWidth().padding(top = 3.dp, bottom = 4.dp),
                 )
             }
         }
         item(key = "privacy") {
-            Text(stringResource(R.string.library_local_privacy_note), color = colors.onSurfaceVariant, fontSize = 12.sp, modifier = Modifier.padding(top = 10.dp))
+            Text(
+                stringResource(R.string.library_local_privacy_note),
+                color = colors.onSurfaceVariant,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 10.dp),
+            )
         }
     }
 
@@ -377,7 +401,9 @@ internal fun LibraryCatalog(
                     }
                 }) { Text(stringResource(R.string.action_delete)) }
             },
-            dismissButton = { TextButton(onClick = { pendingOfflineCopyRemoval.value = null }) { Text(stringResource(R.string.action_cancel)) } }
+            dismissButton = {
+                TextButton(onClick = { pendingOfflineCopyRemoval.value = null }) { Text(stringResource(R.string.action_cancel)) }
+            },
         )
     }
 
@@ -429,7 +455,7 @@ internal fun LibraryCatalog(
             onSave = {
                 showBookshelfCustomizer = false
                 replacementDecorationId.value = null
-            }
+            },
         )
     }
     if (showHiddenBooks) {
@@ -439,7 +465,7 @@ internal fun LibraryCatalog(
                 onBookshelfLayoutChange(bookshelfLayout.addToShelf(book.id, (bookshelfLayout.shelfCount() - 1).coerceAtLeast(0)))
                 onCustomLayoutSelected()
             },
-            onDismiss = { showHiddenBooks = false }
+            onDismiss = { showHiddenBooks = false },
         )
     }
 }

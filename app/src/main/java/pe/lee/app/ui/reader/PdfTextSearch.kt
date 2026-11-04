@@ -4,18 +4,15 @@ import android.content.res.Resources
 import android.graphics.pdf.PdfRenderer
 import android.os.Build
 import androidx.annotation.RequiresApi
-import pe.lee.app.R
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.coroutineContext
+import pe.lee.app.R
 
-internal data class PdfSearchOutcome(
-    val results: List<PdfSearchResult>,
-    val message: String
-)
+internal data class PdfSearchOutcome(val results: List<PdfSearchResult>, val message: String)
 
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 internal suspend fun searchPdfDocument(
@@ -23,7 +20,7 @@ internal suspend fun searchPdfDocument(
     pageCount: Int,
     term: String,
     renderMutex: Mutex,
-    resources: Resources
+    resources: Resources,
 ): PdfSearchOutcome {
     val matches = mutableListOf<PdfSearchResult>()
     var hasSelectableText = false
@@ -47,7 +44,7 @@ internal suspend fun searchPdfDocument(
                                 left = (bounds.left / page.width).coerceIn(0f, 1f),
                                 top = (bounds.top / page.height).coerceIn(0f, 1f),
                                 right = (bounds.right / page.width).coerceIn(0f, 1f),
-                                bottom = (bounds.bottom / page.height).coerceIn(0f, 1f)
+                                bottom = (bounds.bottom / page.height).coerceIn(0f, 1f),
                             )
                         }
                         while (matchIndex >= 0 && matches.size + pageMatches.size < 100) {
@@ -62,7 +59,7 @@ internal suspend fun searchPdfDocument(
                             matchIndex = blockText.indexOf(
                                 term,
                                 startIndex = matchIndex + term.length,
-                                ignoreCase = true
+                                ignoreCase = true,
                             )
                         }
                         if (matches.size + pageMatches.size >= 100) break
@@ -84,7 +81,7 @@ internal suspend fun searchPdfDocument(
         matches.isNotEmpty() -> resources.getQuantityString(
             R.plurals.pdf_search_matches_count,
             matches.size,
-            matches.size
+            matches.size,
         )
         !hasSelectableText -> resources.getString(R.string.pdf_search_no_selectable_text)
         else -> resources.getString(R.string.pdf_search_no_matches)

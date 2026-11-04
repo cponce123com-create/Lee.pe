@@ -18,7 +18,6 @@ private val combiningMarks = Regex("\\p{M}+")
 private val whitespace = Regex("\\s+")
 
 /** Stable locale-independent normalization shared by catalog indexing and queries. */
-fun normalizeLibraryText(input: String): String =
-    Normalizer.normalize(input.trim().lowercase(Locale.ROOT), Normalizer.Form.NFD)
-        .replace(combiningMarks, "")
-        .replace(whitespace, " ")
+fun normalizeLibraryText(input: String): String = Normalizer.normalize(input.trim().lowercase(Locale.ROOT), Normalizer.Form.NFD)
+    .replace(combiningMarks, "")
+    .replace(whitespace, " ")

@@ -42,5 +42,5 @@ enum class QuoteCardThemeId {
     PREMIUM,
     MOSS_GARDEN,
     SAND,
-    WHITE_RELIEF
+    WHITE_RELIEF,
 }

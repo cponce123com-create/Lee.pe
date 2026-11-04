@@ -22,7 +22,7 @@ object ShareCardModule {
                 return ShareCardViewModel(
                     initialCard = card,
                     generator = ComposeShareCardGenerator(),
-                    sharer = ShareCardSharer(appContext)
+                    sharer = ShareCardSharer(appContext),
                 ) as T
             }
         }

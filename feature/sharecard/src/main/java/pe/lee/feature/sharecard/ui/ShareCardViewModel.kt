@@ -2,24 +2,23 @@ package pe.lee.feature.sharecard.ui
 
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toPixelMap
-import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import pe.lee.feature.sharecard.R
 import pe.lee.feature.sharecard.domain.ShareCardGenerator
 import pe.lee.feature.sharecard.domain.ShareCardSharer
 import pe.lee.feature.sharecard.domain.model.QuoteCard
 import pe.lee.feature.sharecard.domain.model.QuoteCardRaster
-import pe.lee.feature.sharecard.R
 
 /** Progress of PNG generation and handoff to Android's share sheet. */
 sealed interface ShareCardStatus {
@@ -30,41 +29,83 @@ sealed interface ShareCardStatus {
 }
 
 /** Immutable screen state exposed to Compose. */
-data class ShareCardUiState(
-    val card: QuoteCard,
-    val status: ShareCardStatus = ShareCardStatus.Idle
-)
+data class ShareCardUiState(val card: QuoteCard, val status: ShareCardStatus = ShareCardStatus.Idle)
 
 /** Owns editable card state and performs pixel conversion and encoding off the UI thread. */
 class ShareCardViewModel(
     initialCard: QuoteCard,
     private val generator: ShareCardGenerator,
     private val sharer: ShareCardSharer,
-    private val workerDispatcher: CoroutineDispatcher = Dispatchers.Default
+    private val workerDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(ShareCardUiState(initialCard))
     val state = mutableState.asStateFlow()
 
     /** Replaces the quote displayed on the card. */
-    fun updateText(text: String) = mutableState.update { if (it.status == ShareCardStatus.Generating) it else it.copy(card = it.card.copy(text = text), status = ShareCardStatus.Idle) }
+    fun updateText(text: String) = mutableState.update {
+        if (it.status ==
+            ShareCardStatus.Generating
+        ) {
+            it
+        } else {
+            it.copy(card = it.card.copy(text = text), status = ShareCardStatus.Idle)
+        }
+    }
 
     /** Updates the book title kept with the quote metadata; it is not printed on the exported card. */
-    fun updateBookTitle(title: String) = mutableState.update { if (it.status == ShareCardStatus.Generating) it else it.copy(card = it.card.copy(bookTitle = title), status = ShareCardStatus.Idle) }
+    fun updateBookTitle(title: String) = mutableState.update {
+        if (it.status ==
+            ShareCardStatus.Generating
+        ) {
+            it
+        } else {
+            it.copy(card = it.card.copy(bookTitle = title), status = ShareCardStatus.Idle)
+        }
+    }
 
     /** Updates the author printed in the card footer. */
-    fun updateAuthor(author: String) = mutableState.update { if (it.status == ShareCardStatus.Generating) it else it.copy(card = it.card.copy(author = author), status = ShareCardStatus.Idle) }
+    fun updateAuthor(author: String) = mutableState.update {
+        if (it.status ==
+            ShareCardStatus.Generating
+        ) {
+            it
+        } else {
+            it.copy(card = it.card.copy(author = author), status = ShareCardStatus.Idle)
+        }
+    }
 
     /** Selects the visual theme used by both preview and exported image. */
-    fun selectTheme(theme: pe.lee.feature.sharecard.domain.model.QuoteCardThemeId) =
-        mutableState.update { if (it.status == ShareCardStatus.Generating) it else it.copy(card = it.card.copy(themeId = theme), status = ShareCardStatus.Idle) }
+    fun selectTheme(theme: pe.lee.feature.sharecard.domain.model.QuoteCardThemeId) = mutableState.update {
+        if (it.status ==
+            ShareCardStatus.Generating
+        ) {
+            it
+        } else {
+            it.copy(card = it.card.copy(themeId = theme), status = ShareCardStatus.Idle)
+        }
+    }
 
     /** Overrides the template font with an installed system family. */
-    fun selectFont(font: pe.lee.feature.sharecard.domain.model.QuoteCardFont) =
-        mutableState.update { if (it.status == ShareCardStatus.Generating) it else it.copy(card = it.card.copy(font = font), status = ShareCardStatus.Idle) }
+    fun selectFont(font: pe.lee.feature.sharecard.domain.model.QuoteCardFont) = mutableState.update {
+        if (it.status ==
+            ShareCardStatus.Generating
+        ) {
+            it
+        } else {
+            it.copy(card = it.card.copy(font = font), status = ShareCardStatus.Idle)
+        }
+    }
 
     /** Selects the story or square image proportions. */
-    fun selectFormat(format: pe.lee.feature.sharecard.domain.model.QuoteCardFormat) =
-        mutableState.update { if (it.status == ShareCardStatus.Generating) it else it.copy(card = it.card.copy(format = format), status = ShareCardStatus.Idle) }
+    fun selectFormat(format: pe.lee.feature.sharecard.domain.model.QuoteCardFormat) = mutableState.update {
+        if (it.status ==
+            ShareCardStatus.Generating
+        ) {
+            it
+        } else {
+            it.copy(card = it.card.copy(format = format), status = ShareCardStatus.Idle)
+        }
+    }
 
     /** Captures on the UI thread; converts pixels and encodes off the UI thread. */
     fun shareCapturedImage(capture: suspend () -> ImageBitmap) = startSharing {

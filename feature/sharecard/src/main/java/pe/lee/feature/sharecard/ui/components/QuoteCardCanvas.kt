@@ -12,12 +12,7 @@ import pe.lee.feature.sharecard.domain.model.QuoteCard
 
 /** Renders at export resolution; only its presentation is scaled to fit the screen. */
 @Composable
-internal fun QuoteCardCanvas(
-    card: QuoteCard,
-    captureModifier: Modifier,
-    onFitsChanged: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
-) {
+internal fun QuoteCardCanvas(card: QuoteCard, captureModifier: Modifier, onFitsChanged: (Boolean) -> Unit, modifier: Modifier = Modifier) {
     Layout(
         modifier = modifier,
         content = {
@@ -26,7 +21,7 @@ internal fun QuoteCardCanvas(
             CompositionLocalProvider(LocalDensity provides Density(3f, 1f)) {
                 QuoteCardPreview(card, captureModifier, onFitsChanged)
             }
-        }
+        },
     ) { measurables, constraints ->
         val width = card.format.widthPx
         val height = card.format.heightPx

@@ -1,13 +1,13 @@
 package pe.lee.app.data.repository
 
+import kotlinx.coroutines.flow.Flow
 import pe.lee.app.data.local.BookDao
 import pe.lee.app.data.local.BookEntity
 import pe.lee.app.data.local.CollectionEntity
-import pe.lee.core.domain.library.UpdateBookProgressUseCase
-import pe.lee.core.domain.ReadingProgress
 import pe.lee.core.domain.ReaderBook
 import pe.lee.core.domain.ReaderBookRepository
-import kotlinx.coroutines.flow.Flow
+import pe.lee.core.domain.ReadingProgress
+import pe.lee.core.domain.library.UpdateBookProgressUseCase
 
 class BookRepository(private val dao: BookDao) : ReaderBookRepository {
     private val updateProgress = UpdateBookProgressUseCase()
@@ -24,13 +24,13 @@ class BookRepository(private val dao: BookDao) : ReaderBookRepository {
             format = book.format,
             readProgress = ReadingProgress.from(book.readProgress).fraction,
             epubLocator = book.epubLocator,
-            pdfPageIndex = book.pdfPageIndex
+            pdfPageIndex = book.pdfPageIndex,
         )
     }
     suspend fun insertBooks(books: List<BookEntity>) = dao.insertAll(
         books.map { book ->
             book.copy(readProgress = ReadingProgress.from(book.readProgress).fraction)
-        }
+        },
     )
     override suspend fun markOpened(uri: String, at: Long) = dao.markOpened(uri, at)
     override suspend fun saveEpubProgress(uri: String, locator: String, progress: Float, at: Long) =

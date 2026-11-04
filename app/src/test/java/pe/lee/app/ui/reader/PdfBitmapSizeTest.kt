@@ -14,7 +14,7 @@ class PdfBitmapSizeTest {
             pageWidth = pageWidth,
             pageHeight = pageHeight,
             maxWidthPx = 4000,
-            maxPixels = budget
+            maxPixels = budget,
         )
         val pixels = size.width.toLong() * size.height.toLong()
         assertTrue("presupuesto excedido: $pixels > $budget", pixels <= budget)
@@ -40,7 +40,7 @@ class PdfBitmapSizeTest {
             pageWidth = 1000,
             pageHeight = 2000,
             maxWidthPx = 500,
-            maxPixels = MAX_PDF_BITMAP_PIXELS
+            maxPixels = MAX_PDF_BITMAP_PIXELS,
         )
         assertTrue(size.width <= 500)
         val ratio = size.height.toDouble() / size.width
@@ -53,7 +53,7 @@ class PdfBitmapSizeTest {
             pageWidth = 20_000,
             pageHeight = 30_000,
             maxWidthPx = 40,
-            maxPixels = LOW_RAM_PDF_BITMAP_PIXELS
+            maxPixels = LOW_RAM_PDF_BITMAP_PIXELS,
         )
         assertTrue(size.width >= 1 && size.height >= 1)
     }

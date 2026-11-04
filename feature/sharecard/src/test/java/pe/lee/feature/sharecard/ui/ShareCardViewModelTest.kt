@@ -4,21 +4,21 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.coroutines.test.resetMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import pe.lee.feature.sharecard.R
 import pe.lee.feature.sharecard.domain.ShareCardGenerator
 import pe.lee.feature.sharecard.domain.ShareCardSharer
 import pe.lee.feature.sharecard.domain.model.QuoteCard
 import pe.lee.feature.sharecard.domain.model.QuoteCardFormat
 import pe.lee.feature.sharecard.domain.model.QuoteCardRaster
-import pe.lee.feature.sharecard.R
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ShareCardViewModelTest {
@@ -40,7 +40,7 @@ class ShareCardViewModelTest {
             initialCard = QuoteCard("Una frase", "Libro", "Autora"),
             generator = generator,
             sharer = sharer,
-            workerDispatcher = dispatcher
+            workerDispatcher = dispatcher,
         )
 
         assertEquals(ShareCardStatus.Idle, viewModel.state.value.status)
@@ -60,7 +60,7 @@ class ShareCardViewModelTest {
             initialCard = QuoteCard("Una frase", "Libro", "Autora", format = QuoteCardFormat.SQUARE),
             generator = ShareCardGenerator { _, _, _ -> error("falló") },
             sharer = ShareCardSharer { },
-            workerDispatcher = dispatcher
+            workerDispatcher = dispatcher,
         )
 
         viewModel.shareRasterForTest(QuoteCardRaster(1, 1, intArrayOf(0xFFFFFFFF.toInt())))
@@ -73,9 +73,12 @@ class ShareCardViewModelTest {
         var generated = 0
         val viewModel = ShareCardViewModel(
             QuoteCard("Frase", "Libro", "Autora"),
-            ShareCardGenerator { _, _, _ -> generated++; byteArrayOf(1) },
+            ShareCardGenerator { _, _, _ ->
+                generated++
+                byteArrayOf(1)
+            },
             ShareCardSharer { },
-            dispatcher
+            dispatcher,
         )
         viewModel.shareCapturedImage { error("capture failed") }
         advanceUntilIdle()
@@ -93,7 +96,7 @@ class ShareCardViewModelTest {
             QuoteCard("Frase", "Libro", "Autora"),
             ShareCardGenerator { _, _, _ -> throw OutOfMemoryError("sin memoria") },
             ShareCardSharer { },
-            dispatcher
+            dispatcher,
         )
 
         viewModel.shareRasterForTest(QuoteCardRaster(1, 1, intArrayOf(0)))
@@ -117,7 +120,7 @@ class ShareCardViewModelTest {
                 encoded.await()
             },
             ShareCardSharer { shared++ },
-            dispatcher
+            dispatcher,
         )
         val raster = QuoteCardRaster(1, 1, intArrayOf(0))
         viewModel.shareRasterForTest(raster)
@@ -131,5 +134,4 @@ class ShareCardViewModelTest {
         assertEquals(1, shared)
         assertEquals(ShareCardStatus.Ready, viewModel.state.value.status)
     }
-
 }

@@ -30,7 +30,6 @@ class LocalBackupCipherTest {
         assertNotEquals(first.toList(), second.toList())
     }
 
-
     @Test
     fun envelopeDecryptsWithStandardPbkdf2HmacSha256Implementation() {
         val password = "Clave-segura-2026"

@@ -114,7 +114,7 @@ internal fun rememberLibraryScreenState(
             LocalBook(
                 it.id, Uri.parse(it.uri), it.title, it.format, it.isFavorite, it.importedAt, it.lastOpenedAt,
                 it.readProgress, it.collectionId, offlineCopyUris[it.uri],
-                libraryState.bookCollectionNames[it.id].orEmpty()
+                libraryState.bookCollectionNames[it.id].orEmpty(),
             )
         }
     }
@@ -148,7 +148,7 @@ internal fun rememberLibraryScreenState(
     val dailyGoalMinutesState = remember {
         mutableIntStateOf(
             settings.getInt(SettingsRepository.Store.READING_STATS, "daily_goal_minutes", DEFAULT_DAILY_GOAL_MINUTES)
-                .coerceIn(MIN_DAILY_GOAL_MINUTES, MAX_DAILY_GOAL_MINUTES)
+                .coerceIn(MIN_DAILY_GOAL_MINUTES, MAX_DAILY_GOAL_MINUTES),
         )
     }
     val pendingRemovalState = remember { mutableStateOf<LocalBook?>(null) }
@@ -248,12 +248,13 @@ internal fun rememberLibraryScreenState(
                 settings,
                 viewModel::findBook,
                 viewModel::insertBook,
-                viewModel::rebindUri
-            )) {
+                viewModel::rebindUri,
+            )
+        ) {
             Toast.makeText(
                 context,
                 welcomeBookFailedMessage,
-                Toast.LENGTH_LONG
+                Toast.LENGTH_LONG,
             ).show()
         }
     }
@@ -283,7 +284,7 @@ internal fun rememberLibraryScreenState(
         backupPreview = backupPreviewState,
         backupPasswordUri = backupPasswordUriState,
         organizingBook = organizingBookState,
-        onOfflineBooksChanged = { offlineRevision++ }
+        onOfflineBooksChanged = { offlineRevision++ },
     )
 
     return LibraryScreenState(

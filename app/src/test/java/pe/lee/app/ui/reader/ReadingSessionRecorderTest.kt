@@ -1,9 +1,9 @@
 package pe.lee.app.ui.reader
 
-import org.junit.Assert.assertEquals
-import org.junit.Test
 import java.time.LocalDate
 import java.time.ZoneId
+import org.junit.Assert.assertEquals
+import org.junit.Test
 
 class ReadingSessionRecorderTest {
     private val lima = ZoneId.of("America/Lima")
@@ -18,7 +18,7 @@ class ReadingSessionRecorderTest {
 
         assertEquals(
             listOf("2026-11-02" to 10L, "2026-11-03" to 20L),
-            splitSecondsByLocalDay(start, 30L, lima)
+            splitSecondsByLocalDay(start, 30L, lima),
         )
     }
 
@@ -43,7 +43,7 @@ class ReadingSessionRecorderTest {
 
         assertEquals(
             listOf("2026-11-02" to 30L, "2026-11-03" to 1L),
-            splitSecondsByLocalDay(start, 31L, lima)
+            splitSecondsByLocalDay(start, 31L, lima),
         )
     }
 

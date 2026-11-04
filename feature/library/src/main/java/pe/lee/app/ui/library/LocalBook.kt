@@ -13,6 +13,5 @@ internal data class LocalBook(
     val readProgress: Float,
     val collectionId: String?,
     val offlineCopyUri: Uri?,
-    val collectionNames: List<String> = listOfNotNull(collectionId)
+    val collectionNames: List<String> = listOfNotNull(collectionId),
 )
-

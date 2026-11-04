@@ -15,10 +15,10 @@ import androidx.sqlite.execSQL
         ReadingSessionEntity::class,
         CollectionEntity::class,
         BookCollectionCrossRef::class,
-        PendingBookCleanupEntity::class
+        PendingBookCleanupEntity::class,
     ],
     version = 5,
-    exportSchema = true
+    exportSchema = true,
 )
 abstract class LeeDatabase : RoomDatabase() {
     abstract fun bookDao(): BookDao
@@ -43,11 +43,11 @@ abstract class LeeDatabase : RoomDatabase() {
                         `updatedAt` INTEGER NOT NULL,
                         PRIMARY KEY(`id`)
                     )
-                    """.trimIndent()
+                    """.trimIndent(),
                 )
                 connection.execSQL(
                     "CREATE INDEX IF NOT EXISTS `index_reading_annotations_bookUri_createdAt` " +
-                        "ON `reading_annotations` (`bookUri`, `createdAt`)"
+                        "ON `reading_annotations` (`bookUri`, `createdAt`)",
                 )
             }
         }
@@ -62,7 +62,7 @@ abstract class LeeDatabase : RoomDatabase() {
                         `durationSeconds` INTEGER NOT NULL,
                         PRIMARY KEY(`dayKey`, `bookUri`)
                     )
-                    """.trimIndent()
+                    """.trimIndent(),
                 )
             }
         }
@@ -85,7 +85,7 @@ abstract class LeeDatabase : RoomDatabase() {
                         `collectionId` TEXT,
                         PRIMARY KEY(`id`)
                     )
-                    """.trimIndent()
+                    """.trimIndent(),
                 )
                 connection.execSQL(
                     """
@@ -96,12 +96,12 @@ abstract class LeeDatabase : RoomDatabase() {
                     SELECT `uri`, `uri`, `title`, `format`, `importedAt`, `lastOpenedAt`,
                            `epubLocator`, `readProgress`, `pdfPageIndex`, `isFavorite`, `collectionId`
                     FROM `library_books`
-                    """.trimIndent()
+                    """.trimIndent(),
                 )
                 connection.execSQL("DROP TABLE `library_books`")
                 connection.execSQL("ALTER TABLE `library_books_new` RENAME TO `library_books`")
                 connection.execSQL(
-                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_library_books_uri` ON `library_books` (`uri`)"
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_library_books_uri` ON `library_books` (`uri`)",
                 )
                 connection.execSQL(
                     """
@@ -111,11 +111,11 @@ abstract class LeeDatabase : RoomDatabase() {
                         `normalizedName` TEXT NOT NULL,
                         `sortOrder` INTEGER NOT NULL
                     )
-                    """.trimIndent()
+                    """.trimIndent(),
                 )
                 connection.execSQL(
                     "CREATE UNIQUE INDEX IF NOT EXISTS `index_collections_normalizedName` " +
-                        "ON `collections` (`normalizedName`)"
+                        "ON `collections` (`normalizedName`)",
                 )
                 connection.execSQL(
                     """
@@ -126,13 +126,13 @@ abstract class LeeDatabase : RoomDatabase() {
                         FOREIGN KEY(`bookId`) REFERENCES `library_books`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE,
                         FOREIGN KEY(`collectionId`) REFERENCES `collections`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
                     )
-                    """.trimIndent()
+                    """.trimIndent(),
                 )
                 connection.execSQL(
-                    "CREATE INDEX IF NOT EXISTS `index_book_collections_bookId` ON `book_collections` (`bookId`)"
+                    "CREATE INDEX IF NOT EXISTS `index_book_collections_bookId` ON `book_collections` (`bookId`)",
                 )
                 connection.execSQL(
-                    "CREATE INDEX IF NOT EXISTS `index_book_collections_collectionId` ON `book_collections` (`collectionId`)"
+                    "CREATE INDEX IF NOT EXISTS `index_book_collections_collectionId` ON `book_collections` (`collectionId`)",
                 )
                 connection.execSQL(
                     """
@@ -141,7 +141,7 @@ abstract class LeeDatabase : RoomDatabase() {
                     FROM `library_books`
                     WHERE `collectionId` IS NOT NULL AND TRIM(`collectionId`) <> ''
                     GROUP BY LOWER(TRIM(`collectionId`))
-                    """.trimIndent()
+                    """.trimIndent(),
                 )
                 connection.execSQL(
                     """
@@ -151,7 +151,7 @@ abstract class LeeDatabase : RoomDatabase() {
                     JOIN `collections` AS collections
                       ON collections.`normalizedName` = LOWER(TRIM(books.`collectionId`))
                     WHERE books.`collectionId` IS NOT NULL AND TRIM(books.`collectionId`) <> ''
-                    """.trimIndent()
+                    """.trimIndent(),
                 )
                 connection.execSQL(
                     """
@@ -161,7 +161,7 @@ abstract class LeeDatabase : RoomDatabase() {
                         WHERE `collections`.`normalizedName` = LOWER(TRIM(`library_books`.`collectionId`))
                     )
                     WHERE `collectionId` IS NOT NULL AND TRIM(`collectionId`) <> ''
-                    """.trimIndent()
+                    """.trimIndent(),
                 )
             }
         }
@@ -172,7 +172,8 @@ abstract class LeeDatabase : RoomDatabase() {
                     """CREATE TABLE IF NOT EXISTS `pending_book_cleanup` (
                         `uri` TEXT NOT NULL,
                         PRIMARY KEY(`uri`)
-                    )""".trimIndent()
+                    )
+                    """.trimIndent(),
                 )
             }
         }
@@ -183,15 +184,14 @@ abstract class LeeDatabase : RoomDatabase() {
         @Volatile
         private var instance: LeeDatabase? = null
 
-        fun get(context: Context): LeeDatabase =
-            instance ?: synchronized(this) {
-                instance ?: Room.databaseBuilder<LeeDatabase>(
-                    context.applicationContext,
-                    "lee_pe_library.db"
-                )
-                    .addMigrations(*ALL_MIGRATIONS)
-                    .build()
-                    .also { instance = it }
-            }
+        fun get(context: Context): LeeDatabase = instance ?: synchronized(this) {
+            instance ?: Room.databaseBuilder<LeeDatabase>(
+                context.applicationContext,
+                "lee_pe_library.db",
+            )
+                .addMigrations(*ALL_MIGRATIONS)
+                .build()
+                .also { instance = it }
+        }
     }
 }

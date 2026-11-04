@@ -9,11 +9,7 @@ import pe.lee.core.domain.library.SearchBooksUseCase
  * (see docs/METRICAS.md); doing it inside composition blocked the main thread on
  * every Room emission (P-06).
  */
-internal data class CatalogResult(
-    val visible: List<LocalBook>,
-    val ordered: List<LocalBook>,
-    val continueReading: List<LocalBook>
-)
+internal data class CatalogResult(val visible: List<LocalBook>, val ordered: List<LocalBook>, val continueReading: List<LocalBook>)
 
 internal fun computeCatalog(
     books: List<LocalBook>,
@@ -22,7 +18,7 @@ internal fun computeCatalog(
     collection: String?,
     sortMode: LibrarySortMode,
     titleComparator: Comparator<String>,
-    search: SearchBooksUseCase<LocalBook> = librarySearchIndex(books)
+    search: SearchBooksUseCase<LocalBook> = librarySearchIndex(books),
 ): CatalogResult {
     val visible = search(query).filter { book ->
         matchesCatalogFilter(
@@ -32,7 +28,7 @@ internal fun computeCatalog(
             hasOfflineCopy = book.offlineCopyUri != null,
             collectionNames = book.collectionNames,
             selectedCollection = collection,
-            filter = filter
+            filter = filter,
         )
     }
     val continueReading = books.asSequence()
@@ -63,7 +59,7 @@ internal fun matchesCatalogFilter(
     hasOfflineCopy: Boolean,
     collectionNames: List<String>,
     selectedCollection: String?,
-    filter: LibraryFilter
+    filter: LibraryFilter,
 ): Boolean {
     if (selectedCollection != null && selectedCollection !in collectionNames) return false
     return when (filter) {

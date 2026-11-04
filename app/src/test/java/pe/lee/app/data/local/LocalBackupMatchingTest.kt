@@ -5,12 +5,11 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class LocalBackupMatchingTest {
-    private fun book(
-        uri: String,
-        title: String,
-        format: String = "EPUB"
-    ) = BookEntity(
-        uri = uri, title = title, format = format, importedAt = 1234L
+    private fun book(uri: String, title: String, format: String = "EPUB") = BookEntity(
+        uri = uri,
+        title = title,
+        format = format,
+        importedAt = 1234L,
     )
 
     @Test
@@ -37,8 +36,10 @@ class LocalBackupMatchingTest {
     @Test
     fun mismatchedFormatsAreNeverMapped() {
         assertNull(
-            findBackupMatch(book("content://old/1", "Manual", "PDF"),
-                listOf(book("content://new/1", "Manual", "EPUB")))
+            findBackupMatch(
+                book("content://old/1", "Manual", "PDF"),
+                listOf(book("content://new/1", "Manual", "EPUB")),
+            ),
         )
     }
 

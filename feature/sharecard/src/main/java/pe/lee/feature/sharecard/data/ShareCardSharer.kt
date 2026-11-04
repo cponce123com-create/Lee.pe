@@ -3,13 +3,13 @@ package pe.lee.feature.sharecard.data
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
+import java.io.File
+import java.io.IOException
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import pe.lee.feature.sharecard.R
 import pe.lee.feature.sharecard.domain.ShareCardSharer as ShareCardSharerContract
-import java.io.File
-import java.io.IOException
-import java.util.UUID
 
 /** Writes a temporary PNG to the app cache and opens Android's native share sheet. */
 class ShareCardSharer(context: Context) : ShareCardSharerContract {
@@ -30,7 +30,7 @@ class ShareCardSharer(context: Context) : ShareCardSharerContract {
         val uri = FileProvider.getUriForFile(
             appContext,
             "${appContext.packageName}.fileprovider",
-            file
+            file,
         )
         val sendIntent = Intent(Intent.ACTION_SEND).apply {
             type = PNG_MIME_TYPE
@@ -38,7 +38,7 @@ class ShareCardSharer(context: Context) : ShareCardSharerContract {
             clipData = android.content.ClipData.newUri(
                 appContext.contentResolver,
                 appContext.getString(R.string.share_card_clip_label),
-                uri
+                uri,
             )
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }

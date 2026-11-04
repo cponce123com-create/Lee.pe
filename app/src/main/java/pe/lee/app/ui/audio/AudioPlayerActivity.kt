@@ -9,18 +9,17 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.lifecycle.ViewModelProvider
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
-import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,22 +33,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
-import androidx.media3.common.PlaybackException
-import androidx.media3.common.PlaybackParameters
-import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import pe.lee.app.ui.theme.LeePeTheme
-import pe.lee.app.data.local.OfflineBookStore
 import pe.lee.app.LeePeApplication
 import pe.lee.app.R
+import pe.lee.app.data.local.OfflineBookStore
 import pe.lee.app.data.repository.AudioProgressStore
+import pe.lee.app.ui.theme.LeePeTheme
 
 class AudioPlayerActivity : ComponentActivity() {
     private var controllerFuture: ListenableFuture<MediaController>? = null
@@ -57,7 +52,7 @@ class AudioPlayerActivity : ComponentActivity() {
     private val controllerState = mutableStateOf<MediaController?>(null)
     private val connectionError = mutableStateOf<String?>(null)
     private val notificationPermission = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
+        ActivityResultContracts.RequestPermission(),
     ) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -80,7 +75,7 @@ class AudioPlayerActivity : ComponentActivity() {
                     controller = controllerState.value,
                     viewModel = audioViewModel,
                     error = connectionError.value,
-                    onClose = { finish() }
+                    onClose = { finish() },
                 )
             }
         }
@@ -103,7 +98,7 @@ class AudioPlayerActivity : ComponentActivity() {
                             MediaMetadata.Builder()
                                 .setTitle(title)
                                 .setArtist("Lee.pe")
-                                .build()
+                                .build(),
                         )
                         .build()
                     controller.setMediaItem(item, AudioProgressStore.get(this, mediaId))
@@ -148,7 +143,7 @@ private fun AudioPlayerScreen(
     controller: MediaController?,
     viewModel: AudioPlayerViewModel,
     error: String?,
-    onClose: () -> Unit
+    onClose: () -> Unit,
 ) {
     val playerState by viewModel.state.collectAsStateWithLifecycle()
     var sliderPosition by remember(controller) { mutableFloatStateOf(0f) }
@@ -162,7 +157,7 @@ private fun AudioPlayerScreen(
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
             Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onClose) {
@@ -174,72 +169,114 @@ private fun AudioPlayerScreen(
             Column(
                 Modifier.fillMaxWidth().weight(1f),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center,
             ) {
                 Box(
                     Modifier.size(224.dp).clip(RoundedCornerShape(34.dp))
                         .background(Brush.linearGradient(listOf(Color(0xFF702EFF), Color(0xFF087FAF)))),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(Icons.Default.Headphones, contentDescription = null, tint = Color.White, modifier = Modifier.size(100.dp))
                 }
                 Spacer(Modifier.height(28.dp))
                 Text(title, fontSize = 23.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                Text(stringResource(R.string.audio_local_subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
+                Text(
+                    stringResource(R.string.audio_local_subtitle),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
                 if (controller == null && error == null) {
-                    Text(stringResource(R.string.audio_connecting), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 12.dp))
+                    Text(
+                        stringResource(R.string.audio_connecting),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 12.dp),
+                    )
                 }
                 (playerState.error ?: playerState.errorMessageRes?.let { stringResource(it) } ?: error)?.let {
-                    Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 16.dp))
+                    Text(
+                        it,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 16.dp),
+                    )
                 }
             }
 
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Slider(
                     value = sliderPosition.coerceAtMost(playerState.durationMs.toFloat()),
-                    onValueChange = { scrubbing = true; sliderPosition = it },
+                    onValueChange = {
+                        scrubbing = true
+                        sliderPosition = it
+                    },
                     onValueChangeFinished = {
                         viewModel.seekTo(sliderPosition.toLong().coerceIn(0L, playerState.durationMs.coerceAtLeast(0L)))
                         scrubbing = false
                     },
                     valueRange = 0f..playerState.durationMs.coerceAtLeast(1L).toFloat(),
-                    enabled = controller != null && playerState.durationMs > 0L
+                    enabled = controller != null && playerState.durationMs > 0L,
                 )
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(formatTime(if (scrubbing) sliderPosition.toLong() else playerState.positionMs), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
-                    Text("-${formatTime((playerState.durationMs - (if (scrubbing) sliderPosition.toLong() else playerState.positionMs)).coerceAtLeast(0L))}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                    Text(
+                        formatTime(if (scrubbing) sliderPosition.toLong() else playerState.positionMs),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 12.sp,
+                    )
+                    Text(
+                        "-${formatTime(
+                            (playerState.durationMs - (if (scrubbing) sliderPosition.toLong() else playerState.positionMs)).coerceAtLeast(
+                                0L,
+                            ),
+                        )}",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 12.sp,
+                    )
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                     IconButton(enabled = controller != null, onClick = {
                         viewModel.seekTo((playerState.positionMs - 10_000L).coerceAtLeast(0L))
                     }) {
-                        Icon(Icons.Default.Replay10, contentDescription = stringResource(R.string.audio_rewind_10), modifier = Modifier.size(32.dp))
+                        Icon(
+                            Icons.Default.Replay10,
+                            contentDescription = stringResource(R.string.audio_rewind_10),
+                            modifier = Modifier.size(32.dp),
+                        )
                     }
                     IconButton(
                         enabled = controller != null,
                         onClick = { viewModel.playPause() },
                         modifier = Modifier.padding(horizontal = 22.dp).size(76.dp).clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary)
+                            .background(MaterialTheme.colorScheme.primary),
                     ) {
                         Icon(
                             if (playerState.playing) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = if (playerState.playing) stringResource(R.string.audio_pause) else stringResource(R.string.audio_play),
+                            contentDescription = if (playerState.playing) {
+                                stringResource(
+                                    R.string.audio_pause,
+                                )
+                            } else {
+                                stringResource(R.string.audio_play)
+                            },
                             tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(40.dp)
+                            modifier = Modifier.size(40.dp),
                         )
                     }
                     IconButton(enabled = controller != null, onClick = {
                         val target = playerState.positionMs + 10_000L
                         viewModel.seekTo(if (playerState.durationMs > 0L) target.coerceAtMost(playerState.durationMs) else target)
                     }) {
-                        Icon(Icons.Default.Forward10, contentDescription = stringResource(R.string.audio_forward_10), modifier = Modifier.size(32.dp))
+                        Icon(
+                            Icons.Default.Forward10,
+                            contentDescription = stringResource(R.string.audio_forward_10),
+                            modifier = Modifier.size(32.dp),
+                        )
                     }
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.audio_speed), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     TextButton(enabled = controller != null, onClick = {
-                    val index = speeds.indexOf(playerState.speed).coerceAtLeast(0)
-                    viewModel.setSpeed(speeds[(index + 1) % speeds.size])
+                        val index = speeds.indexOf(playerState.speed).coerceAtLeast(0)
+                        viewModel.setSpeed(speeds[(index + 1) % speeds.size])
                     }) {
                         Text("${playerState.speed}x", fontWeight = FontWeight.Bold)
                     }
@@ -254,6 +291,9 @@ private fun formatTime(milliseconds: Long): String {
     val hours = seconds / 3_600L
     val minutes = (seconds % 3_600L) / 60L
     val remainder = seconds % 60L
-    return if (hours > 0L) "%d:%02d:%02d".format(hours, minutes, remainder)
-    else "%d:%02d".format(minutes, remainder)
+    return if (hours > 0L) {
+        "%d:%02d:%02d".format(hours, minutes, remainder)
+    } else {
+        "%d:%02d".format(minutes, remainder)
+    }
 }

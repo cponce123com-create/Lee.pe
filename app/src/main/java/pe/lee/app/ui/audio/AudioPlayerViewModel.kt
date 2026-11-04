@@ -19,7 +19,7 @@ data class AudioPlayerState(
     val positionMs: Long = 0,
     val speed: Float = 1f,
     val error: String? = null,
-    val errorMessageRes: Int? = null
+    val errorMessageRes: Int? = null,
 )
 
 class AudioPlayerViewModel : ViewModel() {
@@ -35,19 +35,24 @@ class AudioPlayerViewModel : ViewModel() {
         listener?.let { this.controller?.removeListener(it) }
         listener = null
         this.controller = controller
-        val player = controller ?: run { mutableState.value = AudioPlayerState(); return }
+        val player = controller ?: run {
+            mutableState.value = AudioPlayerState()
+            return
+        }
         val playerListener = object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 mutableState.value = mutableState.value.copy(playing = isPlaying)
             }
-            override fun onPlaybackStateChanged(playbackState: Int) { refreshPosition() }
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                refreshPosition()
+            }
             override fun onPlaybackParametersChanged(playbackParameters: androidx.media3.common.PlaybackParameters) {
                 mutableState.value = mutableState.value.copy(speed = playbackParameters.speed)
             }
             override fun onPlayerError(playbackException: PlaybackException) {
                 mutableState.value = mutableState.value.copy(
                     error = null,
-                    errorMessageRes = pe.lee.app.R.string.audio_playback_failed
+                    errorMessageRes = pe.lee.app.R.string.audio_playback_failed,
                 )
             }
         }
@@ -57,7 +62,7 @@ class AudioPlayerViewModel : ViewModel() {
             playing = player.isPlaying,
             speed = player.playbackParameters.speed,
             error = null,
-            errorMessageRes = null
+            errorMessageRes = null,
         )
         positionJob = viewModelScope.launch {
             while (isActive && controller === player) {
@@ -85,8 +90,13 @@ class AudioPlayerViewModel : ViewModel() {
         mutableState.value = AudioPlayerState()
     }
 
-    fun playPause() { if (controller?.isPlaying == true) controller?.pause() else controller?.play() }
-    fun seekTo(positionMs: Long) { controller?.seekTo(positionMs.coerceAtLeast(0L)); refreshPosition() }
+    fun playPause() {
+        if (controller?.isPlaying == true) controller?.pause() else controller?.play()
+    }
+    fun seekTo(positionMs: Long) {
+        controller?.seekTo(positionMs.coerceAtLeast(0L))
+        refreshPosition()
+    }
     fun setSpeed(speed: Float) {
         controller?.playbackParameters = androidx.media3.common.PlaybackParameters(speed)
         mutableState.value = mutableState.value.copy(speed = speed)
@@ -96,7 +106,7 @@ class AudioPlayerViewModel : ViewModel() {
         val player = controller ?: return
         val nextState = mutableState.value.copy(
             positionMs = player.currentPosition.coerceAtLeast(0L),
-            durationMs = player.duration.takeIf { it > 0L } ?: 0L
+            durationMs = player.duration.takeIf { it > 0L } ?: 0L,
         )
         if (nextState != mutableState.value) mutableState.value = nextState
     }

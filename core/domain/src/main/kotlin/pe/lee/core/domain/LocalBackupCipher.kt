@@ -28,8 +28,7 @@ object LocalBackupCipher {
     private const val MIN_PASSWORD_LENGTH = 8
 
     /** Returns true only when [data] starts with the Lee.pe encrypted-backup header. */
-    fun isEncrypted(data: ByteArray): Boolean =
-        data.size >= magic.size && data.copyOfRange(0, magic.size).contentEquals(magic)
+    fun isEncrypted(data: ByteArray): Boolean = data.size >= magic.size && data.copyOfRange(0, magic.size).contentEquals(magic)
 
     /** Encrypts [plainText] using a fresh random salt and IV. */
     @Throws(IOException::class)
@@ -116,8 +115,10 @@ object LocalBackupCipher {
                 val previous = u
                 u = mac.doFinal(previous)
                 previous.fill(0)
-                for (index in accumulator.indices) accumulator[index] =
-                    (accumulator[index].toInt() xor u[index].toInt()).toByte()
+                for (index in accumulator.indices) {
+                    accumulator[index] =
+                        (accumulator[index].toInt() xor u[index].toInt()).toByte()
+                }
             }
             return accumulator.copyOf(KEY_BYTES)
         } finally {

@@ -9,8 +9,7 @@ import java.util.Locale
  * All reading statistics are computed on-device. Use calendar days rather than
  * subtracting fixed 24-hour intervals to handle daylight-saving time correctly.
  */
-internal fun readingDayKey(timestampMillis: Long): String =
-    SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(timestampMillis))
+internal fun readingDayKey(timestampMillis: Long): String = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(timestampMillis))
 
 /**
  * A streak can start today, or yesterday if the user has not read yet today.
