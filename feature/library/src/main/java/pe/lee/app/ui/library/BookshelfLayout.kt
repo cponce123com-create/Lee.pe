@@ -16,34 +16,74 @@ internal data class BookshelfBookPlacement(
 internal enum class BookOrientation { UPRIGHT, STACKED }
 
 internal enum class ShelfDecorationType(val labelRes: Int, val drawableRes: Int) {
-    BOOKEND(R.string.shelf_decor_bookend, R.drawable.shelf_ornament_bookend),
+    BOOKEND(R.string.shelf_decor_owl, R.drawable.shelf_ornament_owl),
     PLANT(R.string.shelf_decor_plant, R.drawable.shelf_ornament_plant),
     MUG(R.string.shelf_decor_mug, R.drawable.shelf_ornament_mug),
-    VASE(R.string.shelf_decor_vase, R.drawable.shelf_ornament_vase),
-    DIVIDER(R.string.shelf_decor_divider, R.drawable.shelf_ornament_divider),
-    LAMP(R.string.shelf_decor_lamp, R.drawable.shelf_ornament_lamp),
+    LAVENDER(R.string.shelf_decor_lavender, R.drawable.shelf_ornament_lavender),
     ORB(R.string.shelf_decor_orb, R.drawable.shelf_ornament_orb),
+    BIRD(R.string.shelf_decor_bird, R.drawable.shelf_ornament_bird),
+    LAMP(R.string.shelf_decor_lamp, R.drawable.shelf_ornament_lamp),
+    DIVIDER(R.string.shelf_decor_divider, R.drawable.shelf_ornament_divider),
+    CAT(R.string.shelf_decor_cat, R.drawable.shelf_ornament_cat),
+    DOG(R.string.shelf_decor_dog, R.drawable.shelf_ornament_dog),
+    GLOBE(R.string.shelf_decor_globe, R.drawable.shelf_ornament_globe),
+    TYPEWRITER(R.string.shelf_decor_typewriter, R.drawable.shelf_ornament_typewriter),
+    CANDLE(R.string.shelf_decor_candle, R.drawable.shelf_ornament_candle),
+    HOURGLASS(R.string.shelf_decor_hourglass, R.drawable.shelf_ornament_hourglass),
+    FOREST_SPIRIT(R.string.shelf_decor_forest_spirit, R.drawable.shelf_ornament_spirit),
+    FOX(R.string.shelf_decor_fox, R.drawable.shelf_ornament_fox),
+    HEADPHONES(R.string.shelf_decor_headphones, R.drawable.shelf_ornament_headphones),
+    FAIRY(R.string.shelf_decor_fairy, R.drawable.shelf_ornament_fairy),
+    DRAGON(R.string.shelf_decor_dragon, R.drawable.shelf_ornament_dragon),
+    ASTRONAUT(R.string.shelf_decor_astronaut, R.drawable.shelf_ornament_astronaut),
+    LIGHTHOUSE(R.string.shelf_decor_lighthouse, R.drawable.shelf_ornament_lighthouse),
+    BONSAI(R.string.shelf_decor_bonsai, R.drawable.shelf_ornament_bonsai),
+    ARCH(R.string.shelf_decor_arch, R.drawable.shelf_ornament_arch),
+    AIRSHIP(R.string.shelf_decor_airship, R.drawable.shelf_ornament_airship),
+    MOON_STARS(R.string.shelf_decor_moon_stars, R.drawable.shelf_ornament_moon),
+    CAT_BOX(R.string.shelf_decor_cat_box, R.drawable.shelf_ornament_catbox),
+    COFFEE_SETUP(R.string.shelf_decor_coffee_setup, R.drawable.shelf_ornament_coffee_setup),
+    CAMERA(R.string.shelf_decor_camera, R.drawable.shelf_ornament_camera),
+    SNOW_GLOBE(R.string.shelf_decor_snow_globe, R.drawable.shelf_ornament_snow_globe),
+    LANTERN(R.string.shelf_decor_lantern, R.drawable.shelf_ornament_lantern),
+    SOOT_CREATURE(R.string.shelf_decor_soot, R.drawable.shelf_ornament_soot),
+    GLOWING_BOOK(R.string.shelf_decor_glowing_book, R.drawable.shelf_ornament_glowing_book),
+    CASTLE(R.string.shelf_decor_castle, R.drawable.shelf_ornament_castle),
+    QUILL(R.string.shelf_decor_quill, R.drawable.shelf_ornament_quill),
+    IVY(R.string.shelf_decor_ivy, R.drawable.shelf_ornament_ivy),
+
+    // Keep legacy values readable so existing saved shelf layouts retain their ornaments.
+    VASE(R.string.shelf_decor_vase, R.drawable.shelf_ornament_vase),
     FIGURE(R.string.shelf_decor_figure, R.drawable.shelf_ornament_figure),
     SCULPTURE(R.string.shelf_decor_sculpture, R.drawable.shelf_ornament_figure)
+}
+
+internal val SHELF_DECORATION_GALLERY_TYPES = ShelfDecorationType.entries.filterNot {
+    it == ShelfDecorationType.VASE || it == ShelfDecorationType.FIGURE || it == ShelfDecorationType.SCULPTURE
 }
 
 internal enum class ShelfDecorationCategory(val labelRes: Int) {
     ALL(R.string.shelf_category_all),
     NATURE(R.string.shelf_category_nature),
+    MASCOTS(R.string.shelf_category_mascots),
     READING(R.string.shelf_category_reading),
     FANTASY(R.string.shelf_category_fantasy),
-    MINIMAL(R.string.shelf_category_minimal),
+    ADVENTURE(R.string.shelf_category_adventure),
+    HOME(R.string.shelf_category_home),
+    COFFEE(R.string.shelf_category_coffee),
     SEPARATORS(R.string.shelf_category_separators)
 }
 
 internal fun ShelfDecorationType.belongsTo(category: ShelfDecorationCategory): Boolean = when (category) {
     ShelfDecorationCategory.ALL -> true
-    ShelfDecorationCategory.NATURE -> this == ShelfDecorationType.PLANT || this == ShelfDecorationType.VASE
-    ShelfDecorationCategory.READING -> this == ShelfDecorationType.MUG || this == ShelfDecorationType.LAMP
-    ShelfDecorationCategory.FANTASY -> this == ShelfDecorationType.BOOKEND || this == ShelfDecorationType.ORB ||
-        this == ShelfDecorationType.FIGURE || this == ShelfDecorationType.SCULPTURE
-    ShelfDecorationCategory.MINIMAL -> this == ShelfDecorationType.SCULPTURE || this == ShelfDecorationType.ORB
-    ShelfDecorationCategory.SEPARATORS -> this == ShelfDecorationType.BOOKEND || this == ShelfDecorationType.DIVIDER
+    ShelfDecorationCategory.NATURE -> this in setOf(ShelfDecorationType.PLANT, ShelfDecorationType.LAVENDER, ShelfDecorationType.BONSAI, ShelfDecorationType.IVY)
+    ShelfDecorationCategory.MASCOTS -> this in setOf(ShelfDecorationType.CAT, ShelfDecorationType.DOG, ShelfDecorationType.FOREST_SPIRIT, ShelfDecorationType.FOX, ShelfDecorationType.SOOT_CREATURE)
+    ShelfDecorationCategory.READING -> this in setOf(ShelfDecorationType.MUG, ShelfDecorationType.GLOBE, ShelfDecorationType.TYPEWRITER, ShelfDecorationType.HEADPHONES, ShelfDecorationType.GLOWING_BOOK, ShelfDecorationType.QUILL)
+    ShelfDecorationCategory.FANTASY -> this in setOf(ShelfDecorationType.ORB, ShelfDecorationType.FOREST_SPIRIT, ShelfDecorationType.FAIRY, ShelfDecorationType.DRAGON, ShelfDecorationType.MOON_STARS, ShelfDecorationType.SNOW_GLOBE, ShelfDecorationType.CASTLE, ShelfDecorationType.SOOT_CREATURE)
+    ShelfDecorationCategory.ADVENTURE -> this in setOf(ShelfDecorationType.ASTRONAUT, ShelfDecorationType.LIGHTHOUSE, ShelfDecorationType.ARCH, ShelfDecorationType.AIRSHIP, ShelfDecorationType.GLOBE)
+    ShelfDecorationCategory.HOME -> this in setOf(ShelfDecorationType.LAMP, ShelfDecorationType.CANDLE, ShelfDecorationType.HOURGLASS, ShelfDecorationType.LANTERN, ShelfDecorationType.CAT_BOX)
+    ShelfDecorationCategory.COFFEE -> this in setOf(ShelfDecorationType.MUG, ShelfDecorationType.COFFEE_SETUP, ShelfDecorationType.CANDLE)
+    ShelfDecorationCategory.SEPARATORS -> this in setOf(ShelfDecorationType.BOOKEND, ShelfDecorationType.DIVIDER, ShelfDecorationType.ARCH)
 }
 
 internal data class ShelfDecoration(

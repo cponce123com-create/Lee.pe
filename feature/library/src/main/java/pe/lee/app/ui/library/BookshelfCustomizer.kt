@@ -86,7 +86,7 @@ internal fun BookshelfCustomizerDialog(
     var decorationToReplaceId by rememberSaveable(replacementDecorationId) { mutableStateOf(replacementDecorationId) }
     val selectedCategory = runCatching { ShelfDecorationCategory.valueOf(selectedCategoryName) }
         .getOrDefault(ShelfDecorationCategory.ALL)
-    val galleryTypes = ShelfDecorationType.entries.filterNot { it == ShelfDecorationType.SCULPTURE }
+    val galleryTypes = SHELF_DECORATION_GALLERY_TYPES
     val availableDecorations = galleryTypes.filter { it.belongsTo(selectedCategory) }
     val selectedDecoration = selectedDecorationName?.let { name ->
         galleryTypes.firstOrNull { it.name == name }
