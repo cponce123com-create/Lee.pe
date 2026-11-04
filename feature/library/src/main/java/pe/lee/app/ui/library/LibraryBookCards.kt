@@ -38,6 +38,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,12 +49,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import pe.lee.feature.library.R
+import kotlin.math.absoluteValue
+
+internal enum class LibraryBookAction {
+    OPEN, REMOVE, SAVE_OFFLINE_COPY, REMOVE_OFFLINE_COPY, EXPORT_ANNOTATIONS,
+    TOGGLE_FAVORITE, EDIT_TITLE, ORGANIZE
+}
 
 @Composable
 internal fun LibraryStatisticRow(label: String, value: Int) {
@@ -70,7 +81,7 @@ internal fun EmptyLibraryCard(hasBooks: Boolean, onImport: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBF6))
     ) {
         Column(
             modifier = Modifier
@@ -81,14 +92,14 @@ internal fun EmptyLibraryCard(hasBooks: Boolean, onImport: () -> Unit) {
         ) {
             Box(
                 modifier = Modifier
-                    .size(68.dp)
-                    .background(Color(0xFF211744), CircleShape),
+                .size(68.dp)
+                    .background(Color(0xFF075B50), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     Icons.Default.AutoStories,
                     contentDescription = null,
-                    tint = Color(0xFFC5A9FF),
+                    tint = Color.White,
                     modifier = Modifier.size(32.dp)
                 )
             }
@@ -118,14 +129,7 @@ internal fun BookCard(
     savingBookUri: String?,
     modifier: Modifier = Modifier,
     compact: Boolean = false,
-    onOpen: () -> Unit,
-    onRemove: () -> Unit,
-    onSaveOfflineCopy: () -> Unit,
-    onRemoveOfflineCopy: () -> Unit,
-    onExportAnnotations: () -> Unit,
-    onToggleFavorite: () -> Unit,
-    onEditTitle: () -> Unit,
-    onOrganize: () -> Unit
+    onAction: (LibraryBookAction) -> Unit
 ) {
     val (icon, colors) = when (book.format) {
         "PDF" -> Icons.Default.PictureAsPdf to listOf(Color(0xFF5C2A70), Color(0xFF1F4C70))
@@ -136,10 +140,10 @@ internal fun BookCard(
     Card(
         modifier = modifier.clickable(
             onClickLabel = stringResource(R.string.accessibility_open_book, book.title),
-            onClick = onOpen
+            onClick = { onAction(LibraryBookAction.OPEN) }
         ),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBF6))
     ) {
         if (compact) {
             Row(
@@ -187,13 +191,7 @@ internal fun BookCard(
                 BookActions(
                     book = book,
                     savingBookUri = savingBookUri,
-                    onRemove = onRemove,
-                    onSaveOfflineCopy = onSaveOfflineCopy,
-                    onRemoveOfflineCopy = onRemoveOfflineCopy,
-                    onExportAnnotations = onExportAnnotations,
-                    onToggleFavorite = onToggleFavorite,
-                    onEditTitle = onEditTitle,
-                    onOrganize = onOrganize
+                    onAction = onAction
                 )
             }
         } else {
@@ -201,7 +199,7 @@ internal fun BookCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(150.dp)
+                    .height(132.dp)
                     .background(Brush.linearGradient(colors), RoundedCornerShape(14.dp)),
                 contentAlignment = Alignment.Center
             ) {
@@ -234,13 +232,7 @@ internal fun BookCard(
                     savingBookUri = savingBookUri,
                     modifier = Modifier.align(Alignment.TopEnd),
                     iconTint = Color.White,
-                    onRemove = onRemove,
-                    onSaveOfflineCopy = onSaveOfflineCopy,
-                    onRemoveOfflineCopy = onRemoveOfflineCopy,
-                    onExportAnnotations = onExportAnnotations,
-                    onToggleFavorite = onToggleFavorite,
-                    onEditTitle = onEditTitle,
-                    onOrganize = onOrganize
+                    onAction = onAction
                 )
                 Text(
                     book.format,
@@ -257,6 +249,7 @@ internal fun BookCard(
             Text(
                 book.title,
                 fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF25211D),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
@@ -274,7 +267,7 @@ internal fun BookCard(
             }
             Text(
                 readingStatus,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color(0xFF6B625A),
                 fontSize = 11.sp,
                 modifier = Modifier.padding(top = 3.dp, bottom = if (book.offlineCopyUri == null) 4.dp else 2.dp)
             )
@@ -297,13 +290,7 @@ private fun BookActions(
     savingBookUri: String?,
     modifier: Modifier = Modifier,
     iconTint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    onRemove: () -> Unit,
-    onSaveOfflineCopy: () -> Unit,
-    onRemoveOfflineCopy: () -> Unit,
-    onExportAnnotations: () -> Unit,
-    onToggleFavorite: () -> Unit,
-    onEditTitle: () -> Unit,
-    onOrganize: () -> Unit
+    onAction: (LibraryBookAction) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box(modifier = modifier) {
@@ -324,7 +311,7 @@ private fun BookActions(
                             },
                             onClick = {
                                 expanded = false
-                                onToggleFavorite()
+                                onAction(LibraryBookAction.TOGGLE_FAVORITE)
                             }
                         )
                         DropdownMenuItem(
@@ -342,28 +329,28 @@ private fun BookActions(
                             enabled = savingBookUri != book.uri.toString(),
                             onClick = {
                                 expanded = false
-                                if (book.offlineCopyUri != null) onRemoveOfflineCopy() else onSaveOfflineCopy()
+                                onAction(if (book.offlineCopyUri != null) LibraryBookAction.REMOVE_OFFLINE_COPY else LibraryBookAction.SAVE_OFFLINE_COPY)
                             }
                         )
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.book_export_annotations)) },
                             onClick = {
                                 expanded = false
-                                onExportAnnotations()
+                                onAction(LibraryBookAction.EXPORT_ANNOTATIONS)
                             }
                         )
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.book_organize_collection)) },
                             onClick = {
                                 expanded = false
-                                onOrganize()
+                                onAction(LibraryBookAction.ORGANIZE)
                             }
                         )
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.library_edit_title)) },
                             onClick = {
                                 expanded = false
-                                onEditTitle()
+                                onAction(LibraryBookAction.EDIT_TITLE)
                             }
                         )
                         DropdownMenuItem(
@@ -371,10 +358,116 @@ private fun BookActions(
                             leadingIcon = { Icon(Icons.Default.DeleteOutline, contentDescription = null) },
                             onClick = {
                                 expanded = false
-                                onRemove()
+                                onAction(LibraryBookAction.REMOVE)
                             }
                         )
                     }
                 }
 
+}
+
+/** Mixed layout inspired by a physical shelf: every book remains an actionable book card. */
+@Composable
+internal fun BookshelfRow(
+    books: List<LocalBook>,
+    savingBookUri: String?,
+    adornment: BookshelfAdornment,
+    onBookAction: (LocalBook, LibraryBookAction) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val wood = Brush.verticalGradient(listOf(Color(0xFFB8793E), Color(0xFF75411F), Color(0xFF4A2A18)))
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().height(148.dp).padding(horizontal = 5.dp),
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            verticalAlignment = Alignment.Bottom
+        ) {
+            books.forEachIndexed { index, book ->
+                val palette = shelfPalette(book.id)
+                val vertical = index % 4 != 2
+                if (vertical) {
+                    Box(
+                        modifier = Modifier.weight(if (index % 3 == 0) 1.12f else 0.9f).height((116 + (book.id.hashCode().absoluteValue % 26)).dp)
+                            .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+                            .background(Brush.horizontalGradient(listOf(palette.first, palette.second)))
+                            .clickable(onClickLabel = book.title, onClick = { onBookAction(book, LibraryBookAction.OPEN) })
+                            .semantics { role = Role.Button; contentDescription = book.title },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 5.dp)) {
+                            Text(
+                                text = book.title,
+                                modifier = Modifier.align(Alignment.Center).size(width = 122.dp, height = 22.dp).graphicsLayer { rotationZ = 270f },
+                                color = Color(0xFFFFE6A5),
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 11.sp,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.Center
+                            )
+                            Box(Modifier.align(Alignment.TopEnd)) {
+                                BookActions(book, savingBookUri, iconTint = Color(0xFFFFF5DB), onAction = { onBookAction(book, it) })
+                            }
+                        }
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier.weight(1.18f).padding(bottom = 2.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().height(45.dp).clip(RoundedCornerShape(5.dp))
+                                .background(Brush.verticalGradient(listOf(palette.second, palette.first)))
+                                .clickable(onClickLabel = book.title, onClick = { onBookAction(book, LibraryBookAction.OPEN) })
+                                .semantics { role = Role.Button; contentDescription = book.title },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(book.title, color = Color(0xFFFFE7AA), fontWeight = FontWeight.SemiBold, fontSize = 9.sp,
+                                maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 3.dp))
+                            Box(Modifier.align(Alignment.TopEnd)) {
+                                BookActions(book, savingBookUri, iconTint = Color(0xFFFFF5DB), onAction = { onBookAction(book, it) })
+                            }
+                        }
+                    }
+                }
+            }
+            if (adornment != BookshelfAdornment.NONE) {
+                ShelfDecoration(adornment = adornment, modifier = Modifier.weight(0.55f).height(72.dp))
+            }
+        }
+        Box(
+            Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(3.dp)).background(wood)
+        )
+    }
+}
+
+@Composable
+private fun ShelfDecoration(adornment: BookshelfAdornment, modifier: Modifier = Modifier) {
+    val symbol = when (adornment) {
+        BookshelfAdornment.FLOWERS -> "✿"
+        BookshelfAdornment.PLANTS -> "♣"
+        BookshelfAdornment.FIGURES -> "●"
+        BookshelfAdornment.NONE -> ""
+    }
+    val color = when (adornment) {
+        BookshelfAdornment.FLOWERS -> Color(0xFF8A673E)
+        BookshelfAdornment.PLANTS -> Color(0xFF547342)
+        BookshelfAdornment.FIGURES -> Color(0xFFB68E55)
+        BookshelfAdornment.NONE -> Color.Transparent
+    }
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
+        Text(symbol, fontSize = 30.sp, color = color, textAlign = TextAlign.Center)
+        Box(Modifier.fillMaxWidth(0.7f).height(22.dp).clip(RoundedCornerShape(topStart = 9.dp, topEnd = 9.dp)).background(Color(0xFFD6C2A1)))
+    }
+}
+
+private fun shelfPalette(seed: String): Pair<Color, Color> {
+    val palettes = listOf(
+        Color(0xFF155B51) to Color(0xFF0D3F3B), Color(0xFF173E56) to Color(0xFF102C40),
+        Color(0xFF9A4A3D) to Color(0xFF6F302B), Color(0xFFC58C4B) to Color(0xFF8D5A31),
+        Color(0xFF536349) to Color(0xFF34452F), Color(0xFF6B4C62) to Color(0xFF493346)
+    )
+    val index = (seed.hashCode().toLong() and 0x7fffffffL).rem(palettes.size).toInt()
+    return palettes[index]
 }

@@ -37,7 +37,7 @@
     <string name="accessibility_search">Search</string>
     <string name="accessibility_search_books">Search books by title, format, or collection</string>
     <string name="accessibility_clear_search">Clear search</string>
-    <string name="library_search_placeholder">Search title, format, or collection</string>
+    <string name="library_search_placeholder">Search title or author</string>
     <string name="library_resume_reading">Continue reading</string>
     <string name="library_resume_subtitle">Pick up where you left off</string>
     <string name="library_collection">Collection</string>
@@ -51,6 +51,16 @@
     </plurals>
     <string name="library_view_list">List</string>
     <string name="library_view_covers">Covers</string>
+    <string name="library_view_mixed">Mixed</string>
+    <string name="library_my_books">My library</string>
+    <string name="library_adornments">Decor</string>
+    <string name="library_adornments_title">Bookshelf decorations</string>
+    <string name="library_adornment_flowers">Flowers</string>
+    <string name="library_adornment_plants">Plants</string>
+    <string name="library_adornment_figures">Figures</string>
+    <string name="library_adornment_none">No decorations</string>
+    <string name="accessibility_library_add_book">Import book</string>
+    <string name="accessibility_bookshelf_decoration">Bookshelf decoration</string>
     <string name="library_offline_copy_saved">Copy saved for offline use</string>
     <string name="library_export_file_failed">The export file could not be created.</string>
     <string name="library_export_annotations_done">Annotations exported as Markdown</string>

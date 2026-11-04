@@ -23,3 +23,17 @@ internal enum class LibrarySortMode(val labelRes: Int) {
     IMPORT_DATE(R.string.library_sort_import_date),
     PROGRESS(R.string.library_sort_progress)
 }
+
+/** The two visual arrangements shown in the bookshelf selector. */
+internal enum class LibraryViewMode {
+    COVERS,
+    MIXED_BOOKSHELF
+}
+
+/** Optional ornaments drawn between books on the mixed bookshelf. */
+internal enum class BookshelfAdornment(val labelRes: Int) {
+    FLOWERS(R.string.library_adornment_flowers),
+    PLANTS(R.string.library_adornment_plants),
+    FIGURES(R.string.library_adornment_figures),
+    NONE(R.string.library_adornment_none)
+}

@@ -1,75 +1,71 @@
 package pe.lee.app.ui.library
 
 import android.content.Context
-import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items as gridItems
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Close
-import pe.lee.app.data.local.OfflineBookStore
-import pe.lee.feature.library.R
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import androidx.compose.runtime.MutableState
-import kotlinx.coroutines.CoroutineScope
-import java.io.IOException
+import pe.lee.app.data.local.OfflineBookStore
+import pe.lee.feature.library.R
 
-
+private val ShelfPage = Color(0xFFFFF8EF)
+private val ShelfInk = Color(0xFF123D38)
 
 @Composable
 internal fun LibraryCatalog(
     books: List<LocalBook>,
     visibleBooks: List<LocalBook>,
-    continueBooks: List<LocalBook>,
     orderedBooks: List<LocalBook>,
     collections: List<String>,
     query: MutableState<String>,
@@ -79,7 +75,9 @@ internal fun LibraryCatalog(
     showCollectionsManager: MutableState<Boolean>,
     sortMenuExpanded: MutableState<Boolean>,
     sortMode: MutableState<LibrarySortMode>,
-    listMode: MutableState<Boolean>,
+    viewMode: MutableState<LibraryViewMode>,
+    bookshelfAdornment: MutableState<BookshelfAdornment>,
+    adornmentMenuExpanded: MutableState<Boolean>,
     savingBookUri: MutableState<String?>,
     pendingRemoval: MutableState<LocalBook?>,
     editingBook: MutableState<LocalBook?>,
@@ -100,46 +98,94 @@ internal fun LibraryCatalog(
     onOfflineBooksChanged: () -> Unit,
     onExportAnnotationsFile: (String) -> Unit
 ) {
-    // Removing the offline copy deletes the only local file when the original
-    // SAF grant was revoked, so ask first (A-39).
     val pendingOfflineCopyRemoval = remember { mutableStateOf<LocalBook?>(null) }
-    Box(Modifier.fillMaxSize()) {
-    // A real grid with one lazy item per book: the previous row-of-two approach
-    // composed two cards per item, keyed by the first book of the row, so
-    // favouriting one book recomposed both and positions were unstable (A-40).
+    val colors = MaterialTheme.colorScheme
+
+    fun handleBookAction(book: LocalBook, action: LibraryBookAction) {
+        when (action) {
+            LibraryBookAction.OPEN -> onOpen(book)
+            LibraryBookAction.REMOVE -> pendingRemoval.value = book
+            LibraryBookAction.REMOVE_OFFLINE_COPY -> pendingOfflineCopyRemoval.value = book
+            LibraryBookAction.SAVE_OFFLINE_COPY -> {
+                val key = book.uri.toString()
+                if (savingBookUri.value != key) {
+                    savingBookUri.value = key
+                    coroutineScope.launch {
+                        try {
+                            val displayName = withContext(Dispatchers.IO) { queryDisplayName(context, book.uri) }
+                            OfflineBookStore.saveCopy(context, book.uri, displayName)
+                            onOfflineBooksChanged()
+                            Toast.makeText(context, context.getString(R.string.library_offline_copy_saved), Toast.LENGTH_SHORT).show()
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (_: Exception) {
+                            Toast.makeText(context, context.getString(R.string.library_offline_copy_save_failed), Toast.LENGTH_LONG).show()
+                        } finally {
+                            savingBookUri.value = null
+                        }
+                    }
+                }
+            }
+            LibraryBookAction.EXPORT_ANNOTATIONS -> coroutineScope.launch {
+                try {
+                    val annotations = viewModel.annotationsForBook(book.uri.toString())
+                    if (annotations.isEmpty()) {
+                        Toast.makeText(context, context.getString(R.string.library_no_annotations), Toast.LENGTH_SHORT).show()
+                    } else {
+                        pendingMarkdown.value = book.id
+                        onExportAnnotationsFile(
+                            annotationExportFileName(
+                                book.title,
+                                context.getString(pe.lee.feature.notes.R.string.annotation_default_book)
+                            )
+                        )
+                    }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    Toast.makeText(context, context.getString(R.string.library_annotations_read_failed), Toast.LENGTH_LONG).show()
+                }
+            }
+            LibraryBookAction.TOGGLE_FAVORITE -> coroutineScope.launch {
+                viewModel.updateFavorite(book.uri.toString(), !book.isFavorite)
+            }
+            LibraryBookAction.EDIT_TITLE -> {
+                editingBook.value = book
+                titleDraft.value = book.title
+            }
+            LibraryBookAction.ORGANIZE -> {
+                organizingBook.value = book
+                collectionDraft.value = book.collectionNames.firstOrNull().orEmpty()
+            }
+        }
+    }
+
     LazyVerticalGrid(
-        columns = GridCells.Fixed(if (listMode.value) 1 else 2),
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
+        columns = GridCells.Fixed(if (viewMode.value == LibraryViewMode.COVERS) 3 else 1),
+        modifier = Modifier.fillMaxSize().background(ShelfPage).windowInsetsPadding(WindowInsets.safeDrawing)
             .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(bottom = 22.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         item(key = "dashboard", span = { GridItemSpan(maxLineSpan) }) {
             LibraryDashboardHeader(
                 totalBooks = books.size,
                 busy = scannerBusy || scannerImporting,
-                onImport = {
-                    onImport()
-                },
-                onScan = { onScan() },
+                onImport = onImport,
+                onScan = onScan,
                 onStats = onStats,
                 onBackup = onBackup
             )
         }
-
         item(key = "search", span = { GridItemSpan(maxLineSpan) }) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
-                    .padding(horizontal = 14.dp, vertical = 13.dp),
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+                    .background(Color(0xFFFFFBF5)).padding(horizontal = 13.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.Search, contentDescription = context.getString(R.string.accessibility_search), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.width(10.dp))
+                Icon(Icons.Default.Search, contentDescription = context.getString(R.string.accessibility_search), tint = ShelfInk)
+                Spacer(Modifier.width(9.dp))
                 BasicTextField(
                     value = query.value,
                     onValueChange = { query.value = it },
@@ -147,283 +193,137 @@ internal fun LibraryCatalog(
                     modifier = Modifier.weight(1f).semantics {
                         contentDescription = context.getString(R.string.accessibility_search_books)
                     },
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
-                    decorationBox = { innerTextField ->
-                        if (query.value.isEmpty()) {
-                            Text(stringResource(R.string.library_search_placeholder), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        innerTextField()
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF24211D)),
+                    decorationBox = { inner ->
+                        if (query.value.isEmpty()) Text(stringResource(R.string.library_search_placeholder), color = Color(0xFF77716B))
+                        inner()
                     }
                 )
                 if (query.value.isNotBlank()) {
-                    IconButton(onClick = { query.value = "" }) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = context.getString(R.string.accessibility_clear_search),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    IconButton(onClick = { query.value = "" }, modifier = Modifier.size(36.dp)) {
+                        Icon(Icons.Default.Close, contentDescription = context.getString(R.string.accessibility_clear_search), tint = ShelfInk)
                     }
                 }
             }
         }
-
-        if (continueBooks.isNotEmpty()) {
-            item(key = "resume", span = { GridItemSpan(maxLineSpan) }) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(stringResource(R.string.library_resume_reading), fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
-                            Text(
-                                stringResource(R.string.library_resume_subtitle),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 13.sp
-                            )
-                        }
-                        Text("${continueBooks.size}", color = MaterialTheme.colorScheme.secondary)
-                    }
-                    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                        val singleBook = continueBooks.size == 1
-                        val resumeCardWidth = if (singleBook) maxWidth else 232.dp
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            items(continueBooks, key = { it.uri.toString() }) { book ->
-                                ContinueReadingCard(
-                                    book = book,
-                                    wide = singleBook,
-                                    cardWidth = resumeCardWidth,
-                                    onOpen = { onOpen(book) }
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
         item(key = "filters", span = { GridItemSpan(maxLineSpan) }) {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 items(LibraryFilter.entries, key = { it.name }) { filter ->
                     FilterChip(
                         selected = selectedFilter.value == filter,
                         onClick = { selectedFilter.value = filter },
-                        label = { Text(stringResource(filter.labelRes)) }
+                        label = { Text(stringResource(filter.labelRes), maxLines = 1) },
+                        shape = RoundedCornerShape(18.dp)
                     )
                 }
             }
         }
-
-        if (collections.isNotEmpty()) {
-            item(key = "collections", span = { GridItemSpan(maxLineSpan) }) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.library_collection), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
-                    Box {
-                        TextButton(onClick = { collectionMenuExpanded.value = true }) {
-                            Text(selectedCollection.value ?: stringResource(R.string.library_all_short))
-                        }
-                        DropdownMenu(
-                            expanded = collectionMenuExpanded.value,
-                            onDismissRequest = { collectionMenuExpanded.value = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.library_all_collections)) },
-                                onClick = {
-                                    selectedCollection.value = null
-                                    collectionMenuExpanded.value = false
-                                }
-                            )
-                            collections.forEach { collection ->
-                                DropdownMenuItem(
-                                    text = { Text(collection) },
-                                    onClick = {
-                                        selectedCollection.value = collection
-                                        collectionMenuExpanded.value = false
-                                    }
-                                )
-                            }
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.library_manage_collections)) },
-                                onClick = {
-                                    showCollectionsManager.value = true
-                                    collectionMenuExpanded.value = false
-                                }
-                            )
-                        }
-                    }
-                }
-            }
+        item(key = "viewMode", span = { GridItemSpan(maxLineSpan) }) {
+            LibraryViewModeSelector(
+                viewMode = viewMode.value,
+                onModeChange = { viewMode.value = it },
+                modifier = Modifier.fillMaxWidth()
+            )
         }
-
-        item(key = "viewControls", span = { GridItemSpan(maxLineSpan) }) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                LibraryDisplayToggle(
-                    listMode = listMode.value,
-                    onModeChange = { listMode.value = it }
-                )
-                Box {
-                    TextButton(onClick = { sortMenuExpanded.value = true }) {
-                        Text(stringResource(R.string.library_sort_order, stringResource(sortMode.value.labelRes)))
+        item(key = "toolbar", span = { GridItemSpan(maxLineSpan) }) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Box(Modifier.weight(1f)) {
+                    TextButton(onClick = { sortMenuExpanded.value = true }, contentPadding = PaddingValues(horizontal = 4.dp)) {
+                        Text(stringResource(R.string.library_sort_order, stringResource(sortMode.value.labelRes)), color = ShelfInk)
                     }
-                    DropdownMenu(
-                        expanded = sortMenuExpanded.value,
-                        onDismissRequest = { sortMenuExpanded.value = false }
-                    ) {
+                    DropdownMenu(expanded = sortMenuExpanded.value, onDismissRequest = { sortMenuExpanded.value = false }) {
                         LibrarySortMode.entries.forEach { option ->
-                            DropdownMenuItem(
-                                text = { Text(stringResource(option.labelRes)) },
-                                onClick = {
-                                    sortMode.value = option
-                                    sortMenuExpanded.value = false
-                                }
-                            )
+                            DropdownMenuItem(text = { Text(stringResource(option.labelRes)) }, onClick = {
+                                sortMode.value = option
+                                sortMenuExpanded.value = false
+                            })
+                        }
+                    }
+                }
+                if (collections.isNotEmpty()) {
+                    Box {
+                        TextButton(onClick = { collectionMenuExpanded.value = true }, contentPadding = PaddingValues(horizontal = 5.dp)) {
+                            Text(selectedCollection.value ?: stringResource(R.string.library_collection), color = ShelfInk, maxLines = 1)
+                        }
+                        DropdownMenu(expanded = collectionMenuExpanded.value, onDismissRequest = { collectionMenuExpanded.value = false }) {
+                            DropdownMenuItem(text = { Text(stringResource(R.string.library_all_collections)) }, onClick = {
+                                selectedCollection.value = null; collectionMenuExpanded.value = false
+                            })
+                            collections.forEach { collection ->
+                                DropdownMenuItem(text = { Text(collection) }, onClick = {
+                                    selectedCollection.value = collection; collectionMenuExpanded.value = false
+                                })
+                            }
+                            DropdownMenuItem(text = { Text(stringResource(R.string.library_manage_collections)) }, onClick = {
+                                showCollectionsManager.value = true; collectionMenuExpanded.value = false
+                            })
+                        }
+                    }
+                }
+                if (viewMode.value == LibraryViewMode.MIXED_BOOKSHELF) {
+                    Box {
+                        TextButton(onClick = { adornmentMenuExpanded.value = true }, contentPadding = PaddingValues(horizontal = 4.dp)) {
+                            Text(stringResource(R.string.library_adornments), color = ShelfInk)
+                        }
+                        DropdownMenu(expanded = adornmentMenuExpanded.value, onDismissRequest = { adornmentMenuExpanded.value = false }) {
+                            BookshelfAdornment.entries.forEach { option ->
+                                DropdownMenuItem(text = { Text(stringResource(option.labelRes)) }, onClick = {
+                                    bookshelfAdornment.value = option
+                                    adornmentMenuExpanded.value = false
+                                })
+                            }
                         }
                     }
                 }
             }
         }
-
-        item(key = "onDevice", span = { GridItemSpan(maxLineSpan) }) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.library_on_device), fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
-                    Text(
-                        pluralStringResource(R.plurals.library_files_showing, books.size, books.size, orderedBooks.size),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 13.sp
-                    )
-                }
-                Text(
-                    stringResource(if (listMode.value) R.string.library_view_list else R.string.library_view_covers),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 12.sp
-                )
-            }
-        }
-
         if (visibleBooks.isEmpty()) {
             item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
-                EmptyLibraryCard(
-                    hasBooks = books.isNotEmpty(),
-                    onImport = { onImport() }
+                EmptyLibraryCard(hasBooks = books.isNotEmpty(), onImport = onImport)
+            }
+        } else if (viewMode.value == LibraryViewMode.COVERS) {
+            gridItems(items = orderedBooks, key = { it.id }, contentType = { "cover" }) { book ->
+                BookCard(
+                    book = book,
+                    savingBookUri = savingBookUri.value,
+                    modifier = Modifier.fillMaxWidth(),
+                    compact = false,
+                    onAction = { handleBookAction(book, it) }
                 )
             }
         } else {
-            gridItems(
-                items = orderedBooks,
-                key = { it.id },
-                contentType = { "book" }
-            ) { book ->
-                        BookCard(
-                            book = book,
-                            savingBookUri = savingBookUri.value,
-                            modifier = Modifier.fillMaxWidth(),
-                            compact = listMode.value,
-                            onOpen = { onOpen(book) },
-                            onRemove = { pendingRemoval.value = book },
-                            onSaveOfflineCopy = {
-                                val key = book.uri.toString()
-                                if (savingBookUri.value != key) {
-                                    savingBookUri.value = key
-                                    coroutineScope.launch {
-                                        try {
-                                            val displayName = withContext(Dispatchers.IO) { queryDisplayName(context, book.uri) }
-                                            OfflineBookStore.saveCopy(context, book.uri, displayName)
-                                            onOfflineBooksChanged()
-                                            Toast.makeText(context, context.getString(R.string.library_offline_copy_saved), Toast.LENGTH_SHORT).show()
-                                        } catch (cancelled: CancellationException) {
-                                            throw cancelled
-                                        } catch (error: Exception) {
-                                            Toast.makeText(context, context.getString(R.string.library_offline_copy_save_failed), Toast.LENGTH_LONG).show()
-                                        } finally {
-                                            savingBookUri.value = null
-                                        }
-                                    }
-                                }
-                            },
-                            onRemoveOfflineCopy = {
-                                pendingOfflineCopyRemoval.value = book
-                            },
-                            onExportAnnotations = {
-                                coroutineScope.launch {
-                                    try {
-                                        val annotations = viewModel.annotationsForBook(book.uri.toString())
-                                        if (annotations.isEmpty()) {
-                                            Toast.makeText(context, context.getString(R.string.library_no_annotations), Toast.LENGTH_SHORT).show()
-                                        } else {
-                                            pendingMarkdown.value = book.id
-                                            onExportAnnotationsFile(
-                                                annotationExportFileName(
-                                                    book.title,
-                                                    context.getString(pe.lee.feature.notes.R.string.annotation_default_book)
-                                                )
-                                            )
-                                        }
-                                    } catch (cancelled: CancellationException) {
-                                        throw cancelled
-                                    } catch (error: Exception) {
-                                        Toast.makeText(context, context.getString(R.string.library_annotations_read_failed), Toast.LENGTH_LONG).show()
-                                    }
-                                }
-                            },
-                            onToggleFavorite = {
-                                coroutineScope.launch {
-                                    viewModel.updateFavorite(book.uri.toString(), !book.isFavorite)
-                                }
-                            },
-                            onEditTitle = {
-                                editingBook.value = book
-                                titleDraft.value = book.title
-                            },
-                            onOrganize = {
-                                organizingBook.value = book
-                                collectionDraft.value = book.collectionNames.firstOrNull().orEmpty()
-                            }
-                        )
-                    }
+            val shelves = orderedBooks.chunked(5)
+            gridItems(items = shelves, key = { shelf -> "shelf-${shelf.firstOrNull()?.id ?: "empty"}" }, contentType = { "shelf" }) { shelf ->
+                BookshelfRow(
+                    books = shelf,
+                    savingBookUri = savingBookUri.value,
+                    adornment = bookshelfAdornment.value,
+                    onBookAction = { book, action -> handleBookAction(book, action) },
+                    modifier = Modifier.fillMaxWidth().padding(top = 3.dp, bottom = 4.dp)
+                )
+            }
         }
-
         item(key = "privacy", span = { GridItemSpan(maxLineSpan) }) {
-            Text(
-                stringResource(R.string.library_local_privacy_note),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(bottom = 24.dp)
-            )
+            Text(stringResource(R.string.library_local_privacy_note), color = Color(0xFF68615A), fontSize = 12.sp, modifier = Modifier.padding(top = 10.dp))
         }
     }
 
-        pendingOfflineCopyRemoval.value?.let { book ->
-            AlertDialog(
-                onDismissRequest = { pendingOfflineCopyRemoval.value = null },
-                title = { Text(stringResource(R.string.library_remove_offline_copy_title)) },
-                text = {
-                    Text(stringResource(R.string.library_remove_offline_copy_message, book.title))
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        pendingOfflineCopyRemoval.value = null
-                        coroutineScope.launch {
-                            withContext(Dispatchers.IO) { OfflineBookStore.deleteCopy(context, book.uri) }
-                            onOfflineBooksChanged()
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.library_offline_copy_removed),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }) { Text(stringResource(R.string.action_delete)) }
-                },
-                dismissButton = {
-                    TextButton(onClick = { pendingOfflineCopyRemoval.value = null }) {
-                        Text(stringResource(R.string.action_cancel))
+    pendingOfflineCopyRemoval.value?.let { book ->
+        AlertDialog(
+            onDismissRequest = { pendingOfflineCopyRemoval.value = null },
+            title = { Text(stringResource(R.string.library_remove_offline_copy_title)) },
+            text = { Text(stringResource(R.string.library_remove_offline_copy_message, book.title)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    pendingOfflineCopyRemoval.value = null
+                    coroutineScope.launch {
+                        withContext(Dispatchers.IO) { OfflineBookStore.deleteCopy(context, book.uri) }
+                        onOfflineBooksChanged()
+                        Toast.makeText(context, context.getString(R.string.library_offline_copy_removed), Toast.LENGTH_SHORT).show()
                     }
-                }
-            )
-        }
+                }) { Text(stringResource(R.string.action_delete)) }
+            },
+            dismissButton = { TextButton(onClick = { pendingOfflineCopyRemoval.value = null }) { Text(stringResource(R.string.action_cancel)) } }
+        )
     }
 }
