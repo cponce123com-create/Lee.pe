@@ -141,7 +141,7 @@ internal object LocalLibraryBackup {
             while (true) {
                 val n = stream.read(chunk)
                 if (n < 0) break
-                if (buffer.size() + n > MAX_ARCHIVE_BYTES) throw IOException("Respaldo demasiado grande (máximo 16 MB).")
+                if (buffer.size() + n > MAX_ARCHIVE_BYTES) throw IOException("Respaldo demasiado grande (máximo 64 MB).")
                 buffer.write(chunk, 0, n)
             }
         }
@@ -426,10 +426,14 @@ internal object LocalLibraryBackup {
                 name.take(LocalTextLimits.COLLECTION_NAME).takeIf(String::isNotBlank)
             }.distinctBy { it.lowercase(Locale.ROOT) }.take(MAX_COLLECTIONS)
         }
+        val sessions = snapshot.sessions.take(MAX_SESSIONS).also {
+            if (snapshot.sessions.size > MAX_SESSIONS) adjusted += snapshot.sessions.size - MAX_SESSIONS
+        }
         return SanitizedBackupSnapshot(
             snapshot.copy(
                 books = books,
                 annotations = notes,
+                sessions = sessions,
                 collections = collections,
                 bookCollectionNames = bookCollectionNames
             ),
