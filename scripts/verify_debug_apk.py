@@ -36,7 +36,10 @@ def _is_expected_media3_bluetooth_validation_activity(activity: ET.Element) -> b
         activity.get(ANDROID + "exported") != "true"
         or activity.get(ANDROID + "excludeFromRecents") != "true"
         or activity.get(ANDROID + "noHistory") != "true"
-        or activity.get(ANDROID + "theme") != "@android:style/Theme.NoDisplay"
+        or activity.get(ANDROID + "theme") not in {
+            "@android:style/Theme.NoDisplay",
+            "@ref/0x1030055",
+        }
         or activity.get(ANDROID + "permission") != "android.permission.BLUETOOTH_PRIVILEGED"
     ):
         return False
@@ -106,10 +109,7 @@ def verify_manifest(manifest: str) -> str:
                 raise RuntimeError("MainActivity must be exported for the launcher")
         elif name == "androidx.media3.session.BluetoothValidationActivity":
             if not _is_expected_media3_bluetooth_validation_activity(activity):
-                raise RuntimeError(
-                    "Media3 Bluetooth validation activity is not safely configured: "
-                    + ET.tostring(activity, encoding="unicode")
-                )
+                raise RuntimeError("Media3 Bluetooth validation activity is not safely configured")
         elif name.startswith("pe.lee.") and exported != "false":
             raise RuntimeError(f"App activity must be explicitly non-exported: {name}")
         elif exported == "true":
