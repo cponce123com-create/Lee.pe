@@ -110,7 +110,6 @@ internal fun PdfReaderScreen(
     val pdfSearchInProgressMessage = stringResource(R.string.pdf_search_in_progress_document)
     val pdfSearchCancelledMessage = stringResource(R.string.pdf_search_cancelled)
     val pdfSearchFailedMessage = stringResource(R.string.pdf_search_failed)
-    val pdfSearchFailedDetailFormat = stringResource(R.string.pdf_search_failed_detail)
 
 
     LaunchedEffect(viewModel, uri) { viewModel.openBook(uri.toString()) }
@@ -150,8 +149,8 @@ internal fun PdfReaderScreen(
             loading = false
         } catch (cancelled: CancellationException) {
             throw cancelled
-        } catch (error: Exception) {
-            errorMessage = error.message ?: pdfOpenFailedMessage
+        } catch (_: Exception) {
+            errorMessage = pdfOpenFailedMessage
             loading = false
         }
     }
@@ -212,8 +211,8 @@ internal fun PdfReaderScreen(
             )
         } catch (cancelled: CancellationException) {
             throw cancelled
-        } catch (error: Exception) {
-            errorMessage = error.message ?: pdfRenderFailedMessage
+        } catch (_: Exception) {
+            errorMessage = pdfRenderFailedMessage
         } finally {
             rendering = false
         }
@@ -278,10 +277,8 @@ internal fun PdfReaderScreen(
             } catch (cancelled: CancellationException) {
                 pdfSearchMessage = pdfSearchCancelledMessage
                 throw cancelled
-            } catch (error: Exception) {
-                pdfSearchMessage = error.message?.let {
-                    pdfSearchFailedDetailFormat.replace("%1\$s", it)
-                } ?: pdfSearchFailedMessage
+            } catch (_: Exception) {
+                pdfSearchMessage = pdfSearchFailedMessage
             } finally {
                 searchingPdf = false
                 pdfSearchJob = null

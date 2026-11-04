@@ -79,7 +79,7 @@ internal fun rememberLibraryDocumentActions(
                 } catch (error: Exception) {
                     Toast.makeText(
                         context,
-                        error.message ?: context.getString(R.string.library_export_annotations_failed),
+                        context.getString(R.string.library_export_annotations_failed),
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -105,7 +105,7 @@ internal fun rememberLibraryDocumentActions(
             } catch (e: Exception) {
                 Toast.makeText(
                     context,
-                    e.message ?: context.getString(R.string.library_export_backup_failed),
+                    context.getString(R.string.library_export_backup_failed),
                     Toast.LENGTH_LONG
                 ).show()
             } finally {
@@ -125,7 +125,7 @@ internal fun rememberLibraryDocumentActions(
             } catch (e: Exception) {
                 Toast.makeText(
                     context,
-                    e.message ?: context.getString(R.string.library_backup_invalid),
+                    context.getString(R.string.library_backup_invalid),
                     Toast.LENGTH_LONG
                 ).show()
             } finally {
@@ -198,7 +198,7 @@ internal fun rememberLibraryDocumentActions(
             } catch (error: Exception) {
                 Toast.makeText(
                     context,
-                    error.message ?: context.getString(R.string.library_import_failed),
+                    context.getString(R.string.library_import_failed),
                     Toast.LENGTH_LONG
                 ).show()
             }
@@ -253,7 +253,7 @@ internal fun rememberLibraryDocumentActions(
             } catch (error: Exception) {
                 Toast.makeText(
                     context,
-                    error.message ?: context.getString(R.string.library_relink_failed),
+                    context.getString(R.string.library_relink_failed),
                     Toast.LENGTH_LONG
                 ).show()
             }

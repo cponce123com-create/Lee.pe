@@ -338,7 +338,7 @@ internal fun LibraryCatalog(
                                         } catch (cancelled: CancellationException) {
                                             throw cancelled
                                         } catch (error: Exception) {
-                                            Toast.makeText(context, error.message ?: context.getString(R.string.library_offline_copy_save_failed), Toast.LENGTH_LONG).show()
+                                            Toast.makeText(context, context.getString(R.string.library_offline_copy_save_failed), Toast.LENGTH_LONG).show()
                                         } finally {
                                             savingBookUri.value = null
                                         }
@@ -361,7 +361,7 @@ internal fun LibraryCatalog(
                                     } catch (cancelled: CancellationException) {
                                         throw cancelled
                                     } catch (error: Exception) {
-                                        Toast.makeText(context, error.message ?: context.getString(R.string.library_annotations_read_failed), Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, context.getString(R.string.library_annotations_read_failed), Toast.LENGTH_LONG).show()
                                     }
                                 }
                             },

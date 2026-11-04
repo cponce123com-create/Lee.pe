@@ -286,7 +286,7 @@ internal fun LibraryManagementDialogs(
                                     collectionBeingRenamed.value = null
                                 }
                                 .onFailure {
-                                    Toast.makeText(context, it.message ?: context.getString(R.string.library_collection_rename_failed), Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, context.getString(R.string.library_collection_rename_failed), Toast.LENGTH_LONG).show()
                                 }
                         }
                     }
