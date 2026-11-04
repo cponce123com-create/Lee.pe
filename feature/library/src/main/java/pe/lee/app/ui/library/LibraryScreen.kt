@@ -256,6 +256,7 @@ fun LibraryScreen(
     var showBackupOptions by showBackupOptionsState
     val backupPreviewState = remember { mutableStateOf<LocalBackupPreview?>(null) }
     var backupPreview by backupPreviewState
+    val backupPasswordUriState = remember { mutableStateOf<Uri?>(null) }
     val backupBusyState = remember { mutableStateOf(false) }
     var backupBusy by backupBusyState
     // The folder scan lives in the ViewModel so rotation no longer cancels it (A-36).
@@ -370,6 +371,7 @@ fun LibraryScreen(
         pendingMarkdown = pendingMarkdownState,
         backupBusy = backupBusyState,
         backupPreview = backupPreviewState,
+        backupPasswordUri = backupPasswordUriState,
         organizingBook = organizingBookState,
         onOfflineBooksChanged = { offlineRevision++ }
     )
@@ -386,8 +388,10 @@ fun LibraryScreen(
         showBackupOptions = showBackupOptionsState,
         backupBusy = backupBusyState,
         backupPreview = backupPreviewState,
+        backupPasswordUri = backupPasswordUriState,
         onExportBackup = documentActions.exportBackup,
-        onImportBackup = documentActions.importBackup
+        onImportBackup = documentActions.importBackup,
+        onUnlockBackup = documentActions.unlockBackup
     )
 
     LibraryStatisticsDialogs(
