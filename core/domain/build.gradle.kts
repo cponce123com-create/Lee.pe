@@ -1,4 +1,5 @@
 plugins {
+    id("org.jetbrains.kotlinx.kover")
     alias(libs.plugins.kotlin.jvm)
     id("java-library")
 }
