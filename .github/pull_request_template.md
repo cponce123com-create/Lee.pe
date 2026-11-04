@@ -21,3 +21,9 @@
 ## Capturas
 
 <!-- Antes/después si hay cambio visual. -->
+
+## Seguridad y privacidad
+
+- [ ] No se exportaron componentes sensibles sin justificación.
+- [ ] Los servicios y receptores tienen la protección requerida.
+- [ ] No se añadió permiso INTERNET ni acceso general al almacenamiento.
