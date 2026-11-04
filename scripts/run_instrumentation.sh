@@ -13,7 +13,8 @@ fi
 # Synthetic UI fixtures only: keep screenshots with the device diagnostics.
 for name in covers mixed; do
   preview="build/device-diagnostics/leepe-${name}.png"
-  if adb exec-out run-as pe.lee.feature.library.test cat "files/leepe-ui-preview/${name}.png" > "$preview" 2>/dev/null && [ -s "$preview" ]; then
+  if adb exec-out cat "/sdcard/Pictures/LeepeUiPreview/${name}.png" > "$preview" 2>/dev/null &&
+     [ "$(head -c8 "$preview" | base64 -w0)" = "iVBORw0KGgo=" ]; then
     # API 35 logs also expose an encoded copy for review without a local emulator.
     if [ "$(adb shell getprop ro.build.version.sdk | tr -d '\r')" = "35" ]; then
       printf '\nLEEPE_PREVIEW_BEGIN %s\n' "$name"

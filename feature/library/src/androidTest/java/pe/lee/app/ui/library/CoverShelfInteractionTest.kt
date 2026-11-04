@@ -2,7 +2,9 @@ package pe.lee.app.ui.library
 
 import android.net.Uri
 import android.graphics.Bitmap
-import java.io.File
+import android.content.ContentValues
+import android.os.Build
+import android.provider.MediaStore
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -104,10 +106,20 @@ class CoverShelfInteractionTest {
     }
 
     private fun savePreview(name: String) {
+        if (Build.VERSION.SDK_INT < 29) return
         compose.waitForIdle()
         val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
-        val directory = File(InstrumentationRegistry.getInstrumentation().targetContext.filesDir, "leepe-ui-preview")
-        directory.mkdirs()
-        File(directory, name).outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        val resolver = InstrumentationRegistry.getInstrumentation().targetContext.contentResolver
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, name)
+            put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+            put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/LeepeUiPreview")
+            put(MediaStore.Images.Media.IS_PENDING, 1)
+        }
+        val uri = requireNotNull(resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values))
+        requireNotNull(resolver.openOutputStream(uri)).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        values.clear()
+        values.put(MediaStore.Images.Media.IS_PENDING, 0)
+        resolver.update(uri, values, null, null)
     }
 }
