@@ -148,6 +148,39 @@ class VerifyApkManifestTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "not safely configured"):
             verify_manifest(manifest)
 
+
+    def test_accepts_profile_installer_only_with_dump_permission_and_fixed_actions(self):
+        receiver = """        <receiver
+            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+            android:directBootAware="false" android:enabled="true"
+            android:exported="true" android:permission="android.permission.DUMP">
+            <intent-filter><action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" /></intent-filter>
+            <intent-filter><action android:name="androidx.profileinstaller.action.SKIP_FILE" /></intent-filter>
+            <intent-filter><action android:name="androidx.profileinstaller.action.SAVE_PROFILE" /></intent-filter>
+            <intent-filter><action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" /></intent-filter>
+        </receiver>
+"""
+        manifest = BASE_MANIFEST.replace(
+            "    </application>", receiver + "    </application>"
+        )
+        self.assertEqual("pe.lee.app", verify_manifest(manifest))
+
+    def test_rejects_profile_installer_without_system_permission(self):
+        receiver = """        <receiver
+            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+            android:exported="true">
+            <intent-filter><action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" /></intent-filter>
+            <intent-filter><action android:name="androidx.profileinstaller.action.SKIP_FILE" /></intent-filter>
+            <intent-filter><action android:name="androidx.profileinstaller.action.SAVE_PROFILE" /></intent-filter>
+            <intent-filter><action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" /></intent-filter>
+        </receiver>
+"""
+        manifest = BASE_MANIFEST.replace(
+            "    </application>", receiver + "    </application>"
+        )
+        with self.assertRaisesRegex(RuntimeError, "Exported receiver"):
+            verify_manifest(manifest)
+
     def test_rejects_exported_receiver(self):
         manifest = BASE_MANIFEST.replace(
             "    </application>",
