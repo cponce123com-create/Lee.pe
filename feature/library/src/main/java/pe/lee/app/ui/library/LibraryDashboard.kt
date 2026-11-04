@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -39,6 +40,8 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import pe.lee.feature.library.R
 
@@ -53,94 +56,48 @@ internal fun LibraryDashboardHeader(
     onBackup: () -> Unit,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
-
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    Row(Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Image(
-            painter = painterResource(R.drawable.leepe_logo),
+            painterResource(R.drawable.leepe_logo),
             contentDescription = stringResource(R.string.accessibility_leepe_logo),
+            modifier = Modifier.size(40.dp),
             contentScale = ContentScale.Fit,
-            modifier = Modifier.size(48.dp),
         )
         Spacer(Modifier.size(8.dp))
-        Text(
-            text = stringResource(R.string.app_name),
-            style = MaterialTheme.typography.titleMedium,
-            color = Color(0xFF075B50),
-            fontWeight = FontWeight.Bold,
-        )
-        Spacer(Modifier.weight(1f))
-        IconButton(onClick = onStats) {
-            Icon(
-                Icons.Default.BarChart,
-                contentDescription = stringResource(R.string.accessibility_reading_statistics),
-                tint = MaterialTheme.colorScheme.onSurface,
+        Column(Modifier.weight(1f)) {
+            Text(
+                stringResource(R.string.library_my_books), fontSize = 18.sp, fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
+            Text(stringResource(R.string.shelf_book_count, totalBooks), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        IconButton(onClick = onStats, modifier = Modifier.size(40.dp)) {
+            Icon(Icons.Default.BarChart, stringResource(R.string.accessibility_reading_statistics), tint = MaterialTheme.colorScheme.primary)
         }
         Box {
-            IconButton(onClick = { menuExpanded = true }) {
-                Icon(
-                    Icons.Default.MoreVert,
-                    contentDescription = stringResource(R.string.accessibility_library_more_options),
-                )
+            IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(36.dp)) {
+                Icon(Icons.Default.MoreVert, stringResource(R.string.accessibility_library_more_options), tint = MaterialTheme.colorScheme.primary)
             }
             DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                 DropdownMenuItem(
-                    text = {
-                        Text(stringResource(if (busy) R.string.library_scanning else R.string.library_scan))
-                    },
-                    leadingIcon = { Icon(Icons.Default.FolderOpen, contentDescription = null) },
+                    text = { Text(stringResource(if (busy) R.string.library_scanning else R.string.library_scan)) },
                     enabled = !busy,
-                    onClick = {
-                        menuExpanded = false
-                        onScan()
-                    },
+                    onClick = { menuExpanded = false; onScan() },
                 )
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.library_backup_restore)) },
-                    onClick = {
-                        menuExpanded = false
-                        onBackup()
-                    },
+                    onClick = { menuExpanded = false; onBackup() },
                 )
             }
         }
-    }
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = stringResource(R.string.library_my_books),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f),
-        )
         Box(
-            modifier = Modifier
-                .size(42.dp)
-                .background(Color(0xFF075B50), RoundedCornerShape(12.dp))
+            Modifier.size(44.dp).background(MaterialTheme.colorScheme.primary, RoundedCornerShape(13.dp))
                 .clickable(onClickLabel = stringResource(R.string.accessibility_library_add_book), onClick = onImport)
                 .semantics { role = Role.Button },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                Icons.Default.Add,
-                contentDescription = stringResource(R.string.accessibility_library_add_book),
-                tint = Color.White,
-            )
+            Icon(Icons.Default.Add, stringResource(R.string.accessibility_library_add_book), tint = Color.White)
         }
-    }
-    if (totalBooks == 0) {
-        Text(
-            text = stringResource(R.string.library_empty_prompt),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 6.dp),
-        )
     }
 }
 

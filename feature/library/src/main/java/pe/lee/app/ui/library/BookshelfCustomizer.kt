@@ -62,6 +62,7 @@ import pe.lee.feature.library.R
 @Composable
 internal fun BookshelfCustomizerDialog(
     viewMode: LibraryViewMode,
+    decorationCount: Int,
     onViewModeChange: (LibraryViewMode) -> Unit,
     coverRows: List<List<LocalBook>>,
     shelves: List<ShelfDisplay>,
@@ -169,22 +170,15 @@ internal fun BookshelfCustomizerDialog(
                         Spacer(Modifier.weight(1f))
                         TextButton(onClick = onReset) { Text(stringResource(R.string.shelf_reset)) }
                     }
-                    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                        shelves.forEach { shelf ->
-                            BookshelfRow(
-                                shelf = shelf,
-                                booksById = booksById,
-                                savingBookUri = savingBookUri,
-                                onBookAction = onBookAction,
-                                onMoveBook = onMoveBook,
-                                onToggleOrientation = onToggleOrientation,
-                                onRemoveBook = onRemoveBook,
-                                onMoveDecoration = onMoveDecoration,
-                                onReplaceDecoration = { id -> decorationToReplaceId = id },
-                                onRemoveDecoration = onRemoveDecoration,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
+                    Text(
+                        stringResource(R.string.shelf_decoration_count, decorationCount),
+                        color = dialogInk,
+                    )
+                    if (decorationToReplaceId != null) {
+                        TextButton(onClick = {
+                            decorationToReplaceId?.let(onRemoveDecoration)
+                            onSave()
+                        }) { Text(stringResource(R.string.shelf_remove_decoration)) }
                     }
                     Text(
                         stringResource(R.string.shelf_gallery_heading),
@@ -253,7 +247,8 @@ internal fun BookshelfCustomizerDialog(
                             decorationToReplaceId = null
                             selectedDecorationName = null
                         },
-                        enabled = selectedDecoration != null,
+                        enabled = selectedDecoration != null &&
+                            (decorationToReplaceId != null || decorationCount < MAX_SHELF_DECORATIONS),
                         modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00695F), contentColor = Color.White),
                     ) {

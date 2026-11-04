@@ -10,4 +10,19 @@ if [ "$status" -ne 0 ]; then
   adb exec-out screencap -p > build/device-diagnostics/screenshot.png || true
   adb shell dumpsys activity > build/device-diagnostics/activity.txt 2>&1 || true
 fi
+# Synthetic UI fixtures only: keep screenshots with the device diagnostics.
+for name in covers mixed; do
+  preview="build/device-diagnostics/leepe-${name}.png"
+  if adb exec-out cat "/sdcard/Pictures/LeepeUiPreview/${name}.png" > "$preview" 2>/dev/null &&
+     [ "$(head -c8 "$preview" | base64 -w0)" = "iVBORw0KGgo=" ]; then
+    # API 35 logs also expose an encoded copy for review without a local emulator.
+    if [ "$(adb shell getprop ro.build.version.sdk | tr -d '\r')" = "35" ]; then
+      printf '\nLEEPE_PREVIEW_BEGIN %s\n' "$name"
+      base64 -w0 "$preview"
+      printf '\nLEEPE_PREVIEW_END\n'
+    fi
+  else
+    rm -f "$preview"
+  fi
+done
 exit "$status"

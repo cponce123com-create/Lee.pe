@@ -29,10 +29,17 @@ internal fun LibraryScreenCatalog(state: LibraryScreenState, onOpenBook: (Uri, S
     LaunchedEffect(books) {
         indexedBooks = withContext(Dispatchers.Default) { books to librarySearchIndex(books) }
     }
-    LaunchedEffect(books, indexedBooks, query, selectedFilter, selectedCollection, sortMode) {
+    LaunchedEffect(books, indexedBooks, query, selectedFilter, selectedCollection, sortMode, bookshelfLayout) {
         val index = indexedBooks?.takeIf { it.first == books }?.second ?: return@LaunchedEffect
         catalog = withContext(Dispatchers.Default) {
-            computeCatalog(books, query, selectedFilter, selectedCollection, sortMode, libraryTitleComparator(), index)
+            val result = computeCatalog(books, query, selectedFilter, selectedCollection, sortMode, libraryTitleComparator(), index)
+            if (sortMode == LibrarySortMode.CUSTOM) {
+                val rank = bookshelfLayout.books.sortedWith(compareBy({ it.shelf }, { it.order }))
+                    .mapIndexed { order, placement -> placement.bookId to order }.toMap()
+                result.copy(ordered = result.ordered.sortedBy { rank[it.id] ?: Int.MAX_VALUE })
+            } else {
+                result
+            }
         }
     }
     val visibleBooks = catalog.visible

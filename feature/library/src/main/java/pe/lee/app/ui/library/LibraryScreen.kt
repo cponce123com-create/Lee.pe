@@ -14,6 +14,8 @@ fun LibraryScreen(
     onOpenBook: (uri: Uri, format: String, title: String, offlineCopyUri: Uri?) -> Unit,
 ) {
     val state = rememberLibraryScreenState(viewModel, settings, backupRepository)
-    LibraryScreenDialogs(state)
-    LibraryScreenCatalog(state, onOpenBook)
+    LibraryShelfTheme {
+        LibraryScreenDialogs(state)
+        LibraryScreenCatalog(state, onOpenBook)
+    }
 }

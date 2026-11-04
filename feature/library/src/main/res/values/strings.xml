@@ -80,8 +80,8 @@
     <string name="shelf_decor_figure">Figura</string>
     <string name="shelf_decor_sculpture">Escultura</string>
     <string name="shelf_customizer_title">Personalizar estantería</string>
-    <string name="shelf_save">Guardar</string>
-    <string name="shelf_customizer_hint">Los adornos son opcionales. Elige una pieza y usa el menú de cada objeto para moverlo, cambiar su orientación o quitarlo.</string>
+    <string name="shelf_save">Listo</string>
+    <string name="shelf_customizer_hint">Elige un adorno para añadirlo. En la estantería, mantén pulsado y arrastra para colocarlo.</string>
     <string name="shelf_gallery_heading">Elige tus adornos</string>
     <string name="shelf_add_selected">Añadir a la estantería</string>
     <string name="shelf_replace_selected">Cambiar adorno</string>
@@ -337,4 +337,11 @@
     <string name="backup_password_confirm_label">Repite la contraseña</string>
     <string name="backup_password_mismatch">Las contraseñas no coinciden.</string>
     <string name="backup_unlock">Desbloquear</string>
+    <string name="shelf_page_position">Página %1$d de %2$d</string>
+    <string name="shelf_decoration_count">Adornos: %1$d/10</string>
+    <string name="shelf_decoration_limit">Puedes colocar hasta 10 adornos.</string>
+    <string name="shelf_drag_hint">Mantén pulsado y arrastra para ordenar.</string>
+    <string name="shelf_book_count">%1$d libros</string>
+    <string name="shelf_drop_here">Suelta aquí para crear una repisa</string>
+    <string name="shelf_mixed_drag_hint">Mantén pulsado y arrastra. Doble toque para girar un libro.</string>
 </resources>
