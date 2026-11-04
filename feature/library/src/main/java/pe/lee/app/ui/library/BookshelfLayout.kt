@@ -15,15 +15,35 @@ internal data class BookshelfBookPlacement(
 
 internal enum class BookOrientation { UPRIGHT, STACKED }
 
-internal enum class ShelfDecorationType(val labelRes: Int, val glyph: String) {
-    BOOKEND(R.string.shelf_decor_bookend, "◧"),
-    DIVIDER(R.string.shelf_decor_divider, "▥"),
-    PLANT(R.string.shelf_decor_plant, "♣"),
-    VASE(R.string.shelf_decor_vase, "♙"),
-    LAMP(R.string.shelf_decor_lamp, "♜"),
-    ORB(R.string.shelf_decor_orb, "●"),
-    FIGURE(R.string.shelf_decor_figure, "♟"),
-    SCULPTURE(R.string.shelf_decor_sculpture, "◆")
+internal enum class ShelfDecorationType(val labelRes: Int, val drawableRes: Int) {
+    BOOKEND(R.string.shelf_decor_bookend, R.drawable.shelf_ornament_bookend),
+    PLANT(R.string.shelf_decor_plant, R.drawable.shelf_ornament_plant),
+    MUG(R.string.shelf_decor_mug, R.drawable.shelf_ornament_mug),
+    VASE(R.string.shelf_decor_vase, R.drawable.shelf_ornament_vase),
+    DIVIDER(R.string.shelf_decor_divider, R.drawable.shelf_ornament_divider),
+    LAMP(R.string.shelf_decor_lamp, R.drawable.shelf_ornament_lamp),
+    ORB(R.string.shelf_decor_orb, R.drawable.shelf_ornament_orb),
+    FIGURE(R.string.shelf_decor_figure, R.drawable.shelf_ornament_figure),
+    SCULPTURE(R.string.shelf_decor_sculpture, R.drawable.shelf_ornament_figure)
+}
+
+internal enum class ShelfDecorationCategory(val labelRes: Int) {
+    ALL(R.string.shelf_category_all),
+    NATURE(R.string.shelf_category_nature),
+    READING(R.string.shelf_category_reading),
+    FANTASY(R.string.shelf_category_fantasy),
+    MINIMAL(R.string.shelf_category_minimal),
+    SEPARATORS(R.string.shelf_category_separators)
+}
+
+internal fun ShelfDecorationType.belongsTo(category: ShelfDecorationCategory): Boolean = when (category) {
+    ShelfDecorationCategory.ALL -> true
+    ShelfDecorationCategory.NATURE -> this == ShelfDecorationType.PLANT || this == ShelfDecorationType.VASE
+    ShelfDecorationCategory.READING -> this == ShelfDecorationType.MUG || this == ShelfDecorationType.LAMP
+    ShelfDecorationCategory.FANTASY -> this == ShelfDecorationType.BOOKEND || this == ShelfDecorationType.ORB ||
+        this == ShelfDecorationType.FIGURE || this == ShelfDecorationType.SCULPTURE
+    ShelfDecorationCategory.MINIMAL -> this == ShelfDecorationType.SCULPTURE || this == ShelfDecorationType.ORB
+    ShelfDecorationCategory.SEPARATORS -> this == ShelfDecorationType.BOOKEND || this == ShelfDecorationType.DIVIDER
 }
 
 internal data class ShelfDecoration(
@@ -97,13 +117,48 @@ internal data class BookshelfLayout(
         return copy(decorations = decorations + decoration)
     }
 
-    fun moveDecoration(id: String, shelfDelta: Int = 0, orderDelta: Int = 0): BookshelfLayout = copy(
-        decorations = decorations.map { item ->
-            if (item.id != id) item else item.copy(shelf = (item.shelf + shelfDelta).coerceAtLeast(0), order = (item.order + orderDelta).coerceAtLeast(0))
+    fun moveDecoration(id: String, shelfDelta: Int = 0, orderDelta: Int = 0): BookshelfLayout {
+        val decoration = decorations.firstOrNull { it.id == id } ?: return this
+        val sourceShelf = decoration.shelf
+        val targetShelf = (sourceShelf + shelfDelta).coerceAtLeast(0)
+        val sourceObjects = objectsOnShelf(sourceShelf).toMutableList()
+        val sourceIndex = sourceObjects.indexOfFirst { it is ShelfObject.Decor && it.decoration.id == id }
+        if (sourceIndex < 0) return this
+
+        val moving = sourceObjects.removeAt(sourceIndex)
+        val targetObjects = if (targetShelf == sourceShelf) sourceObjects else objectsOnShelf(targetShelf).toMutableList()
+        val targetIndex = (sourceIndex + orderDelta).coerceIn(0, targetObjects.size)
+        targetObjects.add(targetIndex, moving)
+
+        val changedShelves = if (targetShelf == sourceShelf) {
+            mapOf(sourceShelf to targetObjects)
+        } else {
+            mapOf(sourceShelf to sourceObjects, targetShelf to targetObjects)
         }
-    )
+        val changedBooks = changedShelves.flatMap { (shelf, objects) ->
+            objects.mapIndexedNotNull { index, item ->
+                (item as? ShelfObject.Book)?.placement?.copy(shelf = shelf, order = index)
+            }
+        }
+        val changedDecorations = changedShelves.flatMap { (shelf, objects) ->
+            objects.mapIndexedNotNull { index, item ->
+                (item as? ShelfObject.Decor)?.decoration?.copy(shelf = shelf, order = index)
+            }
+        }
+        val shelfIds = changedShelves.keys
+        return copy(
+            books = books.filterNot { it.shelf in shelfIds } + changedBooks,
+            decorations = decorations.filterNot { it.shelf in shelfIds } + changedDecorations
+        )
+    }
 
     fun removeDecoration(id: String): BookshelfLayout = copy(decorations = decorations.filterNot { it.id == id })
+
+    fun replaceDecoration(id: String, type: ShelfDecorationType): BookshelfLayout = copy(
+        decorations = decorations.map { decoration ->
+            if (decoration.id == id) decoration.copy(type = type) else decoration
+        }
+    )
 
     fun objectsOnShelf(shelf: Int): List<ShelfObject> = buildList {
         books.filter { it.shelf == shelf && it.bookId !in hiddenBookIds }.forEach {
