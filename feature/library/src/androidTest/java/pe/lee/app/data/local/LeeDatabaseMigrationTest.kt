@@ -38,7 +38,7 @@ class LeeDatabaseMigrationTest {
                 val entity = entities.getJSONObject(index)
                 val table = entity.getString("tableName")
                 legacy.execSQL(entity.getString("createSql").replace("\${TABLE_NAME}", table))
-                val indices = entity.getJSONArray("indices")
+                val indices = entity.optJSONArray("indices") ?: org.json.JSONArray()
                 for (i in 0 until indices.length()) {
                     legacy.execSQL(indices.getJSONObject(i).getString("createSql").replace("\${TABLE_NAME}", table))
                 }

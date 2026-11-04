@@ -73,3 +73,14 @@ Medición con `LibraryScaleTest` (JVM de escritorio, 10 000 títulos con acentos
 - Estantería 3D: medir frames lentos, FPS y memoria al desplazar y mover adornos.
 - Recontar pruebas a partir de XML JUnit del commit validado. El conteo histórico
   de 64 no se aumenta por estimación ni se considera cobertura.
+
+## Controles añadidos el 4 de noviembre de 2026
+
+- `LibraryScreen.kt`: 19 líneas; estado, observación diaria, catálogo y diálogos en archivos separados.
+- Dominio: 14 tipos públicos de nivel superior con KDoc (conteo de fuentes, no una medición de cobertura).
+- Nueve pruebas nuevas de casos de uso: búsqueda, importación, borrado, cancelación, progreso y respaldos.
+- Tres macrobenchmarks con 60 EPUB de fixture: arranque, desplazamiento y apertura.
+
+Las duraciones y los porcentajes nuevos siguen pendientes de resultados de CI y
+medición en dispositivo. No se suman estas pruebas al conteo histórico como si ya
+se hubieran ejecutado satisfactoriamente.

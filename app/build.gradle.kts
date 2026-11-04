@@ -56,6 +56,15 @@ android {
         }
     }
 
+    if (providers.gradleProperty("enableBenchmarks").orNull == "true") {
+        buildTypes.create("benchmark") {
+            initWith(buildTypes.getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+            isDebuggable = false
+        }
+    }
+
     buildFeatures {
         compose = true
     }
@@ -97,4 +106,17 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
+}
+
+kover {
+    reports {
+        filters {
+            excludes {
+                classes("*.BuildConfig", "*.R", "*.R\$*", "*_Impl", "*_Impl\$*")
+            }
+        }
+        verify {
+            rule { minBound(30) }
+        }
+    }
 }

@@ -10,6 +10,8 @@ on:
       - "feature/**"
       - "library/**"
       - "gradle/**"
+      - "config/**"
+      - ".editorconfig"
       - "*.gradle.kts"
       - "gradle.properties"
       - "version.properties"
@@ -27,6 +29,8 @@ on:
       - "feature/**"
       - "library/**"
       - "gradle/**"
+      - "config/**"
+      - ".editorconfig"
       - "*.gradle.kts"
       - "gradle.properties"
       - "version.properties"
@@ -122,6 +126,26 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Evaluate requested coverage goals
+        id: coverage_goals
+        continue-on-error: true
+        run: ./gradlew --no-daemon --stacktrace --continue coverageGoals koverXmlReportAll
+      - name: Record coverage goal status
+        if: always()
+        env:
+          COVERAGE_OUTCOME: ${{ steps.coverage_goals.outcome }}
+        run: |
+          echo "Coverage goals: $COVERAGE_OUTCOME (targets: domain 60%, data 50%, features 40%, app 30%)." >> "$GITHUB_STEP_SUMMARY"
+          if [ "$COVERAGE_OUTCOME" != success ]; then
+            echo "::warning::Coverage targets are not verified as achieved; inspect the XML/HTML reports."
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: coverage-goals
+          path: '**/build/reports/kover/'
+          retention-days: 30
+
   instrumentation:
     name: Instrumentation API ${{ matrix.api }}
     runs-on: ubuntu-latest
@@ -174,3 +198,25 @@ jobs:
             build/device-diagnostics/
           if-no-files-found: warn
           retention-days: 14
+
+  notify-failure:
+    needs: [build, instrumentation]
+    if: always() && github.event_name == 'push' && (needs.build.result == 'failure' || needs.instrumentation.result == 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify configured team webhook
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python - <<'PYTHON'
+          import json, os, urllib.request
+          webhook = os.environ.get('SLACK_WEBHOOK')
+          if webhook:
+              payload = json.dumps({'text': 'Falló el CI de Lee.pe: ' + os.environ['RUN_URL']}).encode()
+              request = urllib.request.Request(webhook, data=payload, headers={'Content-Type': 'application/json'})
+              with urllib.request.urlopen(request, timeout=15) as response:
+                  response.read()
+          else:
+              print('Notificación no configurada: falta SLACK_WEBHOOK.')
+          PYTHON

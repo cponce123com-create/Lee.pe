@@ -3,12 +3,14 @@ package pe.lee.app.data.repository
 import pe.lee.app.data.local.BookDao
 import pe.lee.app.data.local.BookEntity
 import pe.lee.app.data.local.CollectionEntity
+import pe.lee.core.domain.library.UpdateBookProgressUseCase
 import pe.lee.core.domain.ReadingProgress
 import pe.lee.core.domain.ReaderBook
 import pe.lee.core.domain.ReaderBookRepository
 import kotlinx.coroutines.flow.Flow
 
 class BookRepository(private val dao: BookDao) : ReaderBookRepository {
+    private val updateProgress = UpdateBookProgressUseCase()
     fun observeBooks(): Flow<List<BookEntity>> = dao.observeAll()
     fun observeCollections(): Flow<List<CollectionEntity>> = dao.observeCollections()
     fun observeBookCollectionNames() = dao.observeBookCollectionNames()
@@ -32,9 +34,9 @@ class BookRepository(private val dao: BookDao) : ReaderBookRepository {
     )
     override suspend fun markOpened(uri: String, at: Long) = dao.markOpened(uri, at)
     override suspend fun saveEpubProgress(uri: String, locator: String, progress: Float, at: Long) =
-        dao.saveEpubProgress(uri, locator, ReadingProgress.from(progress).fraction, at)
+        updateProgress(progress) { dao.saveEpubProgress(uri, locator, it, at) }
     override suspend fun savePdfProgress(uri: String, page: Int, progress: Float, at: Long) =
-        dao.savePdfProgress(uri, page, ReadingProgress.from(progress).fraction, at)
+        updateProgress(progress) { dao.savePdfProgress(uri, page, it, at) }
     suspend fun updateFavorite(uri: String, value: Boolean) = dao.updateFavorite(uri, value)
     suspend fun updateTitle(uri: String, title: String) = dao.updateTitle(uri, title)
     suspend fun updateCollection(uri: String, name: String?) = dao.updateCollection(uri, name)

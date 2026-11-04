@@ -1,5 +1,7 @@
 package pe.lee.app.ui.library
 
+import pe.lee.core.domain.library.ImportBookUseCase
+import pe.lee.core.domain.library.DeleteBookUseCase
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
@@ -44,6 +46,9 @@ class LibraryViewModel(
     private val annotationRepository: ReaderAnnotationRepository,
     private val statsRepository: ReadingStatisticsRepository
 ) : ViewModel() {
+    private val importBooks = ImportBookUseCase(booksRepository::insertBooks, BookEntity::uri)
+    private val removeBook = DeleteBookUseCase(booksRepository::deleteBook)
+
     val state: StateFlow<LibraryState> = combine(
         booksRepository.observeBooks(),
         booksRepository.observeCollections(),
@@ -62,10 +67,10 @@ class LibraryViewModel(
     fun observeReadingDayKeys() = statsRepository.observeReadingDayKeys()
     suspend fun findBook(uri: String) = booksRepository.findByUri(uri)
     suspend fun findBookById(id: String) = booksRepository.findById(id)
-    suspend fun insertBook(book: BookEntity) = booksRepository.insertBooks(listOf(book))
-    suspend fun insertBooks(books: List<BookEntity>) = booksRepository.insertBooks(books)
+    suspend fun insertBook(book: BookEntity) = importBooks(listOf(book))
+    suspend fun insertBooks(books: List<BookEntity>) = importBooks(books)
     suspend fun rebindUri(bookId: String, uri: String) = booksRepository.rebindUri(bookId, uri)
-    suspend fun deleteBook(uri: String) = booksRepository.deleteBook(uri)
+    suspend fun deleteBook(uri: String) = removeBook(uri)
     suspend fun pendingCleanupUris() = booksRepository.pendingCleanupUris()
     suspend fun completeCleanup(uri: String) = booksRepository.completeCleanup(uri)
     suspend fun resetReadingStatistics() = statsRepository.reset()

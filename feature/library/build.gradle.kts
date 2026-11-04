@@ -54,3 +54,16 @@ androidComponents {
         variant.androidTest?.sources?.assets?.addStaticSourceDirectory("../../core/database/schemas")
     }
 }
+
+kover {
+    reports {
+        filters {
+            excludes {
+                classes("*.BuildConfig", "*.R", "*.R\$*", "*_Impl", "*_Impl\$*")
+            }
+        }
+        verify {
+            rule { minBound(40) }
+        }
+    }
+}

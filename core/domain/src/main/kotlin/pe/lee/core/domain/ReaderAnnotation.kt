@@ -15,6 +15,7 @@ data class ReaderAnnotation(
     val updatedAt: Long = createdAt
 )
 
+/** Local annotation persistence used by readers; operations never require a network connection. */
 interface ReaderAnnotationRepository {
     fun observeReaderAnnotations(bookUri: String): Flow<List<ReaderAnnotation>>
     suspend fun getReaderAnnotations(bookUri: String): List<ReaderAnnotation>

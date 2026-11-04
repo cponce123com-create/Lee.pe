@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Opt in with git config core.hooksPath .githooks. Never rewrite staged files.
+git diff --cached --check
+./gradlew --no-daemon detekt ktlintCheck

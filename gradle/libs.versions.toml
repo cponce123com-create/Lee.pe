@@ -19,6 +19,13 @@ androidxTestCore = "1.6.1"
 androidxTestExtJunit = "1.2.1"
 androidxTestRunner = "1.6.2"
 kover = "0.9.11"
+detekt = "2.0.0-alpha.6"
+ktlintPlugin = "14.2.0"
+dokka = "2.2.0"
+dependencyCheck = "13.0.0"
+
+benchmark = "1.4.1"
+uiautomator = "2.3.0"
 
 [libraries]
 room3-runtime = { group = "androidx.room3", name = "room3-runtime", version.ref = "room" }
@@ -48,6 +55,9 @@ androidx-test-core = { group = "androidx.test", name = "core", version.ref = "an
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
 androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
 
+androidx-benchmark = { group = "androidx.benchmark", name = "benchmark-macro-junit4", version.ref = "benchmark" }
+androidx-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "uiautomator" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
@@ -55,3 +65,9 @@ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+
+detekt = { id = "dev.detekt", version.ref = "detekt" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintPlugin" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+dependency-check = { id = "org.owasp.dependencycheck", version.ref = "dependencyCheck" }
+android-test = { id = "com.android.test", version.ref = "agp" }

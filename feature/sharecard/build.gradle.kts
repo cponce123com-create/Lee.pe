@@ -45,3 +45,16 @@ dependencies {
     androidTestImplementation(libs.androidx.test.runner)
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
+
+kover {
+    reports {
+        filters {
+            excludes {
+                classes("*.BuildConfig", "*.R", "*.R\$*", "*_Impl", "*_Impl\$*")
+            }
+        }
+        verify {
+            rule { minBound(40) }
+        }
+    }
+}

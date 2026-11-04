@@ -39,3 +39,5 @@ contraseñas, keystores o datos personales en commits o registros de pruebas.
 Se espera trato respetuoso, críticas al código y no a las personas, y colaboración
 sin acoso ni discriminación. Sigue los principios de Contributor Covenant.
 No publiques información privada para reportar un incidente.
+
+Los comandos de análisis estático, cobertura, documentación, seguridad y benchmarks están en [QUALITY.md](docs/QUALITY.md).
