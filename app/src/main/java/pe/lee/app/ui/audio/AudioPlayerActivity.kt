@@ -109,8 +109,6 @@ class AudioPlayerActivity : ComponentActivity() {
                     controller.setMediaItem(item, AudioProgressStore.get(this, mediaId))
                     controller.prepare()
                     controller.play()
-                } else if (!controller.isPlaying) {
-                    controller.play()
                 }
             } catch (_: Exception) {
                 connectionError.value = getString(R.string.audio_connection_failed)

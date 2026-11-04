@@ -29,7 +29,14 @@ class AudioPlaybackService : MediaSessionService() {
         super.onCreate()
 
         val exoPlayer = ExoPlayer.Builder(this).setWakeMode(C.WAKE_MODE_LOCAL).build()
-        exoPlayer.setAudioAttributes(AudioAttributes.DEFAULT, true)
+        exoPlayer.setAudioAttributes(
+            AudioAttributes.Builder()
+                .setUsage(C.USAGE_MEDIA)
+                .setContentType(C.AUDIO_CONTENT_TYPE_SPEECH)
+                .build(),
+            true
+        )
+        exoPlayer.setHandleAudioBecomingNoisy(true)
         player = exoPlayer
         exoPlayer.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
