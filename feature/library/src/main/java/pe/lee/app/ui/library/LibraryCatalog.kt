@@ -103,8 +103,9 @@ internal fun LibraryCatalog(
     onExportAnnotationsFile: (String) -> Unit
 ) {
     val pendingOfflineCopyRemoval = remember { mutableStateOf<LocalBook?>(null) }
-    var showDecorationGallery by rememberSaveable { mutableStateOf(false) }
+    var showBookshelfCustomizer by rememberSaveable { mutableStateOf(false) }
     var showHiddenBooks by rememberSaveable { mutableStateOf(false) }
+    val replacementDecorationId = rememberSaveable { mutableStateOf<String?>(null) }
     val screenWidth = LocalConfiguration.current.screenWidthDp
     val colors = MaterialTheme.colorScheme
     val darkTheme = isSystemInDarkTheme()
@@ -280,7 +281,7 @@ internal fun LibraryCatalog(
                     }
                 }
                 if (viewMode.value == LibraryViewMode.MIXED_BOOKSHELF) {
-                    TextButton(onClick = { showDecorationGallery = true }, contentPadding = PaddingValues(horizontal = 5.dp)) {
+                    TextButton(onClick = { showBookshelfCustomizer = true }, contentPadding = PaddingValues(horizontal = 5.dp)) {
                         Text(stringResource(R.string.library_adornments), color = colors.primary)
                     }
                 }
@@ -339,6 +340,10 @@ internal fun LibraryCatalog(
                         onBookshelfLayoutChange(bookshelfLayout.moveDecoration(id, shelfDelta, orderDelta))
                         onCustomLayoutSelected()
                     },
+                    onReplaceDecoration = { id ->
+                        replacementDecorationId.value = id
+                        showBookshelfCustomizer = true
+                    },
                     onRemoveDecoration = { id ->
                         onBookshelfLayoutChange(bookshelfLayout.removeDecoration(id))
                         onCustomLayoutSelected()
@@ -371,16 +376,55 @@ internal fun LibraryCatalog(
         )
     }
 
-    if (showDecorationGallery) {
-        ShelfDecorationGallery(
-            onSelect = { type ->
+    if (showBookshelfCustomizer) {
+        BookshelfCustomizerDialog(
+            viewMode = viewMode.value,
+            onViewModeChange = onViewModeChange,
+            coverRows = coverRows,
+            shelves = shelves,
+            booksById = booksById,
+            savingBookUri = savingBookUri.value,
+            onBookAction = ::handleBookAction,
+            onMoveBook = { id, shelfDelta, orderDelta ->
+                onBookshelfLayoutChange(bookshelfLayout.moveBook(id, shelfDelta, orderDelta))
+                onCustomLayoutSelected()
+            },
+            onToggleOrientation = { id ->
+                onBookshelfLayoutChange(bookshelfLayout.toggleOrientation(id))
+                onCustomLayoutSelected()
+            },
+            onRemoveBook = { id ->
+                onBookshelfLayoutChange(bookshelfLayout.removeFromShelf(id))
+                onCustomLayoutSelected()
+            },
+            onMoveDecoration = { id, shelfDelta, orderDelta ->
+                onBookshelfLayoutChange(bookshelfLayout.moveDecoration(id, shelfDelta, orderDelta))
+                onCustomLayoutSelected()
+            },
+            onReplaceDecoration = { id, type ->
+                onBookshelfLayoutChange(bookshelfLayout.replaceDecoration(id, type))
+                onCustomLayoutSelected()
+            },
+            onRemoveDecoration = { id ->
+                onBookshelfLayoutChange(bookshelfLayout.removeDecoration(id))
+                onCustomLayoutSelected()
+            },
+            replacementDecorationId = replacementDecorationId.value,
+            onAddDecoration = { type ->
                 val shelf = (bookshelfLayout.shelfCount() - 1).coerceAtLeast(0)
                 val nextOrder = (bookshelfLayout.objectsOnShelf(shelf).maxOfOrNull(ShelfObject::order) ?: -1) + 1
                 onBookshelfLayoutChange(bookshelfLayout.addDecoration(type, shelf, nextOrder))
                 onCustomLayoutSelected()
-                showDecorationGallery = false
             },
-            onDismiss = { showDecorationGallery = false }
+            onAddBooks = { showHiddenBooks = true },
+            onReset = {
+                onResetBookshelf()
+                onSortModeChange(LibrarySortMode.TITLE_ASC)
+            },
+            onSave = {
+                showBookshelfCustomizer = false
+                replacementDecorationId.value = null
+            }
         )
     }
     if (showHiddenBooks) {
