@@ -36,8 +36,9 @@ internal data class LibraryDocumentActions(
     val scanDirectory: () -> Unit,
     val relinkBook: (LocalBook) -> Unit,
     val exportAnnotationsFile: (String) -> Unit,
-    val exportBackup: () -> Unit,
-    val importBackup: () -> Unit
+    val exportBackup: (String) -> Unit,
+    val importBackup: () -> Unit,
+    val unlockBackup: (Uri, String) -> Unit
 )
 
 @Composable
@@ -50,6 +51,7 @@ internal fun rememberLibraryDocumentActions(
     pendingMarkdown: MutableState<String?>,
     backupBusy: MutableState<Boolean>,
     backupPreview: MutableState<LocalBackupPreview?>,
+    backupPasswordUri: MutableState<Uri?>,
     organizingBook: MutableState<LocalBook?>,
     onOfflineBooksChanged: () -> Unit
 ): LibraryDocumentActions {
@@ -89,13 +91,16 @@ internal fun rememberLibraryDocumentActions(
         }
     }
 
+    val pendingBackupPassword = remember { mutableStateOf<String?>(null) }
     val backupExportLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/json")
+        ActivityResultContracts.CreateDocument("application/vnd.leepe.backup")
     ) { destination ->
-        if (destination != null) coroutineScope.launch {
+        val password = pendingBackupPassword.value
+        pendingBackupPassword.value = null
+        if (destination != null && password != null) coroutineScope.launch {
             backupBusy.value = true
             try {
-                val adjustedRecords = LocalLibraryBackup.save(context, destination, backupRepository)
+                val adjustedRecords = LocalLibraryBackup.save(context, destination, backupRepository, password)
                 val message = if (adjustedRecords == 0) {
                     context.getString(R.string.library_export_backup_done)
                 } else {
@@ -122,6 +127,8 @@ internal fun rememberLibraryDocumentActions(
             backupBusy.value = true
             try {
                 backupPreview.value = LocalLibraryBackup.preview(context, picked, backupRepository)
+            } catch (_: BackupPasswordRequiredException) {
+                backupPasswordUri.value = picked
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (e: Exception) {
@@ -299,7 +306,25 @@ internal fun rememberLibraryDocumentActions(
             )
         },
         exportAnnotationsFile = { exportAnnotationsLauncher.launch(it) },
-        exportBackup = { backupExportLauncher.launch("Lee.pe-respaldo-${readingDayKey(System.currentTimeMillis())}.json") },
-        importBackup = { backupImportLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }
+        exportBackup = { password ->
+            pendingBackupPassword.value = password
+            backupExportLauncher.launch("Lee.pe-respaldo-" + readingDayKey(System.currentTimeMillis()) + ".leepebackup")
+        },
+        importBackup = { backupImportLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream", "application/vnd.leepe.backup")) },
+        unlockBackup = { uri, password ->
+            coroutineScope.launch {
+                backupBusy.value = true
+                try {
+                    backupPreview.value = LocalLibraryBackup.preview(context, uri, backupRepository, password)
+                    backupPasswordUri.value = null
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    Toast.makeText(context, context.getString(R.string.library_backup_invalid), Toast.LENGTH_LONG).show()
+                } finally {
+                    backupBusy.value = false
+                }
+            }
+        }
     )
 }
