@@ -101,6 +101,13 @@ internal fun PdfReaderScreen(
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val density = LocalDensity.current
+    val pdfOpenFailedMessage = stringResource(R.string.pdf_open_failed)
+    val pdfRenderFailedMessage = stringResource(R.string.pdf_render_failed)
+    val pdfSearchEmptyQueryMessage = stringResource(R.string.pdf_search_empty_query)
+    val pdfSearchRequiresAndroid15Message = stringResource(R.string.pdf_search_requires_android15)
+    val pdfSearchInProgressMessage = stringResource(R.string.pdf_search_in_progress_document)
+    val pdfSearchCancelledMessage = stringResource(R.string.pdf_search_cancelled)
+    val pdfSearchFailedMessage = stringResource(R.string.pdf_search_failed)
 
 
     LaunchedEffect(viewModel, uri) { viewModel.openBook(uri.toString()) }
@@ -141,7 +148,7 @@ internal fun PdfReaderScreen(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
-            errorMessage = error.message ?: context.getString(R.string.pdf_open_failed)
+            errorMessage = error.message ?: pdfOpenFailedMessage
             loading = false
         }
     }
@@ -195,7 +202,7 @@ internal fun PdfReaderScreen(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
-            errorMessage = error.message ?: context.getString(R.string.pdf_render_failed)
+            errorMessage = error.message ?: pdfRenderFailedMessage
         } finally {
             rendering = false
         }
@@ -234,17 +241,17 @@ internal fun PdfReaderScreen(
         val term = query.trim()
         if (term.isEmpty()) {
             pdfSearchResults = emptyList()
-            pdfSearchMessage = context.getString(R.string.pdf_search_empty_query)
+            pdfSearchMessage = pdfSearchEmptyQueryMessage
             return
         }
         if (Build.VERSION.SDK_INT < 35) {
             pdfSearchResults = emptyList()
-            pdfSearchMessage = context.getString(R.string.pdf_search_requires_android15)
+            pdfSearchMessage = pdfSearchRequiresAndroid15Message
             return
         }
         val current = handle ?: return
         pdfSearchResults = emptyList()
-        pdfSearchMessage = context.getString(R.string.pdf_search_in_progress_document)
+        pdfSearchMessage = pdfSearchInProgressMessage
         pdfSearchJob = coroutineScope.launch {
             searchingPdf = true
             try {
@@ -258,12 +265,12 @@ internal fun PdfReaderScreen(
                 pdfSearchResults = outcome.results
                 pdfSearchMessage = outcome.message
             } catch (cancelled: CancellationException) {
-                pdfSearchMessage = context.getString(R.string.pdf_search_cancelled)
+                pdfSearchMessage = pdfSearchCancelledMessage
                 throw cancelled
             } catch (error: Exception) {
                 pdfSearchMessage = error.message?.let {
                     context.getString(R.string.pdf_search_failed_detail, it)
-                } ?: context.getString(R.string.pdf_search_failed)
+                } ?: pdfSearchFailedMessage
             } finally {
                 searchingPdf = false
                 pdfSearchJob = null
