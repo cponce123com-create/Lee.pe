@@ -269,6 +269,7 @@ fun LibraryScreen(
     val welcomeBookFailedMessage = androidx.compose.ui.res.stringResource(R.string.library_welcome_book_failed)
 
     LaunchedEffect(context, viewModel, settings) {
+        withContext(Dispatchers.IO) { OfflineBookStore.purgeOrphanedParts(context) }
         migrateLegacyLibrary(context, viewModel)
         drainPendingBookCleanup()
         if (!BundledWelcomeBook.installIfNeeded(
