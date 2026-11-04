@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -53,6 +54,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -189,29 +191,29 @@ internal fun BookshelfCustomizerDialog(
                     }
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         items(availableDecorations, key = ShelfDecorationType::name) { type ->
-                            val selected = selectedDecoration == type
+                            val isSelected = selectedDecoration == type
                             val decorationLabel = stringResource(type.labelRes)
                             Surface(
                                 modifier = Modifier.width(132.dp).height(154.dp)
                                     .semantics {
                                         role = Role.RadioButton
                                         contentDescription = decorationLabel
-                                        selected = selected
+                                        selected = isSelected
                                     }
                                     .clickable { selectedDecorationName = type.name },
                                 shape = RoundedCornerShape(20.dp),
                                 color = when {
-                                    selected && darkTheme -> dialogColors.primaryContainer
-                                    selected -> Color(0xFFE5F4EE)
+                                    isSelected && darkTheme -> dialogColors.primaryContainer
+                                    isSelected -> Color(0xFFE5F4EE)
                                     darkTheme -> dialogColors.surface
                                     else -> Color(0xFFFFFBF6)
                                 },
-                                border = BorderStroke(if (selected) 2.dp else 1.dp, if (selected) dialogColors.primary else dialogColors.outlineVariant),
-                                shadowElevation = if (selected) 5.dp else 2.dp
+                                border = BorderStroke(if (isSelected) 2.dp else 1.dp, if (isSelected) dialogColors.primary else dialogColors.outlineVariant),
+                                shadowElevation = if (isSelected) 5.dp else 2.dp
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                                     ShelfDecorationArt(type, Modifier.fillMaxWidth().height(112.dp).padding(horizontal = 12.dp))
-                                    Text(stringResource(type.labelRes), style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center, color = if (darkTheme && selected) dialogColors.onPrimaryContainer else dialogColors.onSurface)
+                                    Text(stringResource(type.labelRes), style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center, color = if (darkTheme && isSelected) dialogColors.onPrimaryContainer else dialogColors.onSurface)
                                 }
                             }
                         }
@@ -251,7 +253,7 @@ internal fun BookshelfCustomizerDialog(
 }
 
 @Composable
-private fun ShelfDecorationArt(type: ShelfDecorationType, modifier: Modifier = Modifier) {
+internal fun ShelfDecorationArt(type: ShelfDecorationType, modifier: Modifier = Modifier) {
     Image(
         painter = painterResource(type.drawableRes),
         contentDescription = null,
