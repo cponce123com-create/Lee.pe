@@ -2,6 +2,7 @@ package pe.lee.app.ui.audio
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.net.Uri
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.Player
@@ -61,6 +62,18 @@ class AudioPlaybackService : MediaSessionService() {
                 lastSavedMediaId = null
                 lastSavedPositionMs = -1L
                 savePosition(exoPlayer, force = true)
+                mediaItem?.let { item ->
+                    val openPlayer = Intent(this@AudioPlaybackService, AudioPlayerActivity::class.java)
+                        .setData(Uri.parse(item.mediaId))
+                        .putExtra(AudioPlayerActivity.EXTRA_TITLE, item.mediaMetadata.title?.toString().orEmpty())
+                    val playerIntent = PendingIntent.getActivity(
+                        this@AudioPlaybackService,
+                        item.mediaId.hashCode(),
+                        openPlayer,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+                    mediaSession?.setSessionActivity(playerIntent)
+                }
             }
         })
 

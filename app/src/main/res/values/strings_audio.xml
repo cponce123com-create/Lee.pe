@@ -6,8 +6,8 @@
     <string name="audio_connecting">Conectando el reproductor…</string>
     <string name="audio_connection_failed">No se pudo iniciar el reproductor. Vuelve a abrir el audiolibro.</string>
     <string name="audio_back">Volver</string>
-    <string name="audio_rewind_15">Retroceder 15 segundos</string>
-    <string name="audio_forward_15">Avanzar 15 segundos</string>
+    <string name="audio_rewind_10">Retroceder 10 segundos</string>
+    <string name="audio_forward_10">Avanzar 10 segundos</string>
     <string name="audio_speed">Velocidad</string>
     <string name="audio_pause">Pausar</string>
     <string name="audio_play">Reproducir</string>

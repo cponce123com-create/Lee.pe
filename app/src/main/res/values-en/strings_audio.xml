@@ -6,8 +6,8 @@
     <string name="audio_connecting">Connecting the player…</string>
     <string name="audio_connection_failed">The player could not start. Open the audiobook again.</string>
     <string name="audio_back">Back</string>
-    <string name="audio_rewind_15">Rewind 15 seconds</string>
-    <string name="audio_forward_15">Forward 15 seconds</string>
+    <string name="audio_rewind_10">Rewind 10 seconds</string>
+    <string name="audio_forward_10">Forward 10 seconds</string>
     <string name="audio_speed">Speed</string>
     <string name="audio_pause">Pause</string>
     <string name="audio_play">Play</string>
