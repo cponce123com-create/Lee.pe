@@ -5,7 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.widget.Toast
-import pe.lee.app.R
+import pe.lee.feature.library.R
 
 /** Helpers for releasing SAF grants and warning before Android's persisted-grant limit. */
 internal object PersistableUriGrants {

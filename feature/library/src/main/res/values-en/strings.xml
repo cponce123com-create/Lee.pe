@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="library_uri_permission_limit">%1$d file permissions are saved; Android allows approximately %2$d. Revoke permissions you no longer use from the book details.</string>
     <string name="app_name">Lee.pe</string>
     <string name="accessibility_leepe_logo">Lee.pe logo</string>
     <string name="accessibility_reading_statistics">Reading statistics</string>
