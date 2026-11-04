@@ -15,11 +15,8 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -35,14 +32,17 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -50,7 +50,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.style.TextAlign
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -60,7 +59,6 @@ import pe.lee.app.data.local.OfflineBookStore
 import pe.lee.feature.library.R
 
 private val ShelfPage = Color(0xFFFFF8EF)
-private val ShelfInk = Color(0xFF123D38)
 
 @Composable
 internal fun LibraryCatalog(
@@ -76,8 +74,12 @@ internal fun LibraryCatalog(
     sortMenuExpanded: MutableState<Boolean>,
     sortMode: MutableState<LibrarySortMode>,
     viewMode: MutableState<LibraryViewMode>,
-    bookshelfAdornment: MutableState<BookshelfAdornment>,
-    adornmentMenuExpanded: MutableState<Boolean>,
+    bookshelfLayout: BookshelfLayout,
+    onViewModeChange: (LibraryViewMode) -> Unit,
+    onBookshelfLayoutChange: (BookshelfLayout) -> Unit,
+    onCustomLayoutSelected: () -> Unit,
+    onSortModeChange: (LibrarySortMode) -> Unit,
+    onResetBookshelf: () -> Unit,
     savingBookUri: MutableState<String?>,
     pendingRemoval: MutableState<LocalBook?>,
     editingBook: MutableState<LocalBook?>,
@@ -99,7 +101,11 @@ internal fun LibraryCatalog(
     onExportAnnotationsFile: (String) -> Unit
 ) {
     val pendingOfflineCopyRemoval = remember { mutableStateOf<LocalBook?>(null) }
+    var showDecorationGallery by rememberSaveable { mutableStateOf(false) }
+    var showHiddenBooks by rememberSaveable { mutableStateOf(false) }
+    val screenWidth = LocalConfiguration.current.screenWidthDp
     val colors = MaterialTheme.colorScheme
+    val darkTheme = isSystemInDarkTheme()
 
     fun handleBookAction(book: LocalBook, action: LibraryBookAction) {
         when (action) {
@@ -160,15 +166,26 @@ internal fun LibraryCatalog(
         }
     }
 
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(if (viewMode.value == LibraryViewMode.COVERS) 3 else 1),
-        modifier = Modifier.fillMaxSize().background(ShelfPage).windowInsetsPadding(WindowInsets.safeDrawing)
+    val coverColumns = when {
+        screenWidth < 600 -> ((screenWidth - 32 + 7) / 111).coerceIn(1, 3)
+        else -> ((screenWidth - 32) / 138).coerceIn(3, 7)
+    }
+    val coverRows = remember(orderedBooks, coverColumns) { orderedBooks.chunked(coverColumns) }
+    val customOrder = sortMode.value == LibrarySortMode.CUSTOM
+    val shelfBooks = remember(orderedBooks, bookshelfLayout.hiddenBookIds, customOrder) {
+        if (customOrder) orderedBooks.filterNot { it.id in bookshelfLayout.hiddenBookIds } else orderedBooks
+    }
+    val booksById = remember(books) { books.associateBy(LocalBook::id) }
+    val shelves = remember(shelfBooks, bookshelfLayout, customOrder) { buildShelfDisplay(shelfBooks, bookshelfLayout, customOrder) }
+    LazyColumn(
+        modifier = Modifier.fillMaxSize()
+            .background(if (darkTheme) colors.background else ShelfPage)
+            .windowInsetsPadding(WindowInsets.safeDrawing)
             .padding(horizontal = 16.dp),
         contentPadding = PaddingValues(bottom = 22.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        item(key = "dashboard", span = { GridItemSpan(maxLineSpan) }) {
+        item(key = "dashboard") {
             LibraryDashboardHeader(
                 totalBooks = books.size,
                 busy = scannerBusy || scannerImporting,
@@ -178,13 +195,13 @@ internal fun LibraryCatalog(
                 onBackup = onBackup
             )
         }
-        item(key = "search", span = { GridItemSpan(maxLineSpan) }) {
+        item(key = "search") {
             Row(
                 modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
-                    .background(Color(0xFFFFFBF5)).padding(horizontal = 13.dp, vertical = 10.dp),
+                    .background(if (darkTheme) colors.surfaceVariant else Color(0xFFFFFBF5)).padding(horizontal = 13.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.Search, contentDescription = context.getString(R.string.accessibility_search), tint = ShelfInk)
+                Icon(Icons.Default.Search, contentDescription = context.getString(R.string.accessibility_search), tint = colors.primary)
                 Spacer(Modifier.width(9.dp))
                 BasicTextField(
                     value = query.value,
@@ -193,20 +210,20 @@ internal fun LibraryCatalog(
                     modifier = Modifier.weight(1f).semantics {
                         contentDescription = context.getString(R.string.accessibility_search_books)
                     },
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF24211D)),
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.onSurface),
                     decorationBox = { inner ->
-                        if (query.value.isEmpty()) Text(stringResource(R.string.library_search_placeholder), color = Color(0xFF77716B))
+                        if (query.value.isEmpty()) Text(stringResource(R.string.library_search_placeholder), color = colors.onSurfaceVariant)
                         inner()
                     }
                 )
                 if (query.value.isNotBlank()) {
                     IconButton(onClick = { query.value = "" }, modifier = Modifier.size(36.dp)) {
-                        Icon(Icons.Default.Close, contentDescription = context.getString(R.string.accessibility_clear_search), tint = ShelfInk)
+                        Icon(Icons.Default.Close, contentDescription = context.getString(R.string.accessibility_clear_search), tint = colors.primary)
                     }
                 }
             }
         }
-        item(key = "filters", span = { GridItemSpan(maxLineSpan) }) {
+        item(key = "filters") {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 items(LibraryFilter.entries, key = { it.name }) { filter ->
                     FilterChip(
@@ -218,23 +235,23 @@ internal fun LibraryCatalog(
                 }
             }
         }
-        item(key = "viewMode", span = { GridItemSpan(maxLineSpan) }) {
+        item(key = "viewMode") {
             LibraryViewModeSelector(
                 viewMode = viewMode.value,
-                onModeChange = { viewMode.value = it },
+                onModeChange = onViewModeChange,
                 modifier = Modifier.fillMaxWidth()
             )
         }
-        item(key = "toolbar", span = { GridItemSpan(maxLineSpan) }) {
+        item(key = "toolbar") {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Box(Modifier.weight(1f)) {
                     TextButton(onClick = { sortMenuExpanded.value = true }, contentPadding = PaddingValues(horizontal = 4.dp)) {
-                        Text(stringResource(R.string.library_sort_order, stringResource(sortMode.value.labelRes)), color = ShelfInk)
+                        Text(stringResource(R.string.library_sort_order, stringResource(sortMode.value.labelRes)), color = colors.primary)
                     }
                     DropdownMenu(expanded = sortMenuExpanded.value, onDismissRequest = { sortMenuExpanded.value = false }) {
                         LibrarySortMode.entries.forEach { option ->
                             DropdownMenuItem(text = { Text(stringResource(option.labelRes)) }, onClick = {
-                                sortMode.value = option
+                                onSortModeChange(option)
                                 sortMenuExpanded.value = false
                             })
                         }
@@ -243,7 +260,7 @@ internal fun LibraryCatalog(
                 if (collections.isNotEmpty()) {
                     Box {
                         TextButton(onClick = { collectionMenuExpanded.value = true }, contentPadding = PaddingValues(horizontal = 5.dp)) {
-                            Text(selectedCollection.value ?: stringResource(R.string.library_collection), color = ShelfInk, maxLines = 1)
+                            Text(selectedCollection.value ?: stringResource(R.string.library_collection), color = colors.primary, maxLines = 1)
                         }
                         DropdownMenu(expanded = collectionMenuExpanded.value, onDismissRequest = { collectionMenuExpanded.value = false }) {
                             DropdownMenuItem(text = { Text(stringResource(R.string.library_all_collections)) }, onClick = {
@@ -261,50 +278,75 @@ internal fun LibraryCatalog(
                     }
                 }
                 if (viewMode.value == LibraryViewMode.MIXED_BOOKSHELF) {
-                    Box {
-                        TextButton(onClick = { adornmentMenuExpanded.value = true }, contentPadding = PaddingValues(horizontal = 4.dp)) {
-                            Text(stringResource(R.string.library_adornments), color = ShelfInk)
-                        }
-                        DropdownMenu(expanded = adornmentMenuExpanded.value, onDismissRequest = { adornmentMenuExpanded.value = false }) {
-                            BookshelfAdornment.entries.forEach { option ->
-                                DropdownMenuItem(text = { Text(stringResource(option.labelRes)) }, onClick = {
-                                    bookshelfAdornment.value = option
-                                    adornmentMenuExpanded.value = false
-                                })
-                            }
-                        }
+                    TextButton(onClick = { showDecorationGallery = true }, contentPadding = PaddingValues(horizontal = 5.dp)) {
+                        Text(stringResource(R.string.library_adornments), color = colors.primary)
+                    }
+                }
+            }
+            if (viewMode.value == LibraryViewMode.MIXED_BOOKSHELF) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = { showHiddenBooks = true }, contentPadding = PaddingValues(horizontal = 5.dp)) {
+                        Text(stringResource(R.string.shelf_add_books), color = colors.primary)
+                    }
+                    Spacer(Modifier.weight(1f))
+                    TextButton(onClick = {
+                        onResetBookshelf()
+                        onSortModeChange(LibrarySortMode.TITLE_ASC)
+                    }, contentPadding = PaddingValues(horizontal = 5.dp)) {
+                        Text(stringResource(R.string.shelf_reset), color = colors.primary)
                     }
                 }
             }
         }
         if (visibleBooks.isEmpty()) {
-            item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
+            item(key = "empty") {
                 EmptyLibraryCard(hasBooks = books.isNotEmpty(), onImport = onImport)
             }
         } else if (viewMode.value == LibraryViewMode.COVERS) {
-            gridItems(items = orderedBooks, key = { it.id }, contentType = { "cover" }) { book ->
-                BookCard(
-                    book = book,
+            items(coverRows, key = { row -> "cover-row-${row.firstOrNull()?.id.orEmpty()}" }) { row ->
+                CoverShelfRow(
+                    books = row,
                     savingBookUri = savingBookUri.value,
-                    modifier = Modifier.fillMaxWidth(),
-                    compact = false,
-                    onAction = { handleBookAction(book, it) }
+                    onBookAction = ::handleBookAction
                 )
             }
+        } else if (shelves.isEmpty()) {
+            item(key = "shelf-empty") {
+                Text(stringResource(R.string.shelf_empty), color = colors.onSurfaceVariant, modifier = Modifier.padding(vertical = 24.dp))
+            }
         } else {
-            val shelves = orderedBooks.chunked(5)
-            gridItems(items = shelves, key = { shelf -> "shelf-${shelf.firstOrNull()?.id ?: "empty"}" }, contentType = { "shelf" }) { shelf ->
+            items(shelves, key = { shelf -> "shelf-${shelf.index}" }) { shelf ->
                 BookshelfRow(
-                    books = shelf,
+                    shelf = shelf,
+                    booksById = booksById,
                     savingBookUri = savingBookUri.value,
-                    adornment = bookshelfAdornment.value,
-                    onBookAction = { book, action -> handleBookAction(book, action) },
+                    onBookAction = ::handleBookAction,
+                    onMoveBook = { id, shelfDelta, orderDelta ->
+                        onBookshelfLayoutChange(bookshelfLayout.moveBook(id, shelfDelta, orderDelta))
+                        onCustomLayoutSelected()
+                    },
+                    onToggleOrientation = { id ->
+                        onBookshelfLayoutChange(bookshelfLayout.toggleOrientation(id))
+                        onCustomLayoutSelected()
+                    },
+                    onRemoveBook = { id ->
+                        onBookshelfLayoutChange(bookshelfLayout.removeFromShelf(id))
+                        onCustomLayoutSelected()
+                    },
+                    onMoveDecoration = { id, shelfDelta, orderDelta ->
+                        onBookshelfLayoutChange(bookshelfLayout.moveDecoration(id, shelfDelta, orderDelta))
+                        onCustomLayoutSelected()
+                    },
+                    onRemoveDecoration = { id ->
+                        onBookshelfLayoutChange(bookshelfLayout.removeDecoration(id))
+                        onCustomLayoutSelected()
+                    },
                     modifier = Modifier.fillMaxWidth().padding(top = 3.dp, bottom = 4.dp)
                 )
             }
         }
-        item(key = "privacy", span = { GridItemSpan(maxLineSpan) }) {
-            Text(stringResource(R.string.library_local_privacy_note), color = Color(0xFF68615A), fontSize = 12.sp, modifier = Modifier.padding(top = 10.dp))
+        item(key = "privacy") {
+            Text(stringResource(R.string.library_local_privacy_note), color = colors.onSurfaceVariant, fontSize = 12.sp, modifier = Modifier.padding(top = 10.dp))
         }
     }
 
@@ -324,6 +366,29 @@ internal fun LibraryCatalog(
                 }) { Text(stringResource(R.string.action_delete)) }
             },
             dismissButton = { TextButton(onClick = { pendingOfflineCopyRemoval.value = null }) { Text(stringResource(R.string.action_cancel)) } }
+        )
+    }
+
+    if (showDecorationGallery) {
+        ShelfDecorationGallery(
+            onSelect = { type ->
+                val shelf = (bookshelfLayout.shelfCount() - 1).coerceAtLeast(0)
+                val nextOrder = (bookshelfLayout.objectsOnShelf(shelf).maxOfOrNull(ShelfObject::order) ?: -1) + 1
+                onBookshelfLayoutChange(bookshelfLayout.addDecoration(type, shelf, nextOrder))
+                onCustomLayoutSelected()
+                showDecorationGallery = false
+            },
+            onDismiss = { showDecorationGallery = false }
+        )
+    }
+    if (showHiddenBooks) {
+        BookshelfHiddenBooksDialog(
+            books = books.filter { it.id in bookshelfLayout.hiddenBookIds },
+            onAdd = { book ->
+                onBookshelfLayoutChange(bookshelfLayout.addToShelf(book.id, (bookshelfLayout.shelfCount() - 1).coerceAtLeast(0)))
+                onCustomLayoutSelected()
+            },
+            onDismiss = { showHiddenBooks = false }
         )
     }
 }

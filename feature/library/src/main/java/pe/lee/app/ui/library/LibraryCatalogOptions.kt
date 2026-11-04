@@ -17,6 +17,7 @@ internal enum class LibraryFilter(val labelRes: Int) {
 
 /** Stable sort values; labels are resolved from the current app locale. */
 internal enum class LibrarySortMode(val labelRes: Int) {
+    CUSTOM(R.string.library_sort_custom),
     TITLE_ASC(R.string.library_sort_title_ascending),
     TITLE_DESC(R.string.library_sort_title_descending),
     LAST_READ(R.string.library_sort_last_read),
@@ -31,9 +32,3 @@ internal enum class LibraryViewMode {
 }
 
 /** Optional ornaments drawn between books on the mixed bookshelf. */
-internal enum class BookshelfAdornment(val labelRes: Int) {
-    FLOWERS(R.string.library_adornment_flowers),
-    PLANTS(R.string.library_adornment_plants),
-    FIGURES(R.string.library_adornment_figures),
-    NONE(R.string.library_adornment_none)
-}

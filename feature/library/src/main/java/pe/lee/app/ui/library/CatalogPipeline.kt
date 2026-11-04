@@ -48,6 +48,7 @@ internal fun computeCatalog(
         .take(8)
         .toList()
     val ordered = when (sortMode) {
+        LibrarySortMode.CUSTOM -> visible
         LibrarySortMode.LAST_READ -> visible.sortedByDescending { it.lastOpenedAt ?: 0L }
         LibrarySortMode.IMPORT_DATE -> visible.sortedByDescending { it.importedAt }
         LibrarySortMode.PROGRESS -> visible.sortedByDescending { it.readProgress }

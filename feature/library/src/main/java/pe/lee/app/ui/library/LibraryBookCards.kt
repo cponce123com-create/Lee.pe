@@ -48,16 +48,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import pe.lee.feature.library.R
-import kotlin.math.absoluteValue
 
 internal enum class LibraryBookAction {
     OPEN, REMOVE, SAVE_OFFLINE_COPY, REMOVE_OFFLINE_COPY, EXPORT_ANNOTATIONS,
@@ -78,10 +78,11 @@ internal fun LibraryStatisticRow(label: String, value: Int) {
 
 @Composable
 internal fun EmptyLibraryCard(hasBooks: Boolean, onImport: () -> Unit) {
+    val cardSurface = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.surface else Color(0xFFFFFBF6)
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBF6))
+        colors = CardDefaults.cardColors(containerColor = cardSurface)
     ) {
         Column(
             modifier = Modifier
@@ -124,6 +125,36 @@ internal fun EmptyLibraryCard(hasBooks: Boolean, onImport: () -> Unit) {
 }
 
 @Composable
+internal fun CoverShelfRow(
+    books: List<LocalBook>,
+    savingBookUri: String?,
+    onBookAction: (LocalBook, LibraryBookAction) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val shelfWood = Brush.verticalGradient(listOf(Color(0xFFF0D4A5), Color(0xFFD09A5A), Color(0xFF9A5C2C)))
+    Column(modifier.fillMaxWidth()) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+            verticalAlignment = Alignment.Bottom
+        ) {
+            books.forEach { book ->
+                BookCard(
+                    book = book,
+                    savingBookUri = savingBookUri,
+                    modifier = Modifier.weight(1f),
+                    onAction = { onBookAction(book, it) }
+                )
+            }
+        }
+        Box(
+            Modifier.fillMaxWidth().height(13.dp).shadow(6.dp, RoundedCornerShape(3.dp))
+                .clip(RoundedCornerShape(3.dp)).background(shelfWood)
+        )
+    }
+}
+
+@Composable
 internal fun BookCard(
     book: LocalBook,
     savingBookUri: String?,
@@ -131,6 +162,9 @@ internal fun BookCard(
     compact: Boolean = false,
     onAction: (LibraryBookAction) -> Unit
 ) {
+    val cardSurface = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.surface else Color(0xFFFFFBF6)
+    val cardInk = MaterialTheme.colorScheme.onSurface
+    val mutedInk = MaterialTheme.colorScheme.onSurfaceVariant
     val (icon, colors) = when (book.format) {
         "PDF" -> Icons.Default.PictureAsPdf to listOf(Color(0xFF5C2A70), Color(0xFF1F4C70))
         "Audio" -> Icons.Default.Headphones to listOf(Color(0xFF145D67), Color(0xFF26396F))
@@ -143,7 +177,7 @@ internal fun BookCard(
             onClick = { onAction(LibraryBookAction.OPEN) }
         ),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBF6))
+        colors = CardDefaults.cardColors(containerColor = cardSurface)
     ) {
         if (compact) {
             Row(
@@ -195,14 +229,20 @@ internal fun BookCard(
                 )
             }
         } else {
-        Column(modifier = Modifier.padding(10.dp)) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(132.dp)
-                    .background(Brush.linearGradient(colors), RoundedCornerShape(14.dp)),
-                contentAlignment = Alignment.Center
-            ) {
+        Column(modifier = Modifier.padding(horizontal = 7.dp, vertical = 8.dp)) {
+            Box(modifier = Modifier.fillMaxWidth().aspectRatio(0.68f).padding(end = 4.dp, bottom = 3.dp)) {
+                Box(
+                    modifier = Modifier.fillMaxSize().align(Alignment.Center).padding(start = 4.dp, top = 3.dp)
+                        .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 8.dp, bottomEnd = 8.dp, bottomStart = 4.dp))
+                        .background(Brush.horizontalGradient(listOf(colors.last(), colors.first())))
+                )
+                Box(
+                    modifier = Modifier.fillMaxSize().shadow(7.dp, RoundedCornerShape(8.dp))
+                        .graphicsLayer { rotationY = -2.5f; cameraDistance = 18f * density }
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Brush.linearGradient(colors)),
+                    contentAlignment = Alignment.Center
+                ) {
                 when (book.format) {
                     "PDF" -> LocalPdfCover(
                         originalUri = book.uri,
@@ -219,44 +259,35 @@ internal fun BookCard(
                         tint = Color.White, modifier = Modifier.size(42.dp)
                     )
                 }
-                if (book.isFavorite) {
-                    Icon(
-                        Icons.Default.Bookmark,
-                        contentDescription = stringResource(R.string.accessibility_favorite_book),
-                        tint = Color(0xFFFFD54F),
-                        modifier = Modifier.align(Alignment.TopStart).padding(10.dp)
-                    )
+                    if (book.isFavorite) {
+                        Icon(
+                            Icons.Default.Bookmark,
+                            contentDescription = stringResource(R.string.accessibility_favorite_book),
+                            tint = Color(0xFFFFD54F),
+                            modifier = Modifier.align(Alignment.TopStart).padding(5.dp)
+                        )
+                    }
                 }
-                BookActions(
-                    book = book,
-                    savingBookUri = savingBookUri,
-                    modifier = Modifier.align(Alignment.TopEnd),
-                    iconTint = Color.White,
-                    onAction = onAction
-                )
-                Text(
-                    book.format,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(10.dp)
-                        .background(Color(0x55000000), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                    fontSize = 10.sp,
-                    color = Color.White
-                )
             }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                book.title,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF25211D),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(verticalAlignment = Alignment.Top) {
+                Column(modifier = Modifier.weight(1f).padding(top = 6.dp)) {
+                    Text(
+                        book.title,
+                        fontWeight = FontWeight.SemiBold,
+                        color = cardInk,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        fontSize = 12.sp,
+                        lineHeight = 15.sp
+                    )
+                    Text(book.format, color = mutedInk, fontSize = 10.sp, maxLines = 1)
+                }
+                BookActions(book = book, savingBookUri = savingBookUri, onAction = onAction)
+            }
             if (book.format != "Audio" && book.readProgress > 0f) {
                 LinearProgressIndicator(
                     progress = { book.readProgress.coerceIn(0f, 1f) },
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
                 )
             }
             val readingStatus = when {
@@ -267,8 +298,10 @@ internal fun BookCard(
             }
             Text(
                 readingStatus,
-                color = Color(0xFF6B625A),
-                fontSize = 11.sp,
+                color = mutedInk,
+                fontSize = 10.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 3.dp, bottom = if (book.offlineCopyUri == null) 4.dp else 2.dp)
             )
             if (book.offlineCopyUri != null) {
@@ -285,7 +318,7 @@ internal fun BookCard(
 }
 
 @Composable
-private fun BookActions(
+internal fun BookActions(
     book: LocalBook,
     savingBookUri: String?,
     modifier: Modifier = Modifier,
@@ -364,110 +397,4 @@ private fun BookActions(
                     }
                 }
 
-}
-
-/** Mixed layout inspired by a physical shelf: every book remains an actionable book card. */
-@Composable
-internal fun BookshelfRow(
-    books: List<LocalBook>,
-    savingBookUri: String?,
-    adornment: BookshelfAdornment,
-    onBookAction: (LocalBook, LibraryBookAction) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val wood = Brush.verticalGradient(listOf(Color(0xFFB8793E), Color(0xFF75411F), Color(0xFF4A2A18)))
-    Column(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().height(148.dp).padding(horizontal = 5.dp),
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
-            verticalAlignment = Alignment.Bottom
-        ) {
-            books.forEachIndexed { index, book ->
-                val palette = shelfPalette(book.id)
-                val vertical = index % 4 != 2
-                if (vertical) {
-                    Box(
-                        modifier = Modifier.weight(if (index % 3 == 0) 1.12f else 0.9f).height((116 + (book.id.hashCode().absoluteValue % 26)).dp)
-                            .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
-                            .background(Brush.horizontalGradient(listOf(palette.first, palette.second)))
-                            .clickable(onClickLabel = book.title, onClick = { onBookAction(book, LibraryBookAction.OPEN) })
-                            .semantics { role = Role.Button; contentDescription = book.title },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Box(Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 5.dp)) {
-                            Text(
-                                text = book.title,
-                                modifier = Modifier.align(Alignment.Center).size(width = 122.dp, height = 22.dp).graphicsLayer { rotationZ = 270f },
-                                color = Color(0xFFFFE6A5),
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 11.sp,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                textAlign = TextAlign.Center
-                            )
-                            Box(Modifier.align(Alignment.TopEnd)) {
-                                BookActions(book, savingBookUri, iconTint = Color(0xFFFFF5DB), onAction = { onBookAction(book, it) })
-                            }
-                        }
-                    }
-                } else {
-                    Box(
-                        modifier = Modifier.weight(1.18f).padding(bottom = 2.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().height(45.dp).clip(RoundedCornerShape(5.dp))
-                                .background(Brush.verticalGradient(listOf(palette.second, palette.first)))
-                                .clickable(onClickLabel = book.title, onClick = { onBookAction(book, LibraryBookAction.OPEN) })
-                                .semantics { role = Role.Button; contentDescription = book.title },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(book.title, color = Color(0xFFFFE7AA), fontWeight = FontWeight.SemiBold, fontSize = 9.sp,
-                                maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 3.dp))
-                            Box(Modifier.align(Alignment.TopEnd)) {
-                                BookActions(book, savingBookUri, iconTint = Color(0xFFFFF5DB), onAction = { onBookAction(book, it) })
-                            }
-                        }
-                    }
-                }
-            }
-            if (adornment != BookshelfAdornment.NONE) {
-                ShelfDecoration(adornment = adornment, modifier = Modifier.weight(0.55f).height(72.dp))
-            }
-        }
-        Box(
-            Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(3.dp)).background(wood)
-        )
-    }
-}
-
-@Composable
-private fun ShelfDecoration(adornment: BookshelfAdornment, modifier: Modifier = Modifier) {
-    val symbol = when (adornment) {
-        BookshelfAdornment.FLOWERS -> "✿"
-        BookshelfAdornment.PLANTS -> "♣"
-        BookshelfAdornment.FIGURES -> "●"
-        BookshelfAdornment.NONE -> ""
-    }
-    val color = when (adornment) {
-        BookshelfAdornment.FLOWERS -> Color(0xFF8A673E)
-        BookshelfAdornment.PLANTS -> Color(0xFF547342)
-        BookshelfAdornment.FIGURES -> Color(0xFFB68E55)
-        BookshelfAdornment.NONE -> Color.Transparent
-    }
-    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
-        Text(symbol, fontSize = 30.sp, color = color, textAlign = TextAlign.Center)
-        Box(Modifier.fillMaxWidth(0.7f).height(22.dp).clip(RoundedCornerShape(topStart = 9.dp, topEnd = 9.dp)).background(Color(0xFFD6C2A1)))
-    }
-}
-
-private fun shelfPalette(seed: String): Pair<Color, Color> {
-    val palettes = listOf(
-        Color(0xFF155B51) to Color(0xFF0D3F3B), Color(0xFF173E56) to Color(0xFF102C40),
-        Color(0xFF9A4A3D) to Color(0xFF6F302B), Color(0xFFC58C4B) to Color(0xFF8D5A31),
-        Color(0xFF536349) to Color(0xFF34452F), Color(0xFF6B4C62) to Color(0xFF493346)
-    )
-    val index = (seed.hashCode().toLong() and 0x7fffffffL).rem(palettes.size).toInt()
-    return palettes[index]
 }

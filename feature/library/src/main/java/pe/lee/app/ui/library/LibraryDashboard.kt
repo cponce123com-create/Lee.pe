@@ -59,10 +59,10 @@ internal fun LibraryDashboardHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
-            painter = painterResource(R.drawable.leepe_icon_foreground),
+            painter = painterResource(R.drawable.leepe_logo),
             contentDescription = stringResource(R.string.accessibility_leepe_logo),
             contentScale = ContentScale.Fit,
-            modifier = Modifier.size(38.dp)
+            modifier = Modifier.size(48.dp)
         )
         Spacer(Modifier.size(8.dp))
         Text(

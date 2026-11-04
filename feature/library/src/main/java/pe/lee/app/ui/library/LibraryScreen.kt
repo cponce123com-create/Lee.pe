@@ -242,7 +242,10 @@ fun LibraryScreen(
     var titleDraft by titleDraftState
     val sortMenuExpandedState = remember { mutableStateOf(false) }
     var sortMenuExpanded by sortMenuExpandedState
-    val sortModeState = rememberSaveable { mutableStateOf(LibrarySortMode.TITLE_ASC) }
+    val sortModeState = rememberSaveable {
+        val saved = settings.getString(SettingsRepository.Store.LIBRARY, BOOKSHELF_SORT_MODE_KEY)
+        mutableStateOf(runCatching { LibrarySortMode.valueOf(saved.orEmpty()) }.getOrDefault(LibrarySortMode.TITLE_ASC))
+    }
     var sortMode by sortModeState
     // Persist only the stable book id; markdown is regenerated after the SAF picker returns.
     val pendingMarkdownState = rememberSaveable { mutableStateOf<String?>(null) }
@@ -257,9 +260,49 @@ fun LibraryScreen(
     var backupBusy by backupBusyState
     // The folder scan lives in the ViewModel so rotation no longer cancels it (A-36).
     val scannerState by viewModel.scanner.collectAsStateWithLifecycle()
-    val viewModeState = rememberSaveable { mutableStateOf(LibraryViewMode.COVERS) }
-    val bookshelfAdornmentState = rememberSaveable { mutableStateOf(BookshelfAdornment.FLOWERS) }
-    val adornmentMenuExpandedState = remember { mutableStateOf(false) }
+    val viewModeState = rememberSaveable {
+        val saved = settings.getString(SettingsRepository.Store.LIBRARY, BOOKSHELF_VIEW_MODE_KEY)
+        mutableStateOf(runCatching { LibraryViewMode.valueOf(saved.orEmpty()) }.getOrDefault(LibraryViewMode.COVERS))
+    }
+    val bookshelfLayoutJsonState = remember {
+        mutableStateOf(settings.getString(SettingsRepository.Store.LIBRARY, BOOKSHELF_LAYOUT_KEY))
+    }
+    val libraryBookIds = remember(books) { books.map(LocalBook::id) }
+    val bookshelfLayout = remember(bookshelfLayoutJsonState.value, libraryBookIds) {
+        BookshelfLayout.decode(bookshelfLayoutJsonState.value)?.reconcile(libraryBookIds)
+            ?: BookshelfLayout.automatic(libraryBookIds)
+    }
+
+    fun persistBookshelfLayout(layout: BookshelfLayout) {
+        val reconciled = layout.reconcile(libraryBookIds)
+        val encoded = BookshelfLayout.encode(reconciled)
+        bookshelfLayoutJsonState.value = encoded
+        settings.apply(SettingsRepository.Store.LIBRARY) { putString(BOOKSHELF_LAYOUT_KEY, encoded) }
+    }
+
+    fun resetBookshelfLayout() {
+        bookshelfLayoutJsonState.value = null
+        settings.apply(SettingsRepository.Store.LIBRARY) { remove(BOOKSHELF_LAYOUT_KEY) }
+    }
+
+    fun selectSortMode(mode: LibrarySortMode) {
+        sortModeState.value = mode
+        settings.apply(SettingsRepository.Store.LIBRARY) { putString(BOOKSHELF_SORT_MODE_KEY, mode.name) }
+    }
+
+    LaunchedEffect(libraryState.isLoaded, libraryBookIds, bookshelfLayoutJsonState.value) {
+        if (libraryState.isLoaded) {
+            val existing = BookshelfLayout.decode(bookshelfLayoutJsonState.value)
+            if (existing != null) {
+                val reconciled = existing.reconcile(libraryBookIds)
+                val encoded = BookshelfLayout.encode(reconciled)
+                if (encoded != bookshelfLayoutJsonState.value) {
+                    bookshelfLayoutJsonState.value = encoded
+                    settings.apply(SettingsRepository.Store.LIBRARY) { putString(BOOKSHELF_LAYOUT_KEY, encoded) }
+                }
+            }
+        }
+    }
 
     LaunchedEffect(scannerState.error) {
         val message = scannerState.error ?: return@LaunchedEffect
@@ -411,8 +454,15 @@ fun LibraryScreen(
         sortMenuExpanded = sortMenuExpandedState,
         sortMode = sortModeState,
         viewMode = viewModeState,
-        bookshelfAdornment = bookshelfAdornmentState,
-        adornmentMenuExpanded = adornmentMenuExpandedState,
+        bookshelfLayout = bookshelfLayout,
+        onViewModeChange = { mode ->
+            viewModeState.value = mode
+            settings.apply(SettingsRepository.Store.LIBRARY) { putString(BOOKSHELF_VIEW_MODE_KEY, mode.name) }
+        },
+        onBookshelfLayoutChange = ::persistBookshelfLayout,
+        onCustomLayoutSelected = { selectSortMode(LibrarySortMode.CUSTOM) },
+        onSortModeChange = ::selectSortMode,
+        onResetBookshelf = ::resetBookshelfLayout,
         savingBookUri = savingBookUriState,
         pendingRemoval = pendingRemovalState,
         editingBook = editingBookState,
