@@ -51,7 +51,7 @@ El selector de narración muestra solo voces Android locales en español y ofrec
 
 ## Licencias
 
-Readium Kotlin Toolkit se distribuye bajo BSD-3-Clause. Conserva sus avisos de licencia al distribuir la aplicación.
+Readium Kotlin Toolkit se distribuye bajo BSD-3-Clause. Conserva sus avisos de licencia al distribuir la aplicación. El repositorio aún no declara una licencia para Lee.pe: el autor debe elegirla antes de publicar el código; no se asume una licencia por defecto. Consulta [NOTICE](NOTICE) para los avisos de terceros. El inventario completo de licencias transitivas de la versión final sigue pendiente de generarse desde el grafo de Gradle.
 
 ## Compartir citas como imagen
 
