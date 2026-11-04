@@ -43,7 +43,7 @@ fun QuoteCardPreview(
         QuoteCardFont.SERIF -> FontFamily.Serif
         QuoteCardFont.SANS_SERIF -> FontFamily.SansSerif
     }
-    Column(modifier.background(palette.background).padding(28.dp)) {
+    Column(modifier.fillMaxSize().background(palette.background).padding(28.dp)) {
         Text("“", color = palette.accent, fontSize = 46.sp, lineHeight = 48.sp)
         FittedCardText(
             text = card.text.trim(),

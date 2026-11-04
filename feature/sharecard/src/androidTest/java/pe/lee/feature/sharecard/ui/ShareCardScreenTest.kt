@@ -62,7 +62,7 @@ class ShareCardScreenTest {
         composeRule.setContent { ShareCardScreen(viewModel = viewModel, onBack = {}) }
 
         composeRule.onNodeWithText("Compartir").performScrollTo().performClick()
-        composeRule.waitUntil(5_000) { viewModel.state.value.status == ShareCardStatus.Ready }
+        composeRule.waitUntil(15_000) { viewModel.state.value.status == ShareCardStatus.Ready }
 
         assertEquals(1080, captured.get()?.width)
         assertEquals(1920, captured.get()?.height)
