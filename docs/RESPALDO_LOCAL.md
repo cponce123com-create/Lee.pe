@@ -15,7 +15,7 @@ La exportación actual genera un archivo `.leepebackup` seleccionado mediante St
 Para un archivo `.leepebackup`, Lee.pe solicita la contraseña antes de mostrar la vista previa. Una contraseña incorrecta y un archivo alterado presentan el mismo error genérico. La contraseña se mantiene solo en memoria durante la operación.
 
 1. Importar al dispositivo los libros correspondientes antes de restaurar.
-2. Elegir el JSON local desde el selector de documentos.
+2. Elegir el JSON v1/v2 histórico o el archivo `.leepebackup` desde el selector de documentos.
 3. Leer la vista previa de coincidencias exactas, coincidencias por título/formato y libros sin correspondencia.
 4. Confirmar explícitamente la recuperación. Si no hay coincidencias la acción queda deshabilitada.
 5. El sistema solo relaciona datos con libros **ya existentes** en Room; no inserta referencias `content://` inaccesibles.
