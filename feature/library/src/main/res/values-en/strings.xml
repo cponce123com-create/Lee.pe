@@ -81,7 +81,7 @@
     <string name="shelf_decor_sculpture">Sculpture</string>
     <string name="shelf_customizer_title">Customize bookshelf</string>
     <string name="shelf_save">Save</string>
-    <string name="shelf_customizer_hint">Decorations are optional. Choose an item and use each object's menu to move it, change its orientation, or remove it.</string>
+    <string name="shelf_customizer_hint">Decorations are optional. Choose an item, then use its menu to move it, change its orientation, or remove it.</string>
     <string name="shelf_gallery_heading">Choose your decorations</string>
     <string name="shelf_add_selected">Add to bookshelf</string>
     <string name="shelf_replace_selected">Change decoration</string>
