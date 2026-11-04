@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="library_selected_folder">Carpeta seleccionada</string>
     <string name="app_name">Lee.pe</string>
     <string name="accessibility_leepe_logo">Logotipo de Lee.pe</string>
     <string name="accessibility_reading_statistics">Estadísticas de lectura</string>

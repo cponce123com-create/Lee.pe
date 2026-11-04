@@ -9,6 +9,7 @@ import pe.lee.app.data.local.CollectionEntity
 import pe.lee.app.data.repository.BookRepository
 import pe.lee.core.domain.ReadingStatisticsRepository
 import pe.lee.core.domain.ReaderAnnotationRepository
+import pe.lee.feature.library.R
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -84,6 +85,7 @@ class LibraryViewModel(
 
     internal fun scanFolder(context: Context, treeUri: Uri, alreadyImported: List<String>) {
         scanJob?.cancel()
+        val appContext = context.applicationContext
         mutableScanner.update {
             it.copy(
                 busy = true,
@@ -95,10 +97,9 @@ class LibraryViewModel(
                 folderName = treeUri.lastPathSegment
                     ?.substringAfterLast(':')
                     ?.takeIf(String::isNotBlank)
-                    ?: "Carpeta seleccionada"
+                    ?: appContext.getString(R.string.library_selected_folder)
             )
         }
-        val appContext = context.applicationContext
         scanJob = viewModelScope.launch {
             try {
                 val result = LocalFolderScanner.scan(appContext, treeUri, alreadyImported) { progress ->
@@ -116,8 +117,7 @@ class LibraryViewModel(
             } catch (error: Exception) {
                 mutableScanner.update {
                     it.copy(
-                        error = error.message
-                            ?: "No se pudo escanear la carpeta.",
+                        error = appContext.getString(R.string.scanner_import_failed),
                         busy = false
                     )
                 }

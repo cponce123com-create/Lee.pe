@@ -295,7 +295,7 @@ internal suspend fun openPdf(context: Context, uri: Uri): PdfHandle = withContex
             val copyDescriptor = ParcelFileDescriptor.open(copy, ParcelFileDescriptor.MODE_READ_ONLY)
             val copyRenderer = try {
                 PdfRenderer(copyDescriptor)
-            } catch (copyError: Exception) {
+            } catch (_: Exception) {
                 runCatching { copyDescriptor.close() }
                 throw copyError
             }
@@ -303,17 +303,17 @@ internal suspend fun openPdf(context: Context, uri: Uri): PdfHandle = withContex
         } catch (cancelled: CancellationException) {
             copy.delete()
             throw cancelled
-        } catch (copyError: Exception) {
+        } catch (_: Exception) {
             copy.delete()
             throw IOException(
                 context.getString(
                     R.string.pdf_open_local_copy_required,
-                    copyError.message ?: error.message
+                    context.getString(R.string.pdf_open_failed)
                 )
             )
         }
-    } catch (error: Exception) {
+    } catch (_: Exception) {
         runCatching { descriptor.close() }
-        throw IOException(context.getString(R.string.pdf_open_failed_detail, error.message))
+        throw IOException(context.getString(R.string.pdf_open_failed))
     }
 }
