@@ -9,6 +9,10 @@ objetos literarios, fantasía y separadores. `BookshelfCustomizer` permite elegi
 adornos y modificar la disposición. `BookshelfLayout` serializa el diseño en las
 preferencias locales y reconcilia los IDs al importar o eliminar libros.
 
+Los 35 adornos tienen siluetas individuales con transparencia y margen de
+seguridad. Los detalles de los archivos y las vistas de comprobación están en
+[Recortes transparentes de adornos](ORNAMENT_ASSETS.md).
+
 ## Decisiones de implementación
 
 - Las portadas y adornos se dibujan con Compose; la apariencia de volumen no requiere un motor 3D.
