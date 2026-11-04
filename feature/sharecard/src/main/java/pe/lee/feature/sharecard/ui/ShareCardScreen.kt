@@ -90,7 +90,7 @@ fun ShareCardScreen(
                     Text(stringResource(R.string.share_card_too_long), color = MaterialTheme.colorScheme.error)
                 }
 
-                Text(stringResource(R.string.share_card_design), style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.share_card_templates_count), style = MaterialTheme.typography.titleSmall)
                 ThemeSelector(
                     selected = state.card.themeId,
                     onThemeSelected = viewModel::selectTheme,
@@ -140,13 +140,6 @@ fun ShareCardScreen(
                         label = { Text(stringResource(R.string.share_card_quote_label)) },
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 3
-                    )
-                    OutlinedTextField(
-                        value = state.card.bookTitle,
-                        onValueChange = viewModel::updateBookTitle,
-                        label = { Text(stringResource(R.string.share_card_book_title_label)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
                     )
                     OutlinedTextField(
                         value = state.card.author,

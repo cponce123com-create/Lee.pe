@@ -48,7 +48,7 @@ class ShareCardViewModel(
     /** Replaces the quote displayed on the card. */
     fun updateText(text: String) = mutableState.update { if (it.status == ShareCardStatus.Generating) it else it.copy(card = it.card.copy(text = text), status = ShareCardStatus.Idle) }
 
-    /** Updates the book title printed in the card footer. */
+    /** Updates the book title kept with the quote metadata; it is not printed on the exported card. */
     fun updateBookTitle(title: String) = mutableState.update { if (it.status == ShareCardStatus.Generating) it else it.copy(card = it.card.copy(bookTitle = title), status = ShareCardStatus.Idle) }
 
     /** Updates the author printed in the card footer. */
