@@ -18,6 +18,7 @@ import org.readium.navigator.media.tts.android.AndroidTtsPreferences
 import org.readium.r2.navigator.VisualNavigator
 import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.util.getOrElse
+import pe.lee.app.R
 import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.app.ui.audio.TtsPlaybackService
 
@@ -91,7 +92,7 @@ private fun createEpubReaderSessionActions(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
-                session.ttsError.value = "No se pudo iniciar la voz en segundo plano."
+                session.ttsError.value = context.getString(R.string.tts_background_start_failed)
                 return@launch
             }
             val binder = binding.binder
@@ -105,7 +106,7 @@ private fun createEpubReaderSessionActions(
             }
             val activePublication = session.publication.value
             if (activePublication == null) {
-                session.ttsError.value = "El EPUB todavía se está preparando."
+                session.ttsError.value = context.getString(R.string.epub_preparing)
                 return@launch
             }
             val factory = AndroidTtsNavigatorFactory(
@@ -113,7 +114,7 @@ private fun createEpubReaderSessionActions(
                 activePublication
             )
             if (factory == null) {
-                session.ttsError.value = "Este EPUB no permite narración por voz."
+                session.ttsError.value = context.getString(R.string.tts_not_supported)
                 return@launch
             }
             val speech = factory.createNavigator(
@@ -130,7 +131,7 @@ private fun createEpubReaderSessionActions(
                     ?: session.navigator.value?.currentLocator?.value,
                 initialPreferences = AndroidTtsPreferences(speed = session.ttsSpeed.value.toDouble())
             ).getOrElse { failure ->
-                session.ttsError.value = "No se pudo preparar la narración: ${failure.message.ifBlank { "error de voz" }}"
+                session.ttsError.value = context.getString(R.string.tts_prepare_failed)
                 return@launch
             }
             val localVoices = speech.voices
@@ -154,7 +155,7 @@ private fun createEpubReaderSessionActions(
             }
             val publication = session.publication.value ?: run {
                 speech.close()
-                session.ttsError.value = "No se pudo conservar el libro para la narración."
+                session.ttsError.value = context.getString(R.string.tts_publication_unavailable)
                 return@launch
             }
             binder.openSession(speech, publication, uri.toString(), title) {

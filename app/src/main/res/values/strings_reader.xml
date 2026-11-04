@@ -1,5 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="epub_selection_highlight">Resaltar</string>
+    <string name="epub_selection_copy">Copiar</string>
+    <string name="epub_navigator_create_failed">No se pudo crear el lector EPUB.</string>
+    <string name="epub_open_failed">No se pudo abrir este EPUB. Comprueba el archivo y sus permisos.</string>
+    <string name="epub_search_not_supported">Este EPUB no permite búsquedas.</string>
+    <string name="epub_search_failed">No se pudo buscar en este EPUB.</string>
+    <string name="epub_preparing">El libro todavía se está preparando.</string>
+    <string name="reader_file_unavailable">No se pudo acceder al archivo seleccionado.</string>
+    <string name="epub_invalid_file">El archivo no parece ser un EPUB compatible.</string>
+    <string name="tts_voice_unavailable">No se pudo iniciar la voz. Comprueba que haya una voz de Android instalada para el idioma del libro.</string>
+    <string name="tts_background_start_failed">No se pudo iniciar la voz en segundo plano.</string>
+    <string name="tts_not_supported">Este EPUB no permite narración por voz.</string>
+    <string name="tts_prepare_failed">No se pudo preparar la narración.</string>
+    <string name="tts_publication_unavailable">No se pudo conservar el libro para la narración.</string>
+    <string name="tts_service_connection_failed">No se pudo conectar el servicio de voz.</string>
+    <string name="tts_service_start_failed">No se pudo iniciar el servicio de voz.</string>
     <!-- ReaderChrome -->
     <string name="reader_go_to_position">Ir a una posición</string>
     <string name="reader_go_to_description">Indica el porcentaje del libro. La paginación EPUB puede cambiar con la letra y la pantalla.</string>

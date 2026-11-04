@@ -171,8 +171,8 @@ internal fun EpubReaderSessionEffects(
 
             val selectionActionCallback = object : BaseActionModeCallback() {
                 override fun onCreateActionMode(mode: ActionMode, menu: Menu): Boolean {
-                    menu.add(Menu.NONE, MENU_HIGHLIGHT, Menu.NONE, "Resaltar")
-                    menu.add(Menu.NONE, MENU_COPY_SELECTION, Menu.NONE, "Copiar")
+                    menu.add(Menu.NONE, MENU_HIGHLIGHT, Menu.NONE, context.getString(R.string.epub_selection_highlight))
+                    menu.add(Menu.NONE, MENU_COPY_SELECTION, Menu.NONE, context.getString(R.string.epub_selection_copy))
                     menu.add(Menu.NONE, MENU_SHARE_SELECTION, 0, context.getString(ShareCardR.string.share_card_create_action))
                         .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
                     return true
@@ -245,7 +245,7 @@ internal fun EpubReaderSessionEffects(
             }
             val epubNavigator = activity.supportFragmentManager
                 .findFragmentByTag(NAVIGATOR_TAG) as? EpubNavigatorFragment
-                ?: error("No se pudo crear el lector EPUB.")
+                ?: error(context.getString(R.string.epub_navigator_create_failed))
             epubNavigator.addInputListener(
                 DirectionalNavigationAdapter(epubNavigator, animatedTransition = true)
             )
@@ -284,7 +284,7 @@ internal fun EpubReaderSessionEffects(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
-            session.errorMessage.value = error.message ?: "No se pudo abrir este EPUB."
+            session.errorMessage.value = context.getString(R.string.epub_open_failed)
             session.loading.value = false
         }
     }
@@ -349,7 +349,7 @@ internal fun EpubReaderSessionEffects(
             session.ttsIsPlaying.value = playback.playWhenReady
             if (playback.state is TtsNavigator.State.Ended) session.ttsIsPlaying.value = false
             if (playback.state is TtsNavigator.State.Failure) {
-                session.ttsError.value = "No se pudo iniciar la voz. Comprueba que haya una voz de Android instalada para el idioma del libro."
+                session.ttsError.value = context.getString(R.string.tts_voice_unavailable)
             }
         }
     }

@@ -28,6 +28,7 @@ import kotlinx.coroutines.launch
 import org.readium.navigator.media.common.Media3Adapter
 import org.readium.navigator.media.tts.AndroidTtsNavigator
 import org.readium.navigator.media.tts.TtsNavigator
+import pe.lee.app.R
 import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.publication.Publication
 import pe.lee.app.LeePeApplication
@@ -249,12 +250,12 @@ class TtsPlaybackService : MediaSessionService() {
                 override fun onServiceDisconnected(name: ComponentName?) = Unit
 
                 override fun onNullBinding(name: ComponentName?) {
-                    result.completeExceptionally(IllegalStateException("No se pudo conectar el servicio de voz."))
+                    result.completeExceptionally(IllegalStateException(application.getString(R.string.tts_service_connection_failed)))
                 }
             }
             val intent = serviceIntent(application)
             if (!application.bindService(intent, connection, Context.BIND_AUTO_CREATE)) {
-                throw IllegalStateException("No se pudo iniciar el servicio de voz.")
+                throw IllegalStateException(application.getString(R.string.tts_service_start_failed))
             }
             return try {
                 ServiceBinding(result.await(), application, connection)

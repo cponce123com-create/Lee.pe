@@ -189,7 +189,7 @@ private fun AudioPlayerScreen(
                 if (controller == null && error == null) {
                     Text(stringResource(R.string.audio_connecting), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 12.dp))
                 }
-                (playerState.error ?: error)?.let {
+                (playerState.error ?: playerState.errorMessageRes?.let { stringResource(it) } ?: error)?.let {
                     Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 16.dp))
                 }
             }

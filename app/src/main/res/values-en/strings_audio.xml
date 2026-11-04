@@ -11,4 +11,5 @@
     <string name="audio_speed">Speed</string>
     <string name="audio_pause">Pause</string>
     <string name="audio_play">Play</string>
+    <string name="audio_playback_failed">Could not play this file. Check that it is not damaged or protected.</string>
 </resources>
