@@ -5,13 +5,15 @@
 **Alcance:** 153 archivos versionados · 88 archivos Kotlin de producción (10.614 líneas) · 10 módulos Gradle · 1 APK de depuración (CI)
 **Naturaleza:** revisión estática de código, configuración de build, datos, seguridad, CI y documentación, más una **compilación completa verificada** (`testDebugUnitTest assembleDebug`, 35 pruebas verdes). No se ejecutó la app en dispositivo o emulador (ver §2).
 
+> **Actualización del estado (4 de noviembre de 2026):** el informe detallado que sigue es una captura histórica del commit `f050bec` del 3 de noviembre; sus descripciones de `versionCode`, `buildTypes`, CI y recuentos no describen `main` actual. `main` ya usa `versionCode=3`, contiene `buildTypes.release` con R8/minificación y firma opcional por variables de entorno, y la línea base más reciente registrada es 64 pruebas unitarias + 12 instrumentadas. El PR #38 corrigió además el cierre al iniciar y pasó lint, pruebas unitarias, `assembleDebug` y una prueba instrumentada de arranque en API 35. Los pendientes de dispositivo físico y la revalidación de release se mantienen explícitos.
+
 ---
 
 ## 1. Resumen ejecutivo
 
 Lee.pe es una app Android nativa (Kotlin + Compose + Readium + Media3 + Room) para leer y escuchar EPUB, PDF y audiolibros locales, con una arquitectura **offline-first** coherente: no pide permiso de `INTERNET`, usa exclusivamente SAF para acceder a archivos, desactiva el backup automático de Android y guarda todo en almacenamiento privado. Esa parte del diseño está bien resuelta y es el principal activo del proyecto.
 
-La base técnica también se sostiene: el proyecto **compila y pasa sus pruebas** (verificado en esta auditoría: `testDebugUnitTest assembleDebug` → **38 pruebas unitarias, 0 fallos**, APK de depuración de 32,1 MB en 14 m 9 s), el catálogo de versiones apunta a artefactos que existen y las migraciones Room están probadas.
+En la captura del 3 de noviembre, la base compilaba con **38 pruebas unitarias**. La línea base posterior registrada en `main` es **64 pruebas unitarias y 12 instrumentadas**; el CI reciente confirmó el APK de depuración y el arranque en emulador API 35. Las cifras de la captura no deben usarse como estado actual.
 
 El código, sin embargo, está en un estado **de prototipo avanzado, no de producto publicable**. Los problemas más serios no son de funcionalidad sino de **acabado de ingeniería**: dos estrategias de internacionalización conviviendo (la pantalla principal traduce; el lector no traduce nada), estado de UI que no sobrevive a la rotación, ciclo de vida de `MediaController`/bitmaps con riesgo de cierre inesperado, un respaldo que pierde datos organizativos, y una cadena de publicación (release, firma, R8, versión) que no existe.
 
@@ -25,8 +27,8 @@ El código, sin embargo, está en un estado **de prototipo avanzado, no de produ
 | Audio / TTS | **Frágil** | Servicios exportados sin permiso, ciclo de vida del controlador, progreso que puede resetearse a 0 % |
 | Rendimiento | **Mejorable** | Suscripciones Room recreadas en cada recomposición, `StatFs` por bloque, cachés sin purga |
 | i18n / accesibilidad | **Deficiente** | 151 literales en español fuera de recursos; `values-en` no cubre el lector |
-| Pruebas | **Insuficiente** | 38 pruebas unitarias + 9 instrumentadas; 0 para lectores/TTS/importación |
-| CI / release | **Insuficiente** | Solo `assembleDebug`; no hay `release`, firma, R8, `versionCode` ni escaneo de dependencias |
+| Pruebas | **Parcial** | La línea base más reciente es 64 pruebas unitarias + 12 instrumentadas; faltan pruebas específicas de SAF, reproductor y varios flujos del lector |
+| CI / release | **Parcial** | Existe `release` con R8 y firma opcional; el release minificado aún necesita validación reproducible y no se declara firmado sin secretos |
 | Documentación | **Buena pero desincronizada** | `docs/` es honesta y detallada, pero contradice al código en varios puntos |
 
 ### Los cinco riesgos que atendería primero
@@ -76,7 +78,7 @@ Por tanto, los hallazgos marcados como *riesgo* (por ejemplo, A-04, A-05, A-06) 
 | Módulos | `app`, `core:{database,datastore,domain,ui}`, `data`, `feature:{library,notes,sharecard}`, `library:readium` |
 | Stack | AGP 9.3.1 · Gradle 9.5.0 · Kotlin 2.4.20 · Compose BOM 2025.12.00 · Room 3.0.3 (`androidx.room3`) · KSP 2.3.10 · Readium 3.2.0 · Media3 1.11.1 |
 | SDK | `minSdk 24` · `targetSdk 36` · `compileSdk 36` · Java 17 con desugaring |
-| Versión de app | `versionCode 1` · `versionName 0.1.0` |
+| Versión de app (captura histórica) | `versionCode 1` · `versionName 0.1.0`; el `main` actual usa `versionCode 3` · `versionName 0.3.0` |
 | Permisos | `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, `WAKE_LOCK`, `POST_NOTIFICATIONS` — **sin `INTERNET`** |
 | Pruebas | 12 archivos (9 unitarios + 3 instrumentados): **38 unitarias ejecutadas, 0 fallos** (35 en `testDebugUnitTest` + 3 en `:core:domain:test`) + 9 instrumentadas |
 | Build | `testDebugUnitTest assembleDebug` **verde** · 14 m 9 s · 311 tareas · 44 advertencias (25 de API experimental de Readium, 16 deprecaciones de Compose, 3 `Elvis` muertos) |
@@ -274,7 +276,7 @@ Un audiolibro de 500 MB implica ~64 000 consultas `statfs`, cada una con acceso 
 
 **A-16 · Medio · No existe configuración de release ni firma**
 
-`app/build.gradle.kts` no declara `buildTypes { release { ... } }`, `signingConfigs`, `isMinifyEnabled`, `proguardFiles` ni `bundle`; `versionCode` está fijo en `1` (`:8-14`). El CI solo produce `assembleDebug`.
+En el commit auditado (`f050bec`), `app/build.gradle.kts` no declaraba `buildTypes { release { ... } }` y el CI solo producía `assembleDebug`. **Esto quedó superado:** `main` ya tiene release con R8, firma opcional por variables de entorno y `version.properties`; el seguimiento del release minificado se conserva como criterio de validación pendiente.
 
 *Consecuencia:* no hay AAB publicable, no hay ofuscación, no hay estrategia de versionado y las credenciales de firma no tienen dónde vivir.
 
@@ -589,7 +591,7 @@ Los peores archivos son `PdfReaderDialogs.kt` (28), `ReaderControls.kt` (26), `R
 
 - Ejecuta `lintDebug` + tests + `assembleDebug` + `assembleDebugAndroidTest` y luego un emulador API 35: buena base.
 - **Duplica trabajo**: `:feature:sharecard:testDebugUnitTest` junto a `testDebugUnitTest` (que ya corre en todos los módulos) y `:feature:sharecard:connectedDebugAndroidTest` junto a `connectedDebugAndroidTest` (`.github/workflows/android-build.yml:58,73`), lo que alarga el pipeline sin cubrir nada nuevo.
-- **No ejecuta las pruebas de `:core:domain`**: el comando usa `testDebugUnitTest`, tarea que no existe en el módulo JVM puro (`:core:domain` usa el plugin `kotlin.jvm` y sus 3 pruebas viven en `test`). En la verificación, el comando ejecutó 35 pruebas y **ninguna de `ReadingProgressTest`**; al lanzar `:core:domain:test` aparte, las 3 pasan (0 fallos, 49 s). El CI tiene el mismo hueco: hay que añadir `test` (o `:core:domain:test`) al pipeline.
+- **Estado histórico del módulo `:core:domain`:** en el commit auditado, `testDebugUnitTest` no ejecutaba sus pruebas JVM. El workflow actual incluye `:core:domain:test`, así que ese hueco ya está cerrado.
 - **44 advertencias de compilación** en el build verificado, la mayoría deprecaciones con acción concreta: `Icons.Filled.MenuBook`/`ArrowBack`/`VolumeUp`/`ViewList`/`RotateRight` → `Icons.AutoMirrored.Filled.*` (que además corrige RTL) y `LinearProgressIndicator(progress: Float)` en `LibraryResumeCards.kt:154` y `LibraryStatisticsDialogs.kt:88` → sobrecarga con lambda.
 - **Tres `Elvis` muertos** (`?:` sobre un `String` no nulo, detectados por el compilador): `EpubTtsSessionActions.kt:125`, `ReaderActivityHost.kt:96` y `:107`. El mensaje de respaldo en español nunca se muestra; el usuario ve el texto de la librería, a menudo en inglés y sin contexto.
 - **No valida el wrapper** (`gradle/actions/wrapper-validation`), no usa `verification-metadata` para checksums de dependencias y no tiene Dependabot/Renovate: cadena de suministro sin control.

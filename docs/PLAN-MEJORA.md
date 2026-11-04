@@ -1,7 +1,7 @@
 ﻿# Plan de trabajo — Lee.pe 1.0
 
 **Objetivo:** llevar Lee.pe del estado actual (prototipo avanzado) a una **1.0 publicable**: estable, bilingüe, con rendimiento aceptable en gama baja y un proceso de release reproducible.
-**Base:** [AUDITORIA-TECNICA.md](AUDITORIA-TECNICA.md) — 38 hallazgos funcionales (A-01…A-40; A-12 y A-13 se retiraron al comprobar que eran falsos positivos), 8 de rendimiento (P-01…P-08) y 5 de arquitectura (M-01…M-05). El proyecto **compila** (`testDebugUnitTest assembleDebug` verde, **51 pruebas unitarias** — 44 en ese comando + 7 en `:core:domain:test` — y APK de depuración de 30,5 MB): el plan no parte de un build roto.
+**Base:** [AUDITORIA-TECNICA.md](AUDITORIA-TECNICA.md), captura histórica del 3 de noviembre. `main` actual está en `versionCode=3` / `versionName=0.3.0`, ya contiene release con R8 y firma opcional; su línea base registrada es 64 pruebas unitarias + 12 instrumentadas. Las cifras y tareas históricas se conservan como contexto, no como estado vigente.
 **Horizonte:** 11-12 semanas con 1 desarrollador a tiempo completo (≈58 días de esfuerzo); 6-7 semanas con 2 desarrolladores en paralelo.
 **Regla de oro:** cada fase termina con un criterio de salida **medible**, no con «ya está hecho».
 
@@ -9,7 +9,7 @@
 
 ## 0. Estado de ejecución
 
-Actualizado el 3 de noviembre de 2026. Seis commits en el repositorio local: `baseline`, `9f68734`, `fe2bba5`, `651db98`, `0e950cb`, `98b46ed` y `4ed08b0`. Build y pruebas verificados después de cada lote.
+Actualizado el 4 de noviembre de 2026. La corrección del arranque del PR #38 está fusionada y pasó CI en API 35. Se está reabriendo la auditoría para atender los hallazgos del listado de producción; las modificaciones de esta tanda aún requieren CI antes de marcarse como verificadas.
 
 **Cierre de Fase 0 y Fase 1:** 28 tareas cerradas, 1 parcial (A-04 en el lector EPUB: requiere mover el estado de las hojas a `SavedStateHandle`) y 2 retiradas (A-12, A-13).
 
@@ -19,7 +19,7 @@ Actualizado el 3 de noviembre de 2026. Seis commits en el repositorio local: `ba
 | T0.2 endurecer CI | **Hecho** | Wrapper validation, sin tareas duplicadas, `:core:domain:test` incluido |
 | T0.4 gobernanza | **Parcial** | Plantilla de PR en el repo; proteger `main` y labels requiere la interfaz de GitHub |
 | T0.6 limpieza de warnings | **Hecho** | 44 → **0** warnings en recompilación completa |
-| A-01 sesiones restringidas | **Hecho** | `MediaSessionAccess`; solo app propia o `MEDIA_CONTENT_CONTROL` |
+| A-01 sesiones restringidas | **Parcial** | Se usa `ControllerInfo.isTrusted()` y se protege el binder local TTS; faltan pruebas con controladores Android Auto/Wear/Assistant |
 | A-02 progreso TTS | **Hecho** | `readingProgressOr` + pruebas |
 | A-03 respaldo v2 | **Hecho** | Colecciones múltiples, vacías incluidas, compatibilidad v1 |
 | A-04 rotación | **Parcial** | Biblioteca (búsqueda, filtro, orden, diálogos) y PDF (página, zoom, rotación) sí; falta el estado interno de las hojas del lector EPUB |
@@ -53,7 +53,7 @@ Actualizado el 3 de noviembre de 2026. Seis commits en el repositorio local: `ba
 | A-36 escaneo cancelado | **Hecho** | Corre en `viewModelScope` con `ScannerUiState`; sobrevive a la rotación |
 | A-40 grid sin claves | **Hecho** | `LazyVerticalGrid` con `key = book.id`, `contentType` y cabeceras de línea completa |
 | P-06 paginación | **Decidida con medición** | 10k: índice 52 ms, filtro 49 ms, orden 418 ms en JVM → sin Paging en 1.0, pero el cálculo sale a `Dispatchers.Default` (`docs/METRICAS.md`) |
-| A-20 i18n | **Hecho** | 151 → 16 coincidencias; todas las cadenas de UI en recursos ES/EN. Solo quedan los mensajes internos de validación del respaldo |
+| A-20 i18n | **Reabierto** | Quedan literales y mensajes de excepción visibles en lector EPUB/PDF/TTS/audio/tarjetas; completar `values-en` y comprobar paridad en CI antes de cerrar |
 | A-19 accesibilidad | **Parcial** | 48 dp en colores, `liveRegion`, slider etiquetado, `FlowRow` del TTS, insets reales y tema claro; falta la pasada con TalkBack en dispositivo |
 | A-16 release/firma | **Hecho** | `release` con R8 + shrink, firma por variables de entorno, versión desde `version.properties`, workflow `release.yml` |
 | A-17 FileProvider | **Hecho** | EPUB incluido con `content://` propio y migración del URI `file://` existente; `NOTICE` con atribuciones |
