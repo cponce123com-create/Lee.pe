@@ -113,7 +113,9 @@ object LocalBackupCipher {
         val accumulator = u.copyOf()
         try {
             repeat(ITERATIONS - 1) {
-                u = mac.doFinal(u)
+                val previous = u
+                u = mac.doFinal(previous)
+                previous.fill(0)
                 for (index in accumulator.indices) accumulator[index] =
                     (accumulator[index].toInt() xor u[index].toInt()).toByte()
             }
