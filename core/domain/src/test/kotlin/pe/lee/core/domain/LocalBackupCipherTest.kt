@@ -1,6 +1,11 @@
 package pe.lee.core.domain
 
 import java.io.IOException
+import javax.crypto.Cipher
+import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.PBEKeySpec
+import javax.crypto.spec.SecretKeySpec
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -23,6 +28,29 @@ class LocalBackupCipherTest {
         val first = LocalBackupCipher.encrypt(original, "Clave-segura-2026")
         val second = LocalBackupCipher.encrypt(original, "Clave-segura-2026")
         assertNotEquals(first.toList(), second.toList())
+    }
+
+
+    @Test
+    fun envelopeDecryptsWithStandardPbkdf2HmacSha256Implementation() {
+        val password = "Clave-segura-2026"
+        val original = "prueba de interoperabilidad".toByteArray()
+        val envelope = LocalBackupCipher.encrypt(original, password)
+        val saltStart = 9
+        val ivStart = saltStart + 16
+        val cipherStart = ivStart + 12
+        val salt = envelope.copyOfRange(saltStart, ivStart)
+        val iv = envelope.copyOfRange(ivStart, cipherStart)
+        val encrypted = envelope.copyOfRange(cipherStart, envelope.size)
+        val specification = PBEKeySpec(password.toCharArray(), salt, 120_000, 256)
+        val keyBytes = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+            .generateSecret(specification).encoded
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(keyBytes, "AES"), GCMParameterSpec(128, iv))
+
+        assertArrayEquals(original, cipher.doFinal(encrypted))
+        specification.clearPassword()
+        keyBytes.fill(0)
     }
 
     @Test
