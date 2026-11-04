@@ -68,12 +68,16 @@ class ShareCardViewModel(
     /** Captures on the UI thread; converts pixels and encodes off the UI thread. */
     fun shareCapturedImage(capture: suspend () -> ImageBitmap) = startSharing {
         val image = capture()
-        withContext(workerDispatcher) {
-            // toPixelMap() already copies the frame once; its backing buffer holds
-            // exactly the ARGB ints Bitmap.createBitmap needs, so the previous
-            // per-pixel IntArray copy disappeared (A-21).
-            val pixels = image.toPixelMap()
-            QuoteCardRaster(image.width, image.height, pixels.buffer)
+        image.toRaster()
+    }
+
+    /** Converts a bitmap captured on Compose's UI coroutine and shares it off the main thread. */
+    fun shareImage(image: ImageBitmap) = startSharing { image.toRaster() }
+
+    /** Reports a failed UI capture so the user can retry instead of being left waiting. */
+    fun shareCaptureFailed() {
+        mutableState.update {
+            it.copy(status = ShareCardStatus.Error(SHARE_CARD_ERROR_MESSAGE))
         }
     }
 
@@ -115,6 +119,13 @@ class ShareCardViewModel(
                 }
             }
         }
+    }
+
+    private suspend fun ImageBitmap.toRaster(): QuoteCardRaster = withContext(workerDispatcher) {
+        // toPixelMap() already copies the frame once; its backing buffer holds
+        // exactly the ARGB ints Bitmap.createBitmap needs (A-21).
+        val pixels = toPixelMap()
+        QuoteCardRaster(width, height, pixels.buffer)
     }
 
     private suspend fun generateAndShare(card: QuoteCard, raster: QuoteCardRaster) {

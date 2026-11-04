@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +38,8 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pe.lee.app.ui.theme.LeePeTheme
 import pe.lee.feature.sharecard.R
@@ -56,8 +59,10 @@ fun ShareCardScreen(
     LeePeTheme {
         val state by viewModel.state.collectAsStateWithLifecycle()
         val layer = rememberGraphicsLayer()
+        val scope = rememberCoroutineScope()
         var editingQuote by remember { mutableStateOf(false) }
         var contentFits by remember(state.card) { mutableStateOf(false) }
+        var capturing by remember { mutableStateOf(false) }
         val storyFormat = state.card.format == QuoteCardFormat.STORY
 
         Scaffold(
@@ -153,19 +158,27 @@ fun ShareCardScreen(
                 }
 
                 Button(
-                    enabled = contentFits && state.card.text.isNotBlank() && state.status !is ShareCardStatus.Generating,
+                    enabled = contentFits && state.card.text.isNotBlank() &&
+                        state.status !is ShareCardStatus.Generating && !capturing,
                     onClick = {
-                        viewModel.shareCapturedImage {
-                            // The layer was recorded by drawWithContent during the
-                            // latest composed frame. Reading it directly also works
-                            // from viewModelScope and in Compose instrumentation tests,
-                            // where no MonotonicFrameClock is attached.
-                            layer.toImageBitmap()
+                        capturing = true
+                        scope.launch {
+                            try {
+                                // Capture within Compose's frame-aware UI scope. The ViewModel
+                                // only handles pixel conversion and PNG encoding off the main thread.
+                                viewModel.shareImage(layer.toImageBitmap())
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (_: Exception) {
+                                viewModel.shareCaptureFailed()
+                            } finally {
+                                capturing = false
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    if (state.status is ShareCardStatus.Generating) {
+                    if (state.status is ShareCardStatus.Generating || capturing) {
                         CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                         Spacer(Modifier.width(8.dp))
                         Text(stringResource(R.string.share_card_generating))

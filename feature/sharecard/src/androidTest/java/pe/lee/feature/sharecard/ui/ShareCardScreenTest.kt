@@ -1,12 +1,13 @@
 package pe.lee.feature.sharecard.ui
 
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -61,9 +62,11 @@ class ShareCardScreenTest {
         )
         composeRule.setContent { ShareCardScreen(viewModel = viewModel, onBack = {}) }
 
-        composeRule.onNodeWithText("Compartir").performScrollTo().performClick()
-        composeRule.waitUntil(15_000) { viewModel.state.value.status == ShareCardStatus.Ready }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Compartir").performScrollTo().assertIsEnabled().performClick()
+        composeRule.waitUntil(30_000) { viewModel.state.value.status == ShareCardStatus.Ready || viewModel.state.value.status is ShareCardStatus.Error }
 
+        assertEquals(ShareCardStatus.Ready, viewModel.state.value.status)
         assertEquals(1080, captured.get()?.width)
         assertEquals(1920, captured.get()?.height)
         assertTrue(handedOff.get())
