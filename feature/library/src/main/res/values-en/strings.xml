@@ -66,6 +66,7 @@
     <string name="library_relink_done">Book relinked; its progress and annotations were kept</string>
     <string name="library_relink_failed">The book could not be relinked</string>
     <string name="library_folder_permission_failed">The folder permission could not be kept.</string>
+    <string name="library_uri_permission_limit">You have %1$d saved file permissions (approximate limit: %2$d). Remove books or folders you no longer use.</string>
     <string name="library_welcome_book_failed">The welcome guide could not be added</string>
     <string name="library_pdf_thumbnail_description">Local preview of the PDF first page</string>
     <string name="library_offline_copy_save_failed">Could not save the copy</string>

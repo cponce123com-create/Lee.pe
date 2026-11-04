@@ -66,6 +66,7 @@
     <string name="library_relink_done">Libro revinculado; se conservaron su progreso y anotaciones</string>
     <string name="library_relink_failed">No se pudo revincular el libro</string>
     <string name="library_folder_permission_failed">No se pudo conservar el permiso de la carpeta.</string>
+    <string name="library_uri_permission_limit">Tienes %1$d permisos de archivos guardados (límite aproximado: %2$d). Elimina libros o carpetas que ya no uses.</string>
     <string name="library_welcome_book_failed">No se pudo añadir la guía de bienvenida</string>
     <string name="library_pdf_thumbnail_description">Vista previa local de la primera página del PDF</string>
     <string name="library_offline_copy_save_failed">No se pudo guardar la copia</string>

@@ -157,6 +157,7 @@ internal fun rememberLibraryDocumentActions(
                             noPermission++
                             return@mapNotNull null
                         }
+                        PersistableUriGrants.warnIfNearLimit(context)
                         BookEntity(
                             uri = uri.toString(),
                             title = fileName.substringBeforeLast('.', fileName).ifBlank { fileName },
@@ -206,6 +207,7 @@ internal fun rememberLibraryDocumentActions(
                     pickedUri,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
+                PersistableUriGrants.warnIfNearLimit(context)
                 context.contentResolver.openInputStream(pickedUri)?.use { input ->
                     require(input.read() >= 0) {
                         context.getString(R.string.library_relink_empty_file)
@@ -215,6 +217,7 @@ internal fun rememberLibraryDocumentActions(
                 val rebound = viewModel.rebindUri(targetBook.id, pickedUri.toString())
                 require(rebound) { context.getString(R.string.library_relink_already_linked) }
                 if (targetBook.uri != pickedUri) {
+                    PersistableUriGrants.release(context, targetBook.uri)
                     rebindBookScopedPreferences(context, targetBook.uri.toString(), pickedUri.toString())
                     val audioPosition = AudioProgressStore.get(context, targetBook.uri.toString())
                     if (audioPosition > 0L) AudioProgressStore.put(context, pickedUri.toString(), audioPosition)
@@ -259,6 +262,7 @@ internal fun rememberLibraryDocumentActions(
                     Toast.LENGTH_LONG
                 ).show()
             } else {
+                PersistableUriGrants.warnIfNearLimit(context)
                 // The ViewModel owns the scan: it survives rotation and reports
                 // progress through its own state (A-36).
                 viewModel.scanFolder(context, treeUri, storedBooks.map { it.uri })
