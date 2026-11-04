@@ -26,6 +26,7 @@ private const val BACKUP_SCHEMA = "lee.pe.local-library"
 private const val BACKUP_VERSION = 2
 private const val MIN_BACKUP_VERSION = 1
 private const val MAX_ARCHIVE_BYTES = 64 * 1024 * 1024
+private const val ENCRYPTED_BACKUP_OVERHEAD_BYTES = 53
 private const val MAX_BOOKS = 20000
 private const val MAX_ANNOTATIONS = 60000
 private const val MAX_SESSIONS = 100000
@@ -120,16 +121,17 @@ internal object LocalLibraryBackup {
             .put("sessions", sessions).put("settings", bookSettings)
             .put("collections", collections)
         val bytes = root.toString().toByteArray(Charsets.UTF_8)
-        if (bytes.size > MAX_ARCHIVE_BYTES) {
+        if (bytes.size > MAX_ARCHIVE_BYTES - ENCRYPTED_BACKUP_OVERHEAD_BYTES) {
+            bytes.fill(0)
             throw IOException("El respaldo supera el límite de 64 MB.")
         }
         // Never write an archive that our own importer cannot read.
         parse(bytes.toString(Charsets.UTF_8))
         val encrypted = LocalBackupCipher.encrypt(bytes, password)
         bytes.fill(0)
-        val output = context.contentResolver.openOutputStream(uri, "wt")
-            ?: throw IOException("No se pudo abrir el destino del respaldo.")
         try {
+            val output = context.contentResolver.openOutputStream(uri, "wt")
+                ?: throw IOException("No se pudo abrir el destino del respaldo.")
             output.use { it.write(encrypted) }
         } finally {
             encrypted.fill(0)
