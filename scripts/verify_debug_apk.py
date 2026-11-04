@@ -9,6 +9,13 @@ import zipfile
 
 ANDROID = "{http://schemas.android.com/apk/res/android}"
 MEDIA_SESSION_ACTION = "androidx.media3.session.MediaSessionService"
+PROFILE_INSTALL_RECEIVER = "androidx.profileinstaller.ProfileInstallReceiver"
+PROFILE_INSTALL_ACTIONS = {
+    "androidx.profileinstaller.action.INSTALL_PROFILE",
+    "androidx.profileinstaller.action.SKIP_FILE",
+    "androidx.profileinstaller.action.SAVE_PROFILE",
+    "androidx.profileinstaller.action.BENCHMARK_OPERATION",
+}
 FORBIDDEN_PERMISSIONS = {
     "android.permission.INTERNET",
     "android.permission.MANAGE_EXTERNAL_STORAGE",
@@ -64,6 +71,28 @@ def _is_expected_media3_bluetooth_validation_activity(activity: ET.Element) -> b
     # The APK manifest printer may merge the four source <data> elements into
     # one element. Compare the complete attribute set while rejecting extras.
     return len(data_attributes) == len(expected_data) and dict(data_attributes) == expected_data
+
+
+
+
+def _is_expected_profile_install_receiver(receiver: ET.Element) -> bool:
+    """Allow AndroidX ProfileInstaller only with its system DUMP permission."""
+    if (
+        receiver.get(ANDROID + "exported") != "true"
+        or receiver.get(ANDROID + "permission") != "android.permission.DUMP"
+        or receiver.get(ANDROID + "enabled") not in (None, "true")
+        or receiver.get(ANDROID + "directBootAware") not in (None, "false")
+    ):
+        return False
+    actions = []
+    for intent_filter in receiver.findall("intent-filter"):
+        if intent_filter.attrib or intent_filter.findall("category") or intent_filter.findall("data"):
+            return False
+        filter_actions = [node.get(ANDROID + "name") for node in intent_filter.findall("action")]
+        if len(filter_actions) != 1:
+            return False
+        actions.extend(filter_actions)
+    return len(actions) == len(PROFILE_INSTALL_ACTIONS) and set(actions) == PROFILE_INSTALL_ACTIONS
 
 
 def verify_manifest(manifest: str) -> str:
@@ -148,7 +177,8 @@ def verify_manifest(manifest: str) -> str:
     for receiver in app_components["receiver"]:
         name = receiver.get(ANDROID + "name", "")
         if receiver.get(ANDROID + "exported") == "true":
-            raise RuntimeError(f"Exported receiver requires an explicit security review: {name}")
+            if name != PROFILE_INSTALL_RECEIVER or not _is_expected_profile_install_receiver(receiver):
+                raise RuntimeError(f"Exported receiver requires an explicit security review: {name}")
 
     for provider in app_components["provider"]:
         name = provider.get(ANDROID + "name", "")
