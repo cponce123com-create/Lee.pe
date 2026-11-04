@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.ArrowUpward
@@ -245,7 +246,7 @@ private fun PlacementMenu(
             Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.accessibility_book_options, book.title), tint = Color.White)
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            DropdownMenuItem(text = { Text(stringResource(R.string.shelf_move_left)) }, leadingIcon = { Icon(Icons.Default.ArrowBack, null) }, onClick = { expanded = false; onMove(0, -1) })
+            DropdownMenuItem(text = { Text(stringResource(R.string.shelf_move_left)) }, leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) }, onClick = { expanded = false; onMove(0, -1) })
             DropdownMenuItem(text = { Text(stringResource(R.string.shelf_move_right)) }, leadingIcon = { Icon(Icons.Default.ArrowForward, null) }, onClick = { expanded = false; onMove(0, 1) })
             DropdownMenuItem(text = { Text(stringResource(R.string.shelf_move_up)) }, leadingIcon = { Icon(Icons.Default.ArrowUpward, null) }, onClick = { expanded = false; onMove(-1, 0) })
             DropdownMenuItem(text = { Text(stringResource(R.string.shelf_move_down)) }, leadingIcon = { Icon(Icons.Default.ArrowDownward, null) }, onClick = { expanded = false; onMove(1, 0) })

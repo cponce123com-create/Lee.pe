@@ -38,11 +38,12 @@ internal enum class ShelfDecorationCategory(val labelRes: Int) {
 
 internal fun ShelfDecorationType.belongsTo(category: ShelfDecorationCategory): Boolean = when (category) {
     ShelfDecorationCategory.ALL -> true
-    ShelfDecorationCategory.NATURE -> this == PLANT || this == VASE
-    ShelfDecorationCategory.READING -> this == MUG || this == LAMP
-    ShelfDecorationCategory.FANTASY -> this == BOOKEND || this == ORB || this == FIGURE || this == SCULPTURE
-    ShelfDecorationCategory.MINIMAL -> this == SCULPTURE || this == ORB
-    ShelfDecorationCategory.SEPARATORS -> this == BOOKEND || this == DIVIDER
+    ShelfDecorationCategory.NATURE -> this == ShelfDecorationType.PLANT || this == ShelfDecorationType.VASE
+    ShelfDecorationCategory.READING -> this == ShelfDecorationType.MUG || this == ShelfDecorationType.LAMP
+    ShelfDecorationCategory.FANTASY -> this == ShelfDecorationType.BOOKEND || this == ShelfDecorationType.ORB ||
+        this == ShelfDecorationType.FIGURE || this == ShelfDecorationType.SCULPTURE
+    ShelfDecorationCategory.MINIMAL -> this == ShelfDecorationType.SCULPTURE || this == ShelfDecorationType.ORB
+    ShelfDecorationCategory.SEPARATORS -> this == ShelfDecorationType.BOOKEND || this == ShelfDecorationType.DIVIDER
 }
 
 internal data class ShelfDecoration(

@@ -190,11 +190,12 @@ internal fun BookshelfCustomizerDialog(
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         items(availableDecorations, key = ShelfDecorationType::name) { type ->
                             val selected = selectedDecoration == type
+                            val decorationLabel = stringResource(type.labelRes)
                             Surface(
                                 modifier = Modifier.width(132.dp).height(154.dp)
                                     .semantics {
                                         role = Role.RadioButton
-                                        contentDescription = stringResource(type.labelRes)
+                                        contentDescription = decorationLabel
                                         selected = selected
                                     }
                                     .clickable { selectedDecorationName = type.name },
