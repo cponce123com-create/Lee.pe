@@ -78,7 +78,7 @@ jobs:
         # module and would be skipped silently without the explicit task.
         # Avoid parallel packaging of every library test APK; it exhausted the
         # Gradle heap in :feature:library:packageDebugAndroidTest.
-        run: ./gradlew --no-daemon --stacktrace --max-workers=2 -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs=-Xmx4g clean lintDebug testDebugUnitTest :core:domain:test assembleDebug
+        run: ./gradlew --no-daemon --stacktrace --max-workers=2 -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs=-Xmx4g clean lintDebug testDebugUnitTest :core:domain:test assembleDebug koverHtmlReportAll
 
       - name: Build and smoke-check minified release APK
         run: |
@@ -101,7 +101,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: android-validation-reports
+          name: android-validation-and-coverage
           path: |
             **/build/reports/
             **/build/test-results/

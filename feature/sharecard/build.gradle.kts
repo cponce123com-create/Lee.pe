@@ -1,4 +1,5 @@
 plugins {
+    id("org.jetbrains.kotlinx.kover")
     alias(libs.plugins.android.library)
     alias(libs.plugins.compose.compiler)
 }

@@ -1,6 +1,7 @@
 import java.util.Properties
 
 plugins {
+    id("org.jetbrains.kotlinx.kover")
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
 }
