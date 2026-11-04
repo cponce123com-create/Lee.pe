@@ -27,6 +27,7 @@ import androidx.compose.runtime.MutableState
 import kotlinx.coroutines.CoroutineScope
 import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.feature.library.R
+import pe.lee.feature.notes.R as NotesR
 
 
 
@@ -66,7 +67,8 @@ internal fun rememberLibraryDocumentActions(
                     val markdown = AnnotationMarkdownExporter.toMarkdown(
                         bookTitle = book.title,
                         format = book.format,
-                        annotations = annotations
+                        annotations = annotations,
+                        pageLabel = { page -> context.getString(NotesR.string.annotation_page_label, page) }
                     )
                     withContext(Dispatchers.IO) {
                         val output = context.contentResolver.openOutputStream(uri, "wt")

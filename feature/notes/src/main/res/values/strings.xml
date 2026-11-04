@@ -1,0 +1,4 @@
+<resources>
+    <string name="annotation_page_label">Página %1$d</string>
+    <string name="annotation_default_book">libro</string>
+</resources>

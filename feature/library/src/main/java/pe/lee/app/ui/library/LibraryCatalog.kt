@@ -356,7 +356,12 @@ internal fun LibraryCatalog(
                                             Toast.makeText(context, context.getString(R.string.library_no_annotations), Toast.LENGTH_SHORT).show()
                                         } else {
                                             pendingMarkdown.value = book.id
-                                            onExportAnnotationsFile(annotationExportFileName(book.title))
+                                            onExportAnnotationsFile(
+                                                annotationExportFileName(
+                                                    book.title,
+                                                    context.getString(pe.lee.feature.notes.R.string.annotation_default_book)
+                                                )
+                                            )
                                         }
                                     } catch (cancelled: CancellationException) {
                                         throw cancelled
