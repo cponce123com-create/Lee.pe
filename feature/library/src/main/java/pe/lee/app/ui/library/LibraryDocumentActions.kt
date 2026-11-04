@@ -218,7 +218,9 @@ internal fun rememberLibraryDocumentActions(
                     rebindBookScopedPreferences(context, targetBook.uri.toString(), pickedUri.toString())
                     val audioPosition = AudioProgressStore.get(context, targetBook.uri.toString())
                     if (audioPosition > 0L) AudioProgressStore.put(context, pickedUri.toString(), audioPosition)
-                    AudioProgressStore.remove(context, targetBook.uri.toString())
+                    withContext(Dispatchers.IO) {
+                        AudioProgressStore.remove(context, targetBook.uri.toString())
+                    }
                     withContext(Dispatchers.IO) {
                         OfflineBookStore.rebindCopy(context, targetBook.uri, pickedUri)
                     }
