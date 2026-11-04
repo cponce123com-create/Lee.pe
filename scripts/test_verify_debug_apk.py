@@ -87,6 +87,27 @@ class VerifyApkManifestTest(unittest.TestCase):
         )
         self.assertEqual("pe.lee.app", verify_manifest(manifest))
 
+
+    def test_accepts_packaged_android_theme_reference(self):
+        activity = """        <activity
+            android:name="androidx.media3.session.BluetoothValidationActivity"
+            android:exported="true" android:excludeFromRecents="true" android:noHistory="true"
+            android:permission="android.permission.BLUETOOTH_PRIVILEGED"
+            android:theme="@ref/0x1030055">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <data android:scheme="content" />
+                <data android:host="media" />
+                <data android:pathPrefix="/internal/audio/media/" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+        </activity>
+"""
+        manifest = BASE_MANIFEST.replace(
+            "    </application>", activity + "    </application>"
+        )
+        self.assertEqual("pe.lee.app", verify_manifest(manifest))
+
     def test_rejects_validation_activity_without_system_permission(self):
         activity = """        <activity
             android:name="androidx.media3.session.BluetoothValidationActivity"
