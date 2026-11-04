@@ -14,6 +14,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.json.JSONObject
 import java.io.File
 import java.security.MessageDigest
 import java.util.Locale
@@ -21,6 +22,53 @@ import java.util.Locale
 @RunWith(AndroidJUnit4::class)
 class LeeDatabaseMigrationTest {
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
+
+    @Test
+    fun migration4To5PreservesStableIdsAndCollectionLinks() = runBlocking {
+        val name = "migration-4.db"
+        context.deleteDatabase(name)
+        val schema = InstrumentationRegistry.getInstrumentation().context.assets
+            .open("pe.lee.app.data.local.LeeDatabase/4.json")
+            .bufferedReader().use { JSONObject(it.readText()).getJSONObject("database") }
+        val file = context.getDatabasePath(name)
+        file.parentFile?.mkdirs()
+        SQLiteDatabase.openOrCreateDatabase(file, null).use { legacy ->
+            val entities = schema.getJSONArray("entities")
+            for (index in 0 until entities.length()) {
+                val entity = entities.getJSONObject(index)
+                val table = entity.getString("tableName")
+                legacy.execSQL(entity.getString("createSql").replace("\${TABLE_NAME}", table))
+                val indices = entity.getJSONArray("indices")
+                for (i in 0 until indices.length()) {
+                    legacy.execSQL(indices.getJSONObject(i).getString("createSql").replace("\${TABLE_NAME}", table))
+                }
+            }
+            legacy.execSQL(
+                "INSERT INTO library_books (id, uri, title, format, importedAt, readProgress, pdfPageIndex, isFavorite) " +
+                    "VALUES ('stable-id', ?, 'Versión cuatro', 'EPUB', 1, 0.5, 0, 1)",
+                arrayOf(TEST_URI)
+            )
+            legacy.execSQL("INSERT INTO collections (id, name, normalizedName, sortOrder) VALUES (7, 'Lectura', 'lectura', 0)")
+            legacy.execSQL("INSERT INTO book_collections (bookId, collectionId) VALUES ('stable-id', 7)")
+            legacy.version = 4
+        }
+        val database = Room.databaseBuilder<LeeDatabase>(context, name)
+            .addMigrations(*LeeDatabase.ALL_MIGRATIONS).build()
+        try {
+            val book = database.bookDao().findByUri(TEST_URI)
+            assertEquals("stable-id", book?.id)
+            assertEquals("Versión cuatro", book?.title)
+            assertEquals(0.5f, book?.readProgress)
+            assertEquals(true, book?.isFavorite)
+            assertEquals(listOf("Lectura"), database.bookDao().collectionNamesForBook(TEST_URI))
+            assertEquals(emptyList<String>(), database.bookDao().pendingBookCleanupUris())
+            database.bookDao().deleteByUri(TEST_URI)
+            assertEquals(listOf(TEST_URI), database.bookDao().pendingBookCleanupUris())
+        } finally {
+            database.close()
+            context.deleteDatabase(name)
+        }
+    }
 
     @Test
     fun migrationsFromEverySupportedVersionPreserveLibraryNotesAndStatistics() = runBlocking {

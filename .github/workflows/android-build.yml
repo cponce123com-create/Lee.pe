@@ -15,6 +15,8 @@ on:
       - "version.properties"
       - "scripts/verify_debug_apk.py"
       - "scripts/test_verify_debug_apk.py"
+      - "scripts/run_instrumentation.sh"
+      - "scripts/verify_sharecard_locale_parity.py"
       - ".github/workflows/android-build.yml"
   pull_request:
     branches: [main]
@@ -30,6 +32,8 @@ on:
       - "version.properties"
       - "scripts/verify_debug_apk.py"
       - "scripts/test_verify_debug_apk.py"
+      - "scripts/run_instrumentation.sh"
+      - "scripts/verify_sharecard_locale_parity.py"
       - ".github/workflows/android-build.yml"
   workflow_dispatch:
 
@@ -40,7 +44,7 @@ jobs:
   build:
     name: Build debug APK
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - name: Check out repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -93,30 +97,6 @@ jobs:
           cp version.properties app/build/outputs/apk/debug/version.properties
           sha256sum app/build/outputs/apk/debug/*.apk > app/build/outputs/apk/debug/SHA256SUMS
 
-      - name: Enable KVM group permissions
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-
-      - name: Run instrumentation tests on Android 35
-        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
-        with:
-          api-level: 35
-          target: google_apis
-          arch: x86_64
-          profile: pixel_2
-          script: ./gradlew --no-daemon --max-workers=2 -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs=-Xmx4g connectedDebugAndroidTest
-
-      - name: Run instrumentation tests on Android 26
-        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
-        with:
-          api-level: 26
-          target: default
-          arch: x86
-          profile: pixel_2
-          script: ./gradlew --no-daemon --max-workers=2 -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs=-Xmx4g connectedDebugAndroidTest
-
       - name: Upload validation reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -140,4 +120,57 @@ jobs:
             app/build/outputs/apk/debug/SHA256SUMS
             core/database/schemas/**/*.json
           if-no-files-found: error
+          retention-days: 14
+
+  instrumentation:
+    name: Instrumentation API ${{ matrix.api }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - api: 26
+            target: default
+            arch: x86
+          - api: 35
+            target: google_apis
+            arch: x86_64
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: gradle/actions/wrapper-validation@ed408507eac070d1f99cc633dbcf757c94c7933a
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          packages: ""
+      - run: sdkmanager --install "platforms;android-36"
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run device tests
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: ${{ matrix.api }}
+          target: ${{ matrix.target }}
+          arch: ${{ matrix.arch }}
+          profile: pixel_2
+          emulator-boot-timeout: 600
+          disable-animations: true
+          script: bash scripts/run_instrumentation.sh
+      - name: Upload device diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: instrumentation-api-${{ matrix.api }}
+          path: |
+            **/build/reports/androidTests/
+            **/build/outputs/androidTest-results/
+            build/device-diagnostics/
+          if-no-files-found: warn
           retention-days: 14
