@@ -3,15 +3,10 @@ package pe.lee.app.ui.library
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
-import androidx.compose.foundation.layout.Column
-import pe.lee.app.data.local.BookEntity
-import pe.lee.app.data.local.OfflineBookStore
-import pe.lee.app.data.repository.SettingsRepository
-import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-
-
+import pe.lee.app.data.local.BookEntity
+import pe.lee.app.data.repository.SettingsRepository
 
 private val SUPPORTED_AUDIO_EXTENSIONS = setOf("mp3", "m4a", "m4b", "aac", "ogg", "wav", "flac")
 private const val KEY_DOCUMENT_URIS = "document_uris"
@@ -37,14 +32,12 @@ internal fun rebindBookScopedPreferences(context: Context, oldUri: String, newUr
     }
 }
 
-
-internal fun queryDisplayName(context: Context, uri: Uri): String =
-    runCatching {
-        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-            val nameColumn = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            if (cursor.moveToFirst() && nameColumn >= 0) cursor.getString(nameColumn) else null
-        }
-    }.getOrNull() ?: uri.lastPathSegment ?: "Libro importado"
+internal fun queryDisplayName(context: Context, uri: Uri): String = runCatching {
+    context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+        val nameColumn = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+        if (cursor.moveToFirst() && nameColumn >= 0) cursor.getString(nameColumn) else null
+    }
+}.getOrNull() ?: uri.lastPathSegment ?: "Libro importado"
 
 internal fun formatFromFileName(fileName: String): String? {
     val extension = fileName.substringAfterLast('.', "").lowercase()
@@ -95,7 +88,7 @@ internal suspend fun migrateLegacyLibrary(context: Context, viewModel: LibraryVi
                 uri = uri.toString(),
                 title = fileName.substringBeforeLast('.', fileName),
                 format = format,
-                importedAt = System.currentTimeMillis()
+                importedAt = System.currentTimeMillis(),
             )
         }
         books to pendingUris

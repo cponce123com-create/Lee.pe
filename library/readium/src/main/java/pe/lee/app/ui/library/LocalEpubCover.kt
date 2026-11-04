@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
@@ -32,7 +33,6 @@ import org.readium.r2.shared.util.http.DefaultHttpClient
 import org.readium.r2.shared.util.toAbsoluteUrl
 import org.readium.r2.streamer.PublicationOpener
 import org.readium.r2.streamer.parser.DefaultPublicationParser
-import kotlin.coroutines.coroutineContext
 
 /**
  * Extracts actual EPUB cover metadata through the project's existing Readium engine.
@@ -46,8 +46,7 @@ private object EpubCoverCache {
      */
     private val permits = Semaphore(2)
     private val images = object : LruCache<String, Bitmap>(6 * 1024) {
-        override fun sizeOf(key: String, value: Bitmap): Int =
-            (value.byteCount / 1024).coerceAtLeast(1)
+        override fun sizeOf(key: String, value: Bitmap): Int = (value.byteCount / 1024).coerceAtLeast(1)
     }
     private val failures = object : LruCache<String, Boolean>(256) {}
 
@@ -69,7 +68,7 @@ private object EpubCoverCache {
                     context = context,
                     httpClient = httpClient,
                     assetRetriever = retriever,
-                    pdfFactory = null
+                    pdfFactory = null,
                 )
                 val publication = PublicationOpener(parser)
                     .open(asset, allowUserInteraction = false).getOrElse {
@@ -100,16 +99,12 @@ private object EpubCoverCache {
 }
 
 @Composable
-fun LocalEpubCover(
-    originalUri: Uri,
-    offlineCopyUri: Uri?,
-    modifier: Modifier = Modifier
-) {
+fun LocalEpubCover(originalUri: Uri, offlineCopyUri: Uri?, modifier: Modifier = Modifier) {
     val sourceUri = offlineCopyUri ?: originalUri
     val context = androidx.compose.ui.platform.LocalContext.current
     val cover by produceState<Bitmap?>(
         initialValue = null,
-        key1 = sourceUri
+        key1 = sourceUri,
     ) {
         value = EpubCoverCache.get(context.applicationContext, sourceUri)
     }
@@ -118,14 +113,14 @@ fun LocalEpubCover(
             Icon(
                 Icons.AutoMirrored.Filled.MenuBook,
                 contentDescription = null,
-                tint = Color.White
+                tint = Color.White,
             )
         } else {
             Image(
                 bitmap = cover!!.asImageBitmap(),
                 contentDescription = null, // parent's title describes the book
                 contentScale = ContentScale.Fit,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             )
         }
     }

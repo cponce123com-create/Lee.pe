@@ -5,8 +5,8 @@ import androidx.room3.Insert
 import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
 import androidx.room3.Transaction
-import kotlinx.coroutines.flow.Flow
 import java.util.Locale
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface BookDao {
@@ -43,18 +43,22 @@ interface BookDao {
     @Query("UPDATE library_books SET lastOpenedAt = :openedAt WHERE uri = :uri")
     suspend fun markOpened(uri: String, openedAt: Long)
 
-    @Query("""
+    @Query(
+        """
         UPDATE library_books
         SET epubLocator = :locatorJson, readProgress = :progress, lastOpenedAt = :openedAt
         WHERE uri = :uri
-    """)
+    """,
+    )
     suspend fun saveEpubProgress(uri: String, locatorJson: String, progress: Float, openedAt: Long)
 
-    @Query("""
+    @Query(
+        """
         UPDATE library_books
         SET pdfPageIndex = :pageIndex, readProgress = :progress, lastOpenedAt = :openedAt
         WHERE uri = :uri
-    """)
+    """,
+    )
     suspend fun savePdfProgress(uri: String, pageIndex: Int, progress: Float, openedAt: Long)
 
     @Query("UPDATE library_books SET isFavorite = :isFavorite WHERE uri = :uri")
@@ -69,18 +73,22 @@ interface BookDao {
     @Query("SELECT * FROM collections ORDER BY sortOrder ASC, name COLLATE NOCASE ASC")
     fun observeCollections(): Flow<List<CollectionEntity>>
 
-    @Query("""
+    @Query(
+        """
         SELECT book_collections.bookId AS bookId, collections.name AS collectionName
         FROM book_collections
         JOIN collections ON collections.id = book_collections.collectionId
         ORDER BY collections.sortOrder, collections.name COLLATE NOCASE
-    """)
+    """,
+    )
     fun observeBookCollectionNames(): Flow<List<BookCollectionAssignment>>
 
     @Query("SELECT * FROM collections ORDER BY sortOrder ASC, name COLLATE NOCASE ASC")
     suspend fun getCollections(): List<CollectionEntity>
 
-    @Query("SELECT collections.name FROM collections JOIN book_collections ON collections.id = book_collections.collectionId JOIN library_books ON library_books.id = book_collections.bookId WHERE library_books.uri = :uri ORDER BY collections.sortOrder, collections.name COLLATE NOCASE")
+    @Query(
+        "SELECT collections.name FROM collections JOIN book_collections ON collections.id = book_collections.collectionId JOIN library_books ON library_books.id = book_collections.bookId WHERE library_books.uri = :uri ORDER BY collections.sortOrder, collections.name COLLATE NOCASE",
+    )
     suspend fun collectionNamesForBook(uri: String): List<String>
 
     @Query("SELECT id FROM collections WHERE normalizedName = :normalizedName LIMIT 1")
@@ -154,7 +162,9 @@ interface BookDao {
         books.forEach { updateLegacyCollection(it.uri, displayName) }
     }
 
-    @Query("SELECT library_books.* FROM library_books JOIN book_collections ON library_books.id = book_collections.bookId WHERE book_collections.collectionId = :collectionId")
+    @Query(
+        "SELECT library_books.* FROM library_books JOIN book_collections ON library_books.id = book_collections.bookId WHERE book_collections.collectionId = :collectionId",
+    )
     suspend fun booksInCollection(collectionId: Long): List<BookEntity>
 
     @Transaction

@@ -7,13 +7,13 @@ import androidx.room3.PrimaryKey
 
 @Entity(
     tableName = "collections",
-    indices = [Index(value = ["normalizedName"], unique = true)]
+    indices = [Index(value = ["normalizedName"], unique = true)],
 )
 data class CollectionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     val normalizedName: String,
-    val sortOrder: Int = 0
+    val sortOrder: Int = 0,
 )
 
 @Entity(
@@ -24,18 +24,15 @@ data class CollectionEntity(
             entity = BookEntity::class,
             parentColumns = ["id"],
             childColumns = ["bookId"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.CASCADE,
         ),
         ForeignKey(
             entity = CollectionEntity::class,
             parentColumns = ["id"],
             childColumns = ["collectionId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
-    indices = [Index("bookId"), Index("collectionId")]
+    indices = [Index("bookId"), Index("collectionId")],
 )
-data class BookCollectionCrossRef(
-    val bookId: String,
-    val collectionId: Long
-)
+data class BookCollectionCrossRef(val bookId: String, val collectionId: Long)

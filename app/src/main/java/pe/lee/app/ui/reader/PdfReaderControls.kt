@@ -13,11 +13,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.RotateRight
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.PictureAsPdf
-import androidx.compose.material.icons.automirrored.filled.RotateRight
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -50,13 +50,13 @@ internal fun PdfReaderTopBar(
     onBack: () -> Unit,
     onSearch: () -> Unit,
     onAnnotations: () -> Unit,
-    onHideControls: () -> Unit
+    onHideControls: () -> Unit,
 ) {
     if (!visible) return
     Surface(color = Color(0xFF0A1423)) {
         Row(
             modifier = Modifier.fillMaxWidth().height(58.dp).padding(horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.pdf_back), tint = Color.White)
@@ -69,13 +69,17 @@ internal fun PdfReaderTopBar(
                 color = Color.White,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             IconButton(onClick = onSearch, enabled = !loading && pageCount > 0) {
                 Icon(Icons.Default.Search, contentDescription = stringResource(R.string.pdf_search_title), tint = Color.White)
             }
             IconButton(onClick = onAnnotations, enabled = !loading && pageCount > 0) {
-                Icon(Icons.Default.Bookmark, contentDescription = stringResource(R.string.pdf_annotations_content_description), tint = Color.White)
+                Icon(
+                    Icons.Default.Bookmark,
+                    contentDescription = stringResource(R.string.pdf_annotations_content_description),
+                    tint = Color.White,
+                )
             }
             IconButton(onClick = onHideControls, enabled = !loading) {
                 Icon(Icons.Default.VisibilityOff, contentDescription = stringResource(R.string.pdf_hide_controls), tint = Color.White)
@@ -103,7 +107,7 @@ internal fun PdfReaderBottomControls(
     onRotate: () -> Unit,
     onPrevious: () -> Unit,
     onRequestPage: () -> Unit,
-    onNext: () -> Unit
+    onNext: () -> Unit,
 ) {
     if (!visible) return
     Surface(color = Color(0xFF0A1423), shape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)) {
@@ -111,7 +115,7 @@ internal fun PdfReaderBottomControls(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.pdf_continuous_scroll), color = Color.White, fontSize = 14.sp)
@@ -122,7 +126,7 @@ internal fun PdfReaderBottomControls(
                                     stringResource(R.string.pdf_selection_tap_or_drag)
                                 } else {
                                     stringResource(R.string.pdf_selection_select)
-                                }
+                                },
                             )
                         }
                     }
@@ -135,14 +139,14 @@ internal fun PdfReaderBottomControls(
                     onValueChange = onSliderChange,
                     onValueChangeFinished = onSliderFinished,
                     valueRange = 0f..(pageCount - 1).toFloat(),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
             if (!continuousScroll) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     IconButton(onClick = onZoomOut, enabled = zoomScale > 1f) {
                         Icon(Icons.Default.ZoomOut, contentDescription = stringResource(R.string.pdf_zoom_out), tint = Color.White)
@@ -150,21 +154,25 @@ internal fun PdfReaderBottomControls(
                     TextButton(onClick = onZoomReset) {
                         Text(
                             stringResource(R.string.pdf_zoom_reset, (zoomScale * 100).toInt()),
-                            color = Color.White
+                            color = Color.White,
                         )
                     }
                     IconButton(onClick = onZoomIn, enabled = zoomScale < 3f) {
                         Icon(Icons.Default.ZoomIn, contentDescription = stringResource(R.string.pdf_zoom_in), tint = Color.White)
                     }
                     IconButton(onClick = onRotate) {
-                        Icon(Icons.AutoMirrored.Filled.RotateRight, contentDescription = stringResource(R.string.pdf_rotate_page), tint = Color.White)
+                        Icon(
+                            Icons.AutoMirrored.Filled.RotateRight,
+                            contentDescription = stringResource(R.string.pdf_rotate_page),
+                            tint = Color.White,
+                        )
                     }
                 }
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onPrevious, enabled = pageIndex > 0) {
                     Icon(Icons.Default.ChevronLeft, contentDescription = stringResource(R.string.pdf_previous_page), tint = Color.White)
@@ -176,7 +184,7 @@ internal fun PdfReaderBottomControls(
                         } else {
                             stringResource(R.string.pdf_preparing_pdf)
                         },
-                        color = Color.White
+                        color = Color.White,
                     )
                 }
                 IconButton(onClick = onNext, enabled = pageIndex < pageCount - 1) {
@@ -188,16 +196,12 @@ internal fun PdfReaderBottomControls(
 }
 
 @Composable
-internal fun PdfReaderRestoreControls(
-    visible: Boolean,
-    onShowControls: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+internal fun PdfReaderRestoreControls(visible: Boolean, onShowControls: () -> Unit, modifier: Modifier = Modifier) {
     if (visible) return
     Surface(
         modifier = modifier.padding(12.dp),
         color = Color(0xE60A1423),
-        shape = RoundedCornerShape(14.dp)
+        shape = RoundedCornerShape(14.dp),
     ) {
         IconButton(onClick = onShowControls) {
             Icon(Icons.Default.Visibility, contentDescription = stringResource(R.string.pdf_show_controls), tint = Color.White)

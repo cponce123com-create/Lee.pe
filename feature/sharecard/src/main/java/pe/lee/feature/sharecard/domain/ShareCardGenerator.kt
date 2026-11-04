@@ -6,9 +6,5 @@ import pe.lee.feature.sharecard.domain.model.QuoteCardRaster
 
 /** Encodes a captured quote card into a PNG image at the requested social format. */
 fun interface ShareCardGenerator {
-    suspend fun generate(
-        card: QuoteCard,
-        raster: QuoteCardRaster,
-        format: QuoteCardFormat
-    ): ByteArray
+    suspend fun generate(card: QuoteCard, raster: QuoteCardRaster, format: QuoteCardFormat): ByteArray
 }

@@ -16,7 +16,7 @@ class CatalogPipelineTest {
         offline: Boolean = false,
         collections: List<String> = emptyList(),
         selectedCollection: String? = null,
-        filter: LibraryFilter = LibraryFilter.ALL
+        filter: LibraryFilter = LibraryFilter.ALL,
     ): Boolean = matchesCatalogFilter(
         format = format,
         readProgress = progress,
@@ -24,7 +24,7 @@ class CatalogPipelineTest {
         hasOfflineCopy = offline,
         collectionNames = collections,
         selectedCollection = selectedCollection,
-        filter = filter
+        filter = filter,
     )
 
     @Test

@@ -1,10 +1,10 @@
 package pe.lee.app.ui.library
 
+import java.io.IOException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.IOException
 import pe.lee.app.data.local.BookEntity
 import pe.lee.app.data.local.LocalBackupSnapshot
 import pe.lee.app.data.local.ReadingAnnotationEntity
@@ -89,11 +89,11 @@ class LocalLibraryBackupTest {
         val archive = LocalLibraryBackup.parse(v2)
         assertEquals(
             listOf("Novela", "Perú"),
-            archive.snapshot.bookCollectionNames["content://example/test"]
+            archive.snapshot.bookCollectionNames["content://example/test"],
         )
         assertEquals(
             listOf("Novela", "Perú", "Vacía"),
-            archive.snapshot.collections.map { it.name }
+            archive.snapshot.collections.map { it.name },
         )
     }
 
@@ -130,11 +130,11 @@ class LocalLibraryBackupTest {
                         kind = "NOTE",
                         locatorJson = "{}",
                         noteText = longText,
-                        createdAt = 1
-                    )
+                        createdAt = 1,
+                    ),
                 ),
-                sessions = emptyList()
-            )
+                sessions = emptyList(),
+            ),
         )
 
         assertEquals(1, sanitized.adjustedRecords)
@@ -142,7 +142,7 @@ class LocalLibraryBackupTest {
         val exportedNote = sanitized.snapshot.annotations.single().noteText
         val json = root(
             books = "[$book]",
-            notes = """[{"id":"n1","bookUri":"content://example/test","kind":"NOTE","locatorJson":"{}","selectedText":null,"noteText":"$exportedNote","colorArgb":null,"createdAt":1,"updatedAt":1}]"""
+            notes = """[{"id":"n1","bookUri":"content://example/test","kind":"NOTE","locatorJson":"{}","selectedText":null,"noteText":"$exportedNote","colorArgb":null,"createdAt":1,"updatedAt":1}]""",
         )
         assertEquals(12_000, LocalLibraryBackup.parse(json).snapshot.annotations.single().noteText?.length)
     }

@@ -13,7 +13,9 @@
 ```
 
 Detekt usa su API 2.0 y analiza fuentes de todos los módulos sin resolución de
-Android. No corrige archivos durante CI. ktlint produce Checkstyle y SARIF.
+Android. ktlint produce Checkstyle y SARIF. Si falla el análisis, CI genera un
+parche de formato como artefacto para revisión; no lo publica ni convierte el
+fallo en éxito. Se respeta la convención de nombres de funciones `@Composable`.
 Los hallazgos hacen fallar el job; no existe un baseline generado automáticamente
 para esconder deuda previa. `.editorconfig` y el hook optativo ayudan a prevenirla:
 `git config core.hooksPath .githooks`.
@@ -47,6 +49,13 @@ CI usa API 35 y tolera únicamente la advertencia EMULATOR; las cifras no sustit
 las de un teléfono real. Para medir en dispositivo no pases suppressErrors.
 
 ## Estado
+
+La ejecución Android `41924738918` del commit `4de86c6` pasó las pruebas en API
+26 y 35 y el job de construcción del APK. La migración 4→5 quedó verificada en
+ambas versiones. El análisis estático inicial detectó 564 hallazgos de Detekt;
+el formato posterior reduce parte de la deuda, pero no acredita cero hallazgos.
+El primer benchmark compiló pero no pudo instalarse por falta de firma en su
+APK de pruebas; se añadió la firma debug explícita y debe volver a ejecutarse.
 
 La configuración y las pruebas se entregan para revisión. Los porcentajes, tiempos
 y ausencia de hallazgos solo pueden confirmarse con una ejecución exitosa del

@@ -1,9 +1,9 @@
 package pe.lee.app.ui.library
 
+import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.util.Locale
 
 /**
  * Scale check for the catalog pipeline (P-06). It measures the CPU cost of the
@@ -76,7 +76,7 @@ class LibraryScaleTest {
         // and catches any accidental quadratic behaviour.
         assertTrue(
             "crecimiento no lineal: 1k=${small}ms 10k=${large}ms",
-            large <= small * 40 + 250
+            large <= small * 40 + 250,
         )
     }
 }

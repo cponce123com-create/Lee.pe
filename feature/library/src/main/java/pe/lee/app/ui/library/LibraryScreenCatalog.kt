@@ -13,10 +13,7 @@ import pe.lee.app.data.repository.SettingsRepository
 
 /** Presents the catalog and runs cancellable filtering away from the UI thread. */
 @Composable
-internal fun LibraryScreenCatalog(
-    state: LibraryScreenState,
-    onOpenBook: (Uri, String, String, Uri?) -> Unit,
-) = with(state) {
+internal fun LibraryScreenCatalog(state: LibraryScreenState, onOpenBook: (Uri, String, String, Uri?) -> Unit) = with(state) {
     // The catalog pipeline runs on Dispatchers.Default: with 10 000 books it costs
     // hundreds of milliseconds and used to block the main thread on every Room
     // emission (menus, dialogs and stats updates kept it recomputed) (P-06).
@@ -81,6 +78,6 @@ internal fun LibraryScreenCatalog(
         onBackup = { showBackupOptionsState.value = true },
         onOpen = { book -> onOpenBook(book.uri, book.format, book.title, book.offlineCopyUri) },
         onOfflineBooksChanged = onOfflineBooksChanged,
-        onExportAnnotationsFile = documentActions.exportAnnotationsFile
+        onExportAnnotationsFile = documentActions.exportAnnotationsFile,
     )
 }

@@ -74,8 +74,14 @@ tasks.register("koverXmlReportAll") {
 tasks.register("coverageGoals") {
     group = "verification"
     description = "Checks requested per-module line coverage targets; does not hide failures."
-    dependsOn(":core:domain:koverVerify", ":data:koverVerifyDebug", ":app:koverVerifyDebug",
-        ":feature:library:koverVerifyDebug", ":feature:notes:koverVerifyDebug", ":feature:sharecard:koverVerifyDebug")
+    dependsOn(
+        ":core:domain:koverVerify",
+        ":data:koverVerifyDebug",
+        ":app:koverVerifyDebug",
+        ":feature:library:koverVerifyDebug",
+        ":feature:notes:koverVerifyDebug",
+        ":feature:sharecard:koverVerifyDebug",
+    )
 }
 
 dependencyCheck {

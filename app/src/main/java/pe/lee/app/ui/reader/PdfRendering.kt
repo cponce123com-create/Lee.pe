@@ -1,8 +1,6 @@
 package pe.lee.app.ui.reader
 
 import android.content.Context
-import org.json.JSONArray
-import org.json.JSONObject
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
@@ -16,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -27,70 +24,62 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import pe.lee.app.R
-import pe.lee.core.domain.ReaderAnnotation
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import java.io.File
 import java.io.IOException
 import kotlin.coroutines.coroutineContext
-import kotlin.math.min
-import kotlin.math.sqrt
 import kotlin.math.roundToInt
+import kotlin.math.sqrt
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONObject
+import pe.lee.app.R
+import pe.lee.core.domain.ReaderAnnotation
 
-internal fun pdfPageLocator(pageIndex: Int): String =
-    JSONObject().put("format", "pdf-page").put("pageIndex", pageIndex).toString()
+internal fun pdfPageLocator(pageIndex: Int): String = JSONObject().put("format", "pdf-page").put("pageIndex", pageIndex).toString()
 
-internal data class PdfNormalizedRect(
-    val left: Float,
-    val top: Float,
-    val right: Float,
-    val bottom: Float
-)
+internal data class PdfNormalizedRect(val left: Float, val top: Float, val right: Float, val bottom: Float)
 
 internal data class PdfSelectedText(val text: String, val rects: List<PdfNormalizedRect>)
 
 internal data class PdfSearchResult(val pageIndex: Int, val text: String, val rects: List<PdfNormalizedRect>)
 
-internal data class PdfHighlightOverlay(
-    val rect: PdfNormalizedRect,
-    val colorArgb: Int
-)
+internal data class PdfHighlightOverlay(val rect: PdfNormalizedRect, val colorArgb: Int)
 
-internal fun pdfTextLocator(pageIndex: Int, rects: List<PdfNormalizedRect>): String =
-    JSONObject().apply {
-        put("format", "pdf-text")
-        put("pageIndex", pageIndex)
-        put("rects", JSONArray().apply {
+internal fun pdfTextLocator(pageIndex: Int, rects: List<PdfNormalizedRect>): String = JSONObject().apply {
+    put("format", "pdf-text")
+    put("pageIndex", pageIndex)
+    put(
+        "rects",
+        JSONArray().apply {
             rects.forEach { rect ->
-                put(JSONObject()
-                    .put("left", rect.left)
-                    .put("top", rect.top)
-                    .put("right", rect.right)
-                    .put("bottom", rect.bottom))
+                put(
+                    JSONObject()
+                        .put("left", rect.left)
+                        .put("top", rect.top)
+                        .put("right", rect.right)
+                        .put("bottom", rect.bottom),
+                )
             }
-        })
-    }.toString()
+        },
+    )
+}.toString()
 
-internal fun pdfHighlightOverlays(
-    annotations: List<ReaderAnnotation>,
-    pageIndex: Int
-): List<PdfHighlightOverlay> = annotations
+internal fun pdfHighlightOverlays(annotations: List<ReaderAnnotation>, pageIndex: Int): List<PdfHighlightOverlay> = annotations
     .filter { it.kind == "HIGHLIGHT" }
     .flatMap { annotation ->
         runCatching {
@@ -104,9 +93,9 @@ internal fun pdfHighlightOverlays(
                         left = rect.optDouble("left").toFloat().coerceIn(0f, 1f),
                         top = rect.optDouble("top").toFloat().coerceIn(0f, 1f),
                         right = rect.optDouble("right").toFloat().coerceIn(0f, 1f),
-                        bottom = rect.optDouble("bottom").toFloat().coerceIn(0f, 1f)
+                        bottom = rect.optDouble("bottom").toFloat().coerceIn(0f, 1f),
                     ),
-                    colorArgb = annotation.colorArgb ?: DEFAULT_PDF_HIGHLIGHT_COLOR
+                    colorArgb = annotation.colorArgb ?: DEFAULT_PDF_HIGHLIGHT_COLOR,
                 )
             }
         }.getOrDefault(emptyList())
@@ -136,7 +125,7 @@ internal fun pdfBitmapSize(
     pageHeight: Int,
     maxWidthPx: Int,
     maxHeightPx: Int? = null,
-    maxPixels: Long = MAX_PDF_BITMAP_PIXELS
+    maxPixels: Long = MAX_PDF_BITMAP_PIXELS,
 ): PdfBitmapSize {
     require(pageWidth > 0 && pageHeight > 0) { "El PDF contiene una página sin dimensiones válidas." }
     val sourcePixels = pageWidth.toLong() * pageHeight.toLong()
@@ -150,7 +139,11 @@ internal fun pdfBitmapSize(
     var width = (pageWidth * scale).roundToInt().coerceAtLeast(1)
     var height = (pageHeight * scale).roundToInt().coerceAtLeast(1)
     while (width.toLong() * height.toLong() > budget) {
-        if (width >= height && width > 1) width-- else if (height > 1) height--
+        if (width >= height && width > 1) {
+            width--
+        } else if (height > 1) {
+            height--
+        }
     }
     return PdfBitmapSize(width, height)
 }
@@ -169,10 +162,7 @@ internal fun pdfPixelBudget(context: Context): Long =
 
 internal const val LOW_RAM_PDF_BITMAP_PIXELS = 2_097_152L
 
-internal data class PdfHandle(
-    val renderer: PdfRenderer,
-    val cachedCopy: File?
-)
+internal data class PdfHandle(val renderer: PdfRenderer, val cachedCopy: File?)
 
 @Composable
 internal fun PdfContinuousPage(
@@ -180,7 +170,7 @@ internal fun PdfContinuousPage(
     renderMutex: Mutex,
     pageIndex: Int,
     targetWidthPx: Int,
-    highlights: List<PdfHighlightOverlay>
+    highlights: List<PdfHighlightOverlay>,
 ) {
     var bitmap by remember(renderer, pageIndex, targetWidthPx) { mutableStateOf<Bitmap?>(null) }
     var renderFailed by remember(renderer, pageIndex, targetWidthPx) { mutableStateOf(false) }
@@ -200,7 +190,7 @@ internal fun PdfContinuousPage(
                             page.height,
                             maxWidthPx = targetWidthPx,
                             maxHeightPx = 2200,
-                            maxPixels = pixelBudget
+                            maxPixels = pixelBudget,
                         )
                         Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888).also {
                             it.eraseColor(android.graphics.Color.WHITE)
@@ -226,7 +216,7 @@ internal fun PdfContinuousPage(
                 bitmap = pageBitmap.asImageBitmap(),
                 contentDescription = stringResource(R.string.pdf_page_number, pageIndex + 1),
                 modifier = Modifier.fillMaxWidth(),
-                contentScale = ContentScale.FillWidth
+                contentScale = ContentScale.FillWidth,
             )
             if (highlights.isNotEmpty()) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
@@ -236,12 +226,12 @@ internal fun PdfContinuousPage(
                             color = Color(highlight.colorArgb).copy(alpha = 0.40f),
                             topLeft = Offset(
                                 rect.left * size.width,
-                                rect.top * size.height
+                                rect.top * size.height,
                             ),
                             size = Size(
                                 (rect.right - rect.left) * size.width,
-                                (rect.bottom - rect.top) * size.height
-                            )
+                                (rect.bottom - rect.top) * size.height,
+                            ),
                         )
                     }
                 }
@@ -249,7 +239,7 @@ internal fun PdfContinuousPage(
         }
     } ?: Box(
         modifier = Modifier.fillMaxWidth().height(220.dp),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         if (renderFailed) {
             Text(stringResource(R.string.pdf_render_page_failed, pageIndex + 1), color = Color.White)
@@ -308,8 +298,8 @@ internal suspend fun openPdf(context: Context, uri: Uri): PdfHandle = withContex
             throw IOException(
                 context.getString(
                     R.string.pdf_open_local_copy_required,
-                    context.getString(R.string.pdf_open_failed)
-                )
+                    context.getString(R.string.pdf_open_failed),
+                ),
             )
         }
     } catch (_: Exception) {

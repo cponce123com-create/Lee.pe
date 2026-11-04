@@ -4,13 +4,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import java.util.concurrent.atomic.AtomicReference
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import pe.lee.feature.sharecard.domain.model.QuoteCard
 import pe.lee.feature.sharecard.domain.model.QuoteCardFormat
 import pe.lee.feature.sharecard.ui.components.QuoteCardCanvas
-import java.util.concurrent.atomic.AtomicReference
 
 class QuoteCardLayoutTest {
     @get:Rule val compose = createComposeRule()
@@ -24,7 +24,7 @@ class QuoteCardLayoutTest {
                 card = QuoteCard(text, "Título del libro", "Autora"),
                 captureModifier = Modifier,
                 onFitsChanged = { fits.set(it) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
         }
         compose.waitForIdle()
@@ -40,7 +40,7 @@ class QuoteCardLayoutTest {
                 card = QuoteCard("Texto extenso. ".repeat(1000), "Libro", "Autor", format = QuoteCardFormat.SQUARE),
                 captureModifier = Modifier,
                 onFitsChanged = { fits.set(it) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
         }
         compose.waitForIdle()

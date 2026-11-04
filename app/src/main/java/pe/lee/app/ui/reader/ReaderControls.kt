@@ -2,35 +2,32 @@
 
 package pe.lee.app.ui.reader
 
-import android.content.Context
-import android.view.Menu
-import android.view.MenuItem
-import androidx.compose.foundation.background
+import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -47,8 +44,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import android.content.Intent
-import android.widget.Toast
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -57,8 +52,8 @@ import org.readium.navigator.media.tts.android.AndroidTtsEngine
 import org.readium.r2.navigator.epub.EpubPreferences
 import org.readium.r2.navigator.preferences.Color as ReadiumColor
 import org.readium.r2.navigator.preferences.FontFamily as ReadiumFontFamily
-import org.readium.r2.navigator.preferences.Theme as ReadiumTheme
 import org.readium.r2.navigator.preferences.TextAlign as ReadiumTextAlign
+import org.readium.r2.navigator.preferences.Theme as ReadiumTheme
 import org.readium.r2.shared.ExperimentalReadiumApi
 import pe.lee.app.R
 
@@ -77,7 +72,7 @@ internal fun TtsControls(
     onVoiceChange: (AndroidTtsEngine.Voice?) -> Unit,
     onTimerChange: () -> Unit,
     onStop: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val speeds = listOf(0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
@@ -88,7 +83,7 @@ internal fun TtsControls(
     Surface(
         modifier = modifier.fillMaxWidth().padding(horizontal = 12.dp),
         color = Color(0xF20A1423),
-        shape = RoundedCornerShape(18.dp)
+        shape = RoundedCornerShape(18.dp),
     ) {
         Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
             Text(
@@ -96,7 +91,7 @@ internal fun TtsControls(
                 color = Color.White,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                fontSize = 13.sp
+                fontSize = 13.sp,
             )
             error?.let { Text(it, color = Color(0xFFFFB4AB), fontSize = 12.sp) }
             // Five controls in a plain Row overflowed on 360 dp screens with large
@@ -104,7 +99,7 @@ internal fun TtsControls(
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 IconButton(onClick = onTogglePlayback) {
                     Icon(
@@ -114,7 +109,7 @@ internal fun TtsControls(
                         } else {
                             stringResource(R.string.reader_tts_continue_voice)
                         },
-                        tint = Color.White
+                        tint = Color.White,
                     )
                 }
                 TextButton(onClick = {
@@ -125,25 +120,25 @@ internal fun TtsControls(
                     TextButton(onClick = { voiceMenuExpanded = true }) {
                         Text(
                             selectedVoice?.let { spanishVoiceLabel(context, it) }
-                                ?: stringResource(R.string.reader_language_spanish)
+                                ?: stringResource(R.string.reader_language_spanish),
                         )
                     }
                     DropdownMenu(
                         expanded = voiceMenuExpanded,
-                        onDismissRequest = { voiceMenuExpanded = false }
+                        onDismissRequest = { voiceMenuExpanded = false },
                     ) {
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.reader_voice_automatic)) },
                             onClick = {
                                 onVoiceChange(null)
                                 voiceMenuExpanded = false
-                            }
+                            },
                         )
                         if (voices.isEmpty()) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.reader_voice_none_local)) },
                                 enabled = false,
-                                onClick = {}
+                                onClick = {},
                             )
                         } else {
                             voices.forEach { voice ->
@@ -152,7 +147,7 @@ internal fun TtsControls(
                                     onClick = {
                                         onVoiceChange(voice)
                                         voiceMenuExpanded = false
-                                    }
+                                    },
                                 )
                             }
                         }
@@ -162,16 +157,16 @@ internal fun TtsControls(
                                 voiceMenuExpanded = false
                                 try {
                                     context.startActivity(
-                                        Intent(android.speech.tts.TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA)
+                                        Intent(android.speech.tts.TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA),
                                     )
                                 } catch (_: Exception) {
                                     Toast.makeText(
                                         context,
                                         voiceInstallHint,
-                                        Toast.LENGTH_LONG
+                                        Toast.LENGTH_LONG,
                                     ).show()
                                 }
-                            }
+                            },
                         )
                     }
                 }
@@ -182,14 +177,14 @@ internal fun TtsControls(
                             stringResource(R.string.reader_timer)
                         } else {
                             stringResource(R.string.reader_timer_minutes, timerMinutes)
-                        }
+                        },
                     )
                 }
                 IconButton(onClick = onStop) {
                     Icon(
                         Icons.Default.Stop,
                         contentDescription = stringResource(R.string.reader_tts_stop),
-                        tint = Color.White
+                        tint = Color.White,
                     )
                 }
             }
@@ -204,7 +199,7 @@ internal fun EpubAppearanceSheet(
     keepScreenOn: Boolean,
     onKeepScreenOnChange: (Boolean) -> Unit,
     onBrightnessChange: (Float) -> Unit,
-    onPreferencesChange: (EpubPreferences) -> Unit
+    onPreferencesChange: (EpubPreferences) -> Unit,
 ) {
     var fontSize by remember(preferences.fontSize) {
         mutableFloatStateOf((preferences.fontSize ?: 1.0).toFloat().coerceIn(0.75f, 1.75f))
@@ -221,12 +216,12 @@ internal fun EpubAppearanceSheet(
             .fillMaxWidth()
             .padding(horizontal = 22.dp, vertical = 10.dp)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(18.dp)
+        verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
         Text(
             stringResource(R.string.reader_appearance_title),
             fontSize = 21.sp,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
         )
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -237,24 +232,36 @@ internal fun EpubAppearanceSheet(
                     R.string.reader_theme_light to ReaderThemeChoice.LIGHT,
                     R.string.reader_theme_sepia to ReaderThemeChoice.SEPIA,
                     R.string.reader_theme_dark to ReaderThemeChoice.DARK,
-                    R.string.reader_theme_oled to ReaderThemeChoice.OLED
+                    R.string.reader_theme_oled to ReaderThemeChoice.OLED,
                 ).forEach { (labelRes, choice) ->
                     FilterChip(
                         selected = selectedTheme == choice,
                         onClick = {
                             val updated = when (choice) {
-                                ReaderThemeChoice.SEPIA -> preferences.copy(theme = ReadiumTheme.SEPIA, backgroundColor = null, textColor = null)
-                                ReaderThemeChoice.DARK -> preferences.copy(theme = ReadiumTheme.DARK, backgroundColor = null, textColor = null)
+                                ReaderThemeChoice.SEPIA -> preferences.copy(
+                                    theme = ReadiumTheme.SEPIA,
+                                    backgroundColor = null,
+                                    textColor = null,
+                                )
+                                ReaderThemeChoice.DARK -> preferences.copy(
+                                    theme = ReadiumTheme.DARK,
+                                    backgroundColor = null,
+                                    textColor = null,
+                                )
                                 ReaderThemeChoice.OLED -> preferences.copy(
                                     theme = ReadiumTheme.DARK,
                                     backgroundColor = ReadiumColor(0xFF000000.toInt()),
-                                    textColor = ReadiumColor(0xFFFFFFFF.toInt())
+                                    textColor = ReadiumColor(0xFFFFFFFF.toInt()),
                                 )
-                                ReaderThemeChoice.LIGHT -> preferences.copy(theme = ReadiumTheme.LIGHT, backgroundColor = null, textColor = null)
+                                ReaderThemeChoice.LIGHT -> preferences.copy(
+                                    theme = ReadiumTheme.LIGHT,
+                                    backgroundColor = null,
+                                    textColor = null,
+                                )
                             }
                             onPreferencesChange(updated)
                         },
-                        label = { Text(stringResource(labelRes)) }
+                        label = { Text(stringResource(labelRes)) },
                     )
                 }
             }
@@ -263,7 +270,7 @@ internal fun EpubAppearanceSheet(
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 stringResource(R.string.reader_font_size, (fontSize * 100).toInt()),
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
             )
             Slider(
                 value = fontSize,
@@ -271,7 +278,7 @@ internal fun EpubAppearanceSheet(
                 onValueChangeFinished = {
                     onPreferencesChange(preferences.copy(fontSize = fontSize.toDouble()))
                 },
-                valueRange = 0.75f..1.75f
+                valueRange = 0.75f..1.75f,
             )
         }
 
@@ -281,25 +288,25 @@ internal fun EpubAppearanceSheet(
                 FilterChip(
                     selected = preferences.publisherStyles != false,
                     onClick = { onPreferencesChange(preferences.copy(publisherStyles = true)) },
-                    label = { Text(stringResource(R.string.reader_text_style_publisher)) }
+                    label = { Text(stringResource(R.string.reader_text_style_publisher)) },
                 )
                 FilterChip(
                     selected = preferences.publisherStyles == false,
                     onClick = { onPreferencesChange(preferences.copy(publisherStyles = false)) },
-                    label = { Text(stringResource(R.string.reader_text_style_app)) }
+                    label = { Text(stringResource(R.string.reader_text_style_app)) },
                 )
             }
             Text(
                 stringResource(R.string.reader_text_style_hint),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 12.sp
+                fontSize = 12.sp,
             )
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 stringResource(R.string.reader_line_height, (lineHeight * 100).toInt()),
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
             )
             Slider(
                 value = lineHeight,
@@ -308,14 +315,14 @@ internal fun EpubAppearanceSheet(
                     onPreferencesChange(preferences.copy(lineHeight = lineHeight.toDouble(), publisherStyles = false))
                 },
                 valueRange = 1f..2f,
-                steps = 9
+                steps = 9,
             )
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 stringResource(R.string.reader_margins, (pageMargins * 100).toInt()),
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
             )
             Slider(
                 value = pageMargins,
@@ -324,7 +331,7 @@ internal fun EpubAppearanceSheet(
                     onPreferencesChange(preferences.copy(pageMargins = pageMargins.toDouble()))
                 },
                 valueRange = 0.5f..2f,
-                steps = 14
+                steps = 14,
             )
         }
 
@@ -334,14 +341,14 @@ internal fun EpubAppearanceSheet(
                 listOf(
                     R.string.reader_align_start to ReadiumTextAlign.START,
                     R.string.reader_align_justify to ReadiumTextAlign.JUSTIFY,
-                    R.string.reader_align_center to ReadiumTextAlign.CENTER
+                    R.string.reader_align_center to ReadiumTextAlign.CENTER,
                 ).forEach { (labelRes, alignment) ->
                     FilterChip(
                         selected = (preferences.textAlign ?: ReadiumTextAlign.START) == alignment,
                         onClick = {
                             onPreferencesChange(preferences.copy(textAlign = alignment, publisherStyles = false))
                         },
-                        label = { Text(stringResource(labelRes)) }
+                        label = { Text(stringResource(labelRes)) },
                     )
                 }
             }
@@ -353,12 +360,12 @@ internal fun EpubAppearanceSheet(
                 FilterChip(
                     selected = preferences.scroll != true,
                     onClick = { onPreferencesChange(preferences.copy(scroll = false)) },
-                    label = { Text(stringResource(R.string.reader_navigation_paginated)) }
+                    label = { Text(stringResource(R.string.reader_navigation_paginated)) },
                 )
                 FilterChip(
                     selected = preferences.scroll == true,
                     onClick = { onPreferencesChange(preferences.copy(scroll = true)) },
-                    label = { Text(stringResource(R.string.reader_navigation_scroll)) }
+                    label = { Text(stringResource(R.string.reader_navigation_scroll)) },
                 )
             }
         }
@@ -371,7 +378,7 @@ internal fun EpubAppearanceSheet(
                     Text(
                         stringResource(R.string.reader_keep_screen_on_hint),
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 Switch(checked = keepScreenOn, onCheckedChange = onKeepScreenOnChange)
@@ -383,13 +390,13 @@ internal fun EpubAppearanceSheet(
             FilterChip(
                 selected = brightness < 0f,
                 onClick = { onBrightnessChange(-1f) },
-                label = { Text(stringResource(R.string.reader_brightness_system)) }
+                label = { Text(stringResource(R.string.reader_brightness_system)) },
             )
             Slider(
                 value = if (brightness < 0f) 0.7f else brightness.coerceIn(0.15f, 1f),
                 onValueChange = onBrightnessChange,
                 valueRange = 0.15f..1f,
-                enabled = brightness >= 0f
+                enabled = brightness >= 0f,
             )
         }
 
@@ -400,12 +407,12 @@ internal fun EpubAppearanceSheet(
                     R.string.reader_font_original to null,
                     R.string.reader_font_serif to ReadiumFontFamily.SERIF,
                     R.string.reader_font_sans to ReadiumFontFamily.SANS_SERIF,
-                    R.string.reader_font_dyslexic to ReadiumFontFamily.OPEN_DYSLEXIC
+                    R.string.reader_font_dyslexic to ReadiumFontFamily.OPEN_DYSLEXIC,
                 ).forEach { (labelRes, family) ->
                     FilterChip(
                         selected = preferences.fontFamily?.name == family?.name,
                         onClick = { onPreferencesChange(preferences.copy(fontFamily = family)) },
-                        label = { Text(stringResource(labelRes)) }
+                        label = { Text(stringResource(labelRes)) },
                     )
                 }
             }

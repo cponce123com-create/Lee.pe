@@ -7,37 +7,31 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
-import pe.lee.app.data.local.BookEntity
-import pe.lee.app.data.repository.LocalBackupRepository
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import pe.lee.feature.library.R
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
-import androidx.compose.runtime.MutableState
 import kotlinx.coroutines.CoroutineScope
-
-
+import kotlinx.coroutines.launch
+import pe.lee.app.data.local.BookEntity
+import pe.lee.app.data.repository.LocalBackupRepository
+import pe.lee.feature.library.R
 
 @Composable
 internal fun LibraryProcessDialogs(
@@ -45,7 +39,6 @@ internal fun LibraryProcessDialogs(
     viewModel: LibraryViewModel,
     backupRepository: LocalBackupRepository,
     coroutineScope: CoroutineScope,
-    storedBooks: List<BookEntity>,
     scanner: ScannerUiState,
     onCancelScan: () -> Unit,
     onClearScanPreview: () -> Unit,
@@ -55,7 +48,7 @@ internal fun LibraryProcessDialogs(
     backupPasswordUri: MutableState<Uri?>,
     onExportBackup: (String) -> Unit,
     onImportBackup: () -> Unit,
-    onUnlockBackup: (Uri, String) -> Unit
+    onUnlockBackup: (Uri, String) -> Unit,
 ) {
     var importingScan by remember { mutableStateOf(false) }
     var showExportPassword by remember { mutableStateOf(false) }
@@ -80,7 +73,7 @@ internal fun LibraryProcessDialogs(
                 TextButton(onClick = onCancelScan) {
                     Text(stringResource(R.string.action_cancel))
                 }
-            }
+            },
         )
     }
 
@@ -100,11 +93,11 @@ internal fun LibraryProcessDialogs(
                     if (preview.limitReached) {
                         Text(
                             stringResource(R.string.scanner_limit_reached),
-                            color = MaterialTheme.colorScheme.error
+                            color = MaterialTheme.colorScheme.error,
                         )
                     }
                     Text(
-                        stringResource(R.string.scanner_import_privacy_notice)
+                        stringResource(R.string.scanner_import_privacy_notice),
                     )
                 }
             },
@@ -121,36 +114,37 @@ internal fun LibraryProcessDialogs(
                                         uri = item.uri.toString(),
                                         title = item.title,
                                         format = item.format,
-                                        importedAt = now
+                                        importedAt = now,
                                     )
                                 }
                                 viewModel.insertBooks(entries)
                                 Toast.makeText(
                                     context,
                                     context.resources.getQuantityString(R.plurals.scanner_imported_books_toast, entries.size, entries.size),
-                                    Toast.LENGTH_LONG
+                                    Toast.LENGTH_LONG,
                                 ).show()
                                 onClearScanPreview()
                             } catch (cancelled: CancellationException) {
                                 throw cancelled
                             } catch (error: Exception) {
                                 Toast.makeText(
-                                    context, context.getString(R.string.scanner_import_failed),
-                                    Toast.LENGTH_LONG
+                                    context,
+                                    context.getString(R.string.scanner_import_failed),
+                                    Toast.LENGTH_LONG,
                                 ).show()
                             } finally {
                                 importingScan = false
                             }
                         }
-                    }
+                    },
                 ) { Text(stringResource(if (importingScan) R.string.action_importing else R.string.scanner_add_to_library)) }
             },
             dismissButton = {
                 TextButton(
                     enabled = !importingScan,
-                    onClick = onClearScanPreview
+                    onClick = onClearScanPreview,
                 ) { Text(stringResource(R.string.action_cancel)) }
-            }
+            },
         )
     }
 
@@ -163,11 +157,11 @@ internal fun LibraryProcessDialogs(
                     Text(stringResource(R.string.backup_description))
                     Text(
                         stringResource(R.string.backup_books_not_included),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         stringResource(R.string.backup_privacy_notice),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             },
@@ -185,7 +179,7 @@ internal fun LibraryProcessDialogs(
                     }) { Text(stringResource(R.string.backup_restore)) }
                     TextButton(onClick = { showBackupOptions.value = false }) { Text(stringResource(R.string.action_cancel)) }
                 }
-            }
+            },
         )
     }
 
@@ -208,7 +202,7 @@ internal fun LibraryProcessDialogs(
                         label = { Text(stringResource(R.string.backup_password_label)) },
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        singleLine = true
+                        singleLine = true,
                     )
                     OutlinedTextField(
                         value = confirmExportPassword,
@@ -216,7 +210,7 @@ internal fun LibraryProcessDialogs(
                         label = { Text(stringResource(R.string.backup_password_confirm_label)) },
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        singleLine = true
+                        singleLine = true,
                     )
                     if (confirmExportPassword.isNotEmpty() && exportPassword != confirmExportPassword) {
                         Text(stringResource(R.string.backup_password_mismatch), color = MaterialTheme.colorScheme.error)
@@ -231,7 +225,7 @@ internal fun LibraryProcessDialogs(
                         exportPassword = ""
                         confirmExportPassword = ""
                         showExportPassword = false
-                    }
+                    },
                 ) { Text(stringResource(R.string.backup_export)) }
             },
             dismissButton = {
@@ -240,7 +234,7 @@ internal fun LibraryProcessDialogs(
                     confirmExportPassword = ""
                     showExportPassword = false
                 }) { Text(stringResource(R.string.action_cancel)) }
-            }
+            },
         )
     }
 
@@ -258,22 +252,22 @@ internal fun LibraryProcessDialogs(
                         label = { Text(stringResource(R.string.backup_password_label)) },
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        singleLine = true
+                        singleLine = true,
                     )
                 }
             },
             confirmButton = {
                 TextButton(
                     enabled = !backupBusy.value && importPassword.length >= 8,
-                    onClick = { onUnlockBackup(lockedUri, importPassword) }
+                    onClick = { onUnlockBackup(lockedUri, importPassword) },
                 ) { Text(stringResource(if (backupBusy.value) R.string.backup_restoring else R.string.backup_unlock)) }
             },
             dismissButton = {
                 TextButton(
                     enabled = !backupBusy.value,
-                    onClick = { backupPasswordUri.value = null }
+                    onClick = { backupPasswordUri.value = null },
                 ) { Text(stringResource(R.string.action_cancel)) }
-            }
+            },
         )
     }
 
@@ -283,14 +277,26 @@ internal fun LibraryProcessDialogs(
             title = { Text(stringResource(R.string.backup_confirm_restore_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(pluralStringResource(R.plurals.backup_books_count, selected.archive.snapshot.books.size, selected.archive.snapshot.books.size))
+                    Text(
+                        pluralStringResource(
+                            R.plurals.backup_books_count,
+                            selected.archive.snapshot.books.size,
+                            selected.archive.snapshot.books.size,
+                        ),
+                    )
                     Text(pluralStringResource(R.plurals.backup_exact_matches_count, selected.exactMatches, selected.exactMatches))
                     Text(pluralStringResource(R.plurals.backup_title_matches_count, selected.titleMatches, selected.titleMatches))
                     Text(pluralStringResource(R.plurals.backup_unavailable_books_count, selected.unavailable, selected.unavailable))
-                    Text(pluralStringResource(R.plurals.backup_annotations_count, selected.archive.snapshot.annotations.size, selected.archive.snapshot.annotations.size))
+                    Text(
+                        pluralStringResource(
+                            R.plurals.backup_annotations_count,
+                            selected.archive.snapshot.annotations.size,
+                            selected.archive.snapshot.annotations.size,
+                        ),
+                    )
                     Text(
                         stringResource(R.string.backup_restore_safety_notice),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             },
@@ -306,11 +312,23 @@ internal fun LibraryProcessDialogs(
                                     context,
                                     context.getString(
                                         R.string.backup_restore_result,
-                                        context.resources.getQuantityString(R.plurals.backup_books_short, report.linkedBooks, report.linkedBooks),
-                                        context.resources.getQuantityString(R.plurals.backup_annotations_short, report.addedAnnotations, report.addedAnnotations),
-                                        context.resources.getQuantityString(R.plurals.backup_books_pending_short, report.skippedBooks, report.skippedBooks)
+                                        context.resources.getQuantityString(
+                                            R.plurals.backup_books_short,
+                                            report.linkedBooks,
+                                            report.linkedBooks,
+                                        ),
+                                        context.resources.getQuantityString(
+                                            R.plurals.backup_annotations_short,
+                                            report.addedAnnotations,
+                                            report.addedAnnotations,
+                                        ),
+                                        context.resources.getQuantityString(
+                                            R.plurals.backup_books_pending_short,
+                                            report.skippedBooks,
+                                            report.skippedBooks,
+                                        ),
                                     ),
-                                    Toast.LENGTH_LONG
+                                    Toast.LENGTH_LONG,
                                 ).show()
                                 backupPreview.value = null
                             } catch (cancelled: CancellationException) {
@@ -321,15 +339,14 @@ internal fun LibraryProcessDialogs(
                                 backupBusy.value = false
                             }
                         }
-                    }
+                    },
                 ) { Text(stringResource(if (backupBusy.value) R.string.backup_restoring else R.string.backup_restore_data)) }
             },
             dismissButton = {
                 TextButton(enabled = !backupBusy.value, onClick = { backupPreview.value = null }) {
                     Text(stringResource(R.string.action_cancel))
                 }
-            }
+            },
         )
     }
-
 }

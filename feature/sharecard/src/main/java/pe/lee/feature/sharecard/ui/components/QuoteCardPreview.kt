@@ -39,11 +39,7 @@ import pe.lee.feature.sharecard.ui.theme.quoteCardPalette
 
 /** Card-only artwork. Quote and author are measured before they are rendered or exported. */
 @Composable
-fun QuoteCardPreview(
-    card: QuoteCard,
-    modifier: Modifier = Modifier,
-    onFitsChanged: (Boolean) -> Unit = {}
-) {
+fun QuoteCardPreview(card: QuoteCard, modifier: Modifier = Modifier, onFitsChanged: (Boolean) -> Unit = {}) {
     var quoteFits by remember(card) { mutableStateOf(false) }
     var authorFits by remember(card) { mutableStateOf(false) }
     val cardFits = quoteFits && authorFits
@@ -65,7 +61,7 @@ fun QuoteCardPreview(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 minimum = 8,
                 maximum = 32,
-                onFitsChanged = { quoteFits = it }
+                onFitsChanged = { quoteFits = it },
             )
             Spacer(Modifier.height(16.dp))
             Box(Modifier.width(42.dp).height(2.dp).background(palette.accent))
@@ -77,7 +73,7 @@ fun QuoteCardPreview(
                 modifier = Modifier.fillMaxWidth().height(42.dp),
                 minimum = 9,
                 maximum = 16,
-                onFitsChanged = { authorFits = it }
+                onFitsChanged = { authorFits = it },
             )
             Row(Modifier.align(Alignment.End), verticalAlignment = Alignment.CenterVertically) {
                 Image(painterResource(R.drawable.leepe_logo_mark), null, Modifier.size(18.dp))
@@ -89,11 +85,7 @@ fun QuoteCardPreview(
 }
 
 @Composable
-private fun QuoteCardBackdrop(
-    theme: QuoteCardThemeId,
-    palette: QuoteCardPalette,
-    modifier: Modifier = Modifier
-) {
+private fun QuoteCardBackdrop(theme: QuoteCardThemeId, palette: QuoteCardPalette, modifier: Modifier = Modifier) {
     Canvas(modifier) {
         val tint = palette.accent.copy(alpha = 0.38f)
         val soft = palette.accent.copy(alpha = 0.16f)
@@ -102,10 +94,18 @@ private fun QuoteCardBackdrop(
         val random = Random(theme.ordinal + 71)
         when (palette.pattern) {
             QuoteCardPattern.FRAME, QuoteCardPattern.DOUBLE_FRAME, QuoteCardPattern.ANTIQUE,
-            QuoteCardPattern.MUSEUM, QuoteCardPattern.RELIEF -> {
+            QuoteCardPattern.MUSEUM, QuoteCardPattern.RELIEF,
+            -> {
                 drawRect(tint, Offset(inset, inset), Size(size.width - inset * 2, size.height - inset * 2), style = Stroke(stroke))
                 if (palette.pattern != QuoteCardPattern.FRAME) {
-                    drawRect(soft, Offset(inset * 1.65f, inset * 1.65f), Size(size.width - inset * 3.3f, size.height - inset * 3.3f), style = Stroke(stroke * 1.4f))
+                    drawRect(
+                        soft,
+                        Offset(inset * 1.65f, inset * 1.65f),
+                        Size(size.width - inset * 3.3f, size.height - inset * 3.3f),
+                        style = Stroke(
+                            stroke * 1.4f,
+                        ),
+                    )
                 }
                 repeat(4) { index ->
                     val x = if (index % 2 == 0) inset else size.width - inset
@@ -114,7 +114,8 @@ private fun QuoteCardBackdrop(
                 }
             }
             QuoteCardPattern.FIBER, QuoteCardPattern.PAPYRUS, QuoteCardPattern.SAND,
-            QuoteCardPattern.WOOD -> repeat(34) {
+            QuoteCardPattern.WOOD,
+            -> repeat(34) {
                 val y = random.nextFloat() * size.height
                 val x = random.nextFloat() * size.width
                 val length = size.width * (0.04f + random.nextFloat() * 0.13f)
@@ -136,7 +137,11 @@ private fun QuoteCardBackdrop(
                     close()
                 }
                 drawPath(hill, soft)
-                if (palette.pattern == QuoteCardPattern.SUNSET) drawCircle(tint, size.minDimension * .09f, Offset(size.width * .78f, size.height * .22f))
+                if (palette.pattern ==
+                    QuoteCardPattern.SUNSET
+                ) {
+                    drawCircle(tint, size.minDimension * .09f, Offset(size.width * .78f, size.height * .22f))
+                }
             }
             QuoteCardPattern.WAVES, QuoteCardPattern.RAIN -> repeat(18) { index ->
                 val y = size.height * (0.52f + index * 0.025f)
@@ -148,15 +153,32 @@ private fun QuoteCardBackdrop(
                 }
             }
             QuoteCardPattern.WATERCOLOR, QuoteCardPattern.CRYSTAL, QuoteCardPattern.CHROME,
-            QuoteCardPattern.AURA -> {
+            QuoteCardPattern.AURA,
+            -> {
                 repeat(5) { index ->
                     val radius = size.minDimension * (.1f + index * .065f)
-                    drawCircle(if (index % 2 == 0) soft else tint.copy(alpha = .12f), radius,
-                        Offset(size.width * (if (index % 2 == 0) .12f else .88f), size.height * (if (index % 2 == 0) .16f else .84f)), style = Stroke(stroke * 2))
+                    drawCircle(
+                        if (index % 2 == 0) soft else tint.copy(alpha = .12f),
+                        radius,
+                        Offset(
+                            size.width * (
+                                if (index % 2 ==
+                                    0
+                                ) {
+                                    .12f
+                                } else {
+                                    .88f
+                                }
+                                ),
+                            size.height * (if (index % 2 == 0) .16f else .84f),
+                        ),
+                        style = Stroke(stroke * 2),
+                    )
                 }
             }
             QuoteCardPattern.BOTANICAL, QuoteCardPattern.FLOWERS, QuoteCardPattern.STITCHES,
-            QuoteCardPattern.AZULEJOS -> {
+            QuoteCardPattern.AZULEJOS,
+            -> {
                 repeat(8) { index ->
                     val x = size.width * (0.08f + index * .12f)
                     val y = if (index % 2 == 0) inset * 1.5f else size.height - inset * 1.5f
@@ -173,8 +195,11 @@ private fun QuoteCardBackdrop(
             }
             QuoteCardPattern.BOLD, QuoteCardPattern.RETRO -> {
                 val band = Path().apply {
-                    moveTo(0f, size.height * .12f); lineTo(size.width, size.height * .03f)
-                    lineTo(size.width, size.height * .09f); lineTo(0f, size.height * .19f); close()
+                    moveTo(0f, size.height * .12f)
+                    lineTo(size.width, size.height * .03f)
+                    lineTo(size.width, size.height * .09f)
+                    lineTo(0f, size.height * .19f)
+                    close()
                 }
                 drawPath(band, tint)
                 repeat(5) { index ->
@@ -187,7 +212,14 @@ private fun QuoteCardBackdrop(
                 drawCircle(soft, size.minDimension * .11f, Offset(size.width * .88f, size.height * .15f))
                 drawLine(tint, Offset(inset, size.height * .18f), Offset(size.width * .32f, size.height * .18f), stroke * 2)
             }
-            QuoteCardPattern.POLAROID -> drawRect(tint, Offset(inset, inset), Size(size.width - inset * 2, size.height - inset * 2), style = Stroke(inset * .55f))
+            QuoteCardPattern.POLAROID -> drawRect(
+                tint,
+                Offset(inset, inset),
+                Size(size.width - inset * 2, size.height - inset * 2),
+                style = Stroke(
+                    inset * .55f,
+                ),
+            )
             QuoteCardPattern.LETTER, QuoteCardPattern.TORN -> {
                 val tear = Path().apply {
                     moveTo(0f, size.height * .12f)
@@ -202,7 +234,14 @@ private fun QuoteCardBackdrop(
                 drawLine(soft, Offset(inset, y), Offset(end, y), stroke)
             }
             QuoteCardPattern.STONE, QuoteCardPattern.CLAY -> repeat(70) {
-                drawCircle(soft, size.minDimension * (.001f + random.nextFloat() * .002f), Offset(random.nextFloat() * size.width, random.nextFloat() * size.height))
+                drawCircle(
+                    soft,
+                    size.minDimension * (.001f + random.nextFloat() * .002f),
+                    Offset(
+                        random.nextFloat() * size.width,
+                        random.nextFloat() * size.height,
+                    ),
+                )
             }
             QuoteCardPattern.MARBLE -> repeat(8) { index ->
                 val x = size.width * index / 7f
@@ -223,7 +262,7 @@ private fun FittedCardText(
     modifier: Modifier,
     minimum: Int,
     maximum: Int,
-    onFitsChanged: (Boolean) -> Unit
+    onFitsChanged: (Boolean) -> Unit,
 ) {
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
@@ -240,13 +279,15 @@ private fun FittedCardText(
                 val measured = measurer.measure(
                     text = text,
                     style = style.copy(fontSize = size.sp, lineHeight = (size * 1.35f).sp, textAlign = TextAlign.Center),
-                    constraints = Constraints(maxWidth = width, maxHeight = height)
+                    constraints = Constraints(maxWidth = width, maxHeight = height),
                 )
                 if (!measured.hasVisualOverflow) {
                     best = size
                     fits = true
                     low = size + 1
-                } else high = size - 1
+                } else {
+                    high = size - 1
+                }
             }
             best to fits
         }

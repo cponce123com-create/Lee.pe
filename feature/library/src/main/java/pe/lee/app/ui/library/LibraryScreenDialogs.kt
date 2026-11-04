@@ -12,7 +12,6 @@ internal fun LibraryScreenDialogs(state: LibraryScreenState) = with(state) {
         viewModel = viewModel,
         backupRepository = backupRepository,
         coroutineScope = coroutineScope,
-        storedBooks = storedBooks,
         scanner = scannerState,
         onCancelScan = viewModel::cancelScan,
         onClearScanPreview = viewModel::clearScanPreview,
@@ -22,7 +21,7 @@ internal fun LibraryScreenDialogs(state: LibraryScreenState) = with(state) {
         backupPasswordUri = backupPasswordUriState,
         onExportBackup = documentActions.exportBackup,
         onImportBackup = documentActions.importBackup,
-        onUnlockBackup = documentActions.unlockBackup
+        onUnlockBackup = documentActions.unlockBackup,
     )
 
     LibraryStatisticsDialogs(
@@ -37,7 +36,7 @@ internal fun LibraryScreenDialogs(state: LibraryScreenState) = with(state) {
         settings = settings,
         viewModel = viewModel,
         context = context,
-        coroutineScope = coroutineScope
+        coroutineScope = coroutineScope,
     )
 
     LibraryManagementDialogs(
@@ -58,7 +57,6 @@ internal fun LibraryScreenDialogs(state: LibraryScreenState) = with(state) {
         titleDraft = titleDraftState,
         selectedCollection = selectedCollectionState,
         onRelinkFile = documentActions.relinkBook,
-        onOfflineBooksChanged = onOfflineBooksChanged
+        onOfflineBooksChanged = onOfflineBooksChanged,
     )
-
 }

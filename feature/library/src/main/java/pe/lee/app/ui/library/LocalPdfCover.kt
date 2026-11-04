@@ -22,14 +22,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import kotlin.coroutines.coroutineContext
+import kotlin.math.min
+import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.coroutineContext
-import kotlin.math.min
-import kotlin.math.roundToInt
 import pe.lee.feature.library.R
 
 /**
@@ -43,8 +43,7 @@ private object PdfThumbnailCache {
     private const val MAX_CACHE_KIB = 6 * 1024
 
     private val thumbnails = object : LruCache<String, Bitmap>(MAX_CACHE_KIB) {
-        override fun sizeOf(key: String, value: Bitmap): Int =
-            (value.byteCount / 1024).coerceAtLeast(1)
+        override fun sizeOf(key: String, value: Bitmap): Int = (value.byteCount / 1024).coerceAtLeast(1)
     }
     private val failed = object : LruCache<String, Boolean>(256) {}
 
@@ -72,7 +71,7 @@ private object PdfThumbnailCache {
                         if (page.width <= 0 || page.height <= 0) return@use null
                         val ratio = min(
                             MAX_WIDTH.toFloat() / page.width,
-                            MAX_HEIGHT.toFloat() / page.height
+                            MAX_HEIGHT.toFloat() / page.height,
                         )
                         val width = (page.width * ratio).roundToInt().coerceIn(1, MAX_WIDTH)
                         val height = (page.height * ratio).roundToInt().coerceIn(1, MAX_HEIGHT)
@@ -96,11 +95,7 @@ private object PdfThumbnailCache {
  * built-in icon. Never show the thumbnail as if it came from a third-party API.
  */
 @Composable
-internal fun LocalPdfCover(
-    originalUri: Uri,
-    offlineCopyUri: Uri?,
-    modifier: Modifier = Modifier
-) {
+internal fun LocalPdfCover(originalUri: Uri, offlineCopyUri: Uri?, modifier: Modifier = Modifier) {
     val sourceUri = offlineCopyUri ?: originalUri
     val context = androidx.compose.ui.platform.LocalContext.current
     val bitmap by produceState<Bitmap?>(initialValue = null, key1 = sourceUri) {
@@ -114,14 +109,14 @@ internal fun LocalPdfCover(
             Icon(
                 imageVector = Icons.Default.PictureAsPdf,
                 contentDescription = null,
-                tint = Color.White
+                tint = Color.White,
             )
         } else {
             Image(
                 bitmap = bitmap!!.asImageBitmap(),
                 contentDescription = stringResource(R.string.library_pdf_thumbnail_description),
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit
+                contentScale = ContentScale.Fit,
             )
         }
     }

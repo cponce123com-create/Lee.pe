@@ -18,5 +18,5 @@ data class BookEntity(
     val readProgress: Float = 0f,
     val pdfPageIndex: Int = 0,
     val isFavorite: Boolean = false,
-    val collectionId: String? = null
+    val collectionId: String? = null,
 )

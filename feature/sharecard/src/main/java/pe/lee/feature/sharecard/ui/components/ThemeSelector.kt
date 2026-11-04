@@ -15,22 +15,18 @@ import pe.lee.feature.sharecard.R
 import pe.lee.feature.sharecard.domain.model.QuoteCardThemeId
 
 @Composable
-internal fun ThemeSelector(
-    selected: QuoteCardThemeId,
-    onThemeSelected: (QuoteCardThemeId) -> Unit,
-    modifier: Modifier = Modifier
-) {
+internal fun ThemeSelector(selected: QuoteCardThemeId, onThemeSelected: (QuoteCardThemeId) -> Unit, modifier: Modifier = Modifier) {
     FlowRow(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(7.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp)
+        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         QuoteCardThemeId.entries.forEach { theme ->
             FilterChip(
                 selected = selected == theme,
                 onClick = { onThemeSelected(theme) },
                 label = { Text(stringResource(theme.labelRes), maxLines = 1) },
-                modifier = Modifier.semantics { role = Role.RadioButton }
+                modifier = Modifier.semantics { role = Role.RadioButton },
             )
         }
     }

@@ -4,9 +4,9 @@ import android.app.Application
 import pe.lee.app.data.local.LeeDatabase
 import pe.lee.app.data.repository.AnnotationRepository
 import pe.lee.app.data.repository.BookRepository
+import pe.lee.app.data.repository.LocalBackupRepository
 import pe.lee.app.data.repository.ReadingStatsRepository
 import pe.lee.app.data.repository.SettingsRepository
-import pe.lee.app.data.repository.LocalBackupRepository
 import pe.lee.feature.sharecard.data.QuoteCardCacheCleaner
 
 class LeePeApplication : Application() {

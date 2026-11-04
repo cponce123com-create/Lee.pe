@@ -21,9 +21,9 @@ class AnnotationMarkdownExporterTest {
                     locatorJson = "{\"locations\":{\"totalProgression\":0.5}}",
                     selectedText = "Una frase importante",
                     noteText = "Recordar esta idea",
-                    createdAt = 0L
-                )
-            )
+                    createdAt = 0L,
+                ),
+            ),
         )
 
         assertTrue(markdown.contains("# Anotaciones: Mi historia"))
@@ -53,10 +53,10 @@ class AnnotationMarkdownExporterTest {
                     kind = "NOTE",
                     locatorJson = "{\"pageIndex\":4}",
                     noteText = "Nota",
-                    createdAt = 0L
-                )
+                    createdAt = 0L,
+                ),
             ),
-            pageLabel = { "Page $it" }
+            pageLabel = { "Page $it" },
         )
 
         assertTrue(markdown.contains("Page 5"))

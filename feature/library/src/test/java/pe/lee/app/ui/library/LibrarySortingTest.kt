@@ -1,9 +1,9 @@
 package pe.lee.app.ui.library
 
+import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.util.Locale
 
 /**
  * Guards the Spanish alphabetical order of the catalog. Raw UTF-16 comparison
@@ -13,14 +13,13 @@ import java.util.Locale
 class LibrarySortingTest {
     private val comparator = libraryTitleComparator(Locale.forLanguageTag("es-PE"))
 
-    private fun sorted(vararg titles: String): List<String> =
-        titles.toList().sortedWith(comparator)
+    private fun sorted(vararg titles: String): List<String> = titles.toList().sortedWith(comparator)
 
     @Test
     fun accentsAndEnyeSortLikeASpanishIndex() {
         assertEquals(
             listOf("Ángel", "Buenos Aires", "Nube", "Ñandú", "Zorro"),
-            sorted("Zorro", "Ángel", "Nube", "Ñandú", "Buenos Aires")
+            sorted("Zorro", "Ángel", "Nube", "Ñandú", "Buenos Aires"),
         )
     }
 
@@ -43,7 +42,7 @@ class LibrarySortingTest {
         val naive = titles.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it })
         assertTrue(
             "la comparación UTF-16 coloca Ángel después de Zorro",
-            naive.indexOf("Ángel") > naive.indexOf("Zorro")
+            naive.indexOf("Ángel") > naive.indexOf("Zorro"),
         )
         assertEquals("Ángel", sorted("Zorro", "Ángel", "Ñandú").first())
     }

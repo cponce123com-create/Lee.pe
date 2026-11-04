@@ -25,7 +25,7 @@ internal object PersistableUriGrants {
             Toast.makeText(
                 context,
                 context.getString(R.string.library_uri_permission_limit, count, limit),
-                Toast.LENGTH_LONG
+                Toast.LENGTH_LONG,
             ).show()
         }
     }

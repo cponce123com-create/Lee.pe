@@ -9,17 +9,17 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.platform.app.InstrumentationRegistry
+import java.util.concurrent.atomic.AtomicReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import pe.lee.feature.sharecard.R
 import pe.lee.feature.sharecard.domain.ShareCardGenerator
 import pe.lee.feature.sharecard.domain.ShareCardSharer
 import pe.lee.feature.sharecard.domain.model.QuoteCard
-import pe.lee.feature.sharecard.domain.model.QuoteCardThemeId
 import pe.lee.feature.sharecard.domain.model.QuoteCardRaster
-import pe.lee.feature.sharecard.R
-import java.util.concurrent.atomic.AtomicReference
+import pe.lee.feature.sharecard.domain.model.QuoteCardThemeId
 
 class ShareCardScreenTest {
     @get:Rule
@@ -37,7 +37,7 @@ class ShareCardScreenTest {
             R.string.share_card_theme_premium,
             R.string.share_card_theme_paper,
             R.string.share_card_theme_night,
-            R.string.share_card_theme_accent
+            R.string.share_card_theme_accent,
         ).forEach { resourceId ->
             composeRule.onNodeWithText(text(resourceId)).assertExists()
         }
@@ -68,7 +68,7 @@ class ShareCardScreenTest {
                 captured.set(raster)
                 byteArrayOf(1, 2, 3)
             },
-            sharer = ShareCardSharer { handedOff.set(true) }
+            sharer = ShareCardSharer { handedOff.set(true) },
         )
         composeRule.setContent { ShareCardScreen(viewModel = viewModel, onBack = {}) }
 
@@ -77,7 +77,10 @@ class ShareCardScreenTest {
             .performScrollTo()
             .assertIsEnabled()
             .performClick()
-        composeRule.waitUntil(30_000) { viewModel.state.value.status == ShareCardStatus.Ready || viewModel.state.value.status is ShareCardStatus.Error }
+        composeRule.waitUntil(30_000) {
+            viewModel.state.value.status == ShareCardStatus.Ready ||
+                viewModel.state.value.status is ShareCardStatus.Error
+        }
 
         assertEquals(ShareCardStatus.Ready, viewModel.state.value.status)
         assertEquals(1080, captured.get()?.width)
@@ -88,9 +91,8 @@ class ShareCardScreenTest {
     private fun createViewModel(card: QuoteCard) = ShareCardViewModel(
         initialCard = card,
         generator = ShareCardGenerator { _, _, _ -> byteArrayOf(1) },
-        sharer = ShareCardSharer { }
+        sharer = ShareCardSharer { },
     )
 
-    private fun text(resourceId: Int): String =
-        InstrumentationRegistry.getInstrumentation().targetContext.getString(resourceId)
+    private fun text(resourceId: Int): String = InstrumentationRegistry.getInstrumentation().targetContext.getString(resourceId)
 }

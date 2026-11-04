@@ -17,7 +17,7 @@ class ComposeShareCardGeneratorAndroidTest {
         val bytes = ComposeShareCardGenerator().generate(
             card = QuoteCard("Frase", "Libro", "Autora"),
             raster = QuoteCardRaster(2, 2, intArrayOf(-1, -1, -1, -1)),
-            format = QuoteCardFormat.SQUARE
+            format = QuoteCardFormat.SQUARE,
         )
 
         val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
@@ -31,7 +31,7 @@ class ComposeShareCardGeneratorAndroidTest {
         val bytes = ComposeShareCardGenerator().generate(
             card = QuoteCard("Frase", "Libro", "Autora"),
             raster = QuoteCardRaster(2, 2, intArrayOf(-1, -1, -1, -1)),
-            format = QuoteCardFormat.STORY
+            format = QuoteCardFormat.STORY,
         )
         val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
         assertEquals(1080, bitmap.width)

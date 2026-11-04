@@ -3,13 +3,13 @@ package pe.lee.app.ui.library
 import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
-import pe.lee.app.data.local.BookEntity
-import pe.lee.app.data.repository.SettingsRepository
+import java.io.File
+import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.IOException
+import pe.lee.app.data.local.BookEntity
+import pe.lee.app.data.repository.SettingsRepository
 
 /**
  * Copies the bundled Salgari EPUB into app-private storage once
@@ -28,7 +28,7 @@ internal object BundledWelcomeBook {
         settings: SettingsRepository,
         findBook: suspend (String) -> BookEntity?,
         insertBook: suspend (BookEntity) -> Unit,
-        rebindBook: suspend (String, String) -> Boolean
+        rebindBook: suspend (String, String) -> Boolean,
     ): Boolean {
         val appContext = context.applicationContext
         val alreadySeeded = settings.getBoolean(SettingsRepository.Store.BUNDLED_BOOK, SEEDED_KEY, false)
@@ -55,7 +55,7 @@ internal object BundledWelcomeBook {
                 val contentUri = FileProvider.getUriForFile(
                     appContext,
                     "${appContext.packageName}.bundled",
-                    bookFile
+                    bookFile,
                 ).toString()
                 val legacyFileUri = Uri.fromFile(bookFile).toString()
 
@@ -75,8 +75,8 @@ internal object BundledWelcomeBook {
                             uri = contentUri,
                             title = "El tesoro de los Incas — Emilio Salgari",
                             format = "EPUB",
-                            importedAt = System.currentTimeMillis()
-                        )
+                            importedAt = System.currentTimeMillis(),
+                        ),
                     )
                 }
             }

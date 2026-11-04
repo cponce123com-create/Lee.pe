@@ -8,7 +8,7 @@ data class ReaderBook(
     val format: String,
     val readProgress: Float,
     val epubLocator: String?,
-    val pdfPageIndex: Int
+    val pdfPageIndex: Int,
 )
 
 /** Operations the EPUB and PDF readers need from the local book store. */

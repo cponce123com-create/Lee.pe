@@ -12,7 +12,7 @@ data class ReaderAnnotation(
     val noteText: String? = null,
     val colorArgb: Int? = null,
     val createdAt: Long,
-    val updatedAt: Long = createdAt
+    val updatedAt: Long = createdAt,
 )
 
 /** Local annotation persistence used by readers; operations never require a network connection. */

@@ -5,19 +5,19 @@ import android.net.Uri
 import androidx.room3.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import java.io.File
+import java.security.MessageDigest
+import java.util.Locale
 import kotlinx.coroutines.runBlocking
-import pe.lee.app.data.repository.AudioProgressStore
-import pe.lee.app.ui.library.DeletedBookCleanup
-import pe.lee.app.data.repository.SettingsRepository
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.json.JSONObject
-import java.io.File
-import java.security.MessageDigest
-import java.util.Locale
+import pe.lee.app.data.repository.AudioProgressStore
+import pe.lee.app.data.repository.SettingsRepository
+import pe.lee.app.ui.library.DeletedBookCleanup
 
 @RunWith(AndroidJUnit4::class)
 class LeeDatabaseMigrationTest {
@@ -46,7 +46,7 @@ class LeeDatabaseMigrationTest {
             legacy.execSQL(
                 "INSERT INTO library_books (id, uri, title, format, importedAt, readProgress, pdfPageIndex, isFavorite) " +
                     "VALUES ('stable-id', ?, 'Versión cuatro', 'EPUB', 1, 0.5, 0, 1)",
-                arrayOf(TEST_URI)
+                arrayOf(TEST_URI),
             )
             legacy.execSQL("INSERT INTO collections (id, name, normalizedName, sortOrder) VALUES (7, 'Lectura', 'lectura', 0)")
             legacy.execSQL("INSERT INTO book_collections (bookId, collectionId) VALUES ('stable-id', 7)")
@@ -93,10 +93,16 @@ class LeeDatabaseMigrationTest {
                 if (startingVersion >= 3) {
                     assertEquals(180L, snapshot.sessions.single().durationSeconds)
                 }
-                assertEquals("case-insensitive collection migration", listOf("fantasía"),
-                    database.bookDao().collectionNamesForBook(TEST_URI).map { it.lowercase(Locale.ROOT) })
-                assertEquals("duplicate legacy collection merged", listOf("fantasía"),
-                    database.bookDao().collectionNamesForBook(SECOND_URI).map { it.lowercase(Locale.ROOT) })
+                assertEquals(
+                    "case-insensitive collection migration",
+                    listOf("fantasía"),
+                    database.bookDao().collectionNamesForBook(TEST_URI).map { it.lowercase(Locale.ROOT) },
+                )
+                assertEquals(
+                    "duplicate legacy collection merged",
+                    listOf("fantasía"),
+                    database.bookDao().collectionNamesForBook(SECOND_URI).map { it.lowercase(Locale.ROOT) },
+                )
             } finally {
                 database.close()
                 context.deleteDatabase(databaseName)
@@ -118,9 +124,13 @@ class LeeDatabaseMigrationTest {
             database.bookDao().insert(book)
             database.readingAnnotationDao().upsert(
                 ReadingAnnotationEntity(
-                    id = "annotation-1", bookUri = TEST_URI, kind = "NOTE", locatorJson = "{}",
-                    noteText = "Nota", createdAt = 10L
-                )
+                    id = "annotation-1",
+                    bookUri = TEST_URI,
+                    kind = "NOTE",
+                    locatorJson = "{}",
+                    noteText = "Nota",
+                    createdAt = 10L,
+                ),
             )
             database.readingSessionDao().upsert(ReadingSessionEntity("2026-11-03", TEST_URI, 120L))
             database.bookDao().updateCollection(TEST_URI, "Lectura")
@@ -144,7 +154,7 @@ class LeeDatabaseMigrationTest {
                 false,
                 DeletedBookCleanup.complete(context, TEST_URI, SettingsRepository(context)) { uri ->
                     database.bookDao().completeBookCleanup(uri)
-                }
+                },
             )
             assertEquals(listOf(TEST_URI), database.bookDao().pendingBookCleanupUris())
             assertEquals(true, libraryPreferences.contains(preferenceKey))
@@ -158,7 +168,7 @@ class LeeDatabaseMigrationTest {
                 true,
                 DeletedBookCleanup.complete(context, TEST_URI, SettingsRepository(context)) { uri ->
                     database.bookDao().completeBookCleanup(uri)
-                }
+                },
             )
             assertFalse(offlineCopy.exists())
             assertFalse(libraryPreferences.contains(preferenceKey))
@@ -182,7 +192,7 @@ class LeeDatabaseMigrationTest {
             val original = BookEntity(uri = TEST_URI, title = "Reenlazado", format = "EPUB", importedAt = 1L)
             database.bookDao().insert(original)
             database.readingAnnotationDao().upsert(
-                ReadingAnnotationEntity("annotation-rebind", TEST_URI, "NOTE", "{}", noteText = "Se conserva", createdAt = 1L)
+                ReadingAnnotationEntity("annotation-rebind", TEST_URI, "NOTE", "{}", noteText = "Se conserva", createdAt = 1L),
             )
             database.readingSessionDao().upsert(ReadingSessionEntity("2026-11-03", TEST_URI, 90L))
 
@@ -242,15 +252,16 @@ class LeeDatabaseMigrationTest {
                     importedAt INTEGER NOT NULL, lastOpenedAt INTEGER, epubLocator TEXT,
                     readProgress REAL NOT NULL, pdfPageIndex INTEGER NOT NULL,
                     isFavorite INTEGER NOT NULL, collectionId TEXT, PRIMARY KEY(uri)
-                )""".trimIndent()
+                )
+                """.trimIndent(),
             )
             legacy.execSQL(
                 "INSERT INTO library_books VALUES (?, ?, 'EPUB', 1, NULL, NULL, 0.65, 0, 0, ?)",
-                arrayOf(TEST_URI, "Libro de prueba", "Fantasía")
+                arrayOf(TEST_URI, "Libro de prueba", "Fantasía"),
             )
             legacy.execSQL(
                 "INSERT INTO library_books VALUES (?, ?, 'EPUB', 2, NULL, NULL, 0.1, 0, 0, ?)",
-                arrayOf(SECOND_URI, "Segundo libro", "FANTASÍA")
+                arrayOf(SECOND_URI, "Segundo libro", "FANTASÍA"),
             )
             if (version >= 2) {
                 legacy.execSQL(
@@ -259,12 +270,13 @@ class LeeDatabaseMigrationTest {
                         locatorJson TEXT NOT NULL, selectedText TEXT, noteText TEXT,
                         colorArgb INTEGER, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL,
                         PRIMARY KEY(id)
-                    )""".trimIndent()
+                    )
+                    """.trimIndent(),
                 )
                 legacy.execSQL("CREATE INDEX index_reading_annotations_bookUri_createdAt ON reading_annotations (bookUri, createdAt)")
                 legacy.execSQL(
                     "INSERT INTO reading_annotations VALUES ('annotation-legacy', ?, 'NOTE', '{}', NULL, 'Nota antigua', NULL, 5, 5)",
-                    arrayOf(TEST_URI)
+                    arrayOf(TEST_URI),
                 )
             }
             if (version >= 3) {
@@ -272,7 +284,8 @@ class LeeDatabaseMigrationTest {
                     """CREATE TABLE reading_sessions (
                         dayKey TEXT NOT NULL, bookUri TEXT NOT NULL, durationSeconds INTEGER NOT NULL,
                         PRIMARY KEY(dayKey, bookUri)
-                    )""".trimIndent()
+                    )
+                    """.trimIndent(),
                 )
                 legacy.execSQL("INSERT INTO reading_sessions VALUES ('2026-11-03', ?, 180)", arrayOf(TEST_URI))
             }
@@ -288,8 +301,7 @@ class LeeDatabaseMigrationTest {
         val REBOUND_URI = Uri.parse("content://lee.test/reauthorized/book/one").toString()
     }
 
-    private fun sha256(value: String): String =
-        MessageDigest.getInstance("SHA-256")
-            .digest(value.toByteArray(Charsets.UTF_8))
-            .joinToString("") { "%02x".format(it) }
+    private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
+        .digest(value.toByteArray(Charsets.UTF_8))
+        .joinToString("") { "%02x".format(it) }
 }

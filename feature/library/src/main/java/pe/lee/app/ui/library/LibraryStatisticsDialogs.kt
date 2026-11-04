@@ -8,27 +8,24 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
-import pe.lee.app.data.repository.SettingsRepository
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
-import androidx.compose.runtime.MutableState
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.feature.library.R
-
-
 
 private const val DEFAULT_DAILY_GOAL_MINUTES = 30
 private const val MIN_DAILY_GOAL_MINUTES = 5
@@ -41,13 +38,15 @@ private fun formatReadingDuration(context: Context, seconds: Long): String {
     val hours = totalMinutes / 60
     val minutes = totalMinutes % 60
     return if (hours > 0) {
-        if (minutes == 0L) context.getString(R.string.reading_duration_hours, hours)
-        else context.getString(R.string.reading_duration_hours_minutes, hours, minutes)
+        if (minutes == 0L) {
+            context.getString(R.string.reading_duration_hours, hours)
+        } else {
+            context.getString(R.string.reading_duration_hours_minutes, hours, minutes)
+        }
     } else {
         context.getString(R.string.reading_duration_minutes, minutes)
     }
 }
-
 
 @Composable
 internal fun LibraryStatisticsDialogs(
@@ -62,7 +61,7 @@ internal fun LibraryStatisticsDialogs(
     settings: SettingsRepository,
     viewModel: LibraryViewModel,
     context: Context,
-    coroutineScope: CoroutineScope
+    coroutineScope: CoroutineScope,
 ) {
     if (showLibraryStats.value) {
         val currentStreak = calculateReadingStreak(readingDayKeys, System.currentTimeMillis())
@@ -79,19 +78,21 @@ internal fun LibraryStatisticsDialogs(
                     LibraryStatisticRow(stringResource(R.string.library_stat_completed), completedCount)
                     LibraryStatisticRow(stringResource(R.string.library_stat_favorites), favoriteCount)
                     Text(stringResource(R.string.reading_time_today, formatReadingDuration(context, todaySeconds)))
-                    Text(pluralStringResource(
-                        R.plurals.reading_streak_days,
-                        currentStreak,
-                        currentStreak
-                    ))
+                    Text(
+                        pluralStringResource(
+                            R.plurals.reading_streak_days,
+                            currentStreak,
+                            currentStreak,
+                        ),
+                    )
                     Text(stringResource(R.string.reading_daily_goal, dailyGoalMinutes.value))
                     LinearProgressIndicator(
                         progress = { (todaySeconds.toFloat() / (dailyGoalMinutes.value * 60f)).coerceIn(0f, 1f) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         TextButton(onClick = {
                             goalDraft.value = dailyGoalMinutes.value.toString()
@@ -103,13 +104,13 @@ internal fun LibraryStatisticsDialogs(
                     Text(
                         stringResource(R.string.reading_stats_tracking_note),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
                     )
                 }
             },
             confirmButton = {
                 TextButton(onClick = { showLibraryStats.value = false }) { Text(stringResource(R.string.action_close)) }
-            }
+            },
         )
     }
 
@@ -126,7 +127,7 @@ internal fun LibraryStatisticsDialogs(
                     onValueChange = { goalDraft.value = it.filter(Char::isDigit).take(3) },
                     label = { Text(stringResource(R.string.reading_goal_minutes_label)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true
+                    singleLine = true,
                 )
             },
             confirmButton = {
@@ -140,7 +141,7 @@ internal fun LibraryStatisticsDialogs(
                         }
                         showGoalEditor.value = false
                         showLibraryStats.value = true
-                    }
+                    },
                 ) { Text(stringResource(R.string.action_save)) }
             },
             dismissButton = {
@@ -148,7 +149,7 @@ internal fun LibraryStatisticsDialogs(
                     showGoalEditor.value = false
                     showLibraryStats.value = true
                 }) { Text(stringResource(R.string.action_cancel)) }
-            }
+            },
         )
     }
 
@@ -173,8 +174,7 @@ internal fun LibraryStatisticsDialogs(
             },
             dismissButton = {
                 TextButton(onClick = { showResetStatsDialog.value = false }) { Text(stringResource(R.string.action_cancel)) }
-            }
+            },
         )
     }
-
 }

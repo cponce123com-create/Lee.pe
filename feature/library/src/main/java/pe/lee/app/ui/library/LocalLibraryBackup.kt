@@ -2,27 +2,27 @@ package pe.lee.app.ui.library
 
 import android.content.Context
 import android.net.Uri
+import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import pe.lee.app.data.local.CollectionEntity
 import pe.lee.app.data.local.BookEntity
+import pe.lee.app.data.local.CollectionEntity
+import pe.lee.app.data.local.LocalBackupMatcher
 import pe.lee.app.data.local.LocalBackupMergeReport
 import pe.lee.app.data.local.LocalBackupSnapshot
 import pe.lee.app.data.local.ReadingAnnotationEntity
 import pe.lee.app.data.local.ReadingSessionEntity
-import pe.lee.app.data.local.LocalBackupMatcher
-import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.app.data.repository.AudioProgressStore
 import pe.lee.app.data.repository.LocalBackupRepository
-import pe.lee.core.domain.LocalTextLimits
+import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.core.domain.LocalBackupCipher
+import pe.lee.core.domain.LocalTextLimits
 import pe.lee.core.domain.library.ExportBackupUseCase
 import pe.lee.core.domain.library.ImportBackupUseCase
-import java.io.ByteArrayOutputStream
-import java.io.IOException
-import java.util.Locale
 
 private const val BACKUP_SCHEMA = "lee.pe.local-library"
 private const val BACKUP_VERSION = 2
@@ -36,18 +36,9 @@ private const val MAX_COLLECTIONS = 2000
 
 internal class BackupPasswordRequiredException : IOException("Este respaldo está cifrado. Ingresa su contraseña para continuar.")
 
-internal data class LocalBackupArchive(
-    val snapshot: LocalBackupSnapshot,
-    val settings: Map<String, JSONObject>,
-    val dailyGoalMinutes: Int?
-)
+internal data class LocalBackupArchive(val snapshot: LocalBackupSnapshot, val settings: Map<String, JSONObject>, val dailyGoalMinutes: Int?)
 
-internal data class LocalBackupPreview(
-    val archive: LocalBackupArchive,
-    val exactMatches: Int,
-    val titleMatches: Int,
-    val unavailable: Int
-)
+internal data class LocalBackupPreview(val archive: LocalBackupArchive, val exactMatches: Int, val titleMatches: Int, val unavailable: Int)
 
 internal data class SanitizedBackupSnapshot(val snapshot: LocalBackupSnapshot, val adjustedRecords: Int)
 
@@ -86,8 +77,14 @@ internal object LocalLibraryBackup {
             }
             books.put(bookJson)
             val extras = JSONObject()
-            for (key in listOf("epub-preferences:", "reader-brightness:", "keep-screen-on:",
-                "tts-speed:", "tts-voice:", "pdf-continuous:")) {
+            for (key in listOf(
+                "epub-preferences:",
+                "reader-brightness:",
+                "keep-screen-on:",
+                "tts-speed:",
+                "tts-voice:",
+                "pdf-continuous:",
+            )) {
                 val source = key + b.uri
                 if (librarySettings.containsKey(source)) {
                     extras.put(key, librarySettings[source])
@@ -96,7 +93,7 @@ internal object LocalLibraryBackup {
             if (b.format == "Audio") {
                 extras.put(
                     "audioPositionMs",
-                    audioPositions[AudioProgressStore.positionKey(b.uri)] ?: 0L
+                    audioPositions[AudioProgressStore.positionKey(b.uri)] ?: 0L,
                 )
             }
             bookSettings.put(b.uri, extras)
@@ -105,19 +102,23 @@ internal object LocalLibraryBackup {
             collections.put(
                 JSONObject()
                     .put("name", collection.name)
-                    .put("sortOrder", collection.sortOrder)
+                    .put("sortOrder", collection.sortOrder),
             )
         }
         for (a in snapshot.annotations) {
-            annotations.put(JSONObject().put("id", a.id).put("bookUri", a.bookUri)
-                .put("kind", a.kind).put("locatorJson", a.locatorJson)
-                .put("selectedText", a.selectedText).put("noteText", a.noteText)
-                .put("colorArgb", a.colorArgb).put("createdAt", a.createdAt)
-                .put("updatedAt", a.updatedAt))
+            annotations.put(
+                JSONObject().put("id", a.id).put("bookUri", a.bookUri)
+                    .put("kind", a.kind).put("locatorJson", a.locatorJson)
+                    .put("selectedText", a.selectedText).put("noteText", a.noteText)
+                    .put("colorArgb", a.colorArgb).put("createdAt", a.createdAt)
+                    .put("updatedAt", a.updatedAt),
+            )
         }
         for (s in snapshot.sessions) {
-            sessions.put(JSONObject().put("dayKey", s.dayKey).put("bookUri", s.bookUri)
-                .put("durationSeconds", s.durationSeconds))
+            sessions.put(
+                JSONObject().put("dayKey", s.dayKey).put("bookUri", s.bookUri)
+                    .put("durationSeconds", s.durationSeconds),
+            )
         }
         root.put("books", books).put("annotations", annotations)
             .put("sessions", sessions).put("settings", bookSettings)
@@ -144,98 +145,90 @@ internal object LocalLibraryBackup {
         sanitized.adjustedRecords
     }
 
-    suspend fun preview(
-        context: Context,
-        uri: Uri,
-        backupRepository: LocalBackupRepository,
-        password: String? = null
-    ): LocalBackupPreview = withContext(Dispatchers.IO) {
-        val input = context.contentResolver.openInputStream(uri)
-            ?: throw IOException("No se pudo abrir el respaldo.")
-        val buffer = ByteArrayOutputStream()
-        input.use { stream ->
-            val chunk = ByteArray(8192)
-            while (true) {
-                val n = stream.read(chunk)
-                if (n < 0) break
-                if (buffer.size() + n > MAX_ARCHIVE_BYTES) throw IOException("Respaldo demasiado grande (máximo 64 MB).")
-                buffer.write(chunk, 0, n)
+    suspend fun preview(context: Context, uri: Uri, backupRepository: LocalBackupRepository, password: String? = null): LocalBackupPreview =
+        withContext(Dispatchers.IO) {
+            val input = context.contentResolver.openInputStream(uri)
+                ?: throw IOException("No se pudo abrir el respaldo.")
+            val buffer = ByteArrayOutputStream()
+            input.use { stream ->
+                val chunk = ByteArray(8192)
+                while (true) {
+                    val n = stream.read(chunk)
+                    if (n < 0) break
+                    if (buffer.size() + n > MAX_ARCHIVE_BYTES) throw IOException("Respaldo demasiado grande (máximo 64 MB).")
+                    buffer.write(chunk, 0, n)
+                }
             }
-        }
-        val payload = buffer.toByteArray()
-        val jsonBytes = if (LocalBackupCipher.isEncrypted(payload)) {
-            val suppliedPassword = password ?: throw BackupPasswordRequiredException()
-            ImportBackupUseCase()(payload, suppliedPassword)
-        } else {
-            payload
-        }
-        val archive = try {
-            parse(jsonBytes.toString(Charsets.UTF_8))
-        } finally {
-            jsonBytes.fill(0)
-            if (jsonBytes !== payload) payload.fill(0)
-        }
-        val current = backupRepository.allBooks()
-        val matcher = LocalBackupMatcher(current)
-        val used = HashSet<String>()
-        var exact = 0
-        var byTitle = 0
-        archive.snapshot.books.forEach { book ->
-            val match = matcher.find(book)
-            if (match != null && used.add(match.uri)) {
-                if (match.uri == book.uri) exact++ else byTitle++
+            val payload = buffer.toByteArray()
+            val jsonBytes = if (LocalBackupCipher.isEncrypted(payload)) {
+                val suppliedPassword = password ?: throw BackupPasswordRequiredException()
+                ImportBackupUseCase()(payload, suppliedPassword)
+            } else {
+                payload
             }
+            val archive = try {
+                parse(jsonBytes.toString(Charsets.UTF_8))
+            } finally {
+                jsonBytes.fill(0)
+                if (jsonBytes !== payload) payload.fill(0)
+            }
+            val current = backupRepository.allBooks()
+            val matcher = LocalBackupMatcher(current)
+            val used = HashSet<String>()
+            var exact = 0
+            var byTitle = 0
+            archive.snapshot.books.forEach { book ->
+                val match = matcher.find(book)
+                if (match != null && used.add(match.uri)) {
+                    if (match.uri == book.uri) exact++ else byTitle++
+                }
+            }
+            LocalBackupPreview(archive, exact, byTitle, archive.snapshot.books.size - exact - byTitle)
         }
-        LocalBackupPreview(archive, exact, byTitle, archive.snapshot.books.size - exact - byTitle)
-    }
 
-    suspend fun restore(
-        context: Context,
-        preview: LocalBackupPreview,
-        backupRepository: LocalBackupRepository
-    ): LocalBackupMergeReport =
+    suspend fun restore(context: Context, preview: LocalBackupPreview, backupRepository: LocalBackupRepository): LocalBackupMergeReport =
         withContext(Dispatchers.IO) {
             val report = backupRepository.merge(preview.archive.snapshot)
             val settingsRepository = SettingsRepository(context)
             val currentSettings = settingsRepository.all(SettingsRepository.Store.LIBRARY)
             val restoredBooks = backupRepository.allBooks()
             settingsRepository.apply(SettingsRepository.Store.LIBRARY) {
-            for ((backupUri, localUri) in report.uriMap) {
-                val settings = preview.archive.settings[backupUri] ?: continue
-                fun setIfAbsent(key: String, write: () -> Unit) {
-                    if (key + localUri !in currentSettings && settings.has(key) && !settings.isNull(key)) {
-                        write()
+                for ((backupUri, localUri) in report.uriMap) {
+                    val settings = preview.archive.settings[backupUri] ?: continue
+                    fun setIfAbsent(key: String, write: () -> Unit) {
+                        if (key + localUri !in currentSettings && settings.has(key) && !settings.isNull(key)) {
+                            write()
+                        }
+                    }
+                    setIfAbsent("epub-preferences:") {
+                        putString("epub-preferences:$localUri", settings.getString("epub-preferences:"))
+                    }
+                    setIfAbsent("reader-brightness:") {
+                        putFloat("reader-brightness:$localUri", settings.getDouble("reader-brightness:").toFloat().coerceIn(-1f, 1f))
+                    }
+                    setIfAbsent("keep-screen-on:") {
+                        putBoolean("keep-screen-on:$localUri", settings.getBoolean("keep-screen-on:"))
+                    }
+                    setIfAbsent("tts-speed:") {
+                        putFloat("tts-speed:$localUri", settings.getDouble("tts-speed:").toFloat().coerceIn(0.5f, 2f))
+                    }
+                    setIfAbsent("tts-voice:") {
+                        putString("tts-voice:$localUri", settings.getString("tts-voice:"))
+                    }
+                    setIfAbsent("pdf-continuous:") {
+                        putBoolean("pdf-continuous:$localUri", settings.getBoolean("pdf-continuous:"))
+                    }
+                    if (settings.has("audioPositionMs") && AudioProgressStore.get(context, localUri) == 0L) {
+                        AudioProgressStore.put(context, localUri, settings.getLong("audioPositionMs").coerceAtLeast(0L))
                     }
                 }
-                setIfAbsent("epub-preferences:") {
-                    putString("epub-preferences:$localUri", settings.getString("epub-preferences:"))
+                // PDF activity uses this legacy key first. Align it to Room's actual
+                // post-merge position, not blindly to a possibly older backup.
+                for (book in restoredBooks) {
+                    if (book.uri in report.uriMap.values && book.format == "PDF") {
+                        putInt("pdf-page:${book.uri}", book.pdfPageIndex)
+                    }
                 }
-                setIfAbsent("reader-brightness:") {
-                    putFloat("reader-brightness:$localUri", settings.getDouble("reader-brightness:").toFloat().coerceIn(-1f, 1f))
-                }
-                setIfAbsent("keep-screen-on:") {
-                    putBoolean("keep-screen-on:$localUri", settings.getBoolean("keep-screen-on:"))
-                }
-                setIfAbsent("tts-speed:") {
-                    putFloat("tts-speed:$localUri", settings.getDouble("tts-speed:").toFloat().coerceIn(0.5f, 2f))
-                }
-                setIfAbsent("tts-voice:") {
-                    putString("tts-voice:$localUri", settings.getString("tts-voice:"))
-                }
-                setIfAbsent("pdf-continuous:") {
-                    putBoolean("pdf-continuous:$localUri", settings.getBoolean("pdf-continuous:"))
-                }
-                if (settings.has("audioPositionMs") && AudioProgressStore.get(context, localUri) == 0L) {
-                    AudioProgressStore.put(context, localUri, settings.getLong("audioPositionMs").coerceAtLeast(0L))
-                }
-            }
-            // PDF activity uses this legacy key first. Align it to Room's actual
-            // post-merge position, not blindly to a possibly older backup.
-            for (book in restoredBooks) {
-                if (book.uri in report.uriMap.values && book.format == "PDF") {
-                    putInt("pdf-page:${book.uri}", book.pdfPageIndex)
-                }
-            }
             }
             preview.archive.dailyGoalMinutes?.let { goal ->
                 if (!settingsRepository.contains(SettingsRepository.Store.READING_STATS, "daily_goal_minutes")) {
@@ -259,15 +252,21 @@ internal object LocalLibraryBackup {
             val rawBooks = root.getJSONArray("books")
             val rawNotes = root.getJSONArray("annotations")
             val rawSessions = root.getJSONArray("sessions")
-            if (rawBooks.length() > MAX_BOOKS || rawNotes.length() > MAX_ANNOTATIONS ||
-                rawSessions.length() > MAX_SESSIONS) throw IOException("El respaldo contiene demasiados registros.")
+            if (rawBooks.length() > MAX_BOOKS ||
+                rawNotes.length() > MAX_ANNOTATIONS ||
+                rawSessions.length() > MAX_SESSIONS
+            ) {
+                throw IOException("El respaldo contiene demasiados registros.")
+            }
 
-            fun JSONObject.text(name: String, max: Int): String =
-                getString(name).takeIf { it.length in 1..max }
-                    ?: throw IOException("Campo $name incorrecto.")
-            fun JSONObject.maybeText(name: String, max: Int): String? =
-                if (!has(name) || isNull(name)) null else getString(name)
+            fun JSONObject.text(name: String, max: Int): String = getString(name).takeIf { it.length in 1..max }
+                ?: throw IOException("Campo $name incorrecto.")
+            fun JSONObject.maybeText(name: String, max: Int): String? = if (!has(name) || isNull(name)) {
+                null
+            } else {
+                getString(name)
                     .also { if (it.length > max) throw IOException("Campo $name demasiado largo.") }
+            }
 
             val books = ArrayList<BookEntity>()
             val uniqueUris = HashSet<String>()
@@ -302,15 +301,17 @@ internal object LocalLibraryBackup {
                 if (savedCollections.isNotEmpty()) {
                     collectionNamesByBook[bookUri] = savedCollections
                 }
-                books.add(BookEntity(
-                    uri = bookUri, title = o.text("title", LocalTextLimits.BOOK_TITLE), format = format,
-                    importedAt = o.getLong("importedAt").coerceAtLeast(0L),
-                    lastOpenedAt = if (o.isNull("lastOpenedAt")) null else o.getLong("lastOpenedAt").coerceAtLeast(0L),
-                    epubLocator = o.maybeText("epubLocator", LocalTextLimits.LOCATOR_JSON),
-                    readProgress = progression.toFloat(), pdfPageIndex = page,
-                    isFavorite = o.getBoolean("isFavorite"),
-                    collectionId = o.maybeText("collectionId", LocalTextLimits.COLLECTION_NAME)
-                ))
+                books.add(
+                    BookEntity(
+                        uri = bookUri, title = o.text("title", LocalTextLimits.BOOK_TITLE), format = format,
+                        importedAt = o.getLong("importedAt").coerceAtLeast(0L),
+                        lastOpenedAt = if (o.isNull("lastOpenedAt")) null else o.getLong("lastOpenedAt").coerceAtLeast(0L),
+                        epubLocator = o.maybeText("epubLocator", LocalTextLimits.LOCATOR_JSON),
+                        readProgress = progression.toFloat(), pdfPageIndex = page,
+                        isFavorite = o.getBoolean("isFavorite"),
+                        collectionId = o.maybeText("collectionId", LocalTextLimits.COLLECTION_NAME),
+                    ),
+                )
             }
             val restoredCollections = ArrayList<CollectionEntity>()
             root.optJSONArray("collections")?.let { array ->
@@ -327,8 +328,8 @@ internal object LocalLibraryBackup {
                         CollectionEntity(
                             name = name,
                             normalizedName = normalized,
-                            sortOrder = o.optInt("sortOrder", 0)
-                        )
+                            sortOrder = o.optInt("sortOrder", 0),
+                        ),
                     )
                 }
             }
@@ -340,19 +341,23 @@ internal object LocalLibraryBackup {
                 val id = o.text("id", 128)
                 val bookUri = o.text("bookUri", 4096)
                 val kind = o.text("kind", 24)
-                if (!noteIds.add(id) || bookUri !in validUris ||
-                    kind !in setOf("NOTE", "HIGHLIGHT", "BOOKMARK")) {
+                if (!noteIds.add(id) ||
+                    bookUri !in validUris ||
+                    kind !in setOf("NOTE", "HIGHLIGHT", "BOOKMARK")
+                ) {
                     throw IOException("Anotación inválida o repetida.")
                 }
-                notes.add(ReadingAnnotationEntity(
-                    id = id, bookUri = bookUri, kind = kind,
-                    locatorJson = o.text("locatorJson", LocalTextLimits.LOCATOR_JSON),
-                    selectedText = o.maybeText("selectedText", LocalTextLimits.ANNOTATION_TEXT),
-                    noteText = o.maybeText("noteText", LocalTextLimits.ANNOTATION_TEXT),
-                    colorArgb = if (o.isNull("colorArgb")) null else o.getInt("colorArgb"),
-                    createdAt = o.getLong("createdAt").coerceAtLeast(0L),
-                    updatedAt = o.getLong("updatedAt").coerceAtLeast(0L)
-                ))
+                notes.add(
+                    ReadingAnnotationEntity(
+                        id = id, bookUri = bookUri, kind = kind,
+                        locatorJson = o.text("locatorJson", LocalTextLimits.LOCATOR_JSON),
+                        selectedText = o.maybeText("selectedText", LocalTextLimits.ANNOTATION_TEXT),
+                        noteText = o.maybeText("noteText", LocalTextLimits.ANNOTATION_TEXT),
+                        colorArgb = if (o.isNull("colorArgb")) null else o.getInt("colorArgb"),
+                        createdAt = o.getLong("createdAt").coerceAtLeast(0L),
+                        updatedAt = o.getLong("updatedAt").coerceAtLeast(0L),
+                    ),
+                )
             }
             val sessions = ArrayList<ReadingSessionEntity>()
             for (i in 0 until rawSessions.length()) {
@@ -360,8 +365,12 @@ internal object LocalLibraryBackup {
                 val uri = o.text("bookUri", 4096)
                 val day = o.text("dayKey", 10)
                 val amount = o.getLong("durationSeconds")
-                if (uri !in validUris || !day.matches(Regex("\\d{4}-\\d{2}-\\d{2}")) ||
-                    amount !in 0L..86_400L) throw IOException("Sesión de lectura inválida.")
+                if (uri !in validUris ||
+                    !day.matches(Regex("\\d{4}-\\d{2}-\\d{2}")) ||
+                    amount !in 0L..86_400L
+                ) {
+                    throw IOException("Sesión de lectura inválida.")
+                }
                 sessions.add(ReadingSessionEntity(day, uri, amount))
             }
             val extras = HashMap<String, JSONObject>()
@@ -378,8 +387,10 @@ internal object LocalLibraryBackup {
                 fun validFloat(key: String, low: Double, high: Double) {
                     if (!o.has(key) || o.isNull(key)) return
                     val value = o.get(key)
-                    if (value !is Number || !value.toDouble().isFinite() ||
-                        value.toDouble() !in low..high) {
+                    if (value !is Number ||
+                        !value.toDouble().isFinite() ||
+                        value.toDouble() !in low..high
+                    ) {
                         throw IOException("Preferencia $key no válida.")
                     }
                 }
@@ -404,17 +415,19 @@ internal object LocalLibraryBackup {
             }
             val goal = if (root.has("dailyGoalMinutes") && !root.isNull("dailyGoalMinutes")) {
                 root.getInt("dailyGoalMinutes").coerceIn(5, 240)
-            } else null
+            } else {
+                null
+            }
             return LocalBackupArchive(
                 LocalBackupSnapshot(
                     books = books,
                     annotations = notes,
                     sessions = sessions,
                     collections = restoredCollections,
-                    bookCollectionNames = collectionNamesByBook
+                    bookCollectionNames = collectionNamesByBook,
                 ),
                 extras,
-                goal
+                goal,
             )
         } catch (error: IOException) {
             throw error
@@ -464,9 +477,9 @@ internal object LocalLibraryBackup {
                 annotations = notes,
                 sessions = sessions,
                 collections = collections,
-                bookCollectionNames = bookCollectionNames
+                bookCollectionNames = bookCollectionNames,
             ),
-            adjusted
+            adjusted,
         )
     }
 }

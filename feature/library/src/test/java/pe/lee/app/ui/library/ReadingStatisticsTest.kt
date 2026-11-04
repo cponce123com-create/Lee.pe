@@ -1,11 +1,11 @@
 package pe.lee.app.ui.library
 
+import java.util.Calendar
+import java.util.TimeZone
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import java.util.Calendar
-import java.util.TimeZone
 
 class ReadingStatisticsTest {
     private lateinit var previousZone: TimeZone
@@ -21,18 +21,17 @@ class ReadingStatisticsTest {
         TimeZone.setDefault(previousZone)
     }
 
-    private fun instant(year: Int, month: Int, day: Int): Long =
-        Calendar.getInstance().apply {
-            clear()
-            set(year, month - 1, day, 13, 30, 0)
-        }.timeInMillis
+    private fun instant(year: Int, month: Int, day: Int): Long = Calendar.getInstance().apply {
+        clear()
+        set(year, month - 1, day, 13, 30, 0)
+    }.timeInMillis
 
     @Test
     fun activeStreakIncludesToday() {
         val now = instant(2026, 11, 2)
         assertEquals(
             3,
-            calculateReadingStreak(listOf("2026-11-02", "2026-11-01", "2026-10-31"), now)
+            calculateReadingStreak(listOf("2026-11-02", "2026-11-01", "2026-10-31"), now),
         )
     }
 
@@ -41,7 +40,7 @@ class ReadingStatisticsTest {
         val now = instant(2026, 11, 2)
         assertEquals(
             2,
-            calculateReadingStreak(listOf("2026-11-01", "2026-10-31"), now)
+            calculateReadingStreak(listOf("2026-11-01", "2026-10-31"), now),
         )
     }
 
@@ -57,7 +56,7 @@ class ReadingStatisticsTest {
         val now = instant(2026, 11, 2)
         assertEquals(
             2,
-            calculateReadingStreak(listOf("2026-11-02", "2026-11-02", "2026-11-01"), now)
+            calculateReadingStreak(listOf("2026-11-02", "2026-11-02", "2026-11-01"), now),
         )
     }
 

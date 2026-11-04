@@ -1,17 +1,9 @@
 package pe.lee.app.ui.library
 
-import pe.lee.core.domain.library.ImportBookUseCase
-import pe.lee.core.domain.library.DeleteBookUseCase
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import pe.lee.app.data.local.BookEntity
-import pe.lee.app.data.local.CollectionEntity
-import pe.lee.app.data.repository.BookRepository
-import pe.lee.core.domain.ReadingStatisticsRepository
-import pe.lee.core.domain.ReaderAnnotationRepository
-import pe.lee.feature.library.R
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,12 +14,20 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import pe.lee.app.data.local.BookEntity
+import pe.lee.app.data.local.CollectionEntity
+import pe.lee.app.data.repository.BookRepository
+import pe.lee.core.domain.ReaderAnnotationRepository
+import pe.lee.core.domain.ReadingStatisticsRepository
+import pe.lee.core.domain.library.DeleteBookUseCase
+import pe.lee.core.domain.library.ImportBookUseCase
+import pe.lee.feature.library.R
 
 data class LibraryState(
     val books: List<BookEntity> = emptyList(),
     val collections: List<CollectionEntity> = emptyList(),
     val bookCollectionNames: Map<String, List<String>> = emptyMap(),
-    val isLoaded: Boolean = false
+    val isLoaded: Boolean = false,
 )
 
 /** State of the SAF folder scan, owned by the ViewModel so a rotation cannot cancel it (A-36). */
@@ -38,13 +38,13 @@ internal data class ScannerUiState(
     val files: Int = 0,
     val books: Int = 0,
     val preview: LocalFolderScanner.Result? = null,
-    val error: String? = null
+    val error: String? = null,
 )
 
 class LibraryViewModel(
     private val booksRepository: BookRepository,
     private val annotationRepository: ReaderAnnotationRepository,
-    private val statsRepository: ReadingStatisticsRepository
+    private val statsRepository: ReadingStatisticsRepository,
 ) : ViewModel() {
     private val importBooks = ImportBookUseCase(booksRepository::insertBooks, BookEntity::uri)
     private val removeBook = DeleteBookUseCase(booksRepository::deleteBook)
@@ -52,13 +52,13 @@ class LibraryViewModel(
     val state: StateFlow<LibraryState> = combine(
         booksRepository.observeBooks(),
         booksRepository.observeCollections(),
-        booksRepository.observeBookCollectionNames()
+        booksRepository.observeBookCollectionNames(),
     ) { books, collections, assignments ->
         LibraryState(
             books = books,
             collections = collections,
             bookCollectionNames = assignments.groupBy({ it.bookId }, { it.collectionName }),
-            isLoaded = true
+            isLoaded = true,
         )
     }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LibraryState())
@@ -104,7 +104,7 @@ class LibraryViewModel(
                 folderName = treeUri.lastPathSegment
                     ?.substringAfterLast(':')
                     ?.takeIf(String::isNotBlank)
-                    ?: appContext.getString(R.string.library_selected_folder)
+                    ?: appContext.getString(R.string.library_selected_folder),
             )
         }
         scanJob = viewModelScope.launch {
@@ -114,7 +114,7 @@ class LibraryViewModel(
                         it.copy(
                             folders = progress.folders,
                             files = progress.files,
-                            books = progress.books
+                            books = progress.books,
                         )
                     }
                 }
@@ -125,7 +125,7 @@ class LibraryViewModel(
                 mutableScanner.update {
                     it.copy(
                         error = appContext.getString(R.string.scanner_import_failed),
-                        busy = false
+                        busy = false,
                     )
                 }
             } finally {

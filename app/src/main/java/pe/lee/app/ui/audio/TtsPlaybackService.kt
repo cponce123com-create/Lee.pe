@@ -28,10 +28,10 @@ import kotlinx.coroutines.launch
 import org.readium.navigator.media.common.Media3Adapter
 import org.readium.navigator.media.tts.AndroidTtsNavigator
 import org.readium.navigator.media.tts.TtsNavigator
-import pe.lee.app.R
 import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.publication.Publication
 import pe.lee.app.LeePeApplication
+import pe.lee.app.R
 import pe.lee.app.ui.reader.ReaderActivity
 import pe.lee.core.domain.readingProgressOr
 
@@ -44,7 +44,7 @@ class TtsPlaybackService : MediaSessionService() {
         val mediaSession: MediaSession,
         val bookUri: String,
         val title: String,
-        val onPublicationClosed: () -> Unit
+        val onPublicationClosed: () -> Unit,
     ) {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
         var sleepTimerJob: Job? = null
@@ -61,7 +61,7 @@ class TtsPlaybackService : MediaSessionService() {
             publication: Publication,
             bookUri: String,
             title: String,
-            onPublicationClosed: () -> Unit
+            onPublicationClosed: () -> Unit,
         ) {
             closeSession()
             val launchIntent = Intent(this@TtsPlaybackService, ReaderActivity::class.java)
@@ -71,11 +71,11 @@ class TtsPlaybackService : MediaSessionService() {
                 this@TtsPlaybackService,
                 bookUri.hashCode(),
                 launchIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
             val session = MediaSession.Builder(
                 this@TtsPlaybackService,
-                (navigator as Media3Adapter).asMedia3Player()
+                (navigator as Media3Adapter).asMedia3Player(),
             )
                 .setSessionActivity(pendingIntent)
                 .setId(bookUri.hashCode().toString())
@@ -97,14 +97,14 @@ class TtsPlaybackService : MediaSessionService() {
                     if (now - lastSavedAt >= 3_000L) {
                         val progression = readingProgressOr(
                             locator.locations.totalProgression,
-                            knownProgress
+                            knownProgress,
                         )
                         knownProgress = progression
                         container.books.saveEpubProgress(
                             uri = bookUri,
                             locator = locator.toJSON().toString(),
                             progress = progression,
-                            at = now
+                            at = now,
                         )
                         lastSavedAt = now
                     }
@@ -136,7 +136,9 @@ class TtsPlaybackService : MediaSessionService() {
                         activeSession.sleepTimerMinutes.value = 0
                     }
                 }
-            } else null
+            } else {
+                null
+            }
         }
 
         fun closeSession() {
@@ -169,7 +171,7 @@ class TtsPlaybackService : MediaSessionService() {
     class ServiceBinding internal constructor(
         val binder: TtsPlaybackService.ReaderBinder,
         private val application: Application,
-        private val connection: ServiceConnection
+        private val connection: ServiceConnection,
     ) {
         private var isBound = true
 
@@ -190,15 +192,13 @@ class TtsPlaybackService : MediaSessionService() {
             .apply { setReferenceCounted(false) }
     }
 
-    override fun onBind(intent: Intent?): IBinder? {
-        return if (intent?.action == SERVICE_INTERFACE) {
-            // This action returns a plain local Binder used by Lee.pe's reader.
-            // It does not expose an AIDL or Messenger interface to remote callers.
-            super.onBind(intent)
-            binder
-        } else {
-            super.onBind(intent)
-        }
+    override fun onBind(intent: Intent?): IBinder? = if (intent?.action == SERVICE_INTERFACE) {
+        // This action returns a plain local Binder used by Lee.pe's reader.
+        // It does not expose an AIDL or Messenger interface to remote callers.
+        super.onBind(intent)
+        binder
+    } else {
+        super.onBind(intent)
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
@@ -213,8 +213,11 @@ class TtsPlaybackService : MediaSessionService() {
 
     private fun updateWakeLock(shouldHold: Boolean) {
         val lock = wakeLock ?: return
-        if (shouldHold && !lock.isHeld) lock.acquire(WAKE_LOCK_TIMEOUT_MS)
-        else if (!shouldHold && lock.isHeld) lock.release()
+        if (shouldHold && !lock.isHeld) {
+            lock.acquire(WAKE_LOCK_TIMEOUT_MS)
+        } else if (!shouldHold && lock.isHeld) {
+            lock.release()
+        }
     }
 
     companion object {

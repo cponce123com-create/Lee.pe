@@ -1,8 +1,8 @@
 package pe.lee.feature.sharecard.navigation
 
 import android.os.Bundle
-import androidx.activity.compose.setContent
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.lifecycle.ViewModelProvider
 import pe.lee.feature.sharecard.di.ShareCardModule
 import pe.lee.feature.sharecard.ui.ShareCardScreen

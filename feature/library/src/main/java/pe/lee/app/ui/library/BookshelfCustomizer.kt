@@ -5,7 +5,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -79,7 +78,7 @@ internal fun BookshelfCustomizerDialog(
     onAddDecoration: (ShelfDecorationType) -> Unit,
     onAddBooks: () -> Unit,
     onReset: () -> Unit,
-    onSave: () -> Unit
+    onSave: () -> Unit,
 ) {
     var selectedCategoryName by rememberSaveable { mutableStateOf(ShelfDecorationCategory.ALL.name) }
     var selectedDecorationName by rememberSaveable { mutableStateOf<String?>(null) }
@@ -99,39 +98,43 @@ internal fun BookshelfCustomizerDialog(
 
     Dialog(
         onDismissRequest = onSave,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Surface(
             modifier = Modifier.fillMaxWidth(.97f).heightIn(max = maxDialogHeight),
             shape = RoundedCornerShape(28.dp),
             color = dialogBackground,
-            tonalElevation = 8.dp
+            tonalElevation = 8.dp,
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     IconButton(onClick = onSave, modifier = Modifier.size(48.dp)) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_close), tint = Color(0xFF064F48))
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.action_close),
+                            tint = Color(0xFF064F48),
+                        )
                     }
                     Image(
                         painter = painterResource(R.drawable.leepe_logo),
                         contentDescription = stringResource(R.string.accessibility_leepe_logo),
                         contentScale = ContentScale.Fit,
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(48.dp),
                     )
                     Text(
                         stringResource(R.string.shelf_customizer_title),
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.titleLarge,
                         color = dialogInk,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                     Button(
                         onClick = onSave,
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFB81C), contentColor = Color(0xFF073D39)),
-                        modifier = Modifier.heightIn(min = 48.dp)
+                        modifier = Modifier.heightIn(min = 48.dp),
                     ) {
                         Icon(Icons.Default.Check, contentDescription = null)
                         Spacer(Modifier.width(6.dp))
@@ -145,13 +148,17 @@ internal fun BookshelfCustomizerDialog(
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        Icon(Icons.Default.Info, contentDescription = null, tint = if (darkTheme) dialogColors.primary else Color(0xFFDB8A00))
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = null,
+                            tint = if (darkTheme) dialogColors.primary else Color(0xFFDB8A00),
+                        )
                         Text(
                             stringResource(R.string.shelf_customizer_hint),
                             color = if (darkTheme) dialogColors.onSurfaceVariant else Color(0xFF443D35),
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     }
                 }
@@ -175,17 +182,22 @@ internal fun BookshelfCustomizerDialog(
                                 onMoveDecoration = onMoveDecoration,
                                 onReplaceDecoration = { id -> decorationToReplaceId = id },
                                 onRemoveDecoration = onRemoveDecoration,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
                             )
                         }
                     }
-                    Text(stringResource(R.string.shelf_gallery_heading), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = dialogInk)
+                    Text(
+                        stringResource(R.string.shelf_gallery_heading),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = dialogInk,
+                    )
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(ShelfDecorationCategory.entries, key = ShelfDecorationCategory::name) { category ->
                             FilterChip(
                                 selected = selectedCategory == category,
                                 onClick = { selectedCategoryName = category.name },
-                                label = { Text(stringResource(category.labelRes), maxLines = 1) }
+                                label = { Text(stringResource(category.labelRes), maxLines = 1) },
                             )
                         }
                     }
@@ -208,12 +220,26 @@ internal fun BookshelfCustomizerDialog(
                                     darkTheme -> dialogColors.surface
                                     else -> Color(0xFFFFFBF6)
                                 },
-                                border = BorderStroke(if (isSelected) 2.dp else 1.dp, if (isSelected) dialogColors.primary else dialogColors.outlineVariant),
-                                shadowElevation = if (isSelected) 5.dp else 2.dp
+                                border = BorderStroke(
+                                    if (isSelected) 2.dp else 1.dp,
+                                    if (isSelected) dialogColors.primary else dialogColors.outlineVariant,
+                                ),
+                                shadowElevation = if (isSelected) 5.dp else 2.dp,
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                                     ShelfDecorationArt(type, Modifier.fillMaxWidth().height(112.dp).padding(horizontal = 12.dp))
-                                    Text(stringResource(type.labelRes), style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center, color = if (darkTheme && isSelected) dialogColors.onPrimaryContainer else dialogColors.onSurface)
+                                    Text(
+                                        stringResource(type.labelRes),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        textAlign = TextAlign.Center,
+                                        color = if (darkTheme &&
+                                            isSelected
+                                        ) {
+                                            dialogColors.onPrimaryContainer
+                                        } else {
+                                            dialogColors.onSurface
+                                        },
+                                    )
                                 }
                             }
                         }
@@ -229,20 +255,34 @@ internal fun BookshelfCustomizerDialog(
                         },
                         enabled = selectedDecoration != null,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00695F), contentColor = Color.White)
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00695F), contentColor = Color.White),
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text(stringResource(if (decorationToReplaceId == null) R.string.shelf_add_selected else R.string.shelf_replace_selected))
+                        Text(
+                            stringResource(
+                                if (decorationToReplaceId ==
+                                    null
+                                ) {
+                                    R.string.shelf_add_selected
+                                } else {
+                                    R.string.shelf_replace_selected
+                                },
+                            ),
+                        )
                     }
                 } else {
-                    Text(stringResource(R.string.shelf_covers_hint), color = if (darkTheme) dialogColors.onSurfaceVariant else Color(0xFF443D35), style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        stringResource(R.string.shelf_covers_hint),
+                        color = if (darkTheme) dialogColors.onSurfaceVariant else Color(0xFF443D35),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         coverRows.forEach { row ->
                             CoverShelfRow(
                                 books = row,
                                 savingBookUri = savingBookUri,
-                                onBookAction = onBookAction
+                                onBookAction = onBookAction,
                             )
                         }
                     }
@@ -258,16 +298,12 @@ internal fun ShelfDecorationArt(type: ShelfDecorationType, modifier: Modifier = 
         painter = painterResource(type.drawableRes),
         contentDescription = null,
         contentScale = ContentScale.Fit,
-        modifier = modifier
+        modifier = modifier,
     )
 }
 
 @Composable
-internal fun BookshelfHiddenBooksDialog(
-    books: List<LocalBook>,
-    onAdd: (LocalBook) -> Unit,
-    onDismiss: () -> Unit
-) {
+internal fun BookshelfHiddenBooksDialog(books: List<LocalBook>, onAdd: (LocalBook) -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.shelf_add_books_title)) },
@@ -277,7 +313,12 @@ internal fun BookshelfHiddenBooksDialog(
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     books.forEach { book ->
-                        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable { onAdd(book) }.padding(vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable {
+                                onAdd(book)
+                            }.padding(vertical = 7.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
                             Text(book.title, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
                             TextButton(onClick = { onAdd(book) }) { Text(stringResource(R.string.shelf_add_book)) }
                         }
@@ -285,6 +326,6 @@ internal fun BookshelfHiddenBooksDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } }
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } },
     )
 }
