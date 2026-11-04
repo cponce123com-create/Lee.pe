@@ -257,8 +257,9 @@ fun LibraryScreen(
     var backupBusy by backupBusyState
     // The folder scan lives in the ViewModel so rotation no longer cancels it (A-36).
     val scannerState by viewModel.scanner.collectAsStateWithLifecycle()
-    val listModeState = rememberSaveable { mutableStateOf(false) }
-    var listMode by listModeState
+    val viewModeState = rememberSaveable { mutableStateOf(LibraryViewMode.COVERS) }
+    val bookshelfAdornmentState = rememberSaveable { mutableStateOf(BookshelfAdornment.FLOWERS) }
+    val adornmentMenuExpandedState = remember { mutableStateOf(false) }
 
     LaunchedEffect(scannerState.error) {
         val message = scannerState.error ?: return@LaunchedEffect
@@ -395,13 +396,11 @@ fun LibraryScreen(
         }
     }
     val visibleBooks = catalog.visible
-    val continueBooks = catalog.continueReading
     val orderedBooks = catalog.ordered
 
     LibraryCatalog(
         books = books,
         visibleBooks = visibleBooks,
-        continueBooks = continueBooks,
         orderedBooks = orderedBooks,
         collections = collections,
         query = queryState,
@@ -411,7 +410,9 @@ fun LibraryScreen(
         showCollectionsManager = showCollectionsManagerState,
         sortMenuExpanded = sortMenuExpandedState,
         sortMode = sortModeState,
-        listMode = listModeState,
+        viewMode = viewModeState,
+        bookshelfAdornment = bookshelfAdornmentState,
+        adornmentMenuExpanded = adornmentMenuExpandedState,
         savingBookUri = savingBookUriState,
         pendingRemoval = pendingRemovalState,
         editingBook = editingBookState,

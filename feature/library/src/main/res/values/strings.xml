@@ -37,7 +37,7 @@
     <string name="accessibility_search">Buscar</string>
     <string name="accessibility_search_books">Buscar libros por título, formato o colección</string>
     <string name="accessibility_clear_search">Borrar búsqueda</string>
-    <string name="library_search_placeholder">Buscar título, formato o colección</string>
+    <string name="library_search_placeholder">Buscar título o autor</string>
     <string name="library_resume_reading">Retomar lectura</string>
     <string name="library_resume_subtitle">Sigue justo donde lo dejaste</string>
     <string name="library_collection">Colección</string>
@@ -51,6 +51,16 @@
     </plurals>
     <string name="library_view_list">Lista</string>
     <string name="library_view_covers">Portadas</string>
+    <string name="library_view_mixed">Mixta</string>
+    <string name="library_my_books">Mi biblioteca</string>
+    <string name="library_adornments">Adornos</string>
+    <string name="library_adornments_title">Adornos de estantería</string>
+    <string name="library_adornment_flowers">Flores</string>
+    <string name="library_adornment_plants">Plantas</string>
+    <string name="library_adornment_figures">Figuras</string>
+    <string name="library_adornment_none">Sin adornos</string>
+    <string name="accessibility_library_add_book">Importar libro</string>
+    <string name="accessibility_bookshelf_decoration">Adorno de estantería</string>
     <string name="library_offline_copy_saved">Copia guardada para usar sin conexión</string>
     <string name="library_export_file_failed">No se pudo crear el archivo de exportación.</string>
     <string name="library_export_annotations_done">Anotaciones exportadas en Markdown</string>
