@@ -1,6 +1,7 @@
 package pe.lee.app.ui.library
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -37,6 +38,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -248,6 +252,30 @@ private fun MixedShelfObject(
                     ) {
                         Box(Modifier.fillMaxWidth().height(5.dp).align(Alignment.TopCenter)
                             .background(Brush.verticalGradient(listOf(Color(0xFFE7D2A8), Color(0xFFFFF0CF)))))
+                        Canvas(Modifier.fillMaxSize()) {
+                            val depth = 5.dp.toPx()
+                            val top = 7.dp.toPx()
+                            val pages = Path().apply {
+                                moveTo(0f, top)
+                                lineTo(depth, 0f)
+                                lineTo(size.width, 0f)
+                                lineTo(size.width - depth, top)
+                                close()
+                            }
+                            drawPath(pages, Color(0xFFF8E9C8))
+                            drawLine(
+                                Color(0xFFCAB48A), Offset(depth, top / 2f), Offset(size.width - depth / 2f, top / 2f),
+                                strokeWidth = 1.dp.toPx(),
+                            )
+                            val side = Path().apply {
+                                moveTo(size.width - depth, top)
+                                lineTo(size.width, 0f)
+                                lineTo(size.width, size.height - depth)
+                                lineTo(size.width - depth, size.height)
+                                close()
+                            }
+                            drawPath(side, Color(0xFF173C36))
+                        }
                         Box(Modifier.width(2.dp).fillMaxHeight().align(Alignment.CenterStart).background(Color(0x55FFFFFF)))
                         Text(
                             book.title,
@@ -259,7 +287,11 @@ private fun MixedShelfObject(
                 } else {
                     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom) {
                         if (flatTop) {
-                            ShelfCoverArt(book, Modifier.weight(1f).fillMaxWidth().graphicsLayer { rotationX = 22f })
+                            ShelfCoverArt(book, Modifier.weight(1f).fillMaxWidth().graphicsLayer {
+                                rotationX = 50f
+                                cameraDistance = 18f * density
+                                transformOrigin = TransformOrigin(.5f, 1f)
+                            })
                         }
                         Text(
                             book.title,

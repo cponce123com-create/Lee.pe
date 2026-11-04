@@ -271,17 +271,18 @@ internal fun LibraryCatalog(
                         )
                     }
                     DropdownMenu(expanded = sortMenuExpanded.value, onDismissRequest = { sortMenuExpanded.value = false }) {
-                        LibraryFilter.entries.forEach { filter ->
-                            DropdownMenuItem(text = { Text(stringResource(filter.labelRes)) }, onClick = {
-                                selectedFilter.value = filter
+                        LibrarySortMode.entries.forEach { option ->
+                            DropdownMenuItem(text = { Text(stringResource(option.labelRes)) }, onClick = {
+                                onSortModeChange(option)
                                 sortMenuExpanded.value = false
                             })
                         }
                         androidx.compose.material3.HorizontalDivider()
-
-                        LibrarySortMode.entries.forEach { option ->
-                            DropdownMenuItem(text = { Text(stringResource(option.labelRes)) }, onClick = {
-                                onSortModeChange(option)
+                        LibraryFilter.entries.filterNot {
+                            it in listOf(LibraryFilter.ALL, LibraryFilter.TO_READ, LibraryFilter.IN_PROGRESS, LibraryFilter.COMPLETED)
+                        }.forEach { filter ->
+                            DropdownMenuItem(text = { Text(stringResource(filter.labelRes)) }, onClick = {
+                                selectedFilter.value = filter
                                 sortMenuExpanded.value = false
                             })
                         }
