@@ -8,10 +8,6 @@ import zipfile
 
 
 ANDROID = "{http://schemas.android.com/apk/res/android}"
-EXPECTED_MEDIA_SERVICES = {
-    "pe.lee.app.ui.audio.AudioPlaybackService",
-    "pe.lee.app.ui.audio.TtsPlaybackService",
-}
 MEDIA_SESSION_ACTION = "androidx.media3.session.MediaSessionService"
 FORBIDDEN_PERMISSIONS = {
     "android.permission.INTERNET",
