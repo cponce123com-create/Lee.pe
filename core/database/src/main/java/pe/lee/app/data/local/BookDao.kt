@@ -14,10 +14,25 @@ interface BookDao {
     fun observeAll(): Flow<List<BookEntity>>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insert(book: BookEntity)
+    suspend fun insertBookRow(book: BookEntity)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertAll(books: List<BookEntity>)
+    suspend fun insertBookRows(books: List<BookEntity>)
+
+    @Query("DELETE FROM pending_book_cleanup WHERE uri = :uri")
+    suspend fun cancelPendingCleanup(uri: String)
+
+    @Transaction
+    suspend fun insert(book: BookEntity) {
+        cancelPendingCleanup(book.uri)
+        insertBookRow(book)
+    }
+
+    @Transaction
+    suspend fun insertAll(books: List<BookEntity>) {
+        books.forEach { cancelPendingCleanup(it.uri) }
+        insertBookRows(books)
+    }
 
     @Query("SELECT * FROM library_books WHERE uri = :uri LIMIT 1")
     suspend fun findByUri(uri: String): BookEntity?

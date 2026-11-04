@@ -104,6 +104,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import pe.lee.feature.library.R
 import java.text.SimpleDateFormat
@@ -229,6 +231,7 @@ fun LibraryScreen(
     var sortMode by sortModeState
     val pendingMarkdownState = remember { mutableStateOf<String?>(null) }
     var pendingMarkdown by pendingMarkdownState
+    val cleanupMutex = remember { Mutex() }
     var libraryMenuExpanded by remember { mutableStateOf(false) }
     val showBackupOptionsState = remember { mutableStateOf(false) }
     var showBackupOptions by showBackupOptionsState
@@ -248,17 +251,19 @@ fun LibraryScreen(
     }
 
     suspend fun drainPendingBookCleanup() {
-        // One directory rescan for the whole batch, not one per deleted book (A-38).
-        val completed = withContext(Dispatchers.IO) {
-            var cleaned = 0
-            viewModel.pendingCleanupUris().forEach { uri ->
-                if (DeletedBookCleanup.complete(context, uri, settings, viewModel::completeCleanup)) {
-                    cleaned++
+        cleanupMutex.withLock {
+            // One directory rescan for the whole batch, not one per deleted book (A-38).
+            val completed = withContext(Dispatchers.IO) {
+                var cleaned = 0
+                viewModel.pendingCleanupUris().forEach { uri ->
+                    if (DeletedBookCleanup.complete(context, uri, settings, viewModel::completeCleanup)) {
+                        cleaned++
+                    }
                 }
+                cleaned
             }
-            cleaned
+            if (completed > 0) offlineRevision++
         }
-        if (completed > 0) offlineRevision++
     }
 
     val welcomeBookFailedMessage = androidx.compose.ui.res.stringResource(R.string.library_welcome_book_failed)
