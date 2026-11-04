@@ -48,6 +48,46 @@ class VerifyApkManifestTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "non-exported"):
             verify_manifest(manifest)
 
+    def test_allows_only_the_documented_hidden_media3_bluetooth_activity(self):
+        activity = """        <activity
+            android:name="androidx.media3.session.BluetoothValidationActivity"
+            android:exported="true" android:excludeFromRecents="true" android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <data android:scheme="content" />
+                <data android:host="media" />
+                <data android:pathPrefix="/internal/audio/media/" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+        </activity>
+"""
+        manifest = BASE_MANIFEST.replace(
+            "    </application>", activity + "    </application>"
+        )
+        self.assertEqual("pe.lee.app", verify_manifest(manifest))
+
+    def test_rejects_broadened_media3_bluetooth_activity_filter(self):
+        activity = """        <activity
+            android:name="androidx.media3.session.BluetoothValidationActivity"
+            android:exported="true" android:excludeFromRecents="true" android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:host="media" />
+                <data android:pathPrefix="/" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+        </activity>
+"""
+        manifest = BASE_MANIFEST.replace(
+            "    </application>", activity + "    </application>"
+        )
+        with self.assertRaisesRegex(RuntimeError, "not safely configured"):
+            verify_manifest(manifest)
+
     def test_rejects_exported_receiver(self):
         manifest = BASE_MANIFEST.replace(
             "    </application>",
