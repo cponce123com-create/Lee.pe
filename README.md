@@ -29,6 +29,7 @@ El selector de narración muestra solo voces Android locales en español y ofrec
 - Android Storage Access Framework para importar archivos con permisos limitados.
 - Room para biblioteca, progreso, marcadores/notas EPUB y anotaciones por página PDF, incluidos resaltados persistentes.
 - Media3 para audiolibros locales en segundo plano y Readium/Android TTS para narración EPUB; ambas rutas están implementadas en código y requieren validación en dispositivos.
+- Los servicios multimedia exponen únicamente la acción de sesión Media3 y rechazan controladores no confiables; la compatibilidad con Android Auto, Wear OS y Assistant todavía no está validada.
 - Render y Neon solo para API y sincronización opcional; Cloudinary para portadas si hace falta. Los libros no se subirán automáticamente.
 
 ## Abrir el proyecto
