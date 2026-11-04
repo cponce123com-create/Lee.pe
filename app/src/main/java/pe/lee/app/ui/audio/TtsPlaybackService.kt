@@ -191,6 +191,7 @@ class TtsPlaybackService : MediaSessionService() {
 
     override fun onBind(intent: Intent?): IBinder? {
         return if (intent?.action == SERVICE_INTERFACE) {
+            if (Binder.getCallingUid() != applicationInfo.uid) return null
             super.onBind(intent)
             binder
         } else {
