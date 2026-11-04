@@ -295,7 +295,7 @@ internal suspend fun openPdf(context: Context, uri: Uri): PdfHandle = withContex
             val copyDescriptor = ParcelFileDescriptor.open(copy, ParcelFileDescriptor.MODE_READ_ONLY)
             val copyRenderer = try {
                 PdfRenderer(copyDescriptor)
-            } catch (_: Exception) {
+            } catch (copyError: Exception) {
                 runCatching { copyDescriptor.close() }
                 throw copyError
             }

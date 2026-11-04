@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.ViewModelProvider
 import pe.lee.app.LeePeApplication
+import pe.lee.app.R
 import pe.lee.app.data.local.OfflineBookStore
 import pe.lee.app.ui.reader.EpubReaderViewModel
 import org.readium.r2.shared.publication.Publication

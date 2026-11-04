@@ -8,7 +8,7 @@
     <string name="epub_preparing">The book is still being prepared.</string>
     <string name="reader_file_unavailable">Could not access the selected file.</string>
     <string name="epub_invalid_file">This does not appear to be a supported EPUB file.</string>
-    <string name="tts_voice_unavailable">Could not start narration. Check that an Android voice is installed for the book's language.</string>
+    <string name="tts_voice_unavailable">Could not start narration. Check that an Android voice is installed for the book\'s language.</string>
     <string name="tts_background_start_failed">Could not start background narration.</string>
     <string name="tts_not_supported">This EPUB does not support narration.</string>
     <string name="tts_prepare_failed">Could not prepare narration.</string>
