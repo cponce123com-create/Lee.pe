@@ -298,6 +298,7 @@ internal fun ShelfDecorationArt(type: ShelfDecorationType, modifier: Modifier = 
         painter = painterResource(type.drawableRes),
         contentDescription = null,
         contentScale = ContentScale.Fit,
+        alignment = Alignment.BottomCenter,
         modifier = modifier,
     )
 }
