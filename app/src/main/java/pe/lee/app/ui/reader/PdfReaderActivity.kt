@@ -41,11 +41,13 @@ import pe.lee.app.R
 import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.app.ui.reader.PdfReaderViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.collect
 import androidx.compose.runtime.snapshotFlow
@@ -158,10 +160,18 @@ internal fun PdfReaderScreen(
     // Recycling them here would race with the frame Compose may still be drawing
     // ("Canvas: trying to use a recycled bitmap").
     DisposableEffect(handle) {
+        val closingHandle = handle
         onDispose {
-            handle?.let {
-                runCatching { it.renderer.close() }
-                it.cachedCopy?.delete()
+            closingHandle?.let { resource ->
+                CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+                    renderMutex.withLock {
+                        try {
+                            resource.renderer.close()
+                        } finally {
+                            resource.cachedCopy?.delete()
+                        }
+                    }
+                }
             }
         }
     }
