@@ -1,0 +1,36 @@
+<resources>
+    <string name="share_card_title">Create quote card</string>
+    <string name="share_card_quote_label">Quote</string>
+    <string name="share_card_edit_quote">Edit quote</string>
+    <string name="share_card_theme_paper">Antique paper</string>
+    <string name="share_card_theme_night">Elegant dark</string>
+    <string name="share_card_theme_accent">Modern gradient</string>
+    <string name="share_card_format_story">Story</string>
+    <string name="share_card_format_square">Square</string>
+    <string name="share_card_share">Share</string>
+    <string name="share_card_generating">Preparing image…</string>
+    <string name="share_card_shared">Quote card is ready to share</string>
+    <string name="share_card_error">Could not create the card. Please try again.</string>
+    <string name="share_card_chooser_title">Share quote card</string>
+    <string name="share_card_close">Close</string>
+    <string name="share_card_brand">Lee.pe</string>
+    <string name="share_card_create_action">Share as image</string>
+    <string name="share_card_unknown_author">Unknown author</string>
+    <string name="share_card_design">Design</string>
+    <string name="share_card_format">Format</string>
+    <string name="share_card_book_title_label">Book title</string>
+    <string name="share_card_author_label">Author</string>
+    <string name="share_card_unknown_book">Untitled book</string>
+    <string name="share_card_theme_minimal">Minimalist</string>
+    <string name="share_card_theme_editorial">Classic editorial</string>
+    <string name="share_card_theme_premium">Literary premium</string>
+    <string name="share_card_font">Typeface</string>
+    <string name="share_card_font_template">Template default</string>
+    <string name="share_card_font_serif">Classic</string>
+    <string name="share_card_font_sans">Modern</string>
+    <string name="share_card_too_long">The text does not fit at a readable size. Choose Story or edit the quote before sharing.</string>
+    <string name="share_card_clip_label">Lee.pe quote card</string>
+    <string name="share_card_error_detail">Could not create or share the card. Check available storage and try again.</string>
+    <string name="share_card_timeout">Creating the card took too long. Please try again.</string>
+    <string name="share_card_memory_error">There is not enough memory to create the card. Close other apps and try again.</string>
+</resources>

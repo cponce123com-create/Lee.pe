@@ -61,6 +61,9 @@ jobs:
       - name: Install Android SDK Platform 36
         run: sdkmanager --install "platforms;android-36"
 
+      - name: Verify Spanish and English quote-card resources
+        run: python scripts/verify_sharecard_locale_parity.py
+
       - name: Run unit tests and build APK
         # testDebugUnitTest covers every Android module; :core:domain is a Kotlin/JVM
         # module and would be skipped silently without the explicit task.

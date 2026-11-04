@@ -19,13 +19,14 @@ import pe.lee.feature.sharecard.domain.ShareCardGenerator
 import pe.lee.feature.sharecard.domain.ShareCardSharer
 import pe.lee.feature.sharecard.domain.model.QuoteCard
 import pe.lee.feature.sharecard.domain.model.QuoteCardRaster
+import pe.lee.feature.sharecard.R
 
 /** Progress of PNG generation and handoff to Android's share sheet. */
 sealed interface ShareCardStatus {
     data object Idle : ShareCardStatus
     data object Generating : ShareCardStatus
     data object Ready : ShareCardStatus
-    data class Error(val message: String) : ShareCardStatus
+    data class Error(val messageRes: Int) : ShareCardStatus
 }
 
 /** Immutable screen state exposed to Compose. */
@@ -77,7 +78,7 @@ class ShareCardViewModel(
     /** Reports a failed UI capture so the user can retry instead of being left waiting. */
     fun shareCaptureFailed() {
         mutableState.update {
-            it.copy(status = ShareCardStatus.Error(SHARE_CARD_ERROR_MESSAGE))
+            it.copy(status = ShareCardStatus.Error(R.string.share_card_error_detail))
         }
     }
 
@@ -96,7 +97,7 @@ class ShareCardViewModel(
                     generateAndShare(current.card, capture())
                 }
             } catch (timeout: TimeoutCancellationException) {
-                mutableState.update { it.copy(status = ShareCardStatus.Error(SHARE_TIMEOUT_MESSAGE)) }
+                mutableState.update { it.copy(status = ShareCardStatus.Error(R.string.share_card_timeout)) }
             } catch (cancelled: CancellationException) {
                 mutableState.update { it.copy(status = ShareCardStatus.Idle) }
                 throw cancelled
@@ -105,11 +106,11 @@ class ShareCardViewModel(
                 // This is an Error, not an Exception: without this branch the app
                 // would crash instead of showing a message (A-21).
                 mutableState.update {
-                    it.copy(status = ShareCardStatus.Error(SHARE_MEMORY_MESSAGE))
+                    it.copy(status = ShareCardStatus.Error(R.string.share_card_memory_error))
                 }
             } catch (_: Exception) {
                 mutableState.update {
-                    it.copy(status = ShareCardStatus.Error(SHARE_CARD_ERROR_MESSAGE))
+                    it.copy(status = ShareCardStatus.Error(R.string.share_card_error_detail))
                 }
             } finally {
                 // Defensive: a capture that completed after cancellation must not
@@ -135,12 +136,6 @@ class ShareCardViewModel(
     }
 
     private companion object {
-        const val SHARE_CARD_ERROR_MESSAGE =
-            "No se pudo generar o compartir la tarjeta. Revisa el espacio disponible e inténtalo otra vez."
-        const val SHARE_TIMEOUT_MESSAGE =
-            "La captura de la tarjeta tardó demasiado. Vuelve a intentarlo."
-        const val SHARE_MEMORY_MESSAGE =
-            "No hay memoria suficiente para generar la tarjeta. Cierra otras apps e inténtalo otra vez."
         const val SHARE_TIMEOUT_MS = 15_000L
     }
 }

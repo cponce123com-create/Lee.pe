@@ -194,7 +194,7 @@ fun ShareCardScreen(
                         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
                     )
                     is ShareCardStatus.Error -> Text(
-                        text = status.message.ifBlank { stringResource(R.string.share_card_error) },
+                        text = stringResource(status.messageRes),
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive }
                     )

@@ -35,7 +35,11 @@ class ShareCardSharer(context: Context) : ShareCardSharerContract {
         val sendIntent = Intent(Intent.ACTION_SEND).apply {
             type = PNG_MIME_TYPE
             putExtra(Intent.EXTRA_STREAM, uri)
-            clipData = android.content.ClipData.newUri(appContext.contentResolver, "Tarjeta de Lee.pe", uri)
+            clipData = android.content.ClipData.newUri(
+                appContext.contentResolver,
+                appContext.getString(R.string.share_card_clip_label),
+                uri
+            )
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         val chooser = Intent.createChooser(sendIntent, appContext.getString(R.string.share_card_chooser_title)).apply {
