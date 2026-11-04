@@ -22,3 +22,16 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.org.json)
 }
+
+kover {
+    reports {
+        filters {
+            excludes {
+                classes("*.BuildConfig", "*.R", "*.R\$*", "*_Impl", "*_Impl\$*")
+            }
+        }
+        verify {
+            rule { minBound(40) }
+        }
+    }
+}

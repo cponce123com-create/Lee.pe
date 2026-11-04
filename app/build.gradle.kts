@@ -98,3 +98,16 @@ dependencies {
     androidTestImplementation(libs.androidx.test.runner)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 }
+
+kover {
+    reports {
+        filters {
+            excludes {
+                classes("*.BuildConfig", "*.R", "*.R\$*", "*_Impl", "*_Impl\$*")
+            }
+        }
+        verify {
+            rule { minBound(30) }
+        }
+    }
+}

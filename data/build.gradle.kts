@@ -23,3 +23,16 @@ dependencies {
     implementation(project(":core:domain"))
     implementation(libs.room3.runtime)
 }
+
+kover {
+    reports {
+        filters {
+            excludes {
+                classes("*.BuildConfig", "*.R", "*.R\$*", "*_Impl", "*_Impl\$*")
+            }
+        }
+        verify {
+            rule { minBound(50) }
+        }
+    }
+}

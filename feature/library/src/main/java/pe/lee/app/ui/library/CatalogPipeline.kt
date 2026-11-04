@@ -1,5 +1,7 @@
 package pe.lee.app.ui.library
 
+import pe.lee.core.domain.library.SearchBooksUseCase
+
 /**
  * Catalog filtered, sorted and ranked once, away from the UI thread.
  *
@@ -19,20 +21,11 @@ internal fun computeCatalog(
     filter: LibraryFilter,
     collection: String?,
     sortMode: LibrarySortMode,
-    titleComparator: Comparator<String>
+    titleComparator: Comparator<String>,
+    search: SearchBooksUseCase<LocalBook> = librarySearchIndex(books)
 ): CatalogResult {
-    val normalizedQuery = normalizedLibraryText(query)
-    // Normalize accents/format/collection once per book instead of on each keystroke.
-    val searchIndex = books.associate { book ->
-        book.uri.toString() to normalizedLibraryText(
-            "${book.title} ${book.format} ${book.collectionNames.joinToString(" ")}"
-        )
-    }
-    val visible = books.filter { book ->
-        matchesNormalizedLibraryQuery(
-            searchIndex[book.uri.toString()].orEmpty(),
-            normalizedQuery
-        ) && matchesCatalogFilter(
+    val visible = search(query).filter { book ->
+        matchesCatalogFilter(
             format = book.format,
             readProgress = book.readProgress,
             isFavorite = book.isFavorite,
@@ -84,4 +77,9 @@ internal fun matchesCatalogFilter(
         LibraryFilter.AUDIO -> format == "Audio"
         LibraryFilter.ALL -> true
     }
+}
+
+/** Rebuilt only when the catalog changes, rather than normalizing all books on every keystroke. */
+internal fun librarySearchIndex(books: List<LocalBook>) = SearchBooksUseCase(books) { book ->
+    "${book.title} ${book.format} ${book.collectionNames.joinToString(" ")}"
 }

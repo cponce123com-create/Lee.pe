@@ -1,0 +1,26 @@
+config:
+  validation: true
+complexity:
+  LongMethod:
+    allowedLines: 60
+    ignoreAnnotated: ['Composable']
+  LongParameterList:
+    allowedFunctionParameters: 8
+    allowedConstructorParameters: 10
+    ignoreDefaultParameters: true
+    ignoreDataClasses: true
+    ignoreAnnotated: ['Composable']
+style:
+  MaxLineLength:
+    maxLineLength: 140
+    excludePackageStatements: true
+    excludeImportStatements: true
+  WildcardImport:
+    active: true
+  MagicNumber:
+    ignoreNumbers: ['-1', '0', '1', '2', '100']
+    ignorePropertyDeclaration: true
+    ignoreEnums: true
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ['Composable']
