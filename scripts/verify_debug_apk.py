@@ -37,6 +37,7 @@ def _is_expected_media3_bluetooth_validation_activity(activity: ET.Element) -> b
         or activity.get(ANDROID + "excludeFromRecents") != "true"
         or activity.get(ANDROID + "noHistory") != "true"
         or activity.get(ANDROID + "theme") != "@android:style/Theme.NoDisplay"
+        or activity.get(ANDROID + "permission") != "android.permission.BLUETOOTH_PRIVILEGED"
     ):
         return False
     filters = activity.findall("intent-filter")
@@ -46,17 +47,20 @@ def _is_expected_media3_bluetooth_validation_activity(activity: ET.Element) -> b
     actions = {node.get(ANDROID + "name") for node in intent_filter.findall("action")}
     if actions != {"android.intent.action.VIEW"} or intent_filter.findall("category"):
         return False
-    actual_data = {
-        tuple(sorted(node.attrib.items()))
+    data_attributes = [
+        attribute
         for node in intent_filter.findall("data")
-    }
+        for attribute in node.attrib.items()
+    ]
     expected_data = {
-        ((ANDROID + "scheme", "content"),),
-        ((ANDROID + "host", "media"),),
-        ((ANDROID + "pathPrefix", "/internal/audio/media/"),),
-        ((ANDROID + "mimeType", "audio/*"),),
+        ANDROID + "scheme": "content",
+        ANDROID + "host": "media",
+        ANDROID + "pathPrefix": "/internal/audio/media/",
+        ANDROID + "mimeType": "audio/*",
     }
-    return actual_data == expected_data
+    # The APK manifest printer may merge the four source <data> elements into
+    # one element. Compare the complete attribute set while rejecting extras.
+    return len(data_attributes) == len(expected_data) and dict(data_attributes) == expected_data
 
 
 def verify_manifest(manifest: str) -> str:
