@@ -7,9 +7,15 @@ import pe.lee.app.data.repository.BookRepository
 import pe.lee.app.data.repository.ReadingStatsRepository
 import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.app.data.repository.LocalBackupRepository
+import pe.lee.feature.sharecard.data.QuoteCardCacheCleaner
 
 class LeePeApplication : Application() {
     val container: AppContainer by lazy(LazyThreadSafetyMode.SYNCHRONIZED) { AppContainer(this) }
+
+    override fun onCreate() {
+        super.onCreate()
+        QuoteCardCacheCleaner.removeExpired(this)
+    }
 }
 
 class AppContainer(context: Application) {

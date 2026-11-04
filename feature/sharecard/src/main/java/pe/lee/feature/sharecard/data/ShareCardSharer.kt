@@ -22,10 +22,7 @@ class ShareCardSharer(context: Context) : ShareCardSharerContract {
             if (!directory.exists() && !directory.mkdirs()) {
                 throw IOException("No se pudo preparar el espacio temporal para la tarjeta.")
             }
-            directory.listFiles()
-                .orEmpty()
-                .filter { it.isFile && it.lastModified() < System.currentTimeMillis() - CACHE_MAX_AGE_MS }
-                .forEach { it.delete() }
+            QuoteCardCacheCleaner.removeExpired(appContext)
             File(directory, "leepe-${UUID.randomUUID()}.png").apply {
                 writeBytes(pngBytes)
             }
@@ -52,4 +49,20 @@ class ShareCardSharer(context: Context) : ShareCardSharerContract {
         const val CACHE_MAX_AGE_MS = 24L * 60 * 60 * 1000
         const val PNG_MIME_TYPE = "image/png"
     }
+}
+
+/** Removes expired temporary quote-card PNGs from the app cache. */
+object QuoteCardCacheCleaner {
+    /** Deletes cached share images older than one day. */
+    fun removeExpired(context: Context) {
+        val cutoff = System.currentTimeMillis() - CACHE_MAX_AGE_MS
+        File(context.applicationContext.cacheDir, QUOTE_CARD_DIRECTORY)
+            .listFiles()
+            .orEmpty()
+            .filter { it.isFile && it.lastModified() < cutoff }
+            .forEach(File::delete)
+    }
+
+    private const val QUOTE_CARD_DIRECTORY = "quotecards"
+    private const val CACHE_MAX_AGE_MS = 24L * 60 * 60 * 1000
 }
