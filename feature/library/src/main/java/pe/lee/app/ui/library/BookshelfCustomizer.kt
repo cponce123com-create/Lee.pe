@@ -174,6 +174,12 @@ internal fun BookshelfCustomizerDialog(
                         stringResource(R.string.shelf_decoration_count, decorationCount),
                         color = dialogInk,
                     )
+                    if (decorationToReplaceId != null) {
+                        TextButton(onClick = {
+                            decorationToReplaceId?.let(onRemoveDecoration)
+                            onSave()
+                        }) { Text(stringResource(R.string.shelf_remove_decoration)) }
+                    }
                     Text(
                         stringResource(R.string.shelf_gallery_heading),
                         style = MaterialTheme.typography.titleMedium,

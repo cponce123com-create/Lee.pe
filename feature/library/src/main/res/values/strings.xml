@@ -80,7 +80,7 @@
     <string name="shelf_decor_figure">Figura</string>
     <string name="shelf_decor_sculpture">Escultura</string>
     <string name="shelf_customizer_title">Personalizar estantería</string>
-    <string name="shelf_save">Guardar</string>
+    <string name="shelf_save">Listo</string>
     <string name="shelf_customizer_hint">Elige un adorno para añadirlo. En la estantería, mantén pulsado y arrastra para colocarlo.</string>
     <string name="shelf_gallery_heading">Elige tus adornos</string>
     <string name="shelf_add_selected">Añadir a la estantería</string>

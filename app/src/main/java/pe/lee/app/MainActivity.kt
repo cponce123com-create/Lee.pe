@@ -3,10 +3,13 @@ package pe.lee.app
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModelProvider
 import pe.lee.app.data.local.OfflineBookStore
 import pe.lee.app.ui.audio.AudioPlayerActivity
@@ -19,12 +22,17 @@ import pe.lee.app.ui.theme.LeePeTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val paper = 0xFFFFF8EF.toInt()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(paper, paper),
+            navigationBarStyle = SystemBarStyle.light(paper, paper),
+        )
         val container = (application as LeePeApplication).container
         val libraryViewModel = ViewModelProvider(this, container.viewModelFactory)
             .get(LibraryViewModel::class.java)
         setContent {
             LeePeTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
+                Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFFFFF8EF)) {
                     LibraryScreen(
                         viewModel = libraryViewModel,
                         settings = container.settings,

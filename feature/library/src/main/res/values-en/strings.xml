@@ -80,7 +80,7 @@
     <string name="shelf_decor_figure">Figure</string>
     <string name="shelf_decor_sculpture">Sculpture</string>
     <string name="shelf_customizer_title">Customize bookshelf</string>
-    <string name="shelf_save">Save</string>
+    <string name="shelf_save">Done</string>
     <string name="shelf_customizer_hint">Choose an ornament to add it. On the shelf, hold and drag to position it.</string>
     <string name="shelf_gallery_heading">Choose your decorations</string>
     <string name="shelf_add_selected">Add to bookshelf</string>
