@@ -152,7 +152,14 @@ private fun createEpubReaderSessionActions(
                     )
                 )
             }
-            binder.openSession(speech, uri.toString(), title)
+            val publication = session.publication.value ?: run {
+                speech.close()
+                session.ttsError.value = "No se pudo conservar el libro para la narración."
+                return@launch
+            }
+            binder.openSession(speech, publication, uri.toString(), title) {
+                if (session.publication.value === publication) session.publication.value = null
+            }
             session.ttsError.value = null
             session.ttsNavigator.value = speech
             speech.play()
