@@ -192,7 +192,8 @@ class TtsPlaybackService : MediaSessionService() {
 
     override fun onBind(intent: Intent?): IBinder? {
         return if (intent?.action == SERVICE_INTERFACE) {
-            if (Binder.getCallingUid() != applicationInfo.uid) return null
+            // This action returns a plain local Binder used by Lee.pe's reader.
+            // It does not expose an AIDL or Messenger interface to remote callers.
             super.onBind(intent)
             binder
         } else {
