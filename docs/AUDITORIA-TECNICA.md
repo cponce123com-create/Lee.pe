@@ -182,7 +182,7 @@ Si el EPUB no publica `totalProgression` (habitual en libros sin `page-list` ni 
 
 - Room 5 con **migraciones explícitas 1→2→3→4→5** (`LeeDatabase.kt:30-181`), esquema exportado (`core/database/schemas/.../4.json`, `5.json`) y una prueba instrumentada que migra **desde cada versión soportada** y verifica biblioteca, notas y estadísticas (`feature/library/src/androidTest/.../LeeDatabaseMigrationTest.kt:26-58`).
 - **Outbox de borrado**: `deleteByUri()` inserta en `pending_book_cleanup` dentro de la misma transacción Room y la limpieza de archivos se completa después, de forma reintentable (`BookDao.kt:189-197`, `LibraryScreen.kt:228-243`).
-- **Respaldo validado antes de escribirse**: `parse(bytes)` se ejecuta sobre el archivo recién generado para no producir un respaldo que el propio importador rechace (`LocalLibraryBackup.kt:94-95`), con límites (16 MB, 20 000 libros, 60 000 notas, 100 000 sesiones) y validación de tipos y rangos (`:191-314`).
+- **Respaldo validado antes de escribirse**: `parse(bytes)` se ejecuta sobre el archivo recién generado para no producir un respaldo que el propio importador rechace (`LocalLibraryBackup.kt:94-95`), con límites (64 MiB por archivo, 20 000 libros, 60 000 notas, 100 000 sesiones) y validación de tipos y rangos (`:191-314`).
 - **El emparejamiento de respaldos no adivina**: URI exacta primero, y título+formato solo si es único (`LocalBackupDao.kt:171-183`), con pruebas que cubren el caso ambiguo.
 - Estadísticas de lectura que **parten el tiempo por día local** y sobreviven a cambios de día (`ReadingSessionRecorder.kt:97-129`).
 

@@ -1,6 +1,7 @@
 package pe.lee.app.ui.library
 
 import android.content.Context
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -22,6 +24,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import pe.lee.feature.library.R
@@ -47,10 +52,15 @@ internal fun LibraryProcessDialogs(
     showBackupOptions: MutableState<Boolean>,
     backupBusy: MutableState<Boolean>,
     backupPreview: MutableState<LocalBackupPreview?>,
-    onExportBackup: () -> Unit,
-    onImportBackup: () -> Unit
+    backupPasswordUri: MutableState<Uri?>,
+    onExportBackup: (String) -> Unit,
+    onImportBackup: () -> Unit,
+    onUnlockBackup: (Uri, String) -> Unit
 ) {
     var importingScan by remember { mutableStateOf(false) }
+    var showExportPassword by remember { mutableStateOf(false) }
+    var exportPassword by remember { mutableStateOf("") }
+    var confirmExportPassword by remember { mutableStateOf("") }
 
     if (scanner.busy) {
         AlertDialog(
@@ -164,7 +174,7 @@ internal fun LibraryProcessDialogs(
             confirmButton = {
                 TextButton(enabled = !backupBusy.value, onClick = {
                     showBackupOptions.value = false
-                    onExportBackup()
+                    showExportPassword = true
                 }) { Text(stringResource(R.string.backup_export)) }
             },
             dismissButton = {
@@ -175,6 +185,94 @@ internal fun LibraryProcessDialogs(
                     }) { Text(stringResource(R.string.backup_restore)) }
                     TextButton(onClick = { showBackupOptions.value = false }) { Text(stringResource(R.string.action_cancel)) }
                 }
+            }
+        )
+    }
+
+    if (showExportPassword) {
+        AlertDialog(
+            onDismissRequest = {
+                if (!backupBusy.value) {
+                    showExportPassword = false
+                    exportPassword = ""
+                    confirmExportPassword = ""
+                }
+            },
+            title = { Text(stringResource(R.string.backup_password_export_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.backup_password_guidance))
+                    OutlinedTextField(
+                        value = exportPassword,
+                        onValueChange = { exportPassword = it },
+                        label = { Text(stringResource(R.string.backup_password_label)) },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = confirmExportPassword,
+                        onValueChange = { confirmExportPassword = it },
+                        label = { Text(stringResource(R.string.backup_password_confirm_label)) },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        singleLine = true
+                    )
+                    if (confirmExportPassword.isNotEmpty() && exportPassword != confirmExportPassword) {
+                        Text(stringResource(R.string.backup_password_mismatch), color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !backupBusy.value && exportPassword.length >= 8 && exportPassword == confirmExportPassword,
+                    onClick = {
+                        onExportBackup(exportPassword)
+                        exportPassword = ""
+                        confirmExportPassword = ""
+                        showExportPassword = false
+                    }
+                ) { Text(stringResource(R.string.backup_export)) }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    exportPassword = ""
+                    confirmExportPassword = ""
+                    showExportPassword = false
+                }) { Text(stringResource(R.string.action_cancel)) }
+            }
+        )
+    }
+
+    backupPasswordUri.value?.let { lockedUri ->
+        var importPassword by remember(lockedUri) { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { if (!backupBusy.value) backupPasswordUri.value = null },
+            title = { Text(stringResource(R.string.backup_password_import_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.backup_password_guidance))
+                    OutlinedTextField(
+                        value = importPassword,
+                        onValueChange = { importPassword = it },
+                        label = { Text(stringResource(R.string.backup_password_label)) },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !backupBusy.value && importPassword.length >= 8,
+                    onClick = { onUnlockBackup(lockedUri, importPassword) }
+                ) { Text(stringResource(if (backupBusy.value) R.string.backup_restoring else R.string.backup_unlock)) }
+            },
+            dismissButton = {
+                TextButton(
+                    enabled = !backupBusy.value,
+                    onClick = { backupPasswordUri.value = null }
+                ) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }

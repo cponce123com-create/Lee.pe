@@ -1,5 +1,6 @@
 """Verify offline permissions, component exposure, app backup policy, and quote cards."""
 import os
+import argparse
 from pathlib import Path
 import subprocess
 import sys
@@ -9,6 +10,17 @@ import zipfile
 
 ANDROID = "{http://schemas.android.com/apk/res/android}"
 MEDIA_SESSION_ACTION = "androidx.media3.session.MediaSessionService"
+PROFILE_INSTALL_RECEIVER = "androidx.profileinstaller.ProfileInstallReceiver"
+PROFILE_INSTALL_ACTIONS = {
+    "androidx.profileinstaller.action.INSTALL_PROFILE",
+    "androidx.profileinstaller.action.SKIP_FILE",
+    "androidx.profileinstaller.action.SAVE_PROFILE",
+    "androidx.profileinstaller.action.BENCHMARK_OPERATION",
+}
+DEBUG_ONLY_ACTIVITIES = {
+    "androidx.compose.ui.tooling.PreviewActivity",
+    "androidx.activity.ComponentActivity",
+}
 FORBIDDEN_PERMISSIONS = {
     "android.permission.INTERNET",
     "android.permission.MANAGE_EXTERNAL_STORAGE",
@@ -36,7 +48,11 @@ def _is_expected_media3_bluetooth_validation_activity(activity: ET.Element) -> b
         activity.get(ANDROID + "exported") != "true"
         or activity.get(ANDROID + "excludeFromRecents") != "true"
         or activity.get(ANDROID + "noHistory") != "true"
-        or activity.get(ANDROID + "theme") != "@android:style/Theme.NoDisplay"
+        or activity.get(ANDROID + "theme") not in {
+            "@android:style/Theme.NoDisplay",
+            "@ref/0x1030055",
+        }
+        or activity.get(ANDROID + "permission") != "android.permission.BLUETOOTH_PRIVILEGED"
     ):
         return False
     filters = activity.findall("intent-filter")
@@ -46,21 +62,58 @@ def _is_expected_media3_bluetooth_validation_activity(activity: ET.Element) -> b
     actions = {node.get(ANDROID + "name") for node in intent_filter.findall("action")}
     if actions != {"android.intent.action.VIEW"} or intent_filter.findall("category"):
         return False
-    actual_data = {
-        tuple(sorted(node.attrib.items()))
+    data_attributes = [
+        attribute
         for node in intent_filter.findall("data")
-    }
+        for attribute in node.attrib.items()
+    ]
     expected_data = {
-        ((ANDROID + "scheme", "content"),),
-        ((ANDROID + "host", "media"),),
-        ((ANDROID + "pathPrefix", "/internal/audio/media/"),),
-        ((ANDROID + "mimeType", "audio/*"),),
+        ANDROID + "scheme": "content",
+        ANDROID + "host": "media",
+        ANDROID + "pathPrefix": "/internal/audio/media/",
+        ANDROID + "mimeType": "audio/*",
     }
-    return actual_data == expected_data
+    # The APK manifest printer may merge the four source <data> elements into
+    # one element. Compare the complete attribute set while rejecting extras.
+    return len(data_attributes) == len(expected_data) and dict(data_attributes) == expected_data
 
 
-def verify_manifest(manifest: str) -> str:
+
+
+def _is_expected_profile_install_receiver(receiver: ET.Element) -> bool:
+    """Allow AndroidX ProfileInstaller only with its system DUMP permission."""
+    if (
+        receiver.get(ANDROID + "exported") != "true"
+        or receiver.get(ANDROID + "permission") != "android.permission.DUMP"
+        or receiver.get(ANDROID + "enabled") not in (None, "true")
+        or receiver.get(ANDROID + "directBootAware") not in (None, "false")
+    ):
+        return False
+    actions = []
+    for intent_filter in receiver.findall("intent-filter"):
+        if intent_filter.attrib or intent_filter.findall("category") or intent_filter.findall("data"):
+            return False
+        filter_actions = [node.get(ANDROID + "name") for node in intent_filter.findall("action")]
+        if len(filter_actions) != 1:
+            return False
+        actions.extend(filter_actions)
+    return len(actions) == len(PROFILE_INSTALL_ACTIONS) and set(actions) == PROFILE_INSTALL_ACTIONS
+
+
+def _is_expected_debug_only_activity(activity: ET.Element) -> bool:
+    """Allow the filterless Compose preview/test hosts only in debug APKs."""
+    return (
+        activity.get(ANDROID + "exported") == "true"
+        and activity.get(ANDROID + "permission") is None
+        and activity.get(ANDROID + "enabled") in (None, "true")
+        and not activity.findall("intent-filter")
+    )
+
+
+def verify_manifest(manifest: str, variant: str = "release") -> str:
     """Validate app security invariants and return the package name."""
+    if variant not in {"debug", "release"}:
+        raise ValueError("variant must be 'debug' or 'release'")
     root = ET.fromstring(manifest)
     package = root.attrib.get("package")
     if not package:
@@ -103,6 +156,11 @@ def verify_manifest(manifest: str) -> str:
         elif name == "androidx.media3.session.BluetoothValidationActivity":
             if not _is_expected_media3_bluetooth_validation_activity(activity):
                 raise RuntimeError("Media3 Bluetooth validation activity is not safely configured")
+        elif name in DEBUG_ONLY_ACTIVITIES:
+            if variant != "debug":
+                raise RuntimeError(f"Debug-only activity must not be packaged in release: {name}")
+            if not _is_expected_debug_only_activity(activity):
+                raise RuntimeError(f"Debug-only activity is not safely configured: {name}")
         elif name.startswith("pe.lee.") and exported != "false":
             raise RuntimeError(f"App activity must be explicitly non-exported: {name}")
         elif exported == "true":
@@ -141,7 +199,8 @@ def verify_manifest(manifest: str) -> str:
     for receiver in app_components["receiver"]:
         name = receiver.get(ANDROID + "name", "")
         if receiver.get(ANDROID + "exported") == "true":
-            raise RuntimeError(f"Exported receiver requires an explicit security review: {name}")
+            if name != PROFILE_INSTALL_RECEIVER or not _is_expected_profile_install_receiver(receiver):
+                raise RuntimeError(f"Exported receiver requires an explicit security review: {name}")
 
     for provider in app_components["provider"]:
         name = provider.get(ANDROID + "name", "")
@@ -164,13 +223,13 @@ def verify_manifest(manifest: str) -> str:
     return package
 
 
-def verify(apk: Path) -> None:
+def verify(apk: Path, variant: str) -> None:
     sdk = Path(os.environ["ANDROID_HOME"])
     analyzer = sdk / "cmdline-tools/latest/bin/apkanalyzer"
     manifest = subprocess.check_output(
         [str(analyzer), "manifest", "print", str(apk)], text=True
     )
-    package = verify_manifest(manifest)
+    package = verify_manifest(manifest, variant)
 
     with zipfile.ZipFile(apk) as archive:
         marker = b"Lpe/lee/feature/sharecard/navigation/ShareCardActivity;"
@@ -187,4 +246,8 @@ def verify(apk: Path) -> None:
 
 
 if __name__ == "__main__":
-    verify(Path(sys.argv[1]))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("apk", type=Path)
+    parser.add_argument("--variant", choices=("debug", "release"), required=True)
+    arguments = parser.parse_args()
+    verify(arguments.apk, arguments.variant)

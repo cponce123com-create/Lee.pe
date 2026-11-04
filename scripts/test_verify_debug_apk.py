@@ -48,10 +48,36 @@ class VerifyApkManifestTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "non-exported"):
             verify_manifest(manifest)
 
+    def test_compose_preview_activity_is_allowed_only_in_debug_and_without_filters(self):
+        for name in (
+            "androidx.compose.ui.tooling.PreviewActivity",
+            "androidx.activity.ComponentActivity",
+        ):
+            with self.subTest(name=name):
+                activity = f'''        <activity android:name="{name}" android:exported="true" />
+'''
+                manifest = BASE_MANIFEST.replace(
+                    "    </application>", activity + "    </application>"
+                )
+                self.assertEqual("pe.lee.app", verify_manifest(manifest, variant="debug"))
+                with self.assertRaisesRegex(RuntimeError, "must not be packaged in release"):
+                    verify_manifest(manifest, variant="release")
+
+                broad_activity = activity.replace(
+                    'android:exported="true" />',
+                    'android:exported="true"><intent-filter><action android:name="android.intent.action.VIEW" /></intent-filter></activity>',
+                )
+                broad_manifest = BASE_MANIFEST.replace(
+                    "    </application>", broad_activity + "    </application>"
+                )
+                with self.assertRaisesRegex(RuntimeError, "not safely configured"):
+                    verify_manifest(broad_manifest, variant="debug")
+
     def test_allows_only_the_documented_hidden_media3_bluetooth_activity(self):
         activity = """        <activity
             android:name="androidx.media3.session.BluetoothValidationActivity"
             android:exported="true" android:excludeFromRecents="true" android:noHistory="true"
+            android:permission="android.permission.BLUETOOTH_PRIVILEGED"
             android:theme="@android:style/Theme.NoDisplay">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -67,10 +93,69 @@ class VerifyApkManifestTest(unittest.TestCase):
         )
         self.assertEqual("pe.lee.app", verify_manifest(manifest))
 
+
+    def test_accepts_packaged_manifest_with_combined_data_attributes(self):
+        activity = """        <activity
+            android:name="androidx.media3.session.BluetoothValidationActivity"
+            android:exported="true" android:excludeFromRecents="true" android:noHistory="true"
+            android:permission="android.permission.BLUETOOTH_PRIVILEGED"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <data android:scheme="content" android:host="media"
+                    android:pathPrefix="/internal/audio/media/" android:mimeType="audio/*" />
+            </intent-filter>
+        </activity>
+"""
+        manifest = BASE_MANIFEST.replace(
+            "    </application>", activity + "    </application>"
+        )
+        self.assertEqual("pe.lee.app", verify_manifest(manifest))
+
+
+    def test_accepts_packaged_android_theme_reference(self):
+        activity = """        <activity
+            android:name="androidx.media3.session.BluetoothValidationActivity"
+            android:exported="true" android:excludeFromRecents="true" android:noHistory="true"
+            android:permission="android.permission.BLUETOOTH_PRIVILEGED"
+            android:theme="@ref/0x1030055">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <data android:scheme="content" />
+                <data android:host="media" />
+                <data android:pathPrefix="/internal/audio/media/" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+        </activity>
+"""
+        manifest = BASE_MANIFEST.replace(
+            "    </application>", activity + "    </application>"
+        )
+        self.assertEqual("pe.lee.app", verify_manifest(manifest))
+
+    def test_rejects_validation_activity_without_system_permission(self):
+        activity = """        <activity
+            android:name="androidx.media3.session.BluetoothValidationActivity"
+            android:exported="true" android:excludeFromRecents="true" android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <data android:scheme="content" android:host="media"
+                    android:pathPrefix="/internal/audio/media/" android:mimeType="audio/*" />
+            </intent-filter>
+        </activity>
+"""
+        manifest = BASE_MANIFEST.replace(
+            "    </application>", activity + "    </application>"
+        )
+        with self.assertRaisesRegex(RuntimeError, "not safely configured"):
+            verify_manifest(manifest)
+
     def test_rejects_broadened_media3_bluetooth_activity_filter(self):
         activity = """        <activity
             android:name="androidx.media3.session.BluetoothValidationActivity"
             android:exported="true" android:excludeFromRecents="true" android:noHistory="true"
+            android:permission="android.permission.BLUETOOTH_PRIVILEGED"
             android:theme="@android:style/Theme.NoDisplay">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -86,6 +171,39 @@ class VerifyApkManifestTest(unittest.TestCase):
             "    </application>", activity + "    </application>"
         )
         with self.assertRaisesRegex(RuntimeError, "not safely configured"):
+            verify_manifest(manifest)
+
+
+    def test_accepts_profile_installer_only_with_dump_permission_and_fixed_actions(self):
+        receiver = """        <receiver
+            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+            android:directBootAware="false" android:enabled="true"
+            android:exported="true" android:permission="android.permission.DUMP">
+            <intent-filter><action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" /></intent-filter>
+            <intent-filter><action android:name="androidx.profileinstaller.action.SKIP_FILE" /></intent-filter>
+            <intent-filter><action android:name="androidx.profileinstaller.action.SAVE_PROFILE" /></intent-filter>
+            <intent-filter><action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" /></intent-filter>
+        </receiver>
+"""
+        manifest = BASE_MANIFEST.replace(
+            "    </application>", receiver + "    </application>"
+        )
+        self.assertEqual("pe.lee.app", verify_manifest(manifest))
+
+    def test_rejects_profile_installer_without_system_permission(self):
+        receiver = """        <receiver
+            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+            android:exported="true">
+            <intent-filter><action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" /></intent-filter>
+            <intent-filter><action android:name="androidx.profileinstaller.action.SKIP_FILE" /></intent-filter>
+            <intent-filter><action android:name="androidx.profileinstaller.action.SAVE_PROFILE" /></intent-filter>
+            <intent-filter><action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" /></intent-filter>
+        </receiver>
+"""
+        manifest = BASE_MANIFEST.replace(
+            "    </application>", receiver + "    </application>"
+        )
+        with self.assertRaisesRegex(RuntimeError, "Exported receiver"):
             verify_manifest(manifest)
 
     def test_rejects_exported_receiver(self):

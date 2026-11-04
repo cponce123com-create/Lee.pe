@@ -173,7 +173,7 @@ Estado actual: biblioteca local con Room e importación SAF (incluida migración
 - [ ] Comprobar en dispositivos que restauración EPUB, modo PDF e interfaz de temporizador funcionan correctamente.
 - Mejorar portadas, estados vacíos, errores, carga y recuperación tras cierre inesperado.
 - [x] Implementar respaldo **manual y voluntario**, local, exportable y restaurable de metadatos de biblioteca, ajustes, progreso, estadísticas y anotaciones. No contiene archivos originales: los libros deben reimportarse antes de restaurar; ver [respaldo local](RESPALDO_LOCAL.md).
-- [ ] Validar respaldo y restauración en teléfonos reales, incluyendo reins­talación, coincidencias de título, JSON dañado y archivos grandes. El respaldo no está cifrado.
+- [ ] Validar en teléfonos reales la exportación e importación de `.leepebackup` cifrados, contraseñas incorrectas, compatibilidad JSON v1/v2, reinstalación, coincidencias de título, archivos dañados y archivos grandes. El usuario debe conservar la contraseña: Lee.pe no puede recuperarla.
 
 **Se considera lista cuando**
 - Las funciones principales son accesibles sin depender solo del color o de gestos.
