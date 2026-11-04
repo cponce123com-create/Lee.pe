@@ -19,6 +19,30 @@ class BookshelfLayoutTest {
     }
 
     @Test
+    fun movingDecorationReordersItWithBooksAndCanMoveItToAnotherShelf() {
+        val initial = BookshelfLayout()
+            .reconcile(listOf("book-1", "book-2"))
+            .addDecoration(ShelfDecorationType.DIVIDER, shelf = 0, order = 1)
+        val decoration = initial.decorations.single()
+
+        val movedLeft = initial.moveDecoration(decoration.id, orderDelta = -1)
+        assertEquals(
+            listOf("book-1", decoration.id, "book-2"),
+            movedLeft.objectsOnShelf(0).map { item ->
+                when (item) {
+                    is ShelfObject.Book -> item.placement.bookId
+                    is ShelfObject.Decor -> item.decoration.id
+                }
+            }
+        )
+
+        val movedUp = movedLeft.moveDecoration(decoration.id, shelfDelta = 1)
+        assertEquals(1, movedUp.decorations.single().shelf)
+        assertEquals(listOf(decoration.id), movedUp.objectsOnShelf(1).map { (it as ShelfObject.Decor).decoration.id })
+        assertEquals(listOf("book-1", "book-2"), movedUp.objectsOnShelf(0).map { (it as ShelfObject.Book).placement.bookId })
+    }
+
+    @Test
     fun customBooksAndDecorationsSurviveLocalLayoutSerialization() {
         val layout = BookshelfLayout()
             .reconcile(listOf("book-1", "book-2"))

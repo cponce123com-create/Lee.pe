@@ -117,11 +117,40 @@ internal data class BookshelfLayout(
         return copy(decorations = decorations + decoration)
     }
 
-    fun moveDecoration(id: String, shelfDelta: Int = 0, orderDelta: Int = 0): BookshelfLayout = copy(
-        decorations = decorations.map { item ->
-            if (item.id != id) item else item.copy(shelf = (item.shelf + shelfDelta).coerceAtLeast(0), order = (item.order + orderDelta).coerceAtLeast(0))
+    fun moveDecoration(id: String, shelfDelta: Int = 0, orderDelta: Int = 0): BookshelfLayout {
+        val decoration = decorations.firstOrNull { it.id == id } ?: return this
+        val sourceShelf = decoration.shelf
+        val targetShelf = (sourceShelf + shelfDelta).coerceAtLeast(0)
+        val sourceObjects = objectsOnShelf(sourceShelf).toMutableList()
+        val sourceIndex = sourceObjects.indexOfFirst { it is ShelfObject.Decor && it.decoration.id == id }
+        if (sourceIndex < 0) return this
+
+        val moving = sourceObjects.removeAt(sourceIndex)
+        val targetObjects = if (targetShelf == sourceShelf) sourceObjects else objectsOnShelf(targetShelf).toMutableList()
+        val targetIndex = (sourceIndex + orderDelta).coerceIn(0, targetObjects.size)
+        targetObjects.add(targetIndex, moving)
+
+        val changedShelves = if (targetShelf == sourceShelf) {
+            mapOf(sourceShelf to targetObjects)
+        } else {
+            mapOf(sourceShelf to sourceObjects, targetShelf to targetObjects)
         }
-    )
+        val changedBooks = changedShelves.flatMap { (shelf, objects) ->
+            objects.mapIndexedNotNull { index, item ->
+                (item as? ShelfObject.Book)?.placement?.copy(shelf = shelf, order = index)
+            }
+        }
+        val changedDecorations = changedShelves.flatMap { (shelf, objects) ->
+            objects.mapIndexedNotNull { index, item ->
+                (item as? ShelfObject.Decor)?.decoration?.copy(shelf = shelf, order = index)
+            }
+        }
+        val shelfIds = changedShelves.keys
+        return copy(
+            books = books.filterNot { it.shelf in shelfIds } + changedBooks,
+            decorations = decorations.filterNot { it.shelf in shelfIds } + changedDecorations
+        )
+    }
 
     fun removeDecoration(id: String): BookshelfLayout = copy(decorations = decorations.filterNot { it.id == id })
 
