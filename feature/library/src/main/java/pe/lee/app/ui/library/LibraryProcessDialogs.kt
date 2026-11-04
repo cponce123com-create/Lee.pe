@@ -39,7 +39,6 @@ internal fun LibraryProcessDialogs(
     viewModel: LibraryViewModel,
     backupRepository: LocalBackupRepository,
     coroutineScope: CoroutineScope,
-    storedBooks: List<BookEntity>,
     scanner: ScannerUiState,
     onCancelScan: () -> Unit,
     onClearScanPreview: () -> Unit,

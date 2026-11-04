@@ -12,7 +12,6 @@ internal fun LibraryScreenDialogs(state: LibraryScreenState) = with(state) {
         viewModel = viewModel,
         backupRepository = backupRepository,
         coroutineScope = coroutineScope,
-        storedBooks = storedBooks,
         scanner = scannerState,
         onCancelScan = viewModel::cancelScan,
         onClearScanPreview = viewModel::clearScanPreview,
