@@ -49,7 +49,10 @@ fun QuoteCardPreview(
             text = card.text.trim(),
             style = TextStyle(color = palette.text, fontFamily = family, fontStyle = palette.fontStyle),
             modifier = Modifier.weight(1f).fillMaxWidth(),
-            minimum = 12,
+            // Story cards have enough vertical space to remain readable at 8sp
+            // for long, legitimate quotations. Extremely long text still fails
+            // the measured height check and remains non-exportable.
+            minimum = 8,
             maximum = 32,
             onFitsChanged = { quoteFits = it }
         )
