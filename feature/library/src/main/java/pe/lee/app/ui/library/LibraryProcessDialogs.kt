@@ -125,7 +125,7 @@ internal fun LibraryProcessDialogs(
                                 throw cancelled
                             } catch (error: Exception) {
                                 Toast.makeText(
-                                    context, error.message ?: context.getString(R.string.scanner_import_failed),
+                                    context, context.getString(R.string.scanner_import_failed),
                                     Toast.LENGTH_LONG
                                 ).show()
                             } finally {
@@ -218,7 +218,7 @@ internal fun LibraryProcessDialogs(
                             } catch (cancelled: CancellationException) {
                                 throw cancelled
                             } catch (e: Exception) {
-                                Toast.makeText(context, e.message ?: context.getString(R.string.backup_restore_failed), Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, context.getString(R.string.backup_restore_failed), Toast.LENGTH_LONG).show()
                             } finally {
                                 backupBusy.value = false
                             }

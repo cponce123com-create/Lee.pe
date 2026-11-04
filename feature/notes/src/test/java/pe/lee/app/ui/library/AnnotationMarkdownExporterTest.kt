@@ -39,4 +39,27 @@ class AnnotationMarkdownExporterTest {
         assertTrue(annotationExportFileName("Árbol y río").endsWith("_anotaciones.md"))
         assertFalse(annotationExportFileName("../../").contains("/"))
     }
+
+    @Test
+    fun acceptsLocalizedPageAndFallbackBookLabels() {
+        val markdown = AnnotationMarkdownExporter.toMarkdown(
+            bookTitle = "Libro",
+            format = "PDF",
+            exportedAt = 0L,
+            annotations = listOf(
+                ReaderAnnotation(
+                    id = "note-page",
+                    bookUri = "content://private/book.pdf",
+                    kind = "NOTE",
+                    locatorJson = "{\"pageIndex\":4}",
+                    noteText = "Nota",
+                    createdAt = 0L
+                )
+            ),
+            pageLabel = { "Page $it" }
+        )
+
+        assertTrue(markdown.contains("Page 5"))
+        assertTrue(annotationExportFileName("../../", "book").startsWith("book_"))
+    }
 }

@@ -29,6 +29,7 @@ El selector de narración muestra solo voces Android locales en español y ofrec
 - Android Storage Access Framework para importar archivos con permisos limitados.
 - Room para biblioteca, progreso, marcadores/notas EPUB y anotaciones por página PDF, incluidos resaltados persistentes.
 - Media3 para audiolibros locales en segundo plano y Readium/Android TTS para narración EPUB; ambas rutas están implementadas en código y requieren validación en dispositivos.
+- Los servicios multimedia exponen únicamente la acción de sesión Media3 y rechazan controladores no confiables; la compatibilidad con Android Auto, Wear OS y Assistant todavía no está validada.
 - Render y Neon solo para API y sincronización opcional; Cloudinary para portadas si hace falta. Los libros no se subirán automáticamente.
 
 ## Abrir el proyecto
@@ -51,7 +52,7 @@ El selector de narración muestra solo voces Android locales en español y ofrec
 
 ## Licencias
 
-Readium Kotlin Toolkit se distribuye bajo BSD-3-Clause. Conserva sus avisos de licencia al distribuir la aplicación.
+Readium Kotlin Toolkit se distribuye bajo BSD-3-Clause. Conserva sus avisos de licencia al distribuir la aplicación. El repositorio aún no declara una licencia para Lee.pe: el autor debe elegirla antes de publicar el código; no se asume una licencia por defecto. Consulta [NOTICE](NOTICE) para los avisos de terceros. El inventario completo de licencias transitivas de la versión final sigue pendiente de generarse desde el grafo de Gradle.
 
 ## Compartir citas como imagen
 

@@ -20,6 +20,7 @@ internal object DeletedBookCleanup {
             check(AudioProgressStore.remove(context, uri))
             check(settings.removeBookScopedPreferences(uri))
             onComplete(uri)
+            PersistableUriGrants.release(context, Uri.parse(uri))
             true
         } catch (cancelled: CancellationException) {
             throw cancelled

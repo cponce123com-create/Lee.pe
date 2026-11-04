@@ -9,6 +9,7 @@ import pe.lee.app.data.local.CollectionEntity
 import pe.lee.app.data.repository.BookRepository
 import pe.lee.core.domain.ReadingStatisticsRepository
 import pe.lee.core.domain.ReaderAnnotationRepository
+import pe.lee.feature.library.R
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +23,8 @@ import kotlinx.coroutines.launch
 
 data class LibraryState(
     val books: List<BookEntity> = emptyList(),
-    val collections: List<CollectionEntity> = emptyList()
+    val collections: List<CollectionEntity> = emptyList(),
+    val bookCollectionNames: Map<String, List<String>> = emptyMap()
 )
 
 /** State of the SAF folder scan, owned by the ViewModel so a rotation cannot cancel it (A-36). */
@@ -43,13 +45,21 @@ class LibraryViewModel(
 ) : ViewModel() {
     val state: StateFlow<LibraryState> = combine(
         booksRepository.observeBooks(),
-        booksRepository.observeCollections()
-    ) { books, collections -> LibraryState(books, collections) }
+        booksRepository.observeCollections(),
+        booksRepository.observeBookCollectionNames()
+    ) { books, collections, assignments ->
+        LibraryState(
+            books = books,
+            collections = collections,
+            bookCollectionNames = assignments.groupBy({ it.bookId }, { it.collectionName })
+        )
+    }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LibraryState())
 
     fun observeDurationForDay(day: String) = statsRepository.observeDurationForDay(day)
     fun observeReadingDayKeys() = statsRepository.observeReadingDayKeys()
     suspend fun findBook(uri: String) = booksRepository.findByUri(uri)
+    suspend fun findBookById(id: String) = booksRepository.findById(id)
     suspend fun insertBook(book: BookEntity) = booksRepository.insertBooks(listOf(book))
     suspend fun insertBooks(books: List<BookEntity>) = booksRepository.insertBooks(books)
     suspend fun rebindUri(bookId: String, uri: String) = booksRepository.rebindUri(bookId, uri)
@@ -75,6 +85,7 @@ class LibraryViewModel(
 
     internal fun scanFolder(context: Context, treeUri: Uri, alreadyImported: List<String>) {
         scanJob?.cancel()
+        val appContext = context.applicationContext
         mutableScanner.update {
             it.copy(
                 busy = true,
@@ -86,10 +97,9 @@ class LibraryViewModel(
                 folderName = treeUri.lastPathSegment
                     ?.substringAfterLast(':')
                     ?.takeIf(String::isNotBlank)
-                    ?: "Carpeta seleccionada"
+                    ?: appContext.getString(R.string.library_selected_folder)
             )
         }
-        val appContext = context.applicationContext
         scanJob = viewModelScope.launch {
             try {
                 val result = LocalFolderScanner.scan(appContext, treeUri, alreadyImported) { progress ->
@@ -107,8 +117,7 @@ class LibraryViewModel(
             } catch (error: Exception) {
                 mutableScanner.update {
                     it.copy(
-                        error = error.message
-                            ?: "No se pudo escanear la carpeta.",
+                        error = appContext.getString(R.string.scanner_import_failed),
                         busy = false
                     )
                 }

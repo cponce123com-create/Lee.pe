@@ -2,12 +2,15 @@ package pe.lee.app.ui.audio
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.net.Uri
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import androidx.annotation.OptIn
+import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -18,6 +21,7 @@ import kotlinx.coroutines.launch
 import pe.lee.app.MainActivity
 import pe.lee.app.data.repository.AudioProgressStore
 
+@OptIn(UnstableApi::class)
 class AudioPlaybackService : MediaSessionService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var player: ExoPlayer? = null
@@ -29,7 +33,14 @@ class AudioPlaybackService : MediaSessionService() {
         super.onCreate()
 
         val exoPlayer = ExoPlayer.Builder(this).setWakeMode(C.WAKE_MODE_LOCAL).build()
-        exoPlayer.setAudioAttributes(AudioAttributes.DEFAULT, true)
+        exoPlayer.setAudioAttributes(
+            AudioAttributes.Builder()
+                .setUsage(C.USAGE_MEDIA)
+                .setContentType(C.AUDIO_CONTENT_TYPE_SPEECH)
+                .build(),
+            true
+        )
+        exoPlayer.setHandleAudioBecomingNoisy(true)
         player = exoPlayer
         exoPlayer.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -54,6 +65,18 @@ class AudioPlaybackService : MediaSessionService() {
                 lastSavedMediaId = null
                 lastSavedPositionMs = -1L
                 savePosition(exoPlayer, force = true)
+                mediaItem?.let { item ->
+                    val openPlayer = Intent(this@AudioPlaybackService, AudioPlayerActivity::class.java)
+                        .setData(Uri.parse(item.mediaId))
+                        .putExtra(AudioPlayerActivity.EXTRA_TITLE, item.mediaMetadata.title?.toString().orEmpty())
+                    val playerIntent = PendingIntent.getActivity(
+                        this@AudioPlaybackService,
+                        item.mediaId.hashCode(),
+                        openPlayer,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+                    mediaSession?.setSessionActivity(playerIntent)
+                }
             }
         })
 

@@ -16,6 +16,7 @@ import pe.lee.app.data.local.LocalBackupMatcher
 import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.app.data.repository.AudioProgressStore
 import pe.lee.app.data.repository.LocalBackupRepository
+import pe.lee.core.domain.LocalTextLimits
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.util.Locale
@@ -23,7 +24,7 @@ import java.util.Locale
 private const val BACKUP_SCHEMA = "lee.pe.local-library"
 private const val BACKUP_VERSION = 2
 private const val MIN_BACKUP_VERSION = 1
-private const val MAX_ARCHIVE_BYTES = 16 * 1024 * 1024
+private const val MAX_ARCHIVE_BYTES = 64 * 1024 * 1024
 private const val MAX_BOOKS = 20000
 private const val MAX_ANNOTATIONS = 60000
 private const val MAX_SESSIONS = 100000
@@ -42,9 +43,12 @@ internal data class LocalBackupPreview(
     val unavailable: Int
 )
 
+internal data class SanitizedBackupSnapshot(val snapshot: LocalBackupSnapshot, val adjustedRecords: Int)
+
 internal object LocalLibraryBackup {
     suspend fun save(context: Context, uri: Uri, backupRepository: LocalBackupRepository) = withContext(Dispatchers.IO) {
-        val snapshot = backupRepository.snapshot()
+        val sanitized = sanitizeSnapshot(backupRepository.snapshot())
+        val snapshot = sanitized.snapshot
         val settingsRepository = SettingsRepository(context)
         val librarySettings = settingsRepository.all(SettingsRepository.Store.LIBRARY)
         val goal = settingsRepository.getInt(SettingsRepository.Store.READING_STATS, "daily_goal_minutes", 30)
@@ -114,13 +118,14 @@ internal object LocalLibraryBackup {
             .put("collections", collections)
         val bytes = root.toString().toByteArray(Charsets.UTF_8)
         if (bytes.size > MAX_ARCHIVE_BYTES) {
-            throw IOException("El respaldo supera 16 MB. Exporta las anotaciones por libro.")
+            throw IOException("El respaldo supera el límite de 64 MB.")
         }
         // Never write an archive that our own importer cannot read.
         parse(bytes.toString(Charsets.UTF_8))
         val output = context.contentResolver.openOutputStream(uri, "wt")
             ?: throw IOException("No se pudo abrir el destino del respaldo.")
         output.use { it.write(bytes) }
+        sanitized.adjustedRecords
     }
 
     suspend fun preview(
@@ -136,7 +141,7 @@ internal object LocalLibraryBackup {
             while (true) {
                 val n = stream.read(chunk)
                 if (n < 0) break
-                if (buffer.size() + n > MAX_ARCHIVE_BYTES) throw IOException("Respaldo demasiado grande (máximo 16 MB).")
+                if (buffer.size() + n > MAX_ARCHIVE_BYTES) throw IOException("Respaldo demasiado grande (máximo 64 MB).")
                 buffer.write(chunk, 0, n)
             }
         }
@@ -258,7 +263,7 @@ internal object LocalLibraryBackup {
                         }
                         for (index in 0 until array.length()) {
                             val name = array.getString(index).trim()
-                            if (name.isEmpty() || name.length > 120) {
+                            if (name.isEmpty() || name.length > LocalTextLimits.COLLECTION_NAME) {
                                 throw IOException("Nombre de colección no válido.")
                             }
                             add(name)
@@ -269,13 +274,13 @@ internal object LocalLibraryBackup {
                     collectionNamesByBook[bookUri] = savedCollections
                 }
                 books.add(BookEntity(
-                    uri = bookUri, title = o.text("title", 500), format = format,
+                    uri = bookUri, title = o.text("title", LocalTextLimits.BOOK_TITLE), format = format,
                     importedAt = o.getLong("importedAt").coerceAtLeast(0L),
                     lastOpenedAt = if (o.isNull("lastOpenedAt")) null else o.getLong("lastOpenedAt").coerceAtLeast(0L),
-                    epubLocator = o.maybeText("epubLocator", 16000),
+                    epubLocator = o.maybeText("epubLocator", LocalTextLimits.LOCATOR_JSON),
                     readProgress = progression.toFloat(), pdfPageIndex = page,
                     isFavorite = o.getBoolean("isFavorite"),
-                    collectionId = o.maybeText("collectionId", 120)
+                    collectionId = o.maybeText("collectionId", LocalTextLimits.COLLECTION_NAME)
                 ))
             }
             val restoredCollections = ArrayList<CollectionEntity>()
@@ -286,7 +291,7 @@ internal object LocalLibraryBackup {
                 val seenNames = HashSet<String>()
                 for (index in 0 until array.length()) {
                     val o = array.getJSONObject(index)
-                    val name = o.text("name", 120).trim()
+                    val name = o.text("name", LocalTextLimits.COLLECTION_NAME).trim()
                     val normalized = name.lowercase(Locale.ROOT)
                     if (normalized.isEmpty() || !seenNames.add(normalized)) continue
                     restoredCollections.add(
@@ -312,9 +317,9 @@ internal object LocalLibraryBackup {
                 }
                 notes.add(ReadingAnnotationEntity(
                     id = id, bookUri = bookUri, kind = kind,
-                    locatorJson = o.text("locatorJson", 16000),
-                    selectedText = o.maybeText("selectedText", 12000),
-                    noteText = o.maybeText("noteText", 12000),
+                    locatorJson = o.text("locatorJson", LocalTextLimits.LOCATOR_JSON),
+                    selectedText = o.maybeText("selectedText", LocalTextLimits.ANNOTATION_TEXT),
+                    noteText = o.maybeText("noteText", LocalTextLimits.ANNOTATION_TEXT),
                     colorArgb = if (o.isNull("colorArgb")) null else o.getInt("colorArgb"),
                     createdAt = o.getLong("createdAt").coerceAtLeast(0L),
                     updatedAt = o.getLong("updatedAt").coerceAtLeast(0L)
@@ -387,5 +392,52 @@ internal object LocalLibraryBackup {
         } catch (error: Exception) {
             throw IOException("El respaldo no tiene el formato esperado o está dañado.", error)
         }
+    }
+
+    internal fun sanitizeSnapshot(snapshot: LocalBackupSnapshot): SanitizedBackupSnapshot {
+        var adjusted = 0
+        val books = snapshot.books.take(MAX_BOOKS).map { book ->
+            val title = book.title.take(LocalTextLimits.BOOK_TITLE)
+            val collection = book.collectionId?.take(LocalTextLimits.COLLECTION_NAME)
+            val locator = book.epubLocator?.takeIf { it.length <= LocalTextLimits.LOCATOR_JSON }
+            if (title != book.title || collection != book.collectionId || locator != book.epubLocator) adjusted++
+            book.copy(title = title, collectionId = collection, epubLocator = locator)
+        }.also { if (snapshot.books.size > MAX_BOOKS) adjusted += snapshot.books.size - MAX_BOOKS }
+        val notes = snapshot.annotations.asSequence().mapNotNull { note ->
+            if (note.locatorJson.length > LocalTextLimits.LOCATOR_JSON) {
+                adjusted++
+                return@mapNotNull null
+            }
+            val selectedText = note.selectedText?.take(LocalTextLimits.ANNOTATION_TEXT)
+            val noteText = note.noteText?.take(LocalTextLimits.ANNOTATION_TEXT)
+            if (selectedText != note.selectedText || noteText != note.noteText) adjusted++
+            note.copy(selectedText = selectedText, noteText = noteText)
+        }.take(MAX_ANNOTATIONS).toList().also {
+            if (snapshot.annotations.size > MAX_ANNOTATIONS) adjusted += snapshot.annotations.size - MAX_ANNOTATIONS
+        }
+        val collections = snapshot.collections.take(MAX_COLLECTIONS).map { collection ->
+            val name = collection.name.take(LocalTextLimits.COLLECTION_NAME)
+            if (name != collection.name) adjusted++
+            collection.copy(name = name, normalizedName = name.lowercase(Locale.ROOT))
+        }.also { if (snapshot.collections.size > MAX_COLLECTIONS) adjusted += snapshot.collections.size - MAX_COLLECTIONS }
+        val bookCollectionNames = snapshot.bookCollectionNames.mapValues { (_, names) ->
+            names.mapNotNull { name ->
+                if (name.length > LocalTextLimits.COLLECTION_NAME) adjusted++
+                name.take(LocalTextLimits.COLLECTION_NAME).takeIf(String::isNotBlank)
+            }.distinctBy { it.lowercase(Locale.ROOT) }.take(MAX_COLLECTIONS)
+        }
+        val sessions = snapshot.sessions.take(MAX_SESSIONS).also {
+            if (snapshot.sessions.size > MAX_SESSIONS) adjusted += snapshot.sessions.size - MAX_SESSIONS
+        }
+        return SanitizedBackupSnapshot(
+            snapshot.copy(
+                books = books,
+                annotations = notes,
+                sessions = sessions,
+                collections = collections,
+                bookCollectionNames = bookCollectionNames
+            ),
+            adjusted
+        )
     }
 }

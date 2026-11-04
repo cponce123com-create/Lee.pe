@@ -338,7 +338,7 @@ internal fun LibraryCatalog(
                                         } catch (cancelled: CancellationException) {
                                             throw cancelled
                                         } catch (error: Exception) {
-                                            Toast.makeText(context, error.message ?: context.getString(R.string.library_offline_copy_save_failed), Toast.LENGTH_LONG).show()
+                                            Toast.makeText(context, context.getString(R.string.library_offline_copy_save_failed), Toast.LENGTH_LONG).show()
                                         } finally {
                                             savingBookUri.value = null
                                         }
@@ -355,17 +355,18 @@ internal fun LibraryCatalog(
                                         if (annotations.isEmpty()) {
                                             Toast.makeText(context, context.getString(R.string.library_no_annotations), Toast.LENGTH_SHORT).show()
                                         } else {
-                                            pendingMarkdown.value = AnnotationMarkdownExporter.toMarkdown(
-                                                bookTitle = book.title,
-                                                format = book.format,
-                                                annotations = annotations
+                                            pendingMarkdown.value = book.id
+                                            onExportAnnotationsFile(
+                                                annotationExportFileName(
+                                                    book.title,
+                                                    context.getString(pe.lee.feature.notes.R.string.annotation_default_book)
+                                                )
                                             )
-                                            onExportAnnotationsFile(annotationExportFileName(book.title))
                                         }
                                     } catch (cancelled: CancellationException) {
                                         throw cancelled
                                     } catch (error: Exception) {
-                                        Toast.makeText(context, error.message ?: context.getString(R.string.library_annotations_read_failed), Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, context.getString(R.string.library_annotations_read_failed), Toast.LENGTH_LONG).show()
                                     }
                                 }
                             },
@@ -380,7 +381,7 @@ internal fun LibraryCatalog(
                             },
                             onOrganize = {
                                 organizingBook.value = book
-                                collectionDraft.value = book.collectionId.orEmpty()
+                                collectionDraft.value = book.collectionNames.firstOrNull().orEmpty()
                             }
                         )
                     }

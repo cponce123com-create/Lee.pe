@@ -3,6 +3,7 @@ package pe.lee.app.data.local
 import android.content.Context
 import android.net.Uri
 import android.os.StatFs
+import android.provider.OpenableColumns
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
@@ -75,6 +76,21 @@ object OfflineBookStore {
                         findCopy(context, originalUri)?.let { return@withContext it }
                         val temporary = File.createTempFile("lee-pe-", ".part", directory)
                         try {
+                            val sourceSize = context.contentResolver.query(
+                                originalUri,
+                                arrayOf(OpenableColumns.SIZE),
+                                null,
+                                null,
+                                null
+                            )?.use { cursor ->
+                                if (cursor.moveToFirst()) {
+                                    val index = cursor.getColumnIndex(OpenableColumns.SIZE)
+                                    if (index >= 0 && !cursor.isNull(index)) cursor.getLong(index) else -1L
+                                } else -1L
+                            } ?: -1L
+                            if (sourceSize >= 0L && StatFs(directory.absolutePath).availableBytes < sourceSize) {
+                                throw IOException("No hay espacio suficiente para guardar la copia sin conexión.")
+                            }
                             val input = context.contentResolver.openInputStream(originalUri)
                                 ?: throw IOException("No se pudo leer el archivo original. Revisa su permiso.")
                             input.use { source ->
@@ -90,7 +106,10 @@ object OfflineBookStore {
                                         // few megabytes is enough and keeps large audio books
                                         // from crawling (A-09).
                                         if (bytesSinceSpaceCheck >= SPACE_CHECK_INTERVAL_BYTES) {
-                                            if (StatFs(directory.absolutePath).availableBytes < count.toLong()) {
+                                            val remaining = if (sourceSize >= 0L) {
+                                                (sourceSize - copiedBytes).coerceAtLeast(count.toLong())
+                                            } else count.toLong()
+                                            if (StatFs(directory.absolutePath).availableBytes < remaining) {
                                                 throw IOException("No hay espacio suficiente para guardar la copia sin conexión.")
                                             }
                                             bytesSinceSpaceCheck = 0L
@@ -132,6 +151,15 @@ object OfflineBookStore {
             .all { file -> !file.exists() || file.delete() }
     }
 
+    /** Removes incomplete copies left behind by a force stop or power loss. */
+    fun purgeOrphanedParts(context: Context) {
+        val cutoff = System.currentTimeMillis() - ORPHAN_PART_MAX_AGE_MS
+        directory(context).listFiles()
+            ?.asSequence()
+            ?.filter { it.isFile && it.name.endsWith(".part") && it.lastModified() < cutoff }
+            ?.forEach(File::delete)
+    }
+
     @Synchronized
     fun rebindCopy(context: Context, oldUri: Uri, newUri: Uri) {
         if (oldUri == newUri) return
@@ -160,4 +188,6 @@ object OfflineBookStore {
         MessageDigest.getInstance("SHA-256")
             .digest(value.toByteArray(Charsets.UTF_8))
             .joinToString("") { byte -> "%02x".format(byte) }
+
+    private const val ORPHAN_PART_MAX_AGE_MS = 24 * 60 * 60 * 1000L
 }

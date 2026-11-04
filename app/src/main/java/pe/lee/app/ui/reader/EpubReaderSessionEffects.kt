@@ -13,6 +13,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.commitNow
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.CancellationException
@@ -167,8 +171,8 @@ internal fun EpubReaderSessionEffects(
 
             val selectionActionCallback = object : BaseActionModeCallback() {
                 override fun onCreateActionMode(mode: ActionMode, menu: Menu): Boolean {
-                    menu.add(Menu.NONE, MENU_HIGHLIGHT, Menu.NONE, "Resaltar")
-                    menu.add(Menu.NONE, MENU_COPY_SELECTION, Menu.NONE, "Copiar")
+                    menu.add(Menu.NONE, MENU_HIGHLIGHT, Menu.NONE, context.getString(R.string.epub_selection_highlight))
+                    menu.add(Menu.NONE, MENU_COPY_SELECTION, Menu.NONE, context.getString(R.string.epub_selection_copy))
                     menu.add(Menu.NONE, MENU_SHARE_SELECTION, 0, context.getString(ShareCardR.string.share_card_create_action))
                         .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
                     return true
@@ -186,7 +190,7 @@ internal fun EpubReaderSessionEffects(
                                     bookUri = uri.toString(),
                                     kind = "HIGHLIGHT",
                                     locatorJson = selectedLocator.toJSON().toString(),
-                                    selectedText = selectedLocator.text.highlight,
+                                    selectedText = selectedLocator.text.highlight?.take(12_000),
                                     colorArgb = DEFAULT_HIGHLIGHT_COLOR,
                                     createdAt = now
                                 )
@@ -241,7 +245,7 @@ internal fun EpubReaderSessionEffects(
             }
             val epubNavigator = activity.supportFragmentManager
                 .findFragmentByTag(NAVIGATOR_TAG) as? EpubNavigatorFragment
-                ?: error("No se pudo crear el lector EPUB.")
+                ?: error(context.getString(R.string.epub_navigator_create_failed))
             epubNavigator.addInputListener(
                 DirectionalNavigationAdapter(epubNavigator, animatedTransition = true)
             )
@@ -280,7 +284,7 @@ internal fun EpubReaderSessionEffects(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
-            session.errorMessage.value = error.message ?: "No se pudo abrir este EPUB."
+            session.errorMessage.value = context.getString(R.string.epub_open_failed)
             session.loading.value = false
         }
     }
@@ -345,7 +349,7 @@ internal fun EpubReaderSessionEffects(
             session.ttsIsPlaying.value = playback.playWhenReady
             if (playback.state is TtsNavigator.State.Ended) session.ttsIsPlaying.value = false
             if (playback.state is TtsNavigator.State.Failure) {
-                session.ttsError.value = "No se pudo iniciar la voz. Comprueba que haya una voz de Android instalada para el idioma del libro."
+                session.ttsError.value = context.getString(R.string.tts_voice_unavailable)
             }
         }
     }
@@ -362,7 +366,8 @@ internal fun EpubReaderSessionEffects(
         val reader = session.navigator.value ?: return@LaunchedEffect
         // Scroll mode emits a locator several times per second. Persisting each
         // one wrote to Room and SharedPreferences on every frame; throttle to one
-        // write every two seconds and rely on onPause for the final position.
+        // write every two seconds. A lifecycle observer below persists the final
+        // current locator when the activity pauses.
         var lastSavedAt = 0L
         reader.currentLocator.collect { locator ->
             val now = System.currentTimeMillis()
@@ -381,6 +386,33 @@ internal fun EpubReaderSessionEffects(
                 openedAt = System.currentTimeMillis()
             )
         }
+    }
+
+    DisposableEffect(activity, uri, session.navigator.value) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE) {
+                val locator = session.navigator.value?.currentLocator?.value ?: return@LifecycleEventObserver
+                coroutineScope.launch {
+                    val locatorJson = locator.toJSON().toString()
+                    val progress = locator.locations.totalProgression?.toFloat()
+                        ?.coerceIn(0f, 1f) ?: session.progress.value
+                    session.progress.value = progress
+                    withContext(Dispatchers.IO) {
+                        settings.apply(SettingsRepository.Store.LIBRARY) {
+                            putString(ReaderActivity.locatorPreferenceKey(uri), locatorJson)
+                        }
+                        viewModel.saveProgress(
+                            uri = uri.toString(),
+                            locatorJson = locatorJson,
+                            progress = progress,
+                            openedAt = System.currentTimeMillis()
+                        )
+                    }
+                }
+            }
+        }
+        activity.lifecycle.addObserver(observer)
+        onDispose { activity.lifecycle.removeObserver(observer) }
     }
 
     return buildEpubReaderSessionActions(

@@ -14,10 +14,25 @@ interface BookDao {
     fun observeAll(): Flow<List<BookEntity>>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insert(book: BookEntity)
+    suspend fun insertBookRow(book: BookEntity)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertAll(books: List<BookEntity>)
+    suspend fun insertBookRows(books: List<BookEntity>)
+
+    @Query("DELETE FROM pending_book_cleanup WHERE uri = :uri")
+    suspend fun cancelPendingCleanup(uri: String)
+
+    @Transaction
+    suspend fun insert(book: BookEntity) {
+        cancelPendingCleanup(book.uri)
+        insertBookRow(book)
+    }
+
+    @Transaction
+    suspend fun insertAll(books: List<BookEntity>) {
+        books.forEach { cancelPendingCleanup(it.uri) }
+        insertBookRows(books)
+    }
 
     @Query("SELECT * FROM library_books WHERE uri = :uri LIMIT 1")
     suspend fun findByUri(uri: String): BookEntity?
@@ -53,6 +68,14 @@ interface BookDao {
 
     @Query("SELECT * FROM collections ORDER BY sortOrder ASC, name COLLATE NOCASE ASC")
     fun observeCollections(): Flow<List<CollectionEntity>>
+
+    @Query("""
+        SELECT book_collections.bookId AS bookId, collections.name AS collectionName
+        FROM book_collections
+        JOIN collections ON collections.id = book_collections.collectionId
+        ORDER BY collections.sortOrder, collections.name COLLATE NOCASE
+    """)
+    fun observeBookCollectionNames(): Flow<List<BookCollectionAssignment>>
 
     @Query("SELECT * FROM collections ORDER BY sortOrder ASC, name COLLATE NOCASE ASC")
     suspend fun getCollections(): List<CollectionEntity>
@@ -136,10 +159,11 @@ interface BookDao {
 
     @Transaction
     suspend fun deleteCollection(id: Long) {
-        val name = collectionName(id) ?: return
-        val normalized = name.lowercase(Locale.ROOT)
-        clearLegacyCollectionName(normalized)
+        val affectedBooks = booksInCollection(id)
         deleteCollectionRow(id)
+        affectedBooks.forEach { book ->
+            updateLegacyCollection(book.uri, collectionNamesForBook(book.uri).firstOrNull())
+        }
     }
 
     @Query("SELECT name FROM collections WHERE id = :id LIMIT 1")

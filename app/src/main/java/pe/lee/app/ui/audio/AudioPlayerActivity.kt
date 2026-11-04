@@ -109,8 +109,6 @@ class AudioPlayerActivity : ComponentActivity() {
                     controller.setMediaItem(item, AudioProgressStore.get(this, mediaId))
                     controller.prepare()
                     controller.play()
-                } else if (!controller.isPlaying) {
-                    controller.play()
                 }
             } catch (_: Exception) {
                 connectionError.value = getString(R.string.audio_connection_failed)
@@ -191,7 +189,7 @@ private fun AudioPlayerScreen(
                 if (controller == null && error == null) {
                     Text(stringResource(R.string.audio_connecting), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 12.dp))
                 }
-                (playerState.error ?: error)?.let {
+                (playerState.error ?: playerState.errorMessageRes?.let { stringResource(it) } ?: error)?.let {
                     Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 16.dp))
                 }
             }
@@ -213,9 +211,9 @@ private fun AudioPlayerScreen(
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                     IconButton(enabled = controller != null, onClick = {
-                        viewModel.seekTo((playerState.positionMs - 15_000L).coerceAtLeast(0L))
+                        viewModel.seekTo((playerState.positionMs - 10_000L).coerceAtLeast(0L))
                     }) {
-                        Icon(Icons.Default.Replay10, contentDescription = stringResource(R.string.audio_rewind_15), modifier = Modifier.size(32.dp))
+                        Icon(Icons.Default.Replay10, contentDescription = stringResource(R.string.audio_rewind_10), modifier = Modifier.size(32.dp))
                     }
                     IconButton(
                         enabled = controller != null,
@@ -231,10 +229,10 @@ private fun AudioPlayerScreen(
                         )
                     }
                     IconButton(enabled = controller != null, onClick = {
-                        val target = playerState.positionMs + 15_000L
+                        val target = playerState.positionMs + 10_000L
                         viewModel.seekTo(if (playerState.durationMs > 0L) target.coerceAtMost(playerState.durationMs) else target)
                     }) {
-                        Icon(Icons.Default.Forward10, contentDescription = stringResource(R.string.audio_forward_15), modifier = Modifier.size(32.dp))
+                        Icon(Icons.Default.Forward10, contentDescription = stringResource(R.string.audio_forward_10), modifier = Modifier.size(32.dp))
                     }
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {

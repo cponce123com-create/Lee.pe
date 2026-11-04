@@ -95,7 +95,11 @@ internal object LocalFolderScanner {
             val cursor = try {
                 resolver.query(childrenUri, projection, null, null, null)
             } catch (error: SecurityException) {
-                throw IOException("Permiso de carpeta revocado. Vuelve a seleccionarla.", error)
+                if (parentId == rootId) {
+                    throw IOException("Permiso de carpeta revocado. Vuelve a seleccionarla.", error)
+                }
+                skippedFolders++
+                continue
             } catch (_: Exception) {
                 null
             }

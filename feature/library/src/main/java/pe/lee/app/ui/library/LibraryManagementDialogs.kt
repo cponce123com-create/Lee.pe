@@ -124,7 +124,7 @@ internal fun LibraryManagementDialogs(
                         ) {
                             collections.forEach { collection ->
                                 FilterChip(
-                                    selected = book.collectionId == collection,
+                                    selected = collection in book.collectionNames,
                                     onClick = {
                                         coroutineScope.launch {
                                             viewModel.updateCollection(book.uri.toString(), collection)
@@ -138,7 +138,7 @@ internal fun LibraryManagementDialogs(
                     }
                     OutlinedTextField(
                         value = collectionDraft.value,
-                        onValueChange = { collectionDraft.value = it },
+                        onValueChange = { collectionDraft.value = it.take(120) },
                         label = { Text(stringResource(R.string.library_create_or_use_collection)) },
                         placeholder = { Text(stringResource(R.string.library_collection_examples)) },
                         singleLine = true
@@ -168,7 +168,7 @@ internal fun LibraryManagementDialogs(
             },
             dismissButton = {
                 Row {
-                    if (book.collectionId != null) {
+                    if (book.collectionNames.isNotEmpty()) {
                         TextButton(
                             onClick = {
                                 coroutineScope.launch {
@@ -232,7 +232,7 @@ internal fun LibraryManagementDialogs(
     }
 
     pendingCollectionDelete.value?.let { collection ->
-        val affected = storedBooks.count { it.collectionId == collection.name }
+        val affected = storedBooks.count { collection.name in it.collectionNames }
         AlertDialog(
             onDismissRequest = { pendingCollectionDelete.value = null },
             title = { Text(stringResource(R.string.library_delete_collection_title)) },
@@ -286,7 +286,7 @@ internal fun LibraryManagementDialogs(
                                     collectionBeingRenamed.value = null
                                 }
                                 .onFailure {
-                                    Toast.makeText(context, it.message ?: context.getString(R.string.library_collection_rename_failed), Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, context.getString(R.string.library_collection_rename_failed), Toast.LENGTH_LONG).show()
                                 }
                         }
                     }
@@ -305,7 +305,7 @@ internal fun LibraryManagementDialogs(
             text = {
                 OutlinedTextField(
                     value = titleDraft.value,
-                    onValueChange = { titleDraft.value = it },
+                    onValueChange = { titleDraft.value = it.take(500) },
                     label = { Text(stringResource(R.string.library_book_title)) },
                     singleLine = true
                 )

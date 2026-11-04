@@ -18,7 +18,8 @@ data class AudioPlayerState(
     val durationMs: Long = 0,
     val positionMs: Long = 0,
     val speed: Float = 1f,
-    val error: String? = null
+    val error: String? = null,
+    val errorMessageRes: Int? = null
 )
 
 class AudioPlayerViewModel : ViewModel() {
@@ -45,7 +46,8 @@ class AudioPlayerViewModel : ViewModel() {
             }
             override fun onPlayerError(playbackException: PlaybackException) {
                 mutableState.value = mutableState.value.copy(
-                    error = "No se pudo reproducir este archivo. Comprueba que no esté dañado o protegido."
+                    error = null,
+                    errorMessageRes = pe.lee.app.R.string.audio_playback_failed
                 )
             }
         }
@@ -54,7 +56,8 @@ class AudioPlayerViewModel : ViewModel() {
         mutableState.value = mutableState.value.copy(
             playing = player.isPlaying,
             speed = player.playbackParameters.speed,
-            error = null
+            error = null,
+            errorMessageRes = null
         )
         positionJob = viewModelScope.launch {
             while (isActive && controller === player) {

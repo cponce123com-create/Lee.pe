@@ -5,6 +5,9 @@ import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.IOException
+import pe.lee.app.data.local.BookEntity
+import pe.lee.app.data.local.LocalBackupSnapshot
+import pe.lee.app.data.local.ReadingAnnotationEntity
 
 class LocalLibraryBackupTest {
     private fun root(books: String = "[]", notes: String = "[]", settings: String = "{}") =
@@ -112,5 +115,35 @@ class LocalLibraryBackupTest {
         assertThrows(IOException::class.java) {
             LocalLibraryBackup.parse(root().replace("\"version\":1", "\"version\":3"))
         }
+    }
+
+    @Test
+    fun oversizedAnnotationTextIsShortenedInsteadOfBlockingExport() {
+        val longText = "x".repeat(12_001)
+        val sanitized = LocalLibraryBackup.sanitizeSnapshot(
+            LocalBackupSnapshot(
+                books = listOf(BookEntity(uri = "content://example/test", title = "Mi libro", format = "EPUB", importedAt = 1)),
+                annotations = listOf(
+                    ReadingAnnotationEntity(
+                        id = "n1",
+                        bookUri = "content://example/test",
+                        kind = "NOTE",
+                        locatorJson = "{}",
+                        noteText = longText,
+                        createdAt = 1
+                    )
+                ),
+                sessions = emptyList()
+            )
+        )
+
+        assertEquals(1, sanitized.adjustedRecords)
+        assertEquals(12_000, sanitized.snapshot.annotations.single().noteText?.length)
+        val exportedNote = sanitized.snapshot.annotations.single().noteText
+        val json = root(
+            books = "[$book]",
+            notes = """[{"id":"n1","bookUri":"content://example/test","kind":"NOTE","locatorJson":"{}","selectedText":null,"noteText":"$exportedNote","colorArgb":null,"createdAt":1,"updatedAt":1}]"""
+        )
+        assertEquals(12_000, LocalLibraryBackup.parse(json).snapshot.annotations.single().noteText?.length)
     }
 }

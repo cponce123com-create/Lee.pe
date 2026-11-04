@@ -18,6 +18,7 @@ import pe.lee.feature.sharecard.domain.ShareCardSharer
 import pe.lee.feature.sharecard.domain.model.QuoteCard
 import pe.lee.feature.sharecard.domain.model.QuoteCardFormat
 import pe.lee.feature.sharecard.domain.model.QuoteCardRaster
+import pe.lee.feature.sharecard.R
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ShareCardViewModelTest {
@@ -100,9 +101,7 @@ class ShareCardViewModelTest {
 
         val status = viewModel.state.value.status
         assertTrue("esperaba Error, fue $status", status is ShareCardStatus.Error)
-        assertTrue(
-            (status as ShareCardStatus.Error).message.contains("memoria", ignoreCase = true)
-        )
+        assertEquals(R.string.share_card_memory_error, (status as ShareCardStatus.Error).messageRes)
     }
 
     @Test

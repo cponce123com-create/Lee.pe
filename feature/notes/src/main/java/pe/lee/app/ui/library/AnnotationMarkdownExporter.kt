@@ -14,7 +14,8 @@ object AnnotationMarkdownExporter {
         bookTitle: String,
         format: String,
         annotations: List<ReaderAnnotation>,
-        exportedAt: Long = System.currentTimeMillis()
+        exportedAt: Long = System.currentTimeMillis(),
+        pageLabel: (Int) -> String = { "Página $it" }
     ): String = buildString {
         appendLine("# Anotaciones: ${bookTitle.asSingleLine()}")
         appendLine()
@@ -28,7 +29,7 @@ object AnnotationMarkdownExporter {
         annotations.sortedBy { it.createdAt }.forEachIndexed { index, annotation ->
             appendLine("## ${index + 1}. ${annotation.kind.toReadableLabel()}")
             appendLine()
-            annotation.locationDescription()?.let {
+            annotation.locationDescription(pageLabel)?.let {
                 appendLine("**Ubicación:** $it")
                 appendLine()
             }
@@ -64,12 +65,12 @@ object AnnotationMarkdownExporter {
             .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
     }
 
-    private fun ReaderAnnotation.locationDescription(): String? =
+    private fun ReaderAnnotation.locationDescription(pageLabel: (Int) -> String): String? =
         runCatching {
             val locator = JSONObject(locatorJson)
             val pageIndex = locator.optInt("pageIndex", -1)
             if (pageIndex >= 0) {
-                "Página ${pageIndex + 1}"
+                pageLabel(pageIndex + 1)
             } else {
                 val locations = locator.optJSONObject("locations")
                 val href = locator.optString("href").takeIf { it.isNotBlank() }
@@ -82,11 +83,11 @@ object AnnotationMarkdownExporter {
         }.getOrNull()
 }
 
-fun annotationExportFileName(title: String): String {
+fun annotationExportFileName(title: String, fallbackBookLabel: String = "libro"): String {
     val safeTitle = title.trim()
         .replace(Regex("[^A-Za-z0-9._-]+"), "_")
         .trim('_', '.', '-')
         .take(80)
-        .ifBlank { "libro" }
+        .ifBlank { fallbackBookLabel }
     return "${safeTitle}_anotaciones.md"
 }

@@ -27,6 +27,7 @@ import androidx.compose.runtime.MutableState
 import kotlinx.coroutines.CoroutineScope
 import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.feature.library.R
+import pe.lee.feature.notes.R as NotesR
 
 
 
@@ -55,11 +56,20 @@ internal fun rememberLibraryDocumentActions(
     val exportAnnotationsLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/plain")
     ) { uri ->
-        val markdown = pendingMarkdown.value
+        val bookId = pendingMarkdown.value
         pendingMarkdown.value = null
-        if (uri != null && markdown != null) {
+        if (uri != null && bookId != null) {
             coroutineScope.launch {
                 try {
+                    val book = viewModel.findBookById(bookId)
+                        ?: throw IOException(context.getString(R.string.library_export_annotations_failed))
+                    val annotations = viewModel.annotationsForBook(book.uri)
+                    val markdown = AnnotationMarkdownExporter.toMarkdown(
+                        bookTitle = book.title,
+                        format = book.format,
+                        annotations = annotations,
+                        pageLabel = { page -> context.getString(NotesR.string.annotation_page_label, page) }
+                    )
                     withContext(Dispatchers.IO) {
                         val output = context.contentResolver.openOutputStream(uri, "wt")
                             ?: throw IOException(context.getString(R.string.library_export_file_failed))
@@ -71,7 +81,7 @@ internal fun rememberLibraryDocumentActions(
                 } catch (error: Exception) {
                     Toast.makeText(
                         context,
-                        error.message ?: context.getString(R.string.library_export_annotations_failed),
+                        context.getString(R.string.library_export_annotations_failed),
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -85,14 +95,19 @@ internal fun rememberLibraryDocumentActions(
         if (destination != null) coroutineScope.launch {
             backupBusy.value = true
             try {
-                LocalLibraryBackup.save(context, destination, backupRepository)
-                Toast.makeText(context, context.getString(R.string.library_export_backup_done), Toast.LENGTH_LONG).show()
+                val adjustedRecords = LocalLibraryBackup.save(context, destination, backupRepository)
+                val message = if (adjustedRecords == 0) {
+                    context.getString(R.string.library_export_backup_done)
+                } else {
+                    context.getString(R.string.library_export_backup_adjusted, adjustedRecords)
+                }
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (e: Exception) {
                 Toast.makeText(
                     context,
-                    e.message ?: context.getString(R.string.library_export_backup_failed),
+                    context.getString(R.string.library_export_backup_failed),
                     Toast.LENGTH_LONG
                 ).show()
             } finally {
@@ -112,7 +127,7 @@ internal fun rememberLibraryDocumentActions(
             } catch (e: Exception) {
                 Toast.makeText(
                     context,
-                    e.message ?: context.getString(R.string.library_backup_invalid),
+                    context.getString(R.string.library_backup_invalid),
                     Toast.LENGTH_LONG
                 ).show()
             } finally {
@@ -157,6 +172,7 @@ internal fun rememberLibraryDocumentActions(
                             noPermission++
                             return@mapNotNull null
                         }
+                        PersistableUriGrants.warnIfNearLimit(context)
                         BookEntity(
                             uri = uri.toString(),
                             title = fileName.substringBeforeLast('.', fileName).ifBlank { fileName },
@@ -184,7 +200,7 @@ internal fun rememberLibraryDocumentActions(
             } catch (error: Exception) {
                 Toast.makeText(
                     context,
-                    error.message ?: context.getString(R.string.library_import_failed),
+                    context.getString(R.string.library_import_failed),
                     Toast.LENGTH_LONG
                 ).show()
             }
@@ -206,6 +222,7 @@ internal fun rememberLibraryDocumentActions(
                     pickedUri,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
+                PersistableUriGrants.warnIfNearLimit(context)
                 context.contentResolver.openInputStream(pickedUri)?.use { input ->
                     require(input.read() >= 0) {
                         context.getString(R.string.library_relink_empty_file)
@@ -215,10 +232,13 @@ internal fun rememberLibraryDocumentActions(
                 val rebound = viewModel.rebindUri(targetBook.id, pickedUri.toString())
                 require(rebound) { context.getString(R.string.library_relink_already_linked) }
                 if (targetBook.uri != pickedUri) {
+                    PersistableUriGrants.release(context, targetBook.uri)
                     rebindBookScopedPreferences(context, targetBook.uri.toString(), pickedUri.toString())
                     val audioPosition = AudioProgressStore.get(context, targetBook.uri.toString())
                     if (audioPosition > 0L) AudioProgressStore.put(context, pickedUri.toString(), audioPosition)
-                    AudioProgressStore.remove(context, targetBook.uri.toString())
+                    withContext(Dispatchers.IO) {
+                        AudioProgressStore.remove(context, targetBook.uri.toString())
+                    }
                     withContext(Dispatchers.IO) {
                         OfflineBookStore.rebindCopy(context, targetBook.uri, pickedUri)
                     }
@@ -235,7 +255,7 @@ internal fun rememberLibraryDocumentActions(
             } catch (error: Exception) {
                 Toast.makeText(
                     context,
-                    error.message ?: context.getString(R.string.library_relink_failed),
+                    context.getString(R.string.library_relink_failed),
                     Toast.LENGTH_LONG
                 ).show()
             }
@@ -257,6 +277,7 @@ internal fun rememberLibraryDocumentActions(
                     Toast.LENGTH_LONG
                 ).show()
             } else {
+                PersistableUriGrants.warnIfNearLimit(context)
                 // The ViewModel owns the scan: it survives rotation and reports
                 // progress through its own state (A-36).
                 viewModel.scanFolder(context, treeUri, storedBooks.map { it.uri })

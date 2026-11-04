@@ -104,6 +104,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import pe.lee.feature.library.R
 import java.text.SimpleDateFormat
@@ -129,7 +131,8 @@ internal data class LocalBook(
     val lastOpenedAt: Long?,
     val readProgress: Float,
     val collectionId: String?,
-    val offlineCopyUri: Uri?
+    val offlineCopyUri: Uri?,
+    val collectionNames: List<String> = listOfNotNull(collectionId)
 )
 
 @Composable
@@ -176,10 +179,13 @@ fun LibraryScreen(
                 .mapValues { (_, file) -> Uri.fromFile(file) }
         }
     }
-    val books = remember(storedBooks, offlineCopyUris) {
+    val books = remember(storedBooks, offlineCopyUris, libraryState.bookCollectionNames) {
         storedBooks.map {
-            LocalBook(it.id, Uri.parse(it.uri), it.title, it.format, it.isFavorite, it.importedAt, it.lastOpenedAt,
-                it.readProgress, it.collectionId, offlineCopyUris[it.uri])
+            LocalBook(
+                it.id, Uri.parse(it.uri), it.title, it.format, it.isFavorite, it.importedAt, it.lastOpenedAt,
+                it.readProgress, it.collectionId, offlineCopyUris[it.uri],
+                libraryState.bookCollectionNames[it.id].orEmpty()
+            )
         }
     }
     val collections = remember(storedCollections) { storedCollections.map { it.name } }
@@ -198,8 +204,19 @@ fun LibraryScreen(
     var collectionBeingRenamed by collectionBeingRenamedState
     val collectionRenameDraftState = remember { mutableStateOf("") }
     var collectionRenameDraft by collectionRenameDraftState
+    val organizingBookIdState = rememberSaveable { mutableStateOf<String?>(null) }
     val organizingBookState = remember { mutableStateOf<LocalBook?>(null) }
     var organizingBook by organizingBookState
+    LaunchedEffect(organizingBook, organizingBookIdState.value, books) {
+        val selectedId = organizingBookIdState.value
+        if (organizingBook == null && selectedId != null) {
+            organizingBook = books.firstOrNull { it.id == selectedId }
+        } else if (organizingBook != null && selectedId != organizingBook?.id) {
+            organizingBookIdState.value = organizingBook?.id
+        } else if (organizingBook == null && selectedId != null && books.any { it.id == selectedId }) {
+            organizingBookIdState.value = null
+        }
+    }
     val collectionDraftState = remember { mutableStateOf("") }
     var collectionDraft by collectionDraftState
     val showLibraryStatsState = remember { mutableStateOf(false) }
@@ -227,8 +244,10 @@ fun LibraryScreen(
     var sortMenuExpanded by sortMenuExpandedState
     val sortModeState = rememberSaveable { mutableStateOf(LibrarySortMode.TITLE_ASC) }
     var sortMode by sortModeState
-    val pendingMarkdownState = remember { mutableStateOf<String?>(null) }
+    // Persist only the stable book id; markdown is regenerated after the SAF picker returns.
+    val pendingMarkdownState = rememberSaveable { mutableStateOf<String?>(null) }
     var pendingMarkdown by pendingMarkdownState
+    val cleanupMutex = remember { Mutex() }
     var libraryMenuExpanded by remember { mutableStateOf(false) }
     val showBackupOptionsState = remember { mutableStateOf(false) }
     var showBackupOptions by showBackupOptionsState
@@ -248,22 +267,25 @@ fun LibraryScreen(
     }
 
     suspend fun drainPendingBookCleanup() {
-        // One directory rescan for the whole batch, not one per deleted book (A-38).
-        val completed = withContext(Dispatchers.IO) {
-            var cleaned = 0
-            viewModel.pendingCleanupUris().forEach { uri ->
-                if (DeletedBookCleanup.complete(context, uri, settings, viewModel::completeCleanup)) {
-                    cleaned++
+        cleanupMutex.withLock {
+            // One directory rescan for the whole batch, not one per deleted book (A-38).
+            val completed = withContext(Dispatchers.IO) {
+                var cleaned = 0
+                viewModel.pendingCleanupUris().forEach { uri ->
+                    if (DeletedBookCleanup.complete(context, uri, settings, viewModel::completeCleanup)) {
+                        cleaned++
+                    }
                 }
+                cleaned
             }
-            cleaned
+            if (completed > 0) offlineRevision++
         }
-        if (completed > 0) offlineRevision++
     }
 
     val welcomeBookFailedMessage = androidx.compose.ui.res.stringResource(R.string.library_welcome_book_failed)
 
     LaunchedEffect(context, viewModel, settings) {
+        withContext(Dispatchers.IO) { OfflineBookStore.purgeOrphanedParts(context) }
         migrateLegacyLibrary(context, viewModel)
         drainPendingBookCleanup()
         if (!BundledWelcomeBook.installIfNeeded(

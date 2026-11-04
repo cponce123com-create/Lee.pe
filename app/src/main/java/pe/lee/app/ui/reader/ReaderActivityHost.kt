@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.ViewModelProvider
 import pe.lee.app.LeePeApplication
+import pe.lee.app.R
 import pe.lee.app.data.local.OfflineBookStore
 import pe.lee.app.ui.reader.EpubReaderViewModel
 import org.readium.r2.shared.publication.Publication
@@ -92,12 +93,12 @@ class ReaderActivity : FragmentActivity() {
     private suspend fun openPublication(uri: Uri, offlineCopyUri: Uri?): Publication = withContext(Dispatchers.IO) {
         suspend fun openFrom(sourceUri: Uri): Publication {
             val url: AbsoluteUrl = sourceUri.toAbsoluteUrl()
-                ?: throw IOException("No se pudo acceder al archivo seleccionado.")
+                ?: throw IOException(getString(R.string.reader_file_unavailable))
 
             val httpClient = DefaultHttpClient()
             val assetRetriever = AssetRetriever(contentResolver, httpClient)
             val asset = assetRetriever.retrieve(url).getOrElse {
-                throw IOException("No se pudo leer el EPUB: ${it.message.ifBlank { "archivo inaccesible" }}")
+                throw IOException(getString(R.string.epub_open_failed))
             }
 
             val parser = DefaultPublicationParser(
@@ -108,7 +109,7 @@ class ReaderActivity : FragmentActivity() {
             )
             return PublicationOpener(parser).open(asset, allowUserInteraction = false).getOrElse {
                 asset.close()
-                throw IOException("El archivo no parece ser un EPUB compatible: ${it.message.ifBlank { "formato inválido" }}")
+                throw IOException(getString(R.string.epub_invalid_file))
             }
         }
 
@@ -121,7 +122,7 @@ class ReaderActivity : FragmentActivity() {
                 lastError = error
             }
         }
-        throw lastError ?: IOException("No se pudo abrir el EPUB.")
+        throw lastError ?: IOException(getString(R.string.epub_open_failed))
     }
 
     companion object {

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="library_selected_folder">Carpeta seleccionada</string>
     <string name="app_name">Lee.pe</string>
     <string name="accessibility_leepe_logo">Logotipo de Lee.pe</string>
     <string name="accessibility_reading_statistics">Estadísticas de lectura</string>
@@ -56,6 +57,7 @@
     <string name="library_export_annotations_failed">No se pudo exportar las anotaciones</string>
     <string name="library_export_backup_done">Respaldo local exportado correctamente</string>
     <string name="library_export_backup_failed">No se pudo exportar el respaldo</string>
+    <string name="library_export_backup_adjusted">Respaldo exportado. Se ajustaron u omitieron %1$d registros demasiado grandes.</string>
     <string name="library_backup_invalid">Respaldo no válido</string>
     <string name="library_import_summary">Archivos incorporados: %1$d. Ya existentes: %2$d. No compatibles: %3$d. Sin permiso persistente: %4$d.</string>
     <string name="library_import_failed">No se pudo completar la importación.</string>
@@ -66,6 +68,7 @@
     <string name="library_relink_done">Libro revinculado; se conservaron su progreso y anotaciones</string>
     <string name="library_relink_failed">No se pudo revincular el libro</string>
     <string name="library_folder_permission_failed">No se pudo conservar el permiso de la carpeta.</string>
+    <string name="library_uri_permission_limit">Tienes %1$d permisos de archivos guardados (límite aproximado: %2$d). Elimina libros o carpetas que ya no uses.</string>
     <string name="library_welcome_book_failed">No se pudo añadir la guía de bienvenida</string>
     <string name="library_pdf_thumbnail_description">Vista previa local de la primera página del PDF</string>
     <string name="library_offline_copy_save_failed">No se pudo guardar la copia</string>

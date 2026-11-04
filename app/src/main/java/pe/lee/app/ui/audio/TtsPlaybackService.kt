@@ -28,7 +28,9 @@ import kotlinx.coroutines.launch
 import org.readium.navigator.media.common.Media3Adapter
 import org.readium.navigator.media.tts.AndroidTtsNavigator
 import org.readium.navigator.media.tts.TtsNavigator
+import pe.lee.app.R
 import org.readium.r2.shared.ExperimentalReadiumApi
+import org.readium.r2.shared.publication.Publication
 import pe.lee.app.LeePeApplication
 import pe.lee.app.ui.reader.ReaderActivity
 import pe.lee.core.domain.readingProgressOr
@@ -38,9 +40,11 @@ import pe.lee.core.domain.readingProgressOr
 class TtsPlaybackService : MediaSessionService() {
     class Session(
         val navigator: AndroidTtsNavigator,
+        val publication: Publication,
         val mediaSession: MediaSession,
         val bookUri: String,
-        val title: String
+        val title: String,
+        val onPublicationClosed: () -> Unit
     ) {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
         var sleepTimerJob: Job? = null
@@ -52,7 +56,13 @@ class TtsPlaybackService : MediaSessionService() {
         val session: StateFlow<Session?> = sessionState.asStateFlow()
         val currentSession: Session? get() = sessionState.value
 
-        fun openSession(navigator: AndroidTtsNavigator, bookUri: String, title: String) {
+        fun openSession(
+            navigator: AndroidTtsNavigator,
+            publication: Publication,
+            bookUri: String,
+            title: String,
+            onPublicationClosed: () -> Unit
+        ) {
             closeSession()
             val launchIntent = Intent(this@TtsPlaybackService, ReaderActivity::class.java)
                 .setData(android.net.Uri.parse(bookUri))
@@ -71,7 +81,7 @@ class TtsPlaybackService : MediaSessionService() {
                 .setId(bookUri.hashCode().toString())
                 .build()
             addSession(session)
-            val activeSession = Session(navigator, session, bookUri, title)
+            val activeSession = Session(navigator, publication, session, bookUri, title, onPublicationClosed)
             sessionState.value = activeSession
             activeBookUri = bookUri
 
@@ -106,6 +116,9 @@ class TtsPlaybackService : MediaSessionService() {
                         playback.state !is TtsNavigator.State.Ended &&
                         playback.state !is TtsNavigator.State.Failure
                     updateWakeLock(shouldHoldWakeLock)
+                    if (playback.state is TtsNavigator.State.Ended || playback.state is TtsNavigator.State.Failure) {
+                        if (sessionState.value === activeSession) closeSession()
+                    }
                 }
             }
         }
@@ -134,7 +147,15 @@ class TtsPlaybackService : MediaSessionService() {
             activeSession.sleepTimerMinutes.value = 0
             activeSession.scope.cancel()
             activeSession.mediaSession.release()
-            activeSession.navigator.close()
+            try {
+                activeSession.navigator.close()
+            } finally {
+                try {
+                    activeSession.publication.close()
+                } finally {
+                    activeSession.onPublicationClosed()
+                }
+            }
             updateWakeLock(false)
         }
 
@@ -171,6 +192,7 @@ class TtsPlaybackService : MediaSessionService() {
 
     override fun onBind(intent: Intent?): IBinder? {
         return if (intent?.action == SERVICE_INTERFACE) {
+            if (Binder.getCallingUid() != applicationInfo.uid) return null
             super.onBind(intent)
             binder
         } else {
@@ -228,12 +250,12 @@ class TtsPlaybackService : MediaSessionService() {
                 override fun onServiceDisconnected(name: ComponentName?) = Unit
 
                 override fun onNullBinding(name: ComponentName?) {
-                    result.completeExceptionally(IllegalStateException("No se pudo conectar el servicio de voz."))
+                    result.completeExceptionally(IllegalStateException(application.getString(R.string.tts_service_connection_failed)))
                 }
             }
             val intent = serviceIntent(application)
             if (!application.bindService(intent, connection, Context.BIND_AUTO_CREATE)) {
-                throw IllegalStateException("No se pudo iniciar el servicio de voz.")
+                throw IllegalStateException(application.getString(R.string.tts_service_start_failed))
             }
             return try {
                 ServiceBinding(result.await(), application, connection)

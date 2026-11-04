@@ -22,10 +22,7 @@ class ShareCardSharer(context: Context) : ShareCardSharerContract {
             if (!directory.exists() && !directory.mkdirs()) {
                 throw IOException("No se pudo preparar el espacio temporal para la tarjeta.")
             }
-            directory.listFiles()
-                .orEmpty()
-                .filter { it.isFile && it.lastModified() < System.currentTimeMillis() - CACHE_MAX_AGE_MS }
-                .forEach { it.delete() }
+            QuoteCardCacheCleaner.removeExpired(appContext)
             File(directory, "leepe-${UUID.randomUUID()}.png").apply {
                 writeBytes(pngBytes)
             }
@@ -38,7 +35,11 @@ class ShareCardSharer(context: Context) : ShareCardSharerContract {
         val sendIntent = Intent(Intent.ACTION_SEND).apply {
             type = PNG_MIME_TYPE
             putExtra(Intent.EXTRA_STREAM, uri)
-            clipData = android.content.ClipData.newUri(appContext.contentResolver, "Tarjeta de Lee.pe", uri)
+            clipData = android.content.ClipData.newUri(
+                appContext.contentResolver,
+                appContext.getString(R.string.share_card_clip_label),
+                uri
+            )
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         val chooser = Intent.createChooser(sendIntent, appContext.getString(R.string.share_card_chooser_title)).apply {
@@ -52,4 +53,20 @@ class ShareCardSharer(context: Context) : ShareCardSharerContract {
         const val CACHE_MAX_AGE_MS = 24L * 60 * 60 * 1000
         const val PNG_MIME_TYPE = "image/png"
     }
+}
+
+/** Removes expired temporary quote-card PNGs from the app cache. */
+object QuoteCardCacheCleaner {
+    /** Deletes cached share images older than one day. */
+    fun removeExpired(context: Context) {
+        val cutoff = System.currentTimeMillis() - CACHE_MAX_AGE_MS
+        File(context.applicationContext.cacheDir, QUOTE_CARD_DIRECTORY)
+            .listFiles()
+            .orEmpty()
+            .filter { it.isFile && it.lastModified() < cutoff }
+            .forEach(File::delete)
+    }
+
+    private const val QUOTE_CARD_DIRECTORY = "quotecards"
+    private const val CACHE_MAX_AGE_MS = 24L * 60 * 60 * 1000
 }

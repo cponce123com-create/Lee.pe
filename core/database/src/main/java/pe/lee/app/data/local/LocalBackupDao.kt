@@ -106,7 +106,7 @@ interface LocalBackupDao {
     suspend fun collectionName(id: Long): String?
 
     /**
-     * Rebuilds the organization of a restored book. Version 1 backups only carry
+     * Merges the organization of a restored book. Version 1 backups only carry
      * one legacy collection name; version 2 carries every collection, so a book
      * that belonged to "Novela" and "Perú" comes back on both shelves.
      */
@@ -118,7 +118,7 @@ interface LocalBackupDao {
     ) {
         updateRestoredFavorite(uri, favorite)
         val bookId = bookIdForUri(uri) ?: return
-        clearRestoredCollections(bookId)
+        val hasExistingCollections = linkedCollectionNames(bookId).isNotEmpty()
         val uniqueNames = collections
             .map { it.trim() }
             .filter { it.isNotEmpty() }
@@ -134,10 +134,15 @@ interface LocalBackupDao {
                 insertBookCollection(BookCollectionCrossRef(bookId, resolvedId))
             }
         }
-        // The legacy single-name column is still read by older exports and the
-        // library filters, so keep it aligned with the first shelf.
-        updateRestoredLegacyCollection(uri, uniqueNames.firstOrNull())
+        // Do not replace the user's pre-existing legacy shelf while merging a backup.
+        // This column remains a compatibility field for older library queries.
+        if (!hasExistingCollections) {
+            updateRestoredLegacyCollection(uri, uniqueNames.firstOrNull())
+        }
     }
+
+    @Query("SELECT collections.name FROM collections JOIN book_collections ON collections.id = book_collections.collectionId WHERE book_collections.bookId = :bookId")
+    suspend fun linkedCollectionNames(bookId: String): List<String>
 
     @Query("SELECT * FROM reading_sessions WHERE dayKey = :day AND bookUri = :uri LIMIT 1")
     suspend fun findSession(day: String, uri: String): ReadingSessionEntity?

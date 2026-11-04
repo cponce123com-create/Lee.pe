@@ -65,6 +65,9 @@ internal fun EpubSearchSheet(
     onSelectResult: (Locator) -> Unit
 ) {
     val searchScope = rememberCoroutineScope()
+    val searchNotSupportedMessage = stringResource(R.string.epub_search_not_supported)
+    val searchFailedMessage = stringResource(R.string.epub_search_failed)
+    val preparingMessage = stringResource(R.string.epub_preparing)
     ModalBottomSheet(onDismissRequest = onDismiss) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
@@ -107,14 +110,14 @@ internal fun EpubSearchSheet(
                                                     caseSensitive = false,
                                                     diacriticSensitive = false
                                                 )
-                                            ) ?: throw IOException("Este EPUB no permite búsquedas.")
+                                            ) ?: throw IOException(searchNotSupportedMessage)
                                             val locators = mutableListOf<Locator>()
                                             var pagesRead = 0
                                             var limitReached = false
                                             try {
                                                 while (locators.size < 100 && pagesRead < 20) {
                                                     val page = iterator.next().getOrElse { error ->
-                                                        throw IOException(error.message)
+                                                        throw IOException(searchFailedMessage)
                                                     } ?: break
                                                     pagesRead++
                                                     locators += page.locators.take(100 - locators.size)
@@ -132,13 +135,13 @@ internal fun EpubSearchSheet(
                                     } catch (cancelled: CancellationException) {
                                         throw cancelled
                                     } catch (error: Exception) {
-                                        searchError.value = error.message ?: "No se pudo buscar en este EPUB."
+                                        searchError.value = searchFailedMessage
                                     } finally {
                                         searching.value = false
                                     }
                                 }
                             } else if (targetPublication == null) {
-                                searchError.value = "El libro todavía se está preparando."
+                                searchError.value = preparingMessage
                             }
                         }
                     ) {

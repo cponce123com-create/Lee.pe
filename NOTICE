@@ -20,13 +20,14 @@ Kotlin standard library and kotlinx.coroutines
   Copyright (c) JetBrains s.r.o.
   Licensed under the Apache License, Version 2.0.
 
-org.json
-  Copyright (c) JSON.org
-  Licensed under the JSON License ("The Software shall be used for Good, not Evil").
-
 Room (androidx.room3)
   Copyright (c) The Android Open Source Project
   Licensed under the Apache License, Version 2.0.
+
+desugar_jdk_libs (com.android.tools:desugar_jdk_libs)
+  Copyright and license notices are provided by Google and upstream contributors.
+  Licensed under GPL-2.0 with the Classpath Exception; see
+  https://github.com/google/desugar_jdk_libs/blob/master/LICENSE.
 
 Bundled book: "El tesoro de los Incas" by Emilio Salgari (1901).
   Public domain. Included as sample content, not covered by the application
@@ -34,3 +35,7 @@ Bundled book: "El tesoro de los Incas" by Emilio Salgari (1901).
 
 Full license texts: https://www.apache.org/licenses/LICENSE-2.0,
 https://opensource.org/license/bsd-3-clause.
+
+The complete runtime transitive-license inventory for the exact release graph
+must be regenerated from Gradle before distribution; it has not been verified
+in this checkout because the Gradle distribution could not be downloaded.
