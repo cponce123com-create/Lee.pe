@@ -6,6 +6,13 @@ import org.junit.Test
 
 class BookshelfLayoutTest {
     @Test
+    fun ornamentGalleryContainsAllThirtyFiveReferenceItems() {
+        assertEquals(35, SHELF_DECORATION_GALLERY_TYPES.size)
+        assertEquals(9, ShelfDecorationCategory.entries.size)
+        assertEquals(35, SHELF_DECORATION_GALLERY_TYPES.map { it.drawableRes }.distinct().size)
+    }
+
+    @Test
     fun replacingDecorationKeepsItsShelfPositionAndId() {
         val initial = BookshelfLayout().addDecoration(ShelfDecorationType.PLANT, shelf = 1, order = 3)
         val original = initial.decorations.single()
