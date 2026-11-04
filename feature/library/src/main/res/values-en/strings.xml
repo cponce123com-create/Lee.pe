@@ -340,7 +340,8 @@
     <string name="shelf_page_position">Page %1$d of %2$d</string>
     <string name="shelf_decoration_count">Ornaments: %1$d/10</string>
     <string name="shelf_decoration_limit">You can place up to 10 ornaments.</string>
-    <string name="shelf_drag_hint">Hold and drag to arrange. Double-tap to rotate a book.</string>
+    <string name="shelf_drag_hint">Hold and drag to arrange.</string>
     <string name="shelf_book_count">%1$d books</string>
     <string name="shelf_drop_here">Drop here to create a shelf</string>
+    <string name="shelf_mixed_drag_hint">Hold and drag. Double-tap to rotate a book.</string>
 </resources>

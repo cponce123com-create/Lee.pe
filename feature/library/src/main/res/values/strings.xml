@@ -340,7 +340,8 @@
     <string name="shelf_page_position">Página %1$d de %2$d</string>
     <string name="shelf_decoration_count">Adornos: %1$d/10</string>
     <string name="shelf_decoration_limit">Puedes colocar hasta 10 adornos.</string>
-    <string name="shelf_drag_hint">Mantén pulsado y arrastra para ordenar. Doble toque para girar un libro.</string>
+    <string name="shelf_drag_hint">Mantén pulsado y arrastra para ordenar.</string>
     <string name="shelf_book_count">%1$d libros</string>
     <string name="shelf_drop_here">Suelta aquí para crear una repisa</string>
+    <string name="shelf_mixed_drag_hint">Mantén pulsado y arrastra. Doble toque para girar un libro.</string>
 </resources>

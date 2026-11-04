@@ -322,7 +322,9 @@ internal fun LibraryCatalog(
                 }
             }
             Text(
-                stringResource(R.string.shelf_drag_hint),
+                stringResource(
+                    if (viewMode.value == LibraryViewMode.MIXED_BOOKSHELF) R.string.shelf_mixed_drag_hint else R.string.shelf_drag_hint,
+                ),
                 color = colors.onSurfaceVariant, fontSize = 10.sp, modifier = Modifier.padding(bottom = 3.dp),
             )
         }
