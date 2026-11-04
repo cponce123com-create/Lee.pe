@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.Flow
 class BookRepository(private val dao: BookDao) : ReaderBookRepository {
     fun observeBooks(): Flow<List<BookEntity>> = dao.observeAll()
     fun observeCollections(): Flow<List<CollectionEntity>> = dao.observeCollections()
+    fun observeBookCollectionNames() = dao.observeBookCollectionNames()
     suspend fun findByUri(uri: String) = dao.findByUri(uri)
     suspend fun findById(id: String) = dao.findById(id)
     override suspend fun findReaderBook(uri: String): ReaderBook? = dao.findByUri(uri)?.let { book ->

@@ -25,7 +25,7 @@ internal fun computeCatalog(
     // Normalize accents/format/collection once per book instead of on each keystroke.
     val searchIndex = books.associate { book ->
         book.uri.toString() to normalizedLibraryText(
-            "${book.title} ${book.format} ${book.collectionId.orEmpty()}"
+            "${book.title} ${book.format} ${book.collectionNames.joinToString(" ")}"
         )
     }
     val visible = books.filter { book ->
@@ -37,7 +37,7 @@ internal fun computeCatalog(
             readProgress = book.readProgress,
             isFavorite = book.isFavorite,
             hasOfflineCopy = book.offlineCopyUri != null,
-            collectionName = book.collectionId,
+            collectionNames = book.collectionNames,
             selectedCollection = collection,
             filter = filter
         )
@@ -67,11 +67,11 @@ internal fun matchesCatalogFilter(
     readProgress: Float,
     isFavorite: Boolean,
     hasOfflineCopy: Boolean,
-    collectionName: String?,
+    collectionNames: List<String>,
     selectedCollection: String?,
     filter: LibraryFilter
 ): Boolean {
-    if (selectedCollection != null && collectionName != selectedCollection) return false
+    if (selectedCollection != null && selectedCollection !in collectionNames) return false
     return when (filter) {
         LibraryFilter.TO_READ -> format != "Audio" && readProgress <= 0f
         LibraryFilter.OFFLINE_COPY -> hasOfflineCopy

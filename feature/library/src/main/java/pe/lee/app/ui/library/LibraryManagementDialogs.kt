@@ -124,7 +124,7 @@ internal fun LibraryManagementDialogs(
                         ) {
                             collections.forEach { collection ->
                                 FilterChip(
-                                    selected = book.collectionId == collection,
+                                    selected = collection in book.collectionNames,
                                     onClick = {
                                         coroutineScope.launch {
                                             viewModel.updateCollection(book.uri.toString(), collection)
@@ -168,7 +168,7 @@ internal fun LibraryManagementDialogs(
             },
             dismissButton = {
                 Row {
-                    if (book.collectionId != null) {
+                    if (book.collectionNames.isNotEmpty()) {
                         TextButton(
                             onClick = {
                                 coroutineScope.launch {
@@ -232,7 +232,7 @@ internal fun LibraryManagementDialogs(
     }
 
     pendingCollectionDelete.value?.let { collection ->
-        val affected = storedBooks.count { it.collectionId == collection.name }
+        val affected = storedBooks.count { collection.name in it.collectionNames }
         AlertDialog(
             onDismissRequest = { pendingCollectionDelete.value = null },
             title = { Text(stringResource(R.string.library_delete_collection_title)) },

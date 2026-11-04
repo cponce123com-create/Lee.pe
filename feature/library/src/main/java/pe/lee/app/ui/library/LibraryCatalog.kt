@@ -376,7 +376,7 @@ internal fun LibraryCatalog(
                             },
                             onOrganize = {
                                 organizingBook.value = book
-                                collectionDraft.value = book.collectionId.orEmpty()
+                                collectionDraft.value = book.collectionNames.firstOrNull().orEmpty()
                             }
                         )
                     }

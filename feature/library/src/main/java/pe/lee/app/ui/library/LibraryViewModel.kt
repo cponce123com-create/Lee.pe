@@ -22,7 +22,8 @@ import kotlinx.coroutines.launch
 
 data class LibraryState(
     val books: List<BookEntity> = emptyList(),
-    val collections: List<CollectionEntity> = emptyList()
+    val collections: List<CollectionEntity> = emptyList(),
+    val bookCollectionNames: Map<String, List<String>> = emptyMap()
 )
 
 /** State of the SAF folder scan, owned by the ViewModel so a rotation cannot cancel it (A-36). */
@@ -43,8 +44,15 @@ class LibraryViewModel(
 ) : ViewModel() {
     val state: StateFlow<LibraryState> = combine(
         booksRepository.observeBooks(),
-        booksRepository.observeCollections()
-    ) { books, collections -> LibraryState(books, collections) }
+        booksRepository.observeCollections(),
+        booksRepository.observeBookCollectionNames()
+    ) { books, collections, assignments ->
+        LibraryState(
+            books = books,
+            collections = collections,
+            bookCollectionNames = assignments.groupBy({ it.bookId }, { it.collectionName })
+        )
+    }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LibraryState())
 
     fun observeDurationForDay(day: String) = statsRepository.observeDurationForDay(day)

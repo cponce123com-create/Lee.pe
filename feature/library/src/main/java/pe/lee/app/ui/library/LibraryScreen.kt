@@ -131,7 +131,8 @@ internal data class LocalBook(
     val lastOpenedAt: Long?,
     val readProgress: Float,
     val collectionId: String?,
-    val offlineCopyUri: Uri?
+    val offlineCopyUri: Uri?,
+    val collectionNames: List<String> = listOfNotNull(collectionId)
 )
 
 @Composable
@@ -178,10 +179,13 @@ fun LibraryScreen(
                 .mapValues { (_, file) -> Uri.fromFile(file) }
         }
     }
-    val books = remember(storedBooks, offlineCopyUris) {
+    val books = remember(storedBooks, offlineCopyUris, libraryState.bookCollectionNames) {
         storedBooks.map {
-            LocalBook(it.id, Uri.parse(it.uri), it.title, it.format, it.isFavorite, it.importedAt, it.lastOpenedAt,
-                it.readProgress, it.collectionId, offlineCopyUris[it.uri])
+            LocalBook(
+                it.id, Uri.parse(it.uri), it.title, it.format, it.isFavorite, it.importedAt, it.lastOpenedAt,
+                it.readProgress, it.collectionId, offlineCopyUris[it.uri],
+                libraryState.bookCollectionNames[it.id].orEmpty()
+            )
         }
     }
     val collections = remember(storedCollections) { storedCollections.map { it.name } }

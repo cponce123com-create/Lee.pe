@@ -14,7 +14,7 @@ class CatalogPipelineTest {
         progress: Float = 0f,
         favorite: Boolean = false,
         offline: Boolean = false,
-        collection: String? = null,
+        collections: List<String> = emptyList(),
         selectedCollection: String? = null,
         filter: LibraryFilter = LibraryFilter.ALL
     ): Boolean = matchesCatalogFilter(
@@ -22,7 +22,7 @@ class CatalogPipelineTest {
         readProgress = progress,
         isFavorite = favorite,
         hasOfflineCopy = offline,
-        collectionName = collection,
+        collectionNames = collections,
         selectedCollection = selectedCollection,
         filter = filter
     )
@@ -66,9 +66,10 @@ class CatalogPipelineTest {
 
     @Test
     fun selectedCollectionIsMandatoryWhenSet() {
-        assertTrue(matches(collection = "Novela", selectedCollection = "Novela"))
-        assertFalse(matches(collection = "Perú", selectedCollection = "Novela"))
-        assertFalse(matches(collection = null, selectedCollection = "Novela"))
-        assertTrue(matches(collection = null, selectedCollection = null))
+        assertTrue(matches(collections = listOf("Novela", "Perú"), selectedCollection = "Novela"))
+        assertTrue(matches(collections = listOf("Novela", "Perú"), selectedCollection = "Perú"))
+        assertFalse(matches(collections = listOf("Perú"), selectedCollection = "Novela"))
+        assertFalse(matches(collections = emptyList(), selectedCollection = "Novela"))
+        assertTrue(matches(collections = emptyList(), selectedCollection = null))
     }
 }

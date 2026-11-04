@@ -69,6 +69,14 @@ interface BookDao {
     @Query("SELECT * FROM collections ORDER BY sortOrder ASC, name COLLATE NOCASE ASC")
     fun observeCollections(): Flow<List<CollectionEntity>>
 
+    @Query("""
+        SELECT book_collections.bookId AS bookId, collections.name AS collectionName
+        FROM book_collections
+        JOIN collections ON collections.id = book_collections.collectionId
+        ORDER BY collections.sortOrder, collections.name COLLATE NOCASE
+    """)
+    fun observeBookCollectionNames(): Flow<List<BookCollectionName>>
+
     @Query("SELECT * FROM collections ORDER BY sortOrder ASC, name COLLATE NOCASE ASC")
     suspend fun getCollections(): List<CollectionEntity>
 
@@ -151,10 +159,11 @@ interface BookDao {
 
     @Transaction
     suspend fun deleteCollection(id: Long) {
-        val name = collectionName(id) ?: return
-        val normalized = name.lowercase(Locale.ROOT)
-        clearLegacyCollectionName(normalized)
+        val affectedBooks = booksInCollection(id)
         deleteCollectionRow(id)
+        affectedBooks.forEach { book ->
+            updateLegacyCollection(book.uri, collectionNamesForBook(book.uri).firstOrNull())
+        }
     }
 
     @Query("SELECT name FROM collections WHERE id = :id LIMIT 1")
