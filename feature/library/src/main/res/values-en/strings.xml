@@ -205,7 +205,7 @@
     <string name="backup_local_title">Lee.pe local backup</string>
     <string name="backup_description">Export or restore your library, locations, notes, bookmarks, and statistics.</string>
     <string name="backup_books_not_included">EPUB, PDF, and audio files are not included. On another phone, import the books first, then restore the data. Title matches may vary between editions.</string>
-    <string name="backup_privacy_notice">The JSON backup contains unencrypted notes and reading data. Keep it somewhere private. It is never sent to Lee.pe.</string>
+    <string name="backup_privacy_notice">New backups are encrypted on this device. Older JSON backups are not encrypted and may expose your notes and reading data; keep them somewhere private.</string>
     <string name="backup_export">Export</string>
     <string name="backup_restore">Restore</string>
     <string name="backup_confirm_restore_title">Confirm restore</string>
@@ -330,4 +330,11 @@
     <string name="shelf_category_adventure">Adventure</string>
     <string name="shelf_category_home">Home</string>
     <string name="shelf_category_coffee">Coffee</string>
+    <string name="backup_password_export_title">Encrypt backup</string>
+    <string name="backup_password_import_title">Open encrypted backup</string>
+    <string name="backup_password_guidance">Use a password with at least 8 characters and keep it somewhere safe. Lee.pe cannot recover it.</string>
+    <string name="backup_password_label">Password</string>
+    <string name="backup_password_confirm_label">Confirm password</string>
+    <string name="backup_password_mismatch">The passwords do not match.</string>
+    <string name="backup_unlock">Unlock</string>
 </resources>
