@@ -225,4 +225,6 @@
     <string name="book_save_offline">Save offline</string>
     <string name="book_export_annotations">Export annotations to Markdown</string>
     <string name="book_organize_collection">Organize in collection</string>
+    <string name="reader_tts_playing_status">Narration playing</string>
+    <string name="reader_tts_paused_status">Narration paused</string>
 </resources>

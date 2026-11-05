@@ -37,6 +37,28 @@ import pe.lee.feature.library.R
  * The tiny bitmap is cached in RAM; no server, external image library, network
  * permission or full-document rendering is required.
  */
+internal sealed interface PdfCoverCacheLookup<out T> {
+    data object Miss : PdfCoverCacheLookup<Nothing>
+    data object Failed : PdfCoverCacheLookup<Nothing>
+    data class Hit<T>(val value: T) : PdfCoverCacheLookup<T>
+}
+
+internal suspend fun <T : Any> loadPdfCoverAfterCacheCheck(
+    permits: Semaphore,
+    lookup: () -> PdfCoverCacheLookup<T>,
+    render: suspend () -> T?,
+): T? = when (val first = lookup()) {
+    is PdfCoverCacheLookup.Hit -> first.value
+    PdfCoverCacheLookup.Failed -> null
+    PdfCoverCacheLookup.Miss -> permits.withPermit {
+        when (val second = lookup()) {
+            is PdfCoverCacheLookup.Hit -> second.value
+            PdfCoverCacheLookup.Failed -> null
+            PdfCoverCacheLookup.Miss -> render()
+        }
+    }
+}
+
 private object PdfThumbnailCache {
     private const val MAX_WIDTH = 160
     private const val MAX_HEIGHT = 220
@@ -54,39 +76,54 @@ private object PdfThumbnailCache {
      */
     private val permits = Semaphore(2)
 
-    suspend fun load(context: Context, uri: Uri): Bitmap? = permits.withPermit {
+    suspend fun load(context: Context, uri: Uri): Bitmap? {
         coroutineContext.ensureActive()
         val key = uri.toString()
-        synchronized(thumbnails) {
-            thumbnails.get(key)?.let { return@withPermit it }
-            if (failed.get(key) == true) return@withPermit null
-        }
-        val result = runCatching {
-            val descriptor = context.contentResolver.openFileDescriptor(uri, "r")
-                ?: return@runCatching null
-            descriptor.use { fd ->
-                PdfRenderer(fd).use { renderer ->
-                    if (renderer.pageCount <= 0) return@use null
-                    renderer.openPage(0).use { page ->
-                        if (page.width <= 0 || page.height <= 0) return@use null
-                        val ratio = min(
-                            MAX_WIDTH.toFloat() / page.width,
-                            MAX_HEIGHT.toFloat() / page.height,
-                        )
-                        val width = (page.width * ratio).roundToInt().coerceIn(1, MAX_WIDTH)
-                        val height = (page.height * ratio).roundToInt().coerceIn(1, MAX_HEIGHT)
-                        Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { bitmap ->
-                            Canvas(bitmap).drawColor(AndroidColor.WHITE)
-                            page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+        return loadPdfCoverAfterCacheCheck(
+            permits = permits,
+            lookup = {
+                synchronized(thumbnails) {
+                    thumbnails.get(key)?.let { PdfCoverCacheLookup.Hit(it) }
+                        ?: if (failed.get(key) == true) PdfCoverCacheLookup.Failed else PdfCoverCacheLookup.Miss
+                }
+            },
+        ) {
+            coroutineContext.ensureActive()
+            var cacheFailure = true
+            val result = try {
+                val descriptor = context.contentResolver.openFileDescriptor(uri, "r")
+                descriptor?.use { fd ->
+                    PdfRenderer(fd).use { renderer ->
+                        if (renderer.pageCount <= 0) return@use null
+                        renderer.openPage(0).use { page ->
+                            if (page.width <= 0 || page.height <= 0) return@use null
+                            val ratio = min(MAX_WIDTH.toFloat() / page.width, MAX_HEIGHT.toFloat() / page.height)
+                            val width = (page.width * ratio).roundToInt().coerceIn(1, MAX_WIDTH)
+                            val height = (page.height * ratio).roundToInt().coerceIn(1, MAX_HEIGHT)
+                            Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { bitmap ->
+                                Canvas(bitmap).drawColor(AndroidColor.WHITE)
+                                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                            }
                         }
                     }
                 }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (_: SecurityException) {
+                cacheFailure = false
+                null
+            } catch (_: Exception) {
+                null
             }
-        }.getOrNull()
-        synchronized(thumbnails) {
-            if (result == null) failed.put(key, true) else thumbnails.put(key, result)
+            synchronized(thumbnails) {
+                if (result == null) {
+                    if (cacheFailure) failed.put(key, true)
+                } else {
+                    thumbnails.put(key, result)
+                }
+            }
+            result
         }
-        result
     }
 }
 

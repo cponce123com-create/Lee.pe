@@ -146,4 +146,34 @@ class LocalLibraryBackupTest {
         )
         assertEquals(12_000, LocalLibraryBackup.parse(json).snapshot.annotations.single().noteText?.length)
     }
+    @Test
+    fun rejectsImpossibleSessionDay() {
+        val session = """{"dayKey":"2026-13-45","bookUri":"content://example/test","durationSeconds":60}"""
+        assertThrows(IOException::class.java) {
+            LocalLibraryBackup.parse(root(books = "[$book]").replace("\"sessions\":[]", "\"sessions\":[$session]"))
+        }
+    }
+
+    @Test
+    fun rejectsPdfPageOutsideSupportedRange() {
+        val invalid = book.replace("\"pdfPageIndex\":0", "\"pdfPageIndex\":1000001")
+        assertThrows(IOException::class.java) { LocalLibraryBackup.parse(root(books = "[$invalid]")) }
+    }
+
+    @Test
+    fun archiveReaderStopsAtSixteenMegabytes() {
+        val source = object : java.io.InputStream() {
+            private var remaining = MAX_ARCHIVE_BYTES + 1
+            override fun read(): Int = if (remaining-- > 0) 0 else -1
+            override fun read(bytes: ByteArray, offset: Int, length: Int): Int {
+                if (remaining <= 0) return -1
+                val count = minOf(length, remaining)
+                bytes.fill(0, offset, offset + count)
+                remaining -= count
+                return count
+            }
+        }
+        assertThrows(IOException::class.java) { LocalLibraryBackup.readArchivePayload(source) }
+    }
+
 }

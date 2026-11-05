@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.view.accessibility.AccessibilityManager
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -85,7 +86,6 @@ private fun createEpubReaderSessionActions(
                 current.pause()
             } else {
                 session.followNarration.value = true
-                session.chromeVisible.value = false
                 current.play()
             }
             return
@@ -97,7 +97,12 @@ private fun createEpubReaderSessionActions(
             onRequestNotificationPermission()
         }
         session.followNarration.value = true
-        session.chromeVisible.value = false
+        val touchExplorationEnabled = context
+            .getSystemService(AccessibilityManager::class.java)
+            ?.isTouchExplorationEnabled == true
+        if (shouldHideReaderChromeAfterTtsStart(isFirstPlay = true, touchExplorationEnabled = touchExplorationEnabled)) {
+            session.chromeVisible.value = false
+        }
         coroutineScope.launch {
             val app = context.applicationContext as Application
             val binding = session.ttsServiceBinding.value ?: try {

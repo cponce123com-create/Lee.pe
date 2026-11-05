@@ -1,6 +1,9 @@
 package pe.lee.app
 
 import android.app.Application
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import pe.lee.app.data.local.LeeDatabase
 import pe.lee.app.data.repository.AnnotationRepository
 import pe.lee.app.data.repository.BookRepository
@@ -10,11 +13,16 @@ import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.feature.sharecard.data.QuoteCardCacheCleaner
 
 class LeePeApplication : Application() {
+    private val startupScope = CoroutineScope(SupervisorJob())
     val container: AppContainer by lazy(LazyThreadSafetyMode.SYNCHRONIZED) { AppContainer(this) }
 
     override fun onCreate() {
         super.onCreate()
-        QuoteCardCacheCleaner.removeExpired(this)
+        startupScope.launch {
+            runStartupCleanupOnIo {
+                QuoteCardCacheCleaner.removeExpired(this@LeePeApplication)
+            }
+        }
     }
 }
 

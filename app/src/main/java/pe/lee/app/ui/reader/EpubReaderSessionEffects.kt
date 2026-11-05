@@ -354,7 +354,6 @@ internal fun EpubReaderSessionEffects(
                 playback.state !is TtsNavigator.State.Failure
             if (playing && !wasPlaying) {
                 session.followNarration.value = true
-                session.chromeVisible.value = false
             }
             session.ttsIsPlaying.value = playing
             wasPlaying = playing

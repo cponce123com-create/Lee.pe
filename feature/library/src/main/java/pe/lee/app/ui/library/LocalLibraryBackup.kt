@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.Uri
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.io.InputStream
+import java.time.LocalDate
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -28,7 +30,9 @@ import pe.lee.core.domain.library.ImportBackupUseCase
 private const val BACKUP_SCHEMA = "lee.pe.local-library"
 private const val BACKUP_VERSION = 2
 private const val MIN_BACKUP_VERSION = 1
-private const val MAX_ARCHIVE_BYTES = 64 * 1024 * 1024
+internal const val MAX_ARCHIVE_BYTES = 16 * 1024 * 1024
+private const val MAX_PDF_PAGE_INDEX = 1_000_000
+private val DAY_KEY = Regex("\\d{4}-\\d{2}-\\d{2}")
 private const val ENCRYPTED_BACKUP_OVERHEAD_BYTES = 57
 private const val MAX_BOOKS = 20000
 private const val MAX_ANNOTATIONS = 60000
@@ -45,6 +49,7 @@ internal data class SanitizedBackupSnapshot(val snapshot: LocalBackupSnapshot, v
 
 internal object LocalLibraryBackup {
     suspend fun save(context: Context, uri: Uri, backupRepository: LocalBackupRepository, password: String) = withContext(Dispatchers.IO) {
+        try {
         val sanitized = sanitizeSnapshot(backupRepository.snapshot())
         val snapshot = sanitized.snapshot
         val settingsRepository = SettingsRepository(context)
@@ -144,23 +149,17 @@ internal object LocalLibraryBackup {
             encrypted.fill(0)
         }
         sanitized.adjustedRecords
+        } catch (error: OutOfMemoryError) {
+            throw BackupArchiveException(BackupArchiveException.Reason.SIZE_LIMIT, error)
+        }
     }
 
     suspend fun preview(context: Context, uri: Uri, backupRepository: LocalBackupRepository, password: String? = null): LocalBackupPreview =
         withContext(Dispatchers.IO) {
+            try {
             val input = context.contentResolver.openInputStream(uri)
                 ?: throw BackupArchiveException(BackupArchiveException.Reason.SOURCE_UNAVAILABLE)
-            val buffer = ByteArrayOutputStream()
-            input.use { stream ->
-                val chunk = ByteArray(8192)
-                while (true) {
-                    val n = stream.read(chunk)
-                    if (n < 0) break
-                    if (buffer.size() + n > MAX_ARCHIVE_BYTES) throw BackupArchiveException(BackupArchiveException.Reason.SIZE_LIMIT)
-                    buffer.write(chunk, 0, n)
-                }
-            }
-            val payload = buffer.toByteArray()
+            val payload = readArchivePayload(input)
             val jsonBytes = try {
                 if (LocalBackupCipher.isEncrypted(payload)) {
                     val suppliedPassword = password ?: throw BackupPasswordRequiredException()
@@ -190,7 +189,32 @@ internal object LocalLibraryBackup {
                 }
             }
             LocalBackupPreview(archive, exact, byTitle, archive.snapshot.books.size - exact - byTitle)
+            } catch (error: OutOfMemoryError) {
+                throw BackupArchiveException(BackupArchiveException.Reason.SIZE_LIMIT, error)
+            }
         }
+
+    
+internal fun isValidBackupDayKey(value: String): Boolean =
+    DAY_KEY.matches(value) && runCatching { LocalDate.parse(value) }.isSuccess
+
+internal fun readArchivePayload(input: InputStream): ByteArray {
+        val buffer = ByteArrayOutputStream(8 * 1024)
+        input.use { stream ->
+            val chunk = ByteArray(8 * 1024)
+            var totalBytes = 0
+            while (true) {
+                val read = stream.read(chunk)
+                if (read < 0) break
+                if (totalBytes + read > MAX_ARCHIVE_BYTES) {
+                    throw BackupArchiveException(BackupArchiveException.Reason.SIZE_LIMIT)
+                }
+                buffer.write(chunk, 0, read)
+                totalBytes += read
+            }
+        }
+        return buffer.toByteArray()
+    }
 
     suspend fun restore(context: Context, preview: LocalBackupPreview, backupRepository: LocalBackupRepository): LocalBackupMergeReport =
         withContext(Dispatchers.IO) {
@@ -289,7 +313,7 @@ internal object LocalLibraryBackup {
                     throw BackupArchiveException(BackupArchiveException.Reason.INVALID_DATA)
                 }
                 val page = o.getInt("pdfPageIndex")
-                if (page < 0) throw BackupArchiveException(BackupArchiveException.Reason.INVALID_DATA)
+                if (page !in 0..MAX_PDF_PAGE_INDEX) throw BackupArchiveException(BackupArchiveException.Reason.INVALID_DATA)
                 val savedCollections = o.optJSONArray("collections")?.let { array ->
                     buildList {
                         if (array.length() > MAX_COLLECTIONS) {
@@ -372,7 +396,7 @@ internal object LocalLibraryBackup {
                 val day = o.text("dayKey", 10)
                 val amount = o.getLong("durationSeconds")
                 if (uri !in validUris ||
-                    !day.matches(Regex("\\d{4}-\\d{2}-\\d{2}")) ||
+                    !isValidBackupDayKey(day) ||
                     amount !in 0L..86_400L
                 ) {
                     throw BackupArchiveException(BackupArchiveException.Reason.INVALID_DATA)
