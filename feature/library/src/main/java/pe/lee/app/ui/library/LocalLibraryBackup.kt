@@ -42,6 +42,10 @@ private const val MAX_COLLECTIONS = 2000
 internal class BackupPasswordRequiredException : IOException("PASSWORD_REQUIRED")
 
 internal data class LocalBackupArchive(val snapshot: LocalBackupSnapshot, val settings: Map<String, JSONObject>, val dailyGoalMinutes: Int?)
+internal data class LocalLibraryRestoreResult(
+    val merge: LocalBackupMergeReport,
+    val preferencesPersisted: Boolean,
+)
 
 internal data class LocalBackupPreview(val archive: LocalBackupArchive, val exactMatches: Int, val titleMatches: Int, val unavailable: Int)
 
@@ -214,13 +218,13 @@ internal object LocalLibraryBackup {
         return buffer.toByteArray()
     }
 
-    suspend fun restore(context: Context, preview: LocalBackupPreview, backupRepository: LocalBackupRepository): LocalBackupMergeReport =
+    suspend fun restore(context: Context, preview: LocalBackupPreview, backupRepository: LocalBackupRepository): LocalLibraryRestoreResult =
         withContext(Dispatchers.IO) {
             val report = backupRepository.merge(preview.archive.snapshot)
             val settingsRepository = SettingsRepository(context)
             val currentSettings = settingsRepository.all(SettingsRepository.Store.LIBRARY)
             val restoredBooks = backupRepository.allBooks()
-            settingsRepository.apply(SettingsRepository.Store.LIBRARY) {
+            val librarySettingsPersisted = settingsRepository.update(SettingsRepository.Store.LIBRARY) {
                 for ((backupUri, localUri) in report.uriMap) {
                     val settings = preview.archive.settings[backupUri] ?: continue
                     fun setIfAbsent(key: String, write: () -> Unit) {
@@ -246,9 +250,6 @@ internal object LocalLibraryBackup {
                     setIfAbsent("pdf-continuous:") {
                         putBoolean("pdf-continuous:$localUri", settings.getBoolean("pdf-continuous:"))
                     }
-                    if (settings.has("audioPositionMs") && AudioProgressStore.get(context, localUri) == 0L) {
-                        AudioProgressStore.put(context, localUri, settings.getLong("audioPositionMs").coerceAtLeast(0L))
-                    }
                 }
                 // PDF activity uses this legacy key first. Align it to Room's actual
                 // post-merge position, not blindly to a possibly older backup.
@@ -258,14 +259,31 @@ internal object LocalLibraryBackup {
                     }
                 }
             }
-            preview.archive.dailyGoalMinutes?.let { goal ->
-                if (!settingsRepository.contains(SettingsRepository.Store.READING_STATS, "daily_goal_minutes")) {
-                    settingsRepository.apply(SettingsRepository.Store.READING_STATS) {
-                        putInt("daily_goal_minutes", goal.coerceIn(5, 240))
-                    }
+            val audioPositions = report.uriMap.mapNotNull { (backupUri, localUri) ->
+                val settings = preview.archive.settings[backupUri] ?: return@mapNotNull null
+                if (!settings.has("audioPositionMs") || AudioProgressStore.get(context, localUri) != 0L) return@mapNotNull null
+                AudioProgressStore.positionKey(localUri) to settings.getLong("audioPositionMs").coerceAtLeast(0L)
+            }
+            val audioSettingsPersisted = if (audioPositions.isEmpty()) {
+                true
+            } else {
+                settingsRepository.update(SettingsRepository.Store.AUDIO_PROGRESS) {
+                    audioPositions.forEach { (key, position) -> putLong(key, position) }
                 }
             }
-            report
+            val statsPersisted = preview.archive.dailyGoalMinutes?.let { goal ->
+                if (!settingsRepository.contains(SettingsRepository.Store.READING_STATS, "daily_goal_minutes")) {
+                    settingsRepository.update(SettingsRepository.Store.READING_STATS) {
+                        putInt("daily_goal_minutes", goal.coerceIn(5, 240))
+                    }
+                } else {
+                    true
+                }
+            } ?: true
+            LocalLibraryRestoreResult(
+                merge = report,
+                preferencesPersisted = librarySettingsPersisted && audioSettingsPersisted && statsPersisted,
+            )
         }
 
     internal fun parse(json: String): LocalBackupArchive {
