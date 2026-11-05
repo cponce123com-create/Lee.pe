@@ -182,16 +182,14 @@ internal fun EpubReaderSessionEffects(
 
                 override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
                     if (item.itemId !in setOf(MENU_HIGHLIGHT, MENU_COPY_SELECTION, MENU_SHARE_SELECTION)) return false
-                    // Readium may clear its selection when the action mode closes.
-                    // Snapshot it before launching work so the share action cannot lose it.
-                    val selectedLocator = session.navigator.value?.currentSelection()?.locator
-                    val selectedText = selectedLocator?.text?.highlight?.trim().orEmpty()
-                    val selectedLocatorJson = selectedLocator?.toJSON()?.toString()
-                    val selectedAuthor = opened.metadata.authors
-                        .map { it.localizedName.string }
-                        .filter(String::isNotBlank)
-                        .joinToString(", ")
                     coroutineScope.launch {
+                        val selectedLocator = session.navigator.value?.currentSelection()?.locator
+                        val selectedText = selectedLocator?.text?.highlight?.trim().orEmpty()
+                        val selectedLocatorJson = selectedLocator?.toJSON()?.toString()
+                        val selectedAuthor = opened.metadata.authors
+                            .map { it.localizedName.string }
+                            .filter(String::isNotBlank)
+                            .joinToString(", ")
                         if (item.itemId == MENU_HIGHLIGHT && selectedLocator != null) {
                             val now = System.currentTimeMillis()
                             viewModel.saveAnnotation(
