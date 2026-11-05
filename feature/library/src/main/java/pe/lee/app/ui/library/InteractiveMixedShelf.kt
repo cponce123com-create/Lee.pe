@@ -1,7 +1,7 @@
 package pe.lee.app.ui.library
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -10,37 +10,36 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -55,6 +54,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 internal data class MixedShelfGroup(val objects: List<ShelfObject>, val units: Float)
 internal data class MixedShelfLine(val logicalShelf: Int, val groups: List<MixedShelfGroup>)
@@ -105,20 +105,13 @@ internal fun InteractiveMixedShelf(
     val initial = layout.copy(books = layout.books.filterNot { it.bookId in visibleIds } + displayedBooks)
     var draft by remember { mutableStateOf(initial) }
     var beforeDrag by remember { mutableStateOf(initial) }
-    val list = rememberLazyListState()
-    var scrollSpeed by remember { mutableStateOf(0f) }
-    var viewportHeight by remember { mutableStateOf(0f) }
-    val edge = with(LocalDensity.current) { 44.dp.toPx() }
+    var edgeDirection by remember { mutableStateOf(0) }
+    var viewportWidth by remember { mutableStateOf(0f) }
+    val edge = with(LocalDensity.current) { 28.dp.toPx() }
     LaunchedEffect(layout, shelves) { if (drag.activeKey == null) draft = initial }
-    LaunchedEffect(drag.activeKey, scrollSpeed) {
-        while (drag.activeKey != null && scrollSpeed != 0f) {
-            list.scrollBy(scrollSpeed)
-            delay(16)
-        }
-    }
     BoxWithConstraints(Modifier.fillMaxWidth().height(height)) {
-        val availableWidth = maxWidth.value
-        val capacity = ((availableWidth - 16f) / 48f).coerceAtLeast(2f)
+        val availableWidth = minOf(maxWidth.value, maxHeight.value / 1.5f) * .84f
+        val capacity = (availableWidth / 45f).coerceAtLeast(2f)
         val shown = (0 until draft.shelfCount()).mapNotNull { shelf ->
             val objects = draft.objectsOnShelf(shelf).filter { it !is ShelfObject.Book || it.placement.bookId in visibleIds }
             objects.takeIf { it.isNotEmpty() }?.let { ShelfDisplay(shelf, it) }
@@ -131,9 +124,19 @@ internal fun InteractiveMixedShelf(
                 packed
             }
         }
+        val pages = ((lines.size + 2) / 3).coerceAtLeast(1)
+        val pager = rememberPagerState(pageCount = { pages })
+        val scope = rememberCoroutineScope()
+        LaunchedEffect(drag.activeKey, edgeDirection, pages) {
+            while (drag.activeKey != null && edgeDirection != 0) {
+                delay(650)
+                val target = (pager.currentPage + edgeDirection).coerceIn(0, pages - 1)
+                if (target != pager.currentPage) pager.animateScrollToPage(target)
+            }
+        }
         ShelfDragSurface(
             state = drag,
-            modifier = Modifier.fillMaxSize().onGloballyPositioned { viewportHeight = it.size.height.toFloat() },
+            modifier = Modifier.fillMaxSize().onGloballyPositioned { viewportWidth = it.size.width.toFloat() },
             onStart = { beforeDrag = draft },
             onHover = { moving, target ->
                 val destination = if (target.startsWith("zone:")) {
@@ -149,13 +152,13 @@ internal fun InteractiveMixedShelf(
                     draft = draft.moveObject(moving, destination, index)
                 }
             },
-            onDrop = { scrollSpeed = 0f; onCommit(draft) },
-            onCancel = { scrollSpeed = 0f; draft = beforeDrag },
+            onDrop = { edgeDirection = 0; onCommit(draft) },
+            onCancel = { edgeDirection = 0; draft = beforeDrag },
             onDragPosition = { point ->
-                scrollSpeed = when {
-                    point.y < edge -> -12f
-                    point.y > viewportHeight - edge -> 12f
-                    else -> 0f
+                edgeDirection = when {
+                    point.x < edge -> -1
+                    point.x > viewportWidth - edge -> 1
+                    else -> 0
                 }
             },
             overlay = { moving ->
@@ -164,52 +167,56 @@ internal fun InteractiveMixedShelf(
                 }
             },
         ) {
-            LazyColumn(
-                state = list,
-                modifier = Modifier.fillMaxSize(),
-                userScrollEnabled = drag.activeKey == null,
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+            Cabinet3d(
+                height = height,
+                footer = {
+                    CabinetPagerControls(
+                        page = pager.currentPage, pages = pages,
+                        onPrevious = { scope.launch { pager.animateScrollToPage(pager.currentPage - 1) } },
+                        onNext = { scope.launch { pager.animateScrollToPage(pager.currentPage + 1) } },
+                    )
+                },
             ) {
-                itemsIndexed(lines, key = { index, _ -> index }) { lineIndex, line ->
-                    Column(
-                        Modifier.fillMaxWidth().then(drag.targetModifier("zone:${line.logicalShelf}:$lineIndex")).background(
-                            Brush.verticalGradient(listOf(Color(0xFFFFF8EF), Color(0xFFF1DFC3))),
-                            RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp),
-                        ).padding(top = 10.dp),
-                    ) {
-                        Row(
-                            Modifier.fillMaxWidth().height(154.dp).padding(horizontal = 6.dp),
-                            horizontalArrangement = Arrangement.spacedBy(3.dp),
-                            verticalAlignment = Alignment.Bottom,
-                        ) {
-                            val unit = ((availableWidth - 16f - line.groups.size * 3f) /
-                                line.groups.sumOf { it.units.toDouble() }.toFloat().coerceAtLeast(1f)).coerceAtMost(48f)
-                            if (line.groups.isEmpty()) {
-                                Text(
-                                    androidx.compose.ui.res.stringResource(pe.lee.feature.library.R.string.shelf_drop_here),
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.align(Alignment.CenterVertically).padding(12.dp),
-                                )
-                            }
-                            line.groups.forEach { group ->
-                                Column(Modifier.width((group.units * unit).dp), verticalArrangement = Arrangement.Bottom) {
-                                    group.objects.asReversed().forEachIndexed { index, item ->
-                                        key(item.stableKey) {
-                                            MixedShelfObject(
-                                                item, booksById,
-                                                Modifier.fillMaxWidth()
-                                                    .height(if (group.objects.size > 1 && index > 0) 25.dp else 140.dp - ((group.objects.size - 1) * 25).dp)
-                                                    .then(drag.itemModifier(item.stableKey)),
-                                                onOpen, onDecorationClick, flatTop = index == 0,
-                                                onToggle = { id -> onCommit(draft.toggleOrientation(id)) },
-                                            )
+                val cabinetWidth = maxWidth
+                val cabinetHeight = maxHeight
+                HorizontalPager(state = pager, userScrollEnabled = drag.activeKey == null, modifier = Modifier.fillMaxSize()) { page ->
+                    Box(Modifier.fillMaxSize()) {
+                        repeat(3) { row ->
+                            val lineIndex = page * 3 + row
+                            val line = lines.getOrNull(lineIndex)
+                            val rowHeight = cabinetHeight * (cabinetRowBottoms[row] - cabinetRowTops[row])
+                            if (line != null) {
+                                Row(
+                                    Modifier.offset(cabinetWidth * .085f, cabinetHeight * cabinetRowTops[row])
+                                        .size(cabinetWidth * .83f, rowHeight)
+                                        .then(drag.targetModifier("zone:${line.logicalShelf}:$lineIndex")),
+                                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                    verticalAlignment = Alignment.Bottom,
+                                ) {
+                                    val unit = ((availableWidth - line.groups.size * 3f) /
+                                        line.groups.sumOf { it.units.toDouble() }.toFloat().coerceAtLeast(1f)).coerceAtMost(45f)
+                                    line.groups.forEach { group ->
+                                        Column(Modifier.width((group.units * unit).dp), verticalArrangement = Arrangement.Bottom) {
+                                            group.objects.asReversed().forEachIndexed { index, item ->
+                                                key(item.stableKey) {
+                                                    val objectHeight = if (group.objects.size > 1 && index > 0) {
+                                                        rowHeight * .22f
+                                                    } else {
+                                                        rowHeight * (1f - (group.objects.size - 1) * .22f)
+                                                    }
+                                                    MixedShelfObject(
+                                                        item, booksById,
+                                                        Modifier.fillMaxWidth().height(objectHeight).then(drag.itemModifier(item.stableKey)),
+                                                        onOpen, onDecorationClick, flatTop = index == 0,
+                                                        onToggle = { id -> onCommit(draft.toggleOrientation(id)) },
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }
                             }
-                            Spacer(Modifier.weight(1f))
                         }
-                        ShelfPlank()
                     }
                 }
             }

@@ -20,6 +20,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.unit.dp
@@ -59,6 +60,21 @@ class CoverShelfInteractionTest {
         compose.onNodeWithTag("cover-book-b18", useUnmergedTree = true).assertIsDisplayed()
         compose.onNodeWithTag("cover-book-b19", useUnmergedTree = true).assertIsDisplayed()
         assertEquals(width, compose.onNodeWithTag("cover-book-b18", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot.width, 1f)
+    }
+
+    @Test
+    fun drawerButtonsMoveBetweenRealBookPages() {
+        val catalog = books(12)
+        compose.setContent {
+            LibraryShelfTheme { CoverShelfPager(catalog, 450.dp, null, { _, _ -> }, {}) }
+        }
+        val resources = InstrumentationRegistry.getInstrumentation().targetContext.resources
+        compose.onNodeWithContentDescription(resources.getString(pe.lee.feature.library.R.string.cabinet_next_page)).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithTag("cover-book-b9", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithContentDescription(resources.getString(pe.lee.feature.library.R.string.cabinet_previous_page)).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithTag("cover-book-b0", useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test

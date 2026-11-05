@@ -1,29 +1,33 @@
 package pe.lee.app.ui.library
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 
-private val ShelfPaperColors = lightColorScheme(
-    primary = Color(0xFF075B50),
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFD7ECE3),
-    onPrimaryContainer = Color(0xFF063F38),
-    secondary = Color(0xFF9D6B18),
-    secondaryContainer = Color(0xFFFFE8AC),
-    onSecondaryContainer = Color(0xFF503608),
-    background = Color(0xFFFFF8EF),
-    onBackground = Color(0xFF263D36),
-    surface = Color(0xFFFFFBF5),
-    onSurface = Color(0xFF263D36),
-    surfaceVariant = Color(0xFFF0E5D7),
-    onSurfaceVariant = Color(0xFF655E54),
-    outline = Color(0xFFB5A897),
+private val CabinetColors = darkColorScheme(
+    primary = Color(0xFFFFDEA0),
+    onPrimary = Color(0xFF322113),
+    primaryContainer = Color(0xFF007C69),
+    onPrimaryContainer = Color(0xFFFFF1D3),
+    secondary = Color(0xFFEFB958),
+    secondaryContainer = Color(0xFF8B5D1D),
+    onSecondaryContainer = Color(0xFFFFE7B3),
+    background = Color(0xFF2C1E18),
+    onBackground = Color(0xFFFFF0D6),
+    surface = Color(0xFF3C2A20),
+    onSurface = Color(0xFFFFF0D6),
+    surfaceVariant = Color(0xFF4D3626),
+    onSurfaceVariant = Color(0xFFDFCBAD),
+    outline = Color(0xFF967452),
 )
 
-/** The library uses the approved paper/teal identity; reader appearance remains independent. */
+/** Library-only cabinet palette; reader appearance stays independently configurable. */
 @Composable
 internal fun LibraryShelfTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = ShelfPaperColors, typography = MaterialTheme.typography, content = content)
+    MaterialTheme(colorScheme = CabinetColors, typography = MaterialTheme.typography) {
+        CompositionLocalProvider(LocalContentColor provides CabinetColors.onSurface, content = content)
+    }
 }

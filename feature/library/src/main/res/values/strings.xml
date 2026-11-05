@@ -353,4 +353,14 @@
     <string name="backup_record_limit">El respaldo contiene demasiados registros.</string>
     <string name="backup_source_unavailable">No se pudo abrir el respaldo. Revisa el permiso del archivo.</string>
     <string name="backup_destination_unavailable">No se pudo abrir el destino del respaldo.</string>
+    <string name="storage_directory_unavailable">No se pudo crear el almacenamiento local.</string>
+    <string name="storage_insufficient_space">No hay espacio suficiente para guardar la copia.</string>
+    <string name="storage_source_unavailable">No se pudo abrir el archivo original. Revisa su permiso.</string>
+    <string name="storage_empty_source">El archivo está vacío o no se pudo leer.</string>
+    <string name="storage_source_changed">El archivo cambió o se leyó de forma incompleta. Intenta copiarlo de nuevo.</string>
+    <string name="storage_finalization_failed">No se pudo finalizar la copia. Inténtalo de nuevo.</string>
+    <string name="storage_invalid_folder">Selecciona una carpeta con el explorador de Android.</string>
+    <string name="storage_folder_permission_revoked">El permiso de la carpeta fue revocado. Vuelve a seleccionarla.</string>
+    <string name="cabinet_previous_page">Página anterior</string>
+    <string name="cabinet_next_page">Página siguiente</string>
 </resources>

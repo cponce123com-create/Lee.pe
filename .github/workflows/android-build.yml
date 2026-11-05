@@ -17,6 +17,9 @@ on:
       - "version.properties"
       - "scripts/verify_debug_apk.py"
       - "scripts/test_verify_debug_apk.py"
+      - "scripts/test_verify_release_signing.py"
+      - "scripts/verify_release_signing.py"
+      - "scripts/verify_exception_resources.py"
       - "scripts/run_instrumentation.sh"
       - "scripts/verify_sharecard_locale_parity.py"
       - ".github/workflows/android-build.yml"
@@ -36,6 +39,9 @@ on:
       - "version.properties"
       - "scripts/verify_debug_apk.py"
       - "scripts/test_verify_debug_apk.py"
+      - "scripts/test_verify_release_signing.py"
+      - "scripts/verify_release_signing.py"
+      - "scripts/verify_exception_resources.py"
       - "scripts/run_instrumentation.sh"
       - "scripts/verify_sharecard_locale_parity.py"
       - ".github/workflows/android-build.yml"
@@ -73,6 +79,11 @@ jobs:
 
       - name: Test APK manifest security policy
         run: python scripts/test_verify_debug_apk.py
+
+      - name: Test signing certificate checks and exception resource policy
+        run: |
+          python scripts/test_verify_release_signing.py
+          python scripts/verify_exception_resources.py
 
       - name: Verify Spanish and English quote-card resources
         run: python scripts/verify_sharecard_locale_parity.py

@@ -22,6 +22,7 @@ dependencies {
     implementation(project(":core:datastore"))
     implementation(project(":core:domain"))
     implementation(libs.room3.runtime)
+    testImplementation(libs.junit)
 }
 
 kover {

@@ -5,28 +5,33 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,8 +40,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -44,6 +49,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import pe.lee.feature.library.R
 
 internal const val COVER_BOOKS_PER_PAGE = 9
@@ -98,58 +104,60 @@ internal fun CoverShelfPager(
             draft.firstOrNull { "book:${it.id}" == key }?.let { ShelfCoverArt(it, Modifier.fillMaxSize()) }
         },
     ) {
-        Column(Modifier.fillMaxSize()) {
-            Text(
-                stringResource(R.string.shelf_page_position, pager.currentPage + 1, pages),
-                modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 5.dp),
-                color = MaterialTheme.colorScheme.primary,
-                fontSize = 11.sp,
-            )
-
+        val scope = rememberCoroutineScope()
+        Cabinet3d(
+            height = height,
+            footer = {
+                CabinetPagerControls(
+                    page = pager.currentPage, pages = pages,
+                    onPrevious = { scope.launch { pager.animateScrollToPage(pager.currentPage - 1) } },
+                    onNext = { scope.launch { pager.animateScrollToPage(pager.currentPage + 1) } },
+                )
+            },
+        ) {
+            val cabinetWidth = maxWidth
+            val cabinetHeight = maxHeight
             HorizontalPager(
                 state = pager,
                 userScrollEnabled = drag.activeKey == null,
-                modifier = Modifier.weight(1f).fillMaxWidth().testTag("cover-pager"),
+                modifier = Modifier.fillMaxSize().testTag("cover-pager"),
             ) { page ->
-                Column(
-                    Modifier.fillMaxSize().shadow(5.dp, RoundedCornerShape(10.dp))
-                        .background(Brush.horizontalGradient(listOf(Color(0xFFD59A5B), Color(0xFFF5DEC0), Color(0xFFD59A5B))))
-                        .padding(horizontal = 7.dp, vertical = 5.dp),
-                ) {
+                Box(Modifier.fillMaxSize()) {
                     repeat(3) { row ->
-                        Column(Modifier.weight(1f).fillMaxWidth()) {
-                            Row(
-                                Modifier.weight(1f).fillMaxWidth().background(Color(0xFFF6EAD7)).padding(horizontal = 7.dp, vertical = 4.dp),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalAlignment = Alignment.Bottom,
-                            ) {
-                                repeat(3) { column ->
-                                    val book = draft.getOrNull(page * COVER_BOOKS_PER_PAGE + row * 3 + column)
-                                    if (book == null) {
-                                        Spacer(Modifier.weight(1f).fillMaxHeight())
-                                    } else {
-                                        key(book.id) {
-                                            Box(
-                                                Modifier.weight(1f).fillMaxHeight()
-                                                    .then(drag.itemModifier("book:${book.id}")).testTag("cover-book-${book.id}"),
-                                            ) {
-                                                ShelfCoverArt(
-                                                    book,
-                                                    Modifier.fillMaxSize().clickable { onBookAction(book, LibraryBookAction.OPEN) },
-                                                )
-                                                BookActions(
-                                                    book = book,
-                                                    savingBookUri = savingBookUri,
-                                                    modifier = Modifier.align(Alignment.BottomEnd).size(26.dp)
-                                                        .background(Color(0xDFFFF8EF), RoundedCornerShape(8.dp)),
-                                                    onAction = { onBookAction(book, it) },
-                                                )
-                                            }
+                        Row(
+                            Modifier.offset(cabinetWidth * .155f, cabinetHeight * cabinetRowTops[row])
+                                .size(cabinetWidth * .69f, cabinetHeight * (cabinetRowBottoms[row] - cabinetRowTops[row])),
+                            horizontalArrangement = Arrangement.spacedBy(cabinetWidth * .035f),
+                            verticalAlignment = Alignment.Bottom,
+                        ) {
+                            repeat(3) { column ->
+                                val book = draft.getOrNull(page * COVER_BOOKS_PER_PAGE + row * 3 + column)
+                                if (book == null) {
+                                    Spacer(Modifier.weight(1f).fillMaxHeight())
+                                } else {
+                                    key(book.id) {
+                                        Box(
+                                            Modifier.weight(1f).fillMaxHeight()
+                                                .then(drag.itemModifier("book:${book.id}")).testTag("cover-book-${book.id}"),
+                                        ) {
+                                            ShelfCoverArt(
+                                                book,
+                                                Modifier.fillMaxSize().clickable { onBookAction(book, LibraryBookAction.OPEN) },
+                                                stand = true,
+                                            )
+                                            BookActions(
+                                                book = book,
+                                                savingBookUri = savingBookUri,
+                                                modifier = Modifier.align(Alignment.TopEnd).size(18.dp)
+                                                    .background(Color(0xB33A2418), RoundedCornerShape(8.dp)),
+                                                iconSize = 12.dp,
+                                                iconTint = Color(0xFFFFE7B3),
+                                                onAction = { onBookAction(book, it) },
+                                            )
                                         }
                                     }
                                 }
                             }
-                            ShelfPlank()
                         }
                     }
                 }
@@ -160,11 +168,19 @@ internal fun CoverShelfPager(
 
 /** One paper-backed cover, without a metadata card or synthetic purple frame. */
 @Composable
-internal fun ShelfCoverArt(book: LocalBook, modifier: Modifier = Modifier, portrait: Boolean = true) {
+internal fun ShelfCoverArt(book: LocalBook, modifier: Modifier = Modifier, portrait: Boolean = true, stand: Boolean = false) {
     BoxWithConstraints(modifier, contentAlignment = Alignment.BottomCenter) {
         val width = if (portrait) minOf(maxWidth.value, maxHeight.value * .68f) else maxWidth.value
         val height = if (portrait) width / .68f else maxHeight.value
         ShelfCoverFace(book, Modifier.size(width.dp, height.dp))
+        if (stand) {
+            Box(
+                Modifier.align(Alignment.BottomCenter).size(width.dp, 5.dp)
+                    .shadow(2.dp, RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                    .background(Brush.verticalGradient(listOf(Color(0xFFE7B66A), Color(0xFF543219), Color(0xFFAA7437))),
+                        RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)),
+            )
+        }
     }
 }
 
@@ -204,5 +220,27 @@ internal fun ShelfPlank(modifier: Modifier = Modifier) {
             ),
     ) {
         Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0xFFFFECC8)))
+    }
+}
+
+@Composable
+internal fun CabinetPagerControls(page: Int, pages: Int, onPrevious: () -> Unit, onNext: () -> Unit) {
+    BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        val pageDescription = stringResource(R.string.shelf_page_position, page + 1, pages)
+        val compact = maxWidth < 120.dp
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+            IconButton(onClick = onPrevious, enabled = page > 0, modifier = Modifier.size(28.dp)) {
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, stringResource(R.string.cabinet_previous_page))
+            }
+            Text(
+                if (compact) "${page + 1} / $pages" else pageDescription,
+                color = Color(0xFFFFE6B8), fontSize = 9.sp, maxLines = 1,
+                modifier = Modifier.weight(1f).semantics { contentDescription = pageDescription },
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+            IconButton(onClick = onNext, enabled = page + 1 < pages, modifier = Modifier.size(28.dp)) {
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, stringResource(R.string.cabinet_next_page))
+            }
+        }
     }
 }

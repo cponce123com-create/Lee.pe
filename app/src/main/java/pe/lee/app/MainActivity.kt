@@ -22,17 +22,17 @@ import pe.lee.app.ui.theme.LeePeTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val paper = 0xFFFFF8EF.toInt()
+        val paper = 0xFF2C1E18.toInt()
         enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.light(paper, paper),
-            navigationBarStyle = SystemBarStyle.light(paper, paper),
+            statusBarStyle = SystemBarStyle.dark(paper),
+            navigationBarStyle = SystemBarStyle.dark(paper),
         )
         val container = (application as LeePeApplication).container
         val libraryViewModel = ViewModelProvider(this, container.viewModelFactory)
             .get(LibraryViewModel::class.java)
         setContent {
             LeePeTheme {
-                Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFFFFF8EF)) {
+                Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF2C1E18)) {
                     LibraryScreen(
                         viewModel = libraryViewModel,
                         settings = container.settings,
