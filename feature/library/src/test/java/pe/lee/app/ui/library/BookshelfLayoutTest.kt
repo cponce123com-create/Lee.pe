@@ -18,6 +18,7 @@ class BookshelfLayoutTest {
         assertEquals(0, layout.books.single().shelf)
         assertEquals(4095, layout.decorations.single().shelf)
         assertEquals(4096, layout.shelfCount())
+        assertEquals(listOf(0, 4095), layout.occupiedShelfIndices())
         assertEquals(layout, BookshelfLayout.decode(BookshelfLayout.encode(layout)))
         assertEquals(null, BookshelfLayout.decode("{"))
     }
