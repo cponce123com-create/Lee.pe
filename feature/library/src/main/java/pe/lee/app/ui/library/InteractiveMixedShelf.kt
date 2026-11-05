@@ -24,6 +24,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -125,7 +127,7 @@ internal fun InteractiveMixedShelf(
         val pages = ((lines.size + 2) / 3).coerceAtLeast(1)
         val pager = rememberPagerState(pageCount = { pages })
         val scope = rememberCoroutineScope()
-        LaunchedEffect(drag.activeKey, edgeDirection) {
+        LaunchedEffect(drag.activeKey, edgeDirection, pages) {
             while (drag.activeKey != null && edgeDirection != 0) {
                 delay(650)
                 val target = (pager.currentPage + edgeDirection).coerceIn(0, pages - 1)
