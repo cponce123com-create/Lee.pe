@@ -363,4 +363,5 @@
     <string name="storage_folder_permission_revoked">Folder permission was revoked. Select the folder again.</string>
     <string name="cabinet_previous_page">Previous page</string>
     <string name="cabinet_next_page">Next page</string>
+    <string name="backup_restore_preferences_failed">Library data was restored, but some settings could not be saved. Import the backup again to retry.</string>
 </resources>
