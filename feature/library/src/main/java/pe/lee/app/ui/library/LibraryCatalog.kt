@@ -128,8 +128,12 @@ internal fun LibraryCatalog(
                             Toast.makeText(context, context.getString(R.string.library_offline_copy_saved), Toast.LENGTH_SHORT).show()
                         } catch (cancelled: CancellationException) {
                             throw cancelled
-                        } catch (_: Exception) {
-                            Toast.makeText(context, context.getString(R.string.library_offline_copy_save_failed), Toast.LENGTH_LONG).show()
+                        } catch (error: Exception) {
+                            Toast.makeText(
+                                context,
+                                context.getString(storageErrorMessage(error, R.string.library_offline_copy_save_failed)),
+                                Toast.LENGTH_LONG,
+                            ).show()
                         } finally {
                             savingBookUri.value = null
                         }

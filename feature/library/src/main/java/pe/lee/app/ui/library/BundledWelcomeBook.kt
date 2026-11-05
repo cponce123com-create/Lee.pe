@@ -4,7 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
 import java.io.File
-import java.io.IOException
+import pe.lee.core.domain.StorageException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -37,7 +37,7 @@ internal object BundledWelcomeBook {
             withContext(Dispatchers.IO) {
                 val directory = File(appContext.filesDir, "bundled_books")
                 if (!directory.exists() && !directory.mkdirs()) {
-                    throw IOException("No se pudo crear la carpeta del libro incluido.")
+                    throw StorageException(StorageException.Reason.DIRECTORY_UNAVAILABLE)
                 }
                 val bookFile = File(directory, ASSET_NAME)
                 if (!bookFile.exists() || bookFile.length() == 0L) {
@@ -48,7 +48,7 @@ internal object BundledWelcomeBook {
                     if (bookFile.exists()) bookFile.delete()
                     if (!temporary.renameTo(bookFile)) {
                         temporary.delete()
-                        throw IOException("No se pudo guardar El tesoro de los Incas.")
+                        throw StorageException(StorageException.Reason.FINALIZATION_FAILED)
                     }
                 }
 

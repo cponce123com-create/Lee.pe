@@ -5,7 +5,6 @@ import android.net.Uri
 import android.os.StatFs
 import android.provider.OpenableColumns
 import java.io.File
-import java.io.IOException
 import java.io.RandomAccessFile
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
@@ -15,6 +14,7 @@ import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import pe.lee.core.domain.StorageException
 
 /**
  * Stores user-requested offline copies in app-private storage excluded from Android Auto Backup.
@@ -25,8 +25,6 @@ object OfflineBookStore {
 
     private const val DIRECTORY_NAME = "lee_pe_offline_books"
 
-    /** How much is copied between free-space checks (one statfs each). */
-    private const val SPACE_CHECK_INTERVAL_BYTES = 8L * 1024L * 1024L
     private val saveLocks = ConcurrentHashMap<String, ReentrantLock>()
 
     fun findCopy(context: Context, originalUri: Uri): File? = findCopies(context, listOf(originalUri))[originalUri.toString()]
@@ -63,7 +61,7 @@ object OfflineBookStore {
 
             val directory = directory(context)
             if (!directory.exists() && !directory.mkdirs()) {
-                throw IOException("No se pudo crear el almacenamiento local.")
+                throw StorageException(StorageException.Reason.DIRECTORY_UNAVAILABLE)
             }
             val extension = displayName.substringAfterLast('.', "")
                 .lowercase()
@@ -74,73 +72,35 @@ object OfflineBookStore {
             RandomAccessFile(lockFile, "rw").channel.use { channel ->
                 channel.lock().use {
                     findCopy(context, originalUri)?.let { return@withContext it }
-                    val temporary = File.createTempFile("lee-pe-", ".part", directory)
-                    try {
-                        val sourceSize = context.contentResolver.query(
-                            originalUri,
-                            arrayOf(OpenableColumns.SIZE),
-                            null,
-                            null,
-                            null,
-                        )?.use { cursor ->
-                            if (cursor.moveToFirst()) {
-                                val index = cursor.getColumnIndex(OpenableColumns.SIZE)
-                                if (index >= 0 && !cursor.isNull(index)) cursor.getLong(index) else -1L
-                            } else {
-                                -1L
-                            }
-                        } ?: -1L
-                        if (sourceSize >= 0L && StatFs(directory.absolutePath).availableBytes < sourceSize) {
-                            throw IOException("No hay espacio suficiente para guardar la copia sin conexión.")
+                    val sourceSize = context.contentResolver.query(
+                        originalUri,
+                        arrayOf(OpenableColumns.SIZE),
+                        null,
+                        null,
+                        null,
+                    )?.use { cursor ->
+                        if (cursor.moveToFirst()) {
+                            val index = cursor.getColumnIndex(OpenableColumns.SIZE)
+                            if (index >= 0 && !cursor.isNull(index)) cursor.getLong(index) else -1L
+                        } else {
+                            -1L
                         }
-                        val input = context.contentResolver.openInputStream(originalUri)
-                            ?: throw IOException("No se pudo leer el archivo original. Revisa su permiso.")
-                        input.use { source ->
-                            temporary.outputStream().buffered().use { output ->
-                                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                                var copiedBytes = 0L
-                                var bytesSinceSpaceCheck = 0L
-                                while (true) {
-                                    coroutineContext.ensureActive()
-                                    val count = source.read(buffer)
-                                    if (count < 0) break
-                                    // Checking free space costs a syscall; once every
-                                    // few megabytes is enough and keeps large audio books
-                                    // from crawling (A-09).
-                                    if (bytesSinceSpaceCheck >= SPACE_CHECK_INTERVAL_BYTES) {
-                                        val remaining = if (sourceSize >= 0L) {
-                                            (sourceSize - copiedBytes).coerceAtLeast(count.toLong())
-                                        } else {
-                                            count.toLong()
-                                        }
-                                        if (StatFs(directory.absolutePath).availableBytes < remaining) {
-                                            throw IOException("No hay espacio suficiente para guardar la copia sin conexión.")
-                                        }
-                                        bytesSinceSpaceCheck = 0L
-                                    }
-                                    output.write(buffer, 0, count)
-                                    copiedBytes += count
-                                    bytesSinceSpaceCheck += count
-                                }
-                                if (copiedBytes == 0L) {
-                                    throw IOException("El archivo está vacío o no se pudo leer.")
-                                }
-                            }
-                        }
-                        coroutineContext.ensureActive()
-                        // The per-URI OS file lock makes this check and rename a single-writer section.
-                        if (target.exists()) {
-                            temporary.delete()
-                            return@withContext target
-                        }
-                        if (!temporary.renameTo(target)) {
-                            throw IOException("No se pudo finalizar la copia sin conexión.")
-                        }
-                        target
-                    } catch (error: Exception) {
-                        temporary.delete()
-                        throw error
+                    } ?: -1L
+                    // Empty remnants are never a usable copy. Repair them under the URI lock.
+                    if (target.exists() && target.length() == 0L && !target.delete()) {
+                        throw StorageException(StorageException.Reason.FINALIZATION_FAILED)
                     }
+                    val copyContext = coroutineContext
+                    OfflineCopyWriter.write(
+                        target = target,
+                        sourceSize = sourceSize,
+                        openSource = {
+                            context.contentResolver.openInputStream(originalUri)
+                                ?: throw StorageException(StorageException.Reason.SOURCE_UNAVAILABLE)
+                        },
+                        availableBytes = { StatFs(directory.absolutePath).availableBytes },
+                        checkActive = { copyContext.ensureActive() },
+                    )
                 }
             }
         }

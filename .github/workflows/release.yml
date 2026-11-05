@@ -14,11 +14,28 @@ jobs:
     name: Build signed AAB
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    env:
-      HAS_KEYSTORE: ${{ secrets.LEE_PE_KEYSTORE_BASE64 != '' }}
     steps:
       - name: Check out repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Require persistent signing configuration
+        env:
+          LEE_PE_KEYSTORE_BASE64: ${{ secrets.LEE_PE_KEYSTORE_BASE64 }}
+          LEE_PE_KEYSTORE_PASSWORD: ${{ secrets.LEE_PE_KEYSTORE_PASSWORD }}
+          LEE_PE_KEY_ALIAS: ${{ secrets.LEE_PE_KEY_ALIAS }}
+          LEE_PE_KEY_PASSWORD: ${{ secrets.LEE_PE_KEY_PASSWORD }}
+          LEE_PE_SIGNING_CERT_SHA256: ${{ vars.LEE_PE_SIGNING_CERT_SHA256 }}
+        run: |
+          python - <<'PYTHON'
+          import os, re
+          names = ('LEE_PE_KEYSTORE_BASE64', 'LEE_PE_KEYSTORE_PASSWORD', 'LEE_PE_KEY_ALIAS', 'LEE_PE_KEY_PASSWORD', 'LEE_PE_SIGNING_CERT_SHA256')
+          missing = [name for name in names if not os.environ.get(name)]
+          if missing:
+              raise SystemExit('Release requires persistent signing configuration: ' + ', '.join(missing))
+          fingerprint = os.environ['LEE_PE_SIGNING_CERT_SHA256'].replace(':', '').lower()
+          if not re.fullmatch('[0-9a-f]{64}', fingerprint):
+              raise SystemExit('LEE_PE_SIGNING_CERT_SHA256 must be a SHA-256 certificate fingerprint.')
+          PYTHON
 
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
@@ -39,27 +56,42 @@ jobs:
         run: sdkmanager --install "platforms;android-36"
 
       - name: Export signing variables
-        # Only defined when the repository has the keystore secret; otherwise the
-        # bundle is built unsigned, which is still useful for size verification.
-        if: env.HAS_KEYSTORE == 'true'
+        # Release never falls back to an unsigned package or an ephemeral debug key.
         env:
           LEE_PE_KEYSTORE_BASE64: ${{ secrets.LEE_PE_KEYSTORE_BASE64 }}
           LEE_PE_KEYSTORE_PASSWORD: ${{ secrets.LEE_PE_KEYSTORE_PASSWORD }}
           LEE_PE_KEY_ALIAS: ${{ secrets.LEE_PE_KEY_ALIAS }}
           LEE_PE_KEY_PASSWORD: ${{ secrets.LEE_PE_KEY_PASSWORD }}
         run: |
-          printf '%s' "$LEE_PE_KEYSTORE_BASE64" | base64 -d > release.jks
-          echo "LEE_PE_KEYSTORE=$GITHUB_WORKSPACE/release.jks" >> "$GITHUB_ENV"
-          echo "LEE_PE_KEYSTORE_PASSWORD=$LEE_PE_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
-          echo "LEE_PE_KEY_ALIAS=$LEE_PE_KEY_ALIAS" >> "$GITHUB_ENV"
-          echo "LEE_PE_KEY_PASSWORD=$LEE_PE_KEY_PASSWORD" >> "$GITHUB_ENV"
+          umask 077
+          printf '%s' "$LEE_PE_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/lee-pe-release.jks"
+          echo "LEE_PE_KEYSTORE=$RUNNER_TEMP/lee-pe-release.jks" >> "$GITHUB_ENV"
 
       - name: Run tests and build the bundle
-        run: ./gradlew --no-daemon --stacktrace testDebugUnitTest :core:domain:test bundleRelease assembleRelease
+        env:
+          LEE_PE_KEYSTORE_PASSWORD: ${{ secrets.LEE_PE_KEYSTORE_PASSWORD }}
+          LEE_PE_KEY_ALIAS: ${{ secrets.LEE_PE_KEY_ALIAS }}
+          LEE_PE_KEY_PASSWORD: ${{ secrets.LEE_PE_KEY_PASSWORD }}
+        run: ./gradlew --no-daemon --stacktrace testDebugUnitTest :core:domain:test lintRelease bundleRelease assembleRelease
+
+      - name: Verify signed APK certificate
+        env:
+          LEE_PE_SIGNING_CERT_SHA256: ${{ vars.LEE_PE_SIGNING_CERT_SHA256 }}
+        run: python scripts/verify_release_signing.py app/build/outputs/apk/release
 
       - name: Remove the keystore
         if: always()
-        run: rm -f release.jks
+        run: rm -f "$RUNNER_TEMP/lee-pe-release.jks"
+
+      - name: Upload signed APK and certificate provenance
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lee-pe-signed-apk
+          path: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/apk/release/signing.json
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Upload AAB
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -70,7 +102,7 @@ jobs:
           retention-days: 30
 
       - name: Create signed GitHub release
-        if: startsWith(github.ref, 'refs/tags/') && env.HAS_KEYSTORE == 'true'
+        if: startsWith(github.ref, 'refs/tags/')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ github.ref_name }}

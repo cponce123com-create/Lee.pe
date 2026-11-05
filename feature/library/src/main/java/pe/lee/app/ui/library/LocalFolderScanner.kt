@@ -3,7 +3,8 @@ package pe.lee.app.ui.library
 import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
-import java.io.IOException
+import pe.lee.core.domain.StorageException
+import kotlinx.coroutines.CancellationException
 import java.util.ArrayDeque
 import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.Dispatchers
@@ -48,8 +49,8 @@ internal object LocalFolderScanner {
         alreadyImported: Collection<String>,
         onProgress: suspend (Progress) -> Unit = {},
     ): Result = withContext(Dispatchers.IO) {
-        require(treeUri.scheme == "content" && DocumentsContract.isTreeUri(treeUri)) {
-            "Selecciona una carpeta con el explorador de Android."
+        if (treeUri.scheme != "content" || !DocumentsContract.isTreeUri(treeUri)) {
+            throw StorageException(StorageException.Reason.INVALID_FOLDER)
         }
         val resolver = context.contentResolver
         val rootId = DocumentsContract.getTreeDocumentId(treeUri)
@@ -90,10 +91,12 @@ internal object LocalFolderScanner {
                 resolver.query(childrenUri, projection, null, null, null)
             } catch (error: SecurityException) {
                 if (parentId == rootId) {
-                    throw IOException("Permiso de carpeta revocado. Vuelve a seleccionarla.", error)
+                    throw StorageException(StorageException.Reason.FOLDER_PERMISSION_REVOKED, error)
                 }
                 skippedFolders++
                 continue
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (_: Exception) {
                 null
             }

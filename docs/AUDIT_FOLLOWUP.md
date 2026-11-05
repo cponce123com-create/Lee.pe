@@ -84,3 +84,25 @@ Falta medir duración y respuesta en teléfono de gama baja/API 24–25 y realiz
 restauración real antes de dar por cerrado el P0. Los lectores antiguos solo abren
 v1: los nuevos respaldos v2 requieren Lee.pe 0.3.2 o posterior; no se modifica ningún
 respaldo existente. Pruebas y compilación se acreditan mediante el CI del PR.
+
+## Lote de almacenamiento y preparación de firma (0.3.3)
+
+- Copia offline extraída a un componente JVM usado por `OfflineBookStore`, manteniendo
+  los bloqueos por URI y el directorio privado sin Auto Backup.
+- EOF prematuro o cambio de tamaño del origen falla antes del rename. Archivos vacíos,
+  falta de espacio, errores de lectura, cancelación y fallo de publicación eliminan
+  el temporal; una copia final existente nunca se sobrescribe.
+- Pruebas JVM en `data` para esos fallos, copia correcta/tamaño desconocido y lecturas
+  que devuelven cero; ya no se considera este módulo completamente sin pruebas.
+- Errores tipados de copia, escáner y libro incluido; recursos ES/EN y pruebas de
+  mapeo UI. El escáner relanza cancelaciones en su consulta de subcarpetas.
+- CI rechaza literales localizados de `IOException` en código Kotlin de producción.
+  Es una regla acotada, no un detector completo de texto UI fuera de recursos.
+- Release exige secretos y una huella pública esperada; verifica el certificado del
+  APK y genera procedencia. Activación real pendiente: véase [firma APK](FIRMA_APK.md).
+
+Este lote no activa umbrales globales de cobertura: faltan pruebas de DAOs y más
+lógica de lectores para cumplirlos sin esconder código. El APK debug de Actions
+sigue siendo de pruebas; no acredita una actualización con clave persistente.
+La matriz Android y las pruebas JVM se acreditan con la ejecución del PR, y la
+validación física de almacenamiento/actualización sigue pendiente.

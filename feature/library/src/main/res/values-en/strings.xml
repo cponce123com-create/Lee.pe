@@ -353,4 +353,12 @@
     <string name="backup_record_limit">The backup contains too many records.</string>
     <string name="backup_source_unavailable">Could not open the backup. Check the file permission.</string>
     <string name="backup_destination_unavailable">Could not open the backup destination.</string>
+    <string name="storage_directory_unavailable">Could not create local storage.</string>
+    <string name="storage_insufficient_space">There is not enough space to save the copy.</string>
+    <string name="storage_source_unavailable">Could not open the original file. Check its permission.</string>
+    <string name="storage_empty_source">The file is empty or could not be read.</string>
+    <string name="storage_source_changed">The file changed or was read incompletely. Try copying it again.</string>
+    <string name="storage_finalization_failed">Could not finish the copy. Try again.</string>
+    <string name="storage_invalid_folder">Select a folder using the Android file picker.</string>
+    <string name="storage_folder_permission_revoked">Folder permission was revoked. Select the folder again.</string>
 </resources>

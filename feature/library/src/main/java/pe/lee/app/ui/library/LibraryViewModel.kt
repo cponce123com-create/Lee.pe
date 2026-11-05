@@ -124,7 +124,7 @@ class LibraryViewModel(
             } catch (error: Exception) {
                 mutableScanner.update {
                     it.copy(
-                        error = appContext.getString(R.string.scanner_import_failed),
+                        error = appContext.getString(storageErrorMessage(error, R.string.scanner_import_failed)),
                         busy = false,
                     )
                 }
