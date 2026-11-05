@@ -176,7 +176,10 @@ internal fun LibraryCatalog(
     }
 
     val coverRows = remember(orderedBooks) { orderedBooks.chunked(3) }
-    val shelfHeight = (LocalConfiguration.current.screenWidthDp - 12).coerceAtMost(600).dp * 1.5f
+    val configuration = LocalConfiguration.current
+    val naturalCabinetHeight = (configuration.screenWidthDp - 12).coerceAtMost(600).dp * 1.5f
+    val availableCabinetHeight = (configuration.screenHeightDp - 220).coerceAtLeast(260).dp
+    val shelfHeight = minOf(naturalCabinetHeight, availableCabinetHeight)
     var searchExpanded by rememberSaveable { mutableStateOf(false) }
     val customOrder = sortMode.value == LibrarySortMode.CUSTOM
     val shelfBooks = remember(orderedBooks, bookshelfLayout.hiddenBookIds, customOrder) {
