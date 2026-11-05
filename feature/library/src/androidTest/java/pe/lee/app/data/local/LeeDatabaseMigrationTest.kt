@@ -13,6 +13,7 @@ import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import pe.lee.app.data.repository.AudioProgressStore
@@ -81,6 +82,7 @@ class LeeDatabaseMigrationTest {
                 .addMigrations(*LeeDatabase.ALL_MIGRATIONS)
                 .build()
             try {
+                assertSessionBookUriIndex(databaseName)
                 val snapshot = database.localBackupDao().snapshot()
                 assertEquals("version $startingVersion books", 2, snapshot.books.size)
                 assertEquals("version $startingVersion title", "Libro de prueba", snapshot.books.first().title)
@@ -238,6 +240,21 @@ class LeeDatabaseMigrationTest {
         } finally {
             database.close()
             context.deleteDatabase(databaseName)
+        }
+    }
+
+    private fun assertSessionBookUriIndex(databaseName: String) {
+        SQLiteDatabase.openDatabase(
+            context.getDatabasePath(databaseName).path,
+            null,
+            SQLiteDatabase.OPEN_READONLY,
+        ).use { migrated ->
+            migrated.rawQuery("PRAGMA index_list('reading_sessions')", null).use { cursor ->
+                val names = buildSet {
+                    while (cursor.moveToNext()) add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                assertTrue("Expected bookUri lookup index after migration", "index_reading_sessions_bookUri" in names)
+            }
         }
     }
 
