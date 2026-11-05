@@ -115,6 +115,7 @@ jobs:
         env:
           COVERAGE_OUTCOME: ${{ steps.coverage_goals.outcome }}
         run: |
+          python3 scripts/coverage_summary.py >> "$GITHUB_STEP_SUMMARY"
           echo "Coverage goals: $COVERAGE_OUTCOME (targets: domain 60%, data 50%, features 40%, app 30%)." >> "$GITHUB_STEP_SUMMARY"
           if [ "$COVERAGE_OUTCOME" != success ]; then
             echo "::warning::Coverage targets are not verified as achieved; inspect the XML/HTML reports."
