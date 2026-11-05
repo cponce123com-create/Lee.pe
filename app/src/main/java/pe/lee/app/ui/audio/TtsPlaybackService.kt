@@ -148,13 +148,16 @@ class TtsPlaybackService : MediaSessionService() {
             activeSession.sleepTimerJob?.cancel()
             activeSession.sleepTimerMinutes.value = 0
             activeSession.scope.cancel()
-            activeSession.mediaSession.release()
             try {
-                activeSession.navigator.close()
+                runCatching { activeSession.mediaSession.release() }
+                    .onFailure { android.util.Log.e("LeePeTts", "Media session cleanup failed", it) }
+                runCatching { activeSession.navigator.close() }
+                    .onFailure { android.util.Log.e("LeePeTts", "Navigator cleanup failed", it) }
+                runCatching { activeSession.releasePublication() }
+                    .onFailure { android.util.Log.e("LeePeTts", "Publication cleanup failed", it) }
             } finally {
-                activeSession.releasePublication()
+                updateWakeLock(false)
             }
-            updateWakeLock(false)
         }
 
         fun stop() {
