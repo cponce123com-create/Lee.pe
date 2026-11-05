@@ -4,7 +4,6 @@ import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
-import androidx.annotation.RequiresApi
 import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
 import java.io.File
@@ -14,7 +13,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-@RequiresApi(35)
 @SdkSuppress(minSdkVersion = 35)
 class PdfSearchBoundsTest {
     @Test
