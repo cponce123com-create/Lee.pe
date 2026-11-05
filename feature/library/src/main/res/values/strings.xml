@@ -361,4 +361,6 @@
     <string name="storage_finalization_failed">No se pudo finalizar la copia. Inténtalo de nuevo.</string>
     <string name="storage_invalid_folder">Selecciona una carpeta con el explorador de Android.</string>
     <string name="storage_folder_permission_revoked">El permiso de la carpeta fue revocado. Vuelve a seleccionarla.</string>
+    <string name="cabinet_previous_page">Página anterior</string>
+    <string name="cabinet_next_page">Página siguiente</string>
 </resources>

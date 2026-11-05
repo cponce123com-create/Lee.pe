@@ -361,4 +361,6 @@
     <string name="storage_finalization_failed">Could not finish the copy. Try again.</string>
     <string name="storage_invalid_folder">Select a folder using the Android file picker.</string>
     <string name="storage_folder_permission_revoked">Folder permission was revoked. Select the folder again.</string>
+    <string name="cabinet_previous_page">Previous page</string>
+    <string name="cabinet_next_page">Next page</string>
 </resources>

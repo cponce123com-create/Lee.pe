@@ -27,6 +27,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -60,7 +61,7 @@ import kotlinx.coroutines.withContext
 import pe.lee.app.data.local.OfflineBookStore
 import pe.lee.feature.library.R
 
-private val ShelfPage = Color(0xFFFFF8EF)
+private val ShelfPage = Color(0xFF2C1E18)
 
 @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
@@ -175,7 +176,8 @@ internal fun LibraryCatalog(
     }
 
     val coverRows = remember(orderedBooks) { orderedBooks.chunked(3) }
-    val shelfHeight = (LocalConfiguration.current.screenHeightDp - 340).coerceIn(260, 720).dp
+    val shelfHeight = (LocalConfiguration.current.screenWidthDp - 12).coerceAtMost(600).dp * 1.5f
+    var searchExpanded by rememberSaveable { mutableStateOf(false) }
     val customOrder = sortMode.value == LibrarySortMode.CUSTOM
     val shelfBooks = remember(orderedBooks, bookshelfLayout.hiddenBookIds, customOrder) {
         if (customOrder) orderedBooks.filterNot { it.id in bookshelfLayout.hiddenBookIds } else orderedBooks
@@ -188,7 +190,7 @@ internal fun LibraryCatalog(
             .testTag("library_catalog")
             .background(if (darkTheme) colors.background else ShelfPage)
             .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 6.dp),
         contentPadding = PaddingValues(bottom = 22.dp),
         verticalArrangement = Arrangement.spacedBy(5.dp),
     ) {
@@ -200,12 +202,14 @@ internal fun LibraryCatalog(
                 onScan = onScan,
                 onStats = onStats,
                 onBackup = onBackup,
+                onSearch = { searchExpanded = !searchExpanded },
             )
         }
+        if (searchExpanded || query.value.isNotBlank()) {
         item(key = "search") {
             Row(
                 modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
-                    .background(if (darkTheme) colors.surfaceVariant else Color(0xFFFFFBF5)).padding(horizontal = 13.dp, vertical = 8.dp),
+                    .background(if (darkTheme) colors.surfaceVariant else colors.surfaceVariant).padding(horizontal = 13.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(Icons.Default.Search, contentDescription = context.getString(R.string.accessibility_search), tint = colors.primary)
@@ -239,11 +243,16 @@ internal fun LibraryCatalog(
                 }
             }
         }
+        }
         item(key = "filters") {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 listOf(LibraryFilter.ALL, LibraryFilter.TO_READ, LibraryFilter.IN_PROGRESS, LibraryFilter.COMPLETED).forEach { filter ->
                     FilterChip(
                         selected = selectedFilter.value == filter,
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFFF6CD73), selectedLabelColor = Color(0xFF392614),
+                            labelColor = Color(0xFFFFEBD0), containerColor = Color(0x44271D17),
+                        ),
                         onClick = { selectedFilter.value = filter },
                         label = {
                             Text(
@@ -258,15 +267,13 @@ internal fun LibraryCatalog(
                 }
             }
         }
-        item(key = "viewMode") {
-            LibraryViewModeSelector(
-                viewMode = viewMode.value,
-                onModeChange = onViewModeChange,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
         item(key = "toolbar") {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                LibraryViewModeSelector(
+                    viewMode = viewMode.value,
+                    onModeChange = onViewModeChange,
+                    modifier = Modifier.weight(1f),
+                )
                 Box(Modifier.weight(1f)) {
                     TextButton(onClick = { sortMenuExpanded.value = true }, contentPadding = PaddingValues(horizontal = 4.dp)) {
                         Text(
@@ -325,12 +332,7 @@ internal fun LibraryCatalog(
                     }
                 }
             }
-            Text(
-                stringResource(
-                    if (viewMode.value == LibraryViewMode.MIXED_BOOKSHELF) R.string.shelf_mixed_drag_hint else R.string.shelf_drag_hint,
-                ),
-                color = colors.onSurfaceVariant, fontSize = 10.sp, modifier = Modifier.padding(bottom = 3.dp),
-            )
+
         }
         if (visibleBooks.isEmpty()) {
             item(key = "empty") {
