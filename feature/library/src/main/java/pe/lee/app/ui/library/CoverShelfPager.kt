@@ -99,6 +99,13 @@ internal fun CoverShelfPager(
         },
     ) {
         Column(Modifier.fillMaxSize()) {
+            Text(
+                stringResource(R.string.shelf_page_position, pager.currentPage + 1, pages),
+                modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 5.dp),
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 11.sp,
+            )
+
             HorizontalPager(
                 state = pager,
                 userScrollEnabled = drag.activeKey == null,
@@ -147,12 +154,6 @@ internal fun CoverShelfPager(
                     }
                 }
             }
-            Text(
-                stringResource(R.string.shelf_page_position, pager.currentPage + 1, pages),
-                modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 5.dp),
-                color = MaterialTheme.colorScheme.primary,
-                fontSize = 11.sp,
-            )
         }
     }
 }

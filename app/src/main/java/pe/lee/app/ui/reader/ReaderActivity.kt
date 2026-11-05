@@ -215,7 +215,10 @@ internal fun EpubReaderScreen(
                     },
                     onSelectAnnotation = { annotation ->
                         runCatching { Locator.fromJSON(JSONObject(annotation.locatorJson)) }
-                            .getOrNull()?.let { navigator?.go(it) }
+                            .getOrNull()?.let {
+                                sessionActions.pauseTtsForNavigation()
+                                navigator?.go(it)
+                            }
                     },
                     onDeleteAnnotation = { annotation ->
                         coroutineScope.launch { viewModel.deleteAnnotation(annotation.id) }
@@ -249,12 +252,24 @@ internal fun EpubReaderScreen(
                     },
                     onToggleChrome = { chromeVisible = false },
                     onBack = onBack,
-                    onPrevious = { navigator?.goBackward(animated = true) },
-                    onNext = { navigator?.goForward(animated = true) },
+                    onPrevious = {
+                        sessionActions.pauseTtsForNavigation()
+                        navigator?.goBackward(animated = true)
+                    },
+                    onNext = {
+                        sessionActions.pauseTtsForNavigation()
+                        navigator?.goForward(animated = true)
+                    },
                     contents = tableOfContents,
                     searchPublication = publication,
-                    onSelectContent = { link -> navigator?.go(link, animated = true) },
-                    onSelectSearchResult = { locator -> navigator?.go(locator, animated = true) },
+                    onSelectContent = { link ->
+                        sessionActions.pauseTtsForNavigation()
+                        navigator?.go(link, animated = true)
+                    },
+                    onSelectSearchResult = { locator ->
+                        sessionActions.pauseTtsForNavigation()
+                        navigator?.go(locator, animated = true)
+                    },
                     onSeek = { progression ->
                         // Narration would drag the page back to the spoken sentence.
                         sessionActions.pauseTtsForNavigation()
@@ -270,7 +285,7 @@ internal fun EpubReaderScreen(
                 )
             }
 
-            if (ttsNavigator != null) {
+            if (ttsNavigator != null && chromeVisible) {
                 TtsControls(
                     sentence = ttsSentence,
                     isPlaying = ttsIsPlaying,

@@ -80,7 +80,14 @@ private fun createEpubReaderSessionActions(
     fun startOrToggleTts() {
         val current = session.ttsNavigator.value
         if (current != null) {
-            if (session.ttsIsPlaying.value) current.pause() else current.play()
+            if (session.ttsIsPlaying.value) {
+                session.followNarration.value = false
+                current.pause()
+            } else {
+                session.followNarration.value = true
+                session.chromeVisible.value = false
+                current.play()
+            }
             return
         }
         if (
@@ -89,6 +96,8 @@ private fun createEpubReaderSessionActions(
         ) {
             onRequestNotificationPermission()
         }
+        session.followNarration.value = true
+        session.chromeVisible.value = false
         coroutineScope.launch {
             val app = context.applicationContext as Application
             val binding = session.ttsServiceBinding.value ?: try {
@@ -162,8 +171,17 @@ private fun createEpubReaderSessionActions(
                 session.ttsError.value = context.getString(R.string.tts_publication_unavailable)
                 return@launch
             }
-            binder.openSession(speech, publication, uri.toString(), title) {
-                if (session.publication.value === publication) session.publication.value = null
+            val owner = session.publicationOwner.value ?: run {
+                speech.close()
+                return@launch
+            }
+            val voiceOwner = owner.retain()
+            try {
+                binder.openSession(speech, publication, uri.toString(), title) { voiceOwner.close() }
+            } catch (error: Exception) {
+                runCatching { voiceOwner.close() }
+                runCatching { speech.close() }
+                throw error
             }
             session.ttsError.value = null
             session.ttsNavigator.value = speech
@@ -172,6 +190,7 @@ private fun createEpubReaderSessionActions(
     }
 
     fun pauseTtsForNavigation() {
+        session.followNarration.value = false
         val current = session.ttsNavigator.value ?: return
         if (session.ttsIsPlaying.value) current.pause()
     }

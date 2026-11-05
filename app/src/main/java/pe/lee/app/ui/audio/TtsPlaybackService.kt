@@ -44,7 +44,7 @@ class TtsPlaybackService : MediaSessionService() {
         val mediaSession: MediaSession,
         val bookUri: String,
         val title: String,
-        val onPublicationClosed: () -> Unit,
+        val releasePublication: () -> Unit,
     ) {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
         var sleepTimerJob: Job? = null
@@ -61,7 +61,7 @@ class TtsPlaybackService : MediaSessionService() {
             publication: Publication,
             bookUri: String,
             title: String,
-            onPublicationClosed: () -> Unit,
+            releasePublication: () -> Unit,
         ) {
             closeSession()
             val launchIntent = Intent(this@TtsPlaybackService, ReaderActivity::class.java)
@@ -81,7 +81,7 @@ class TtsPlaybackService : MediaSessionService() {
                 .setId(bookUri.hashCode().toString())
                 .build()
             addSession(session)
-            val activeSession = Session(navigator, publication, session, bookUri, title, onPublicationClosed)
+            val activeSession = Session(navigator, publication, session, bookUri, title, releasePublication)
             sessionState.value = activeSession
             activeBookUri = bookUri
 
@@ -152,11 +152,7 @@ class TtsPlaybackService : MediaSessionService() {
             try {
                 activeSession.navigator.close()
             } finally {
-                try {
-                    activeSession.publication.close()
-                } finally {
-                    activeSession.onPublicationClosed()
-                }
+                activeSession.releasePublication()
             }
             updateWakeLock(false)
         }

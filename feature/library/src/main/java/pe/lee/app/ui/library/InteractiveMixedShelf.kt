@@ -278,7 +278,7 @@ private fun MixedShelfObject(
                         }
                         Box(Modifier.width(2.dp).fillMaxHeight().align(Alignment.CenterStart).background(Color(0x55FFFFFF)))
                         Text(
-                            book.title,
+                            book.title.replace('_', ' '),
                             modifier = Modifier.requiredWidth(116.dp).graphicsLayer { rotationZ = 270f },
                             color = Color(0xFFFFF1D6), fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
                             textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis,
@@ -294,7 +294,7 @@ private fun MixedShelfObject(
                             }, portrait = false)
                         }
                         Text(
-                            book.title,
+                            book.title.replace('_', ' '),
                             Modifier.fillMaxWidth().shadow(3.dp, RoundedCornerShape(3.dp)).background(base, RoundedCornerShape(3.dp))
                                 .padding(horizontal = 5.dp, vertical = 4.dp),
                             color = Color(0xFFFFF1D6), fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,

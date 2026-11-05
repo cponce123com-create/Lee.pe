@@ -86,7 +86,7 @@ jobs:
 
       - name: Build and smoke-check minified release APK
         run: |
-          ./gradlew --no-daemon --stacktrace --max-workers=2 -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs=-Xmx4g assembleRelease
+          ./gradlew --no-daemon --stacktrace --max-workers=2 -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs=-Xmx4g lintRelease assembleRelease
           # Release verification rejects every debug-only Compose host.
           python scripts/verify_debug_apk.py app/build/outputs/apk/release/app-release-unsigned.apk --variant release
 
@@ -95,8 +95,13 @@ jobs:
         run: python scripts/verify_debug_apk.py app/build/outputs/apk/debug/app-debug.apk --variant debug
 
       - name: Record APK provenance
+        id: apk_info
         run: |
           mkdir -p app/build/outputs/apk/debug
+          version="$(sed -n 's/^versionName=//p' version.properties)"
+          short_commit="$(git rev-parse --short=8 HEAD)"
+          mv app/build/outputs/apk/debug/app-debug.apk "app/build/outputs/apk/debug/Lee-pe-${version}-${short_commit}-debug.apk"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
           git rev-parse HEAD > app/build/outputs/apk/debug/commit.txt
           cp version.properties app/build/outputs/apk/debug/version.properties
           sha256sum app/build/outputs/apk/debug/*.apk > app/build/outputs/apk/debug/SHA256SUMS
@@ -116,7 +121,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: lee-pe-debug
+          name: lee-pe-debug-${{ steps.apk_info.outputs.version }}-${{ github.run_number }}
           path: |
             app/build/outputs/apk/debug/*.apk
             app/build/outputs/apk/debug/commit.txt

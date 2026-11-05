@@ -16,10 +16,12 @@ import pe.lee.app.ui.audio.TtsPlaybackService
 
 internal class EpubReaderSessionState(uri: Uri, settings: SettingsRepository) {
     val publication = mutableStateOf<Publication?>(null)
+    val publicationOwner = mutableStateOf<SharedResourceLease<Publication>?>(null)
     val navigator = mutableStateOf<EpubNavigatorFragment?>(null)
     val ttsNavigator = mutableStateOf<AndroidTtsNavigator?>(null)
     val ttsServiceBinding = mutableStateOf<TtsPlaybackService.ServiceBinding?>(null)
     val ttsIsPlaying = mutableStateOf(false)
+    val followNarration = mutableStateOf(true)
     val ttsSentence = mutableStateOf("")
     val ttsError = mutableStateOf<String?>(null)
     val ttsSpeed =
