@@ -127,7 +127,8 @@ internal fun ColumnScope.PdfPageViewport(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .clipToBounds(),
             contentAlignment = Alignment.Center,
         ) {
             val imageModifier = if (rotationDegrees % 180 != 0) {
@@ -148,7 +149,7 @@ internal fun ColumnScope.PdfPageViewport(
                         .clickable(enabled = !selectionMode) {
                             readerControlsVisible = !readerControlsVisible
                         }
-                        .pointerInput(pageIndex, rotationDegrees, selectionMode, zoomScale) {
+                        .pointerInput(pageIndex, rotationDegrees, selectionMode, pageBitmap) {
                             if (selectionMode) {
                                 awaitEachGesture {
                                     val down = awaitFirstDown(requireUnconsumed = false)
@@ -280,8 +281,14 @@ internal fun ColumnScope.PdfPageViewport(
                                     if (nextScale == 1f) {
                                         panOffset = Offset.Zero
                                     } else {
-                                        val maxX = size.width * (nextScale - 1f) / 2f
-                                        val maxY = size.height * (nextScale - 1f) / 2f
+                                        val (maxX, maxY) = pdfPanLimits(
+                                            pageBitmap.width.toFloat(),
+                                            pageBitmap.height.toFloat(),
+                                            size.width.toFloat(),
+                                            size.height.toFloat(),
+                                            rotationDegrees,
+                                            nextScale,
+                                        )
                                         panOffset = Offset(
                                             (panOffset.x + pan.x).coerceIn(-maxX, maxX),
                                             (panOffset.y + pan.y).coerceIn(-maxY, maxY),

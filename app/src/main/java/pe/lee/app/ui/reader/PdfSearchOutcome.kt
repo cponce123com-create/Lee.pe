@@ -22,6 +22,7 @@ internal suspend fun searchPdfDocument(
     renderMutex: Mutex,
     resources: Resources,
 ): PdfSearchOutcome {
+    if (term.isBlank()) return PdfSearchOutcome(emptyList(), resources.getString(R.string.pdf_search_no_matches))
     val matches = mutableListOf<PdfSearchResult>()
     var hasSelectableText = false
     for (searchPageIndex in 0 until pageCount) {
@@ -33,12 +34,9 @@ internal suspend fun searchPdfDocument(
                     val textContents = page.getTextContents()
                     val pageMatches = mutableListOf<PdfSearchResult>()
                     val pageHasText = textContents.any { it.text.isNotBlank() }
-                    for (textContent in textContents) {
-                        val blockText = textContent.text
-                        var matchIndex = blockText.indexOf(term, ignoreCase = true)
-                        if (matchIndex < 0) continue
-
-                        val rects = textContent.bounds.mapNotNull { bounds ->
+                    val pageText = textContents.joinToString(separator = "") { it.text }
+                    for (match in page.searchText(term).take(100 - matches.size)) {
+                        val rects = match.bounds.mapNotNull { bounds ->
                             if (page.width <= 0 || page.height <= 0) return@mapNotNull null
                             PdfNormalizedRect(
                                 left = (bounds.left / page.width).coerceIn(0f, 1f),
@@ -47,22 +45,19 @@ internal suspend fun searchPdfDocument(
                                 bottom = (bounds.bottom / page.height).coerceIn(0f, 1f),
                             )
                         }
-                        while (matchIndex >= 0 && matches.size + pageMatches.size < 100) {
-                            val snippetStart = (matchIndex - 45).coerceAtLeast(0)
-                            val snippetEnd = (matchIndex + term.length + 75).coerceAtMost(blockText.length)
-                            val snippet = buildString {
-                                if (snippetStart > 0) append('…')
-                                append(blockText.substring(snippetStart, snippetEnd).trim())
-                                if (snippetEnd < blockText.length) append('…')
+                        val index = match.textStartIndex
+                        val snippet = if (index in pageText.indices) {
+                            val start = (index - 45).coerceAtLeast(0)
+                            val end = (index + term.length + 75).coerceAtMost(pageText.length)
+                            buildString {
+                                if (start > 0) append('…')
+                                append(pageText.substring(start, end).trim())
+                                if (end < pageText.length) append('…')
                             }
-                            pageMatches += PdfSearchResult(searchPageIndex, snippet, rects)
-                            matchIndex = blockText.indexOf(
-                                term,
-                                startIndex = matchIndex + term.length,
-                                ignoreCase = true,
-                            )
+                        } else {
+                            term
                         }
-                        if (matches.size + pageMatches.size >= 100) break
+                        pageMatches += PdfSearchResult(searchPageIndex, snippet, rects)
                     }
                     pageHasText to pageMatches
                 } finally {

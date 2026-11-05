@@ -276,6 +276,7 @@ internal data class BookshelfLayout(
 
     companion object {
         private const val INITIAL_BOOKS_PER_SHELF = 5
+        private const val MAX_PERSISTED_SHELF_INDEX = 4095
 
         fun automatic(bookIds: List<String>): BookshelfLayout = BookshelfLayout().reconcile(bookIds).let { layout ->
             layout.copy(
@@ -293,7 +294,7 @@ internal data class BookshelfLayout(
                     val id = obj.optString("id").takeIf(String::isNotBlank) ?: return@mapNotNull null
                     BookshelfBookPlacement(
                         bookId = id,
-                        shelf = obj.optInt("shelf", 0).coerceAtLeast(0),
+                        shelf = obj.optLong("shelf", 0).coerceIn(0, MAX_PERSISTED_SHELF_INDEX.toLong()).toInt(),
                         order = obj.optInt("order", 0).coerceAtLeast(0),
                         orientation = runCatching {
                             BookOrientation.valueOf(obj.optString("orientation"))
@@ -303,7 +304,7 @@ internal data class BookshelfLayout(
                 val decorations = root.optJSONArray("decorations").toObjectList().mapNotNull { obj ->
                     val id = obj.optString("id").takeIf(String::isNotBlank) ?: return@mapNotNull null
                     val type = runCatching { ShelfDecorationType.valueOf(obj.optString("type")) }.getOrNull() ?: return@mapNotNull null
-                    ShelfDecoration(id, type, obj.optInt("shelf", 0).coerceAtLeast(0), obj.optInt("order", 0).coerceAtLeast(0))
+                    ShelfDecoration(id, type, obj.optLong("shelf", 0).coerceIn(0, MAX_PERSISTED_SHELF_INDEX.toLong()).toInt(), obj.optInt("order", 0).coerceAtLeast(0))
                 }
                 val hidden = root.optJSONArray("hidden").toObjectList().mapNotNull { it.optString("id").takeIf(String::isNotBlank) }.toSet()
                 BookshelfLayout(placements, decorations, hidden)
