@@ -63,6 +63,10 @@ class AudioPlaybackService : MediaSessionService() {
             }
 
             override fun onPositionDiscontinuity(oldPosition: Player.PositionInfo, newPosition: Player.PositionInfo, reason: Int) {
+                val previousId = oldPosition.mediaItem?.mediaId
+                if (!previousId.isNullOrBlank() && previousId != newPosition.mediaItem?.mediaId) {
+                    AudioProgressStore.put(this@AudioPlaybackService, previousId, oldPosition.positionMs.coerceAtLeast(0L))
+                }
                 savePosition(exoPlayer, force = true)
             }
 
