@@ -94,7 +94,6 @@ class AudioPlaybackService : MediaSessionService() {
         mediaSession = MediaSession.Builder(this, exoPlayer)
             .setSessionActivity(activityIntent)
             .build()
-
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -103,7 +102,7 @@ class AudioPlaybackService : MediaSessionService() {
             sleepTimerJob?.cancel()
             sleepTimerJob = if (minutes > 0) {
                 serviceScope.launch {
-                    delay(minutes * 60_000L)
+                    delay(minutes * MILLIS_PER_MINUTE)
                     player?.pause()
                     sleepTimerJob = null
                 }
@@ -151,5 +150,6 @@ class AudioPlaybackService : MediaSessionService() {
         const val ACTION_SET_SLEEP_TIMER = "pe.lee.app.audio.SET_SLEEP_TIMER"
         const val EXTRA_SLEEP_TIMER_MINUTES = "pe.lee.app.audio.SLEEP_TIMER_MINUTES"
         private const val PROGRESS_SAVE_INTERVAL_MS = 5_000L
+        private const val MILLIS_PER_MINUTE = 60_000L
     }
 }
