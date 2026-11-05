@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -136,15 +137,15 @@ internal fun StackedBookVolume(book: LocalBook, base: Color, flatTop: Boolean, m
         val coverHeight = (maxHeight - spineHeight).coerceAtLeast(0.dp)
         val dark = lerp(base, Color.Black, .25f)
         if (flatTop && coverHeight > 0.dp) {
-            ShelfCoverArt(
+            StackedBookTopCover(
                 book,
+                base,
                 Modifier.fillMaxWidth().height(coverHeight).graphicsLayer {
                     rotationX = 32f
                     rotationY = -4f
                     cameraDistance = 24f * density
                     transformOrigin = TransformOrigin(.5f, 1f)
                 },
-                portrait = false,
             )
         }
         Box(
@@ -157,12 +158,66 @@ internal fun StackedBookVolume(book: LocalBook, base: Color, flatTop: Boolean, m
                 drawLine(Foil.copy(alpha = .7f), Offset(3f, 1f), Offset(size.width - 3f, 1f), .7.dp.toPx())
                 drawLine(Color.Black.copy(alpha = .35f), Offset(0f, size.height - 1f), Offset(size.width, size.height - 1f), 1.dp.toPx())
             }
-            Text(
-                bookSpineTitle(book.title), modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp).clearAndSetSemantics {},
-                color = Color(0xFFFFF5DF), fontSize = 9.5.sp, lineHeight = 10.5.sp,
-                fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center,
-                maxLines = if (spineHeight >= 23.dp) 2 else 1, overflow = TextOverflow.Ellipsis,
+            Box(
+                Modifier.align(Alignment.Center).fillMaxWidth(.96f)
+                    .height(spineHeight * .78f)
+                    .background(Color.Black.copy(alpha = .17f), RoundedCornerShape(3.dp)),
             )
+            BoxWithConstraints(
+                Modifier.fillMaxWidth().padding(horizontal = 5.dp, vertical = 1.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                val font = when {
+                    maxWidth < 70.dp -> 9.5.sp
+                    maxHeight < 23.dp -> 10.sp
+                    else -> 10.5.sp
+                }
+                val titleLines = if (maxHeight >= 24.dp && maxWidth >= 70.dp) 2 else 1
+                Text(
+                    bookSpineTitle(book.title),
+                    modifier = Modifier.fillMaxWidth().clearAndSetSemantics {},
+                    color = Color(0xFFFFF5DF), fontSize = font, lineHeight = font * 1.12f,
+                    fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
+                    maxLines = titleLines, overflow = TextOverflow.Ellipsis,
+                    style = androidx.compose.ui.text.TextStyle(
+                        shadow = Shadow(Color(0xCC000000), Offset(0f, 1f), 1.5f),
+                    ),
+                )
+            }
+        }
+    }
+}
+
+/** Keep portrait cover artwork proportional while presenting it across a flat book. */
+@Composable
+private fun StackedBookTopCover(book: LocalBook, base: Color, modifier: Modifier) {
+    BoxWithConstraints(
+        modifier.background(
+            Brush.horizontalGradient(listOf(lerp(base, Color.White, .13f), base, lerp(base, Color.Black, .2f))),
+            RoundedCornerShape(3.dp),
+        ),
+        contentAlignment = Alignment.Center,
+    ) {
+        val coverDepth = maxHeight
+        val coverLength = minOf(maxWidth, coverDepth / .68f)
+        Box(
+            Modifier.requiredSize(width = coverDepth, height = coverLength)
+                .graphicsLayer { rotationZ = 90f },
+        ) {
+            CoverBookVolume(base, Modifier.fillMaxSize()) {
+                when (book.format) {
+                    "EPUB" -> LocalEpubCover(book.uri, book.offlineCopyUri, Modifier.fillMaxSize())
+                    "PDF" -> LocalPdfCover(book.uri, book.offlineCopyUri, Modifier.fillMaxSize())
+                    else -> Text(
+                        bookSpineTitle(book.title),
+                        modifier = Modifier.fillMaxSize().padding(5.dp),
+                        color = Color(0xFF174E44),
+                        fontSize = 10.sp,
+                        maxLines = 6,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
         }
     }
 }
