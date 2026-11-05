@@ -28,6 +28,7 @@ class AudioPlaybackService : MediaSessionService() {
     private var player: ExoPlayer? = null
     private var mediaSession: MediaSession? = null
     private var progressSaveJob: Job? = null
+    private var sleepTimerJob: Job? = null
     private var lastSavedMediaId: String? = null
     private var lastSavedPositionMs: Long = -1L
 
@@ -96,6 +97,23 @@ class AudioPlaybackService : MediaSessionService() {
 
     }
 
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_SET_SLEEP_TIMER) {
+            val minutes = intent.getIntExtra(EXTRA_SLEEP_TIMER_MINUTES, 0).coerceIn(0, 60)
+            sleepTimerJob?.cancel()
+            sleepTimerJob = if (minutes > 0) {
+                serviceScope.launch {
+                    delay(minutes * 60_000L)
+                    player?.pause()
+                    sleepTimerJob = null
+                }
+            } else {
+                null
+            }
+        }
+        return super.onStartCommand(intent, flags, startId)
+    }
+
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
         MediaSessionAccess.sessionFor(this, controllerInfo, mediaSession)
 
@@ -129,7 +147,9 @@ class AudioPlaybackService : MediaSessionService() {
         }
     }
 
-    private companion object {
-        const val PROGRESS_SAVE_INTERVAL_MS = 5_000L
+    companion object {
+        const val ACTION_SET_SLEEP_TIMER = "pe.lee.app.audio.SET_SLEEP_TIMER"
+        const val EXTRA_SLEEP_TIMER_MINUTES = "pe.lee.app.audio.SLEEP_TIMER_MINUTES"
+        private const val PROGRESS_SAVE_INTERVAL_MS = 5_000L
     }
 }
