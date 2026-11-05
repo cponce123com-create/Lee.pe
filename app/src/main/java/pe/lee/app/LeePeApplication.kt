@@ -17,13 +17,13 @@ import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.feature.sharecard.data.QuoteCardCacheCleaner
 
 class LeePeApplication : Application() {
-    private val ttsProgressScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private val ttsProgressMutex = Mutex()
+    private val readerProgressScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val readerProgressMutex = Mutex()
 
-    fun persistTtsProgress(uri: String, locator: String, progress: Double?, at: Long) {
-        ttsProgressScope.launch {
+    fun persistReaderProgress(uri: String, locator: String, progress: Double?, at: Long) {
+        readerProgressScope.launch {
             try {
-                ttsProgressMutex.withLock {
+                readerProgressMutex.withLock {
                     val knownProgress = container.books.findByUri(uri)?.readProgress ?: 0f
                     container.books.saveEpubProgress(
                         uri = uri,
@@ -34,7 +34,7 @@ class LeePeApplication : Application() {
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
-            } catch (error: Exception) {
+            } catch (error: android.database.sqlite.SQLiteException) {
                 android.util.Log.e("LeePeTts", "Progress save failed", error)
             }
         }
