@@ -133,7 +133,7 @@ class ShareCardScreenTest {
     fun editorialThemesExportWithoutPanelInAllSupportedFormats() {
         val captured = AtomicReference<QuoteCardRaster?>(null)
         val viewModel = ShareCardViewModel(
-            initialCard = QuoteCard("Hay historias que nos enseñan a volver a empezar.", "Libro", "Autor de ejemplo"),
+            initialCard = QuoteCard("Volver a empezar.", "Libro", "Autor de ejemplo"),
             generator = ShareCardGenerator { _, raster, _ ->
                 captured.set(raster)
                 byteArrayOf(1)
