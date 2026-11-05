@@ -13,7 +13,7 @@ value class ReadingProgress private constructor(val fraction: Float) {
         get() = fraction >= 1f
 
     companion object {
-        fun from(rawFraction: Float): ReadingProgress = ReadingProgress(if (rawFraction.isFinite()) rawFraction.coerceIn(0f, 1f) else 0f)
+        fun from(rawFraction: Float): ReadingProgress = ReadingProgress(normalizeReadingFraction(rawFraction))
     }
 }
 
@@ -26,10 +26,8 @@ value class ReadingProgress private constructor(val fraction: Float) {
  * already read, so the previous fraction wins instead.
  */
 fun readingProgressOr(progression: Double?, currentFraction: Float): Float {
-    val sanitized = progression?.takeIf { it.isFinite() }?.toFloat()
-    return if (sanitized != null) {
-        ReadingProgress.from(sanitized).fraction
-    } else {
-        ReadingProgress.from(currentFraction).fraction
-    }
+    val fraction = if (progression != null && progression.isFinite()) progression.toFloat() else currentFraction
+    return normalizeReadingFraction(fraction)
 }
+
+private fun normalizeReadingFraction(fraction: Float): Float = if (fraction.isFinite()) fraction.coerceIn(0f, 1f) else 0f
