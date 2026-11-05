@@ -13,6 +13,7 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -26,6 +27,7 @@ class AudioPlaybackService : MediaSessionService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var player: ExoPlayer? = null
     private var mediaSession: MediaSession? = null
+    private var progressSaveJob: Job? = null
     private var lastSavedMediaId: String? = null
     private var lastSavedPositionMs: Long = -1L
 
@@ -44,7 +46,13 @@ class AudioPlaybackService : MediaSessionService() {
         player = exoPlayer
         exoPlayer.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
-                if (!isPlaying) savePosition(exoPlayer, force = true)
+                if (isPlaying) {
+                    startProgressSaveLoop(exoPlayer)
+                } else {
+                    progressSaveJob?.cancel()
+                    progressSaveJob = null
+                    savePosition(exoPlayer, force = true)
+                }
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {
@@ -86,12 +94,6 @@ class AudioPlaybackService : MediaSessionService() {
             .setSessionActivity(activityIntent)
             .build()
 
-        serviceScope.launch {
-            while (isActive) {
-                if (exoPlayer.isPlaying) savePosition(exoPlayer, force = false)
-                delay(PROGRESS_SAVE_INTERVAL_MS)
-            }
-        }
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
@@ -115,6 +117,16 @@ class AudioPlaybackService : MediaSessionService() {
         AudioProgressStore.put(this, mediaId, position)
         lastSavedMediaId = mediaId
         lastSavedPositionMs = position
+    }
+
+    private fun startProgressSaveLoop(player: ExoPlayer) {
+        if (progressSaveJob?.isActive == true) return
+        progressSaveJob = serviceScope.launch {
+            while (isActive && player.isPlaying) {
+                delay(PROGRESS_SAVE_INTERVAL_MS)
+                if (player.isPlaying) savePosition(player, force = false)
+            }
+        }
     }
 
     private companion object {
