@@ -37,6 +37,7 @@ tasks.register("koverHtmlReportAll") {
 // Analyze source without the Android type-resolution integration. This avoids
 // depending on deprecated AGP variant APIs and includes every source module.
 detekt {
+    baseline = file("config/detekt/baseline.xml")
     source.setFrom(subprojects.map { it.file("src") })
     config.setFrom(file("config/detekt/detekt.yml"))
     buildUponDefaultConfig = true
