@@ -2,6 +2,7 @@ package pe.lee.app.ui.audio
 
 import android.Manifest
 import android.content.ComponentName
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -30,7 +31,10 @@ import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Icon
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -49,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -173,6 +178,8 @@ private fun AudioPlayerScreen(
     var sliderPosition by remember(controller) { mutableFloatStateOf(0f) }
     var scrubbing by remember(controller) { mutableStateOf(false) }
     val speeds = listOf(0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
+    val context = LocalContext.current
+    var sleepTimerMenuExpanded by remember(controller) { mutableStateOf(false) }
 
     LaunchedEffect(playerState.positionMs, scrubbing) {
         if (!scrubbing) sliderPosition = playerState.positionMs.toFloat()
@@ -303,6 +310,47 @@ private fun AudioPlayerScreen(
                         viewModel.setSpeed(speeds[(index + 1) % speeds.size])
                     }) {
                         Text("${formatPlaybackSpeed(playerState.speed)}×", fontWeight = FontWeight.Bold)
+                    }
+                }
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    TextButton(
+                        enabled = controller != null,
+                        onClick = { sleepTimerMenuExpanded = true },
+                    ) {
+                        Icon(Icons.Default.Timer, contentDescription = null)
+                        Text(
+                            stringResource(R.string.audio_sleep_timer),
+                            modifier = Modifier.padding(start = 8.dp),
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = sleepTimerMenuExpanded,
+                        onDismissRequest = { sleepTimerMenuExpanded = false },
+                    ) {
+                        listOf(15, 30, 45, 60).forEach { minutes ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.audio_sleep_timer_minutes, minutes)) },
+                                onClick = {
+                                    context.startService(
+                                        Intent(context, AudioPlaybackService::class.java)
+                                            .setAction(AudioPlaybackService.ACTION_SET_SLEEP_TIMER)
+                                            .putExtra(AudioPlaybackService.EXTRA_SLEEP_TIMER_MINUTES, minutes),
+                                    )
+                                    sleepTimerMenuExpanded = false
+                                },
+                            )
+                        }
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.audio_sleep_timer_cancel)) },
+                            onClick = {
+                                context.startService(
+                                    Intent(context, AudioPlaybackService::class.java)
+                                        .setAction(AudioPlaybackService.ACTION_SET_SLEEP_TIMER)
+                                        .putExtra(AudioPlaybackService.EXTRA_SLEEP_TIMER_MINUTES, 0),
+                                )
+                                sleepTimerMenuExpanded = false
+                            },
+                        )
                     }
                 }
             }
