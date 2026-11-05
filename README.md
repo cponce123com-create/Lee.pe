@@ -1,68 +1,232 @@
-# Lee.pe para Android
+<p align="center">
+  <img src="app/src/main/res/drawable-nodpi/leepe_logo.webp" alt="Lee.pe — leer y escuchar" width="340">
+</p>
 
-**Lee.pe** es una aplicación nativa Android para leer y escuchar libros desde el teléfono, con lectura local y sin conexión como objetivo principal.
+<h1 align="center">Lee.pe</h1>
+<p align="center"><strong>Lee, escucha y organiza tus libros desde tu dispositivo.</strong></p>
 
-## Estado del desarrollo
+<p align="center">
+  <a href="https://github.com/cponce123com-create/Lee.pe/actions/workflows/android-build.yml"><img alt="Android CI" src="https://github.com/cponce123com-create/Lee.pe/actions/workflows/android-build.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/cponce123com-create/Lee.pe/actions/workflows/quality.yml"><img alt="Quality reports" src="https://github.com/cponce123com-create/Lee.pe/actions/workflows/quality.yml/badge.svg?branch=main"></a>
+  <img alt="Android 7+" src="https://img.shields.io/badge/Android-7%2B-3DDC84?logo=android&logoColor=white">
+  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-Compose-7F52FF?logo=kotlin&logoColor=white">
+  <a href="LICENSE"><img alt="License Apache 2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
+</p>
 
-La portada de la biblioteca presenta ahora una interfaz limpia con acciones **Importar** y **Escanear**, con vista de portadas o lista compacta. El escáner busca libros en carpetas elegidas explícitamente por el usuario mediante SAF; trabaja sin internet y muestra una vista previa para confirmar antes de importar. Consulta [Escáner local](docs/ESCANER_LOCAL.md).
+<p align="center">
+  <a href="#funciones">Funciones</a> ·
+  <a href="#vistas-y-recursos-visuales">Vistas</a> ·
+  <a href="#flujos">Flujos</a> ·
+  <a href="#arquitectura">Arquitectura</a> ·
+  <a href="#instalar-y-compilar">Compilar</a> ·
+  <a href="#documentación">Documentación</a>
+</p>
 
-La biblioteca permite importar varios EPUB, PDF y archivos de audiolibro en una sola selección con el selector del sistema y conserva sus URI locales. Los EPUB ya se abren con Readium, con índice, avance guardado y acceso para saltar a un porcentaje escrito por el usuario. El menú de apariencia ofrece temas claro, sepia, oscuro y OLED; tamaño y tipografía; interlineado, márgenes, alineación, paginación o desplazamiento; brillo por libro con opción de usar el brillo del sistema y un control para mantener la pantalla encendida. El EPUB se abre directamente a página completa, con las barras del sistema y las herramientas ocultas; un toque recupera los controles. La barra superior es compacta y mantiene las herramientas secundarias en «Más opciones» para no saturar pantallas estrechas.
+> **Estado del proyecto:** versión **0.3.7** (código 10), en desarrollo activo. La lectura local no necesita cuenta ni conexión. La reproducción en segundo plano y TTS están implementados en el código, pero todavía requieren validación en teléfonos físicos.
 
-Los PDF ofrecen además un modo de lectura inmersiva activable: oculta las herramientas para ampliar la página y presenta un botón accesible para recuperarlas. Los PDF locales ya abren en un visor sin conexión con navegación por página, salto a página, restauración de la última página y zoom por gesto o controles, desplazamiento de la página ampliada y rotación en incrementos de 90° y desplazamiento continuo con renderizado bajo demanda. En EPUB ya se pueden guardar, abrir y eliminar marcadores; crear, editar y borrar notas en una posición; y seleccionar texto para copiarlo o guardarlo como resaltado amarillo. Notas y resaltados se persisten en Room mediante una migración que conserva la biblioteca. El PDF permite guardar marcadores y notas vinculadas a una página, editarlas, eliminarlas y volver a esa página. En Android 15 (API 35) o posterior, el modo de selección permite tocar una palabra para copiarla, crear una nota o resaltarla. La búsqueda de texto PDF también está disponible desde Android 15 (API 35): busca localmente página por página, permite saltar a una coincidencia y resalta sus líneas; PDFs escaneados sin capa de texto requieren OCR. En versiones anteriores, Lee.pe explica que esta búsqueda no está disponible. Los resaltados PDF se guardan y se muestran sobre la página, con cuatro colores. En vista de página, con el zoom normal y sin rotación, se puede seleccionar una palabra o arrastrar sobre un rango de texto; requiere Android 15 (API 35) o posterior y que el PDF contenga texto seleccionable. Los audiolibros locales se reproducen con Media3 en un servicio de sesión multimedia, con controles del sistema y notificación para continuar al cambiar de app o bloquear la pantalla. La pantalla permite pausar, buscar en la pista, saltar 15 segundos y elegir una velocidad de 0.75x a 2x. La posición se guarda localmente por archivo y se restaura al volver a abrirlo. En Android 13 o posterior, Lee.pe solicita permiso de notificaciones al abrir el reproductor. El lector EPUB también incorpora narración con Readium y la voz Android: empieza desde el elemento visible, resalta el fragmento leído y mantiene el avance del libro, con pausa, reanudación, velocidad de 0.75x a 2x y temporizador de 15, 30 o 60 minutos. El control de voz permite elegir una voz Android local instalada y guardar la preferencia por libro; las voces que requieren internet no aparecen en la lista. El temporizador de narración se mantiene en el servicio aunque se cierre la pantalla del lector. La narración TTS también usa una sesión multimedia en segundo plano, con controles del sistema y notificación para continuar con la pantalla bloqueada; su código está implementado, pendiente de validación en dispositivo. La reproducción de audiolibros y la narración EPUB en segundo plano, sus controles de sesión y la restauración de progreso están implementadas en el repositorio, pero todavía deben validarse instalando la app y probándola en dispositivos reales. El lector EPUB ahora recrea el motor desde su ubicación persistida tras rotación o recreación de actividad; el temporizador de voz tiene un solo propietario en el servicio multimedia. Ambas mejoras siguen pendientes de pruebas manuales. La biblioteca guarda sus libros en Room y migra automáticamente las URI que ya estaban en preferencias locales. El avance EPUB (locator y porcentaje) y la página PDF se guardan también en Room; las preferencias siguen como respaldo de compatibilidad para posiciones previas. La cadena CI valida la compilación y las pruebas automatizadas; la validación manual en dispositivos reales sigue pendiente. Los ajustes avanzados de EPUB dependen de la API experimental de preferencias de Readium.
+## Qué es Lee.pe
 
-Las cubiertas EPUB se extraen del propio libro mediante Readium cuando la tarjeta es visible y se guardan en una caché limitada de memoria; si falta la portada o el archivo está inaccesible, se usa un icono. No requiere Cloudinary. La búsqueda de la biblioteca funciona localmente por título, formato y colección, ignorando mayúsculas y acentos. Incluye borrado rápido, filtros «Por leer» y «Copia en Lee.pe», orden por progreso y títulos en ambas direcciones. Las portadas PDF usan miniaturas de la primera página, generadas solo para libros visibles y almacenadas en una caché pequeña de memoria; EPUB y audio conservan identificadores visuales cuando no hay portada local. La biblioteca incorpora respaldo local exportable y restaurable en formato JSON: guarda títulos, progreso, anotaciones, estadísticas y algunos ajustes sin incluir EPUB, PDF ni audiolibros. Para restaurar en otro teléfono hay que importar primero los libros y confirmar las coincidencias. Las exportaciones nuevas usan un archivo `.leepebackup` cifrado con contraseña en el dispositivo; se siguen aceptando respaldos JSON antiguos v1/v2 sin cifrar. Si se pierde la contraseña, Lee.pe no puede recuperar ese respaldo. Consulta [Respaldo local](docs/RESPALDO_LOCAL.md) para las precauciones y límites.
+Lee.pe es un lector nativo para Android desarrollado con Kotlin y Jetpack Compose. Reúne biblioteca local, lectura de EPUB y PDF, audiolibros, narración con voz Android y tarjetas visuales para compartir citas. Los archivos se abren desde ubicaciones que la persona elige mediante el selector seguro de Android (SAF).
 
-Consulta el [plan de trabajo](docs/PLAN_TRABAJO.md) para el orden de los siguientes módulos y sus criterios de salida. La [arquitectura offline-first](docs/ARQUITECTURA_OFFLINE_FIRST.md) describe cómo conectar en el futuro Render, Neon y Cloudinary sin depender de ellos para leer.
+- **Android mínimo:** API 24 (Android 7.0).
+- **SDK de compilación y destino:** API 36.
+- **Privacidad:** no se necesita permiso de Internet para importar, leer, anotar, escuchar o exportar una tarjeta.
+- **Sincronización en la nube:** no está implementada. Render, Neon y Cloudinary no son necesarios para usar la app.
 
-## Identidad visual y apertura
+## Funciones
 
-Lee.pe utiliza el logotipo de libro con audífonos como icono adaptativo de la aplicación, y el símbolo aparece también dentro de un marco fijo en la cabecera de la biblioteca. La pantalla de apertura muestra el logotipo completo sobre fondo azul petróleo. En Android 12 y posteriores se usa la pantalla de inicio del sistema; en versiones anteriores se conserva el fondo de ventana de compatibilidad. La cabecera aplica las zonas seguras para que el logo no quede debajo de la hora ni de los indicadores del sistema.
+| Área | Qué incluye | Estado |
+|---|---|---|
+| Biblioteca local | Importación múltiple, búsqueda por título/formato/colección, filtros, orden, cuadrícula o lista y progreso | Implementado |
+| Escáner de carpetas | Búsqueda recursiva de EPUB, PDF y audio dentro de una carpeta autorizada por SAF | Implementado; requiere seleccionar la carpeta |
+| Estantería | Portadas 3×3, nueve libros por página, y vista mixta de libros verticales y horizontales | Implementado |
+| Personalización | Arrastrar libros y adornos, cambiar orientación y guardar el diseño; hasta 10 adornos colocados | Implementado |
+| EPUB | Readium, índice, salto a porcentaje, paginación o desplazamiento, temas, tipografía, márgenes, marcadores, notas y resaltados | Implementado |
+| PDF | Lector offline, zoom, rotación, salto/restauración de página, marcadores, notas y resaltados | Implementado; algunas herramientas requieren API 35 |
+| Audio | Archivos locales, Media3 en segundo plano, controles del sistema y progreso guardado | Implementado en código; falta validación física |
+| Narración EPUB | Readium y voces Android instaladas, resaltado del fragmento, velocidad y temporizador | Implementado en código; falta validación física |
+| Tarjetas de citas | 50 plantillas, autor, marca Lee.pe y PNG en Historia, Cuadrado y Retrato | Implementado |
+| Respaldo local | Archivo .leepebackup cifrado y compatibilidad con respaldos JSON antiguos | Implementado; no incluye los libros originales |
 
-En la primera apertura de cada instalación limpia se añade el EPUB «El tesoro de los Incas — Emilio Salgari» a la biblioteca. Se copia junto con su portada al almacenamiento privado del teléfono y funciona sin conexión. Se puede eliminar; no se vuelve a insertar hasta desinstalar e instalar de nuevo Lee.pe.
+### Lectura de archivos
 
-El selector de narración muestra solo voces Android locales en español y ofrece abrir el instalador de datos del motor TTS del dispositivo. La disponibilidad de Español (México) depende del motor y de sus datos. Hay voces mexicanas de código abierto en Piper, pero integrarlas dentro de Lee.pe requiere un motor de inferencia Android y comprobar la licencia individual de cada modelo; por eso no se descargan ni se distribuyen en esta versión.
+- **EPUB:** Readium conserva la posición con un locator estructural y porcentaje. Permite continuar, navegar por el índice, ajustar la apariencia, añadir marcadores, resaltar texto y tomar notas.
+- **PDF:** PdfRenderer abre documentos locales. La selección y búsqueda requieren que el PDF tenga una capa de texto; la búsqueda está disponible desde Android 15 (API 35). Los documentos escaneados necesitan OCR, que no está incluido.
+- **Audiolibros:** Media3 admite MP3, M4A, M4B, AAC, OGG, WAV y FLAC; la compatibilidad final depende del códec del dispositivo.
+- **Libro de muestra:** una instalación limpia agrega el EPUB *El tesoro de los Incas*, de Emilio Salgari. Se guarda en el espacio privado de la app y puede eliminarse.
 
-## Tecnologías
+### Tarjetas para compartir
 
-- Kotlin y Jetpack Compose para la app Android.
-- Readium Kotlin Toolkit para EPUB y navegación por locators.
-- Android Storage Access Framework para importar archivos con permisos limitados.
-- Room para biblioteca, progreso, marcadores/notas EPUB y anotaciones por página PDF, incluidos resaltados persistentes.
-- Media3 para audiolibros locales en segundo plano y Readium/Android TTS para narración EPUB; ambas rutas están implementadas en código y requieren validación en dispositivos.
-- Los servicios multimedia exponen únicamente la acción de sesión Media3 y rechazan controladores no confiables; la compatibilidad con Android Auto, Wear OS y Assistant todavía no está validada.
-- Render y Neon solo para API y sincronización opcional; Cloudinary para portadas si hace falta. Los libros no se subirán automáticamente.
+Al seleccionar una cita en un EPUB o en un PDF con texto, se puede abrir **Compartir como imagen**, elegir un diseño, editar la frase o el autor y usar la hoja de compartir de Android.
 
-## Abrir el proyecto
+- 40 estilos existentes y 10 diseños editoriales añadidos.
+- Tres formatos: Historia 1080×1920, Cuadrado 1080×1080 y Retrato 1080×1350.
+- La frase, la atribución y el logotipo se dibujan al exportar; no están impresos en el fondo.
+- El PNG se genera localmente y se comparte mediante un permiso temporal de FileProvider.
+- La resolución de las texturas depende del atlas original; el texto y el logo se dibujan al tamaño de salida.
+- No se publica nada automáticamente: la persona elige el destino en Android.
 
-1. Clona este repositorio.
-2. Ábrelo en Android Studio compatible con Android Gradle Plugin 9.3.
-3. Instala Android SDK Platform 36 y sincroniza Gradle.
-   Ejecuta `./gradlew testDebugUnitTest assembleDebug` para pruebas locales y APK de depuración.
-4. Ejecuta la configuración `app` en un emulador o dispositivo Android.
+### Respaldo y recuperación
 
-## Principios
+El archivo guarda datos de la biblioteca —progreso, anotaciones, marcadores, estadísticas y algunos ajustes—, pero **no contiene EPUB, PDF ni audio**. Para restaurar en otro dispositivo, hay que volver a importar los libros y luego vincular las coincidencias. Los permisos SAF también deben concederse de nuevo.
 
-- La lectura local no depende de internet y el APK no solicita permiso de acceso a Internet.
-- El respaldo se crea en el destino que el usuario seleccione, sin pasar por Render, Neon ni Cloudinary.
-- Se desactiva la copia automática de Android para proteger biblioteca, notas y progreso local. **Advertencia:** al desinstalar o cambiar de teléfono, estos datos pueden perderse; el respaldo manual local ya permite recuperar metadatos, progreso y anotaciones, pero no incluye los archivos EPUB, PDF ni audio. Las copias de libros guardadas en el espacio privado también se borran al desinstalar.
-- La posición EPUB se conserva con un locator estructural además del porcentaje.
-- La sincronización será opcional y no enviará el archivo original por defecto.
-- Las pantallas solo mostrarán funciones implementadas.
-- Lee.pe y la sección Lector de Escribiendo se conectarán mediante una API después de estabilizar la experiencia local.
+## Vistas y recursos visuales
+
+El repositorio aún no contiene capturas completas de las pantallas tomadas en la app. Para no presentar mockups como si fueran screenshots reales, esta galería muestra recursos visuales originales que Lee.pe usa en el proyecto:
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="feature/library/src/main/res/drawable-nodpi/library_cabinet_3d.jpg" alt="Mueble gráfico de la estantería de Lee.pe" width="100%">
+      <br><strong>Estantería</strong><br>Fondo gráfico usado por la biblioteca.
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/assets/ornaments-light.webp" alt="Catálogo visual de adornos de Lee.pe" width="100%">
+      <br><strong>Adornos</strong><br>Recursos WebP transparentes para personalizar la estantería.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <img src="feature/sharecard/src/main/res/drawable-nodpi/quote_editorial_atlas.png" alt="Atlas de los diez fondos editoriales de tarjetas de citas" width="82%">
+      <br><strong>Tarjetas editoriales</strong><br>Los diez fondos incorporados en la versión 0.3.7. La app añade frase, autor y marca al exportar.
+    </td>
+  </tr>
+</table>
+
+> **Screenshots completos pendientes:** cuando se capturen desde un dispositivo real, añadirlos en docs/screenshots/ (por ejemplo: biblioteca, lector EPUB, lector PDF y editor de tarjetas). Si una función depende de la versión de Android, indicar también la API usada.
+
+## Flujos
+
+### Importar y leer sin subir libros
+
+```mermaid
+flowchart LR
+    A["Elegir archivos o carpeta"] --> B["Permiso SAF elegido por el usuario"]
+    B --> C["Guardar referencias y metadatos en Room"]
+    C --> D{"Formato"}
+    D --> E["EPUB · Readium"]
+    D --> F["PDF · PdfRenderer"]
+    D --> G["Audio · Media3"]
+    E --> H["Progreso y anotaciones locales"]
+    F --> H
+    G --> H
+```
+
+Lee.pe conserva acceso a las URI autorizadas. Si se revoca el permiso o se mueve el archivo original, la app pedirá seleccionarlo de nuevo. El escáner se ejecuta cuando la persona lo solicita; no copia los libros ni vigila cambios de forma permanente.
+
+### Compartir una cita como PNG
+
+```mermaid
+flowchart LR
+    A["Seleccionar texto"] --> B["Elegir diseño y formato"]
+    B --> C["Previsualizar y editar"]
+    C --> D["Generar PNG en el dispositivo"]
+    D --> E["URI temporal de FileProvider"]
+    E --> F["Hoja de compartir de Android"]
+```
+
+### Exportar y restaurar un respaldo
+
+```mermaid
+flowchart LR
+    A["Biblioteca y metadatos en Room"] --> B["Crear respaldo cifrado"]
+    B --> C["Guardar en destino elegido"]
+    C --> D["Importar respaldo"]
+    D --> E["Volver a importar libros"]
+    E --> F["Vincular libros y restaurar metadatos"]
+```
+
+## Arquitectura
+
+La interfaz Compose observa el estado de ViewModels. Los casos de uso coordinan repositorios; Room conserva los datos de biblioteca y anotaciones. Las integraciones de lectura y medios se mantienen en módulos dedicados.
+
+```mermaid
+flowchart TD
+    UI["Jetpack Compose"] --> VM["ViewModels"]
+    VM --> DOMAIN["Dominio y casos de uso"]
+    DOMAIN --> DATA["Repositorios"]
+    DATA --> ROOM["Room"]
+    DATA --> LOCAL["SAF y archivos locales"]
+    VM --> READER["Readium · PdfRenderer · Media3"]
+```
+
+| Módulo | Responsabilidad |
+|---|---|
+| app | Entrada Android, navegación, actividades y servicios multimedia |
+| core/domain | Modelos y reglas independientes de Android |
+| core/database | Room y migraciones |
+| core/datastore | Preferencias locales |
+| core/ui | Componentes visuales compartidos |
+| data | Repositorios, progreso, almacenamiento local y respaldos |
+| feature/library | Biblioteca, búsqueda, estantería, adornos y escáner |
+| feature/notes | Notas y anotaciones |
+| feature/sharecard | Plantillas y exportación PNG |
+| library/readium | Integración del toolkit Readium |
+| benchmark | Macrobenchmarks; se incluye al activar la opción de benchmarks |
+
+### Tecnologías
+
+Kotlin · Jetpack Compose · AndroidX · Room 3 · Readium Kotlin Toolkit · Media3 · Storage Access Framework · Gradle Kotlin DSL.
+
+## Instalar y compilar
+
+### Requisitos
+
+- JDK 21.
+- Android SDK Platform 36.
+- Android Gradle Plugin 9.3.1 y el Gradle Wrapper del repositorio.
+- Android Studio compatible o un entorno con Android SDK instalado.
+
+### Compilar localmente
+
+```bash
+git clone https://github.com/cponce123com-create/Lee.pe.git
+cd Lee.pe
+./gradlew lintDebug testDebugUnitTest :core:domain:test assembleDebug
+```
+
+El APK de depuración se genera en app/build/outputs/apk/debug/. En Windows se puede ejecutar gradlew.bat con los mismos argumentos.
+
+### Descargar el APK de CI
+
+1. Abre [Actions → Android debug APK](https://github.com/cponce123com-create/Lee.pe/actions/workflows/android-build.yml).
+2. Elige una ejecución exitosa de main.
+3. Descarga el artefacto lee-pe-debug-...
+4. Revisa commit.txt, version.properties y SHA256SUMS para confirmar su origen.
+
+Los APK release que CI genera sin secretos de firma están **sin firmar**; sirven para validar compilación, no para actualizar una app instalada. Consulta [Firma de APK](docs/FIRMA_APK.md).
+
+## Calidad y validación
+
+La automatización ejecuta compilación, lint, pruebas unitarias, validaciones del APK, pruebas instrumentadas en API 26 y API 35, y macrobenchmarks. La auditoría de dependencias se ejecuta en main y en ejecuciones manuales. Consulta el resultado del commit en [Actions](https://github.com/cponce123com-create/Lee.pe/actions).
+
+Que el proyecto compile no demuestra por sí solo el comportamiento en un teléfono. La reproducción en segundo plano, TTS, selección de texto PDF, restauración y entrega a apps externas requieren validación manual; los pasos están en la [guía de validación](docs/VALIDACION_ANDROID.md).
+
+## Documentación
+
+| Guía | Contenido |
+|---|---|
+| [Arquitectura](ARCHITECTURE.md) | Módulos y límites |
+| [Escáner local](docs/ESCANER_LOCAL.md) | SAF, formatos y límites del escaneo |
+| [Estantería](docs/LIBRARY_3D.md) | Disposición, adornos y persistencia |
+| [Interacciones de biblioteca](docs/LIBRARY_INTERACTIONS.md) | Portadas 3×3, arrastre y vista mixta |
+| [Tarjetas premium](docs/TARJETAS_PREMIUM.md) | Diez diseños editoriales, formatos y calidad de imagen |
+| [Compartir tarjetas](docs/COMPARTIR_TARJETAS.md) | Flujo PNG, hoja de compartir y límites |
+| [Respaldo local](docs/RESPALDO_LOCAL.md) | Cifrado, importación y restauración |
+| [Compilar](docs/BUILD.md) | Variantes y artefactos |
+| [Calidad](docs/QUALITY.md) | Lint, pruebas, cobertura y benchmarks |
+| [Validación Android](docs/VALIDACION_ANDROID.md) | Pruebas manuales en dispositivos |
+| [Arquitectura offline-first](docs/ARQUITECTURA_OFFLINE_FIRST.md) | Principios y sincronización futura |
+
+## Privacidad
+
+- Los libros se abren desde una URI elegida por la persona o desde una copia local explícita.
+- Lee.pe no sube libros automáticamente ni depende de una cuenta.
+- Las tarjetas se renderizan en el dispositivo y se comparten solo después de elegir una app receptora.
+- El respaldo se guarda donde la persona elija y no contiene los archivos originales.
+- La copia de seguridad automática de Android está desactivada; exporta un respaldo manual antes de reinstalar o cambiar de teléfono.
+- No se necesita permiso general de almacenamiento ni cámara para escanear carpetas. El escáner no realiza OCR.
 
 ## Licencias
 
-Readium Kotlin Toolkit se distribuye bajo BSD-3-Clause. Conserva sus avisos de licencia al distribuir la aplicación. El código fuente de Lee.pe se distribuye bajo Apache License 2.0. Los recursos y obras de terceros mantienen sus propias licencias y avisos. Consulta [NOTICE](NOTICE) para los avisos de terceros. El inventario completo de licencias transitivas de la versión final sigue pendiente de generarse desde el grafo de Gradle.
-
-## Compartir citas como imagen
-
-En EPUB, mantén pulsada una frase y selecciona **Compartir como imagen** (en algunos dispositivos está en los tres puntos del menú de selección). La versión 0.3.0 incluye seis plantillas, fuente configurable y PNG en formato Historia/Cuadrada con título, autor y marca Lee.pe. Todo se prepara en el dispositivo. Consulta [Tarjetas](docs/COMPARTIR_TARJETAS.md) y [auditoría y validación](docs/AUDITORIA_INTEGRACION.md). La aceptación en apps receptoras sigue pendiente de prueba física.
-
-El artefacto de CI incluye `commit.txt`, `version.properties` y `SHA256SUMS` para identificar la APK. No instalar un APK de origen desconocido sobre una biblioteca sin respaldo; una firma diferente no permite actualizar conservando los datos de forma automática.
-
-## Respaldo local y calidad
-
-Los respaldos `.leepebackup` cifran metadatos, progreso y anotaciones con AES-256-GCM;
-no incluyen los libros originales. Consulta [respaldo local](docs/RESPALDO_LOCAL.md),
-[calidad y comandos](docs/QUALITY.md), [estantería](docs/LIBRARY_3D.md) y
-[tarjetas de citas](docs/SHARECARD.md).
+El código de Lee.pe se distribuye bajo Apache License 2.0. Consulta [NOTICE](NOTICE) para las licencias y avisos de dependencias y recursos de terceros.
