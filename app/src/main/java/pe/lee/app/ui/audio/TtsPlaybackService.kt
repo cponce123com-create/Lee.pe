@@ -90,7 +90,7 @@ class TtsPlaybackService : MediaSessionService() {
                 navigator.currentLocator.collect { locator ->
                     val now = System.currentTimeMillis()
                     if (now - lastSavedAt >= 3_000L) {
-                        (application as LeePeApplication).persistTtsProgress(
+                        (application as LeePeApplication).persistReaderProgress(
                             uri = bookUri,
                             locator = locator.toJSON().toString(),
                             progress = locator.locations.totalProgression,
@@ -144,7 +144,7 @@ class TtsPlaybackService : MediaSessionService() {
         fun closeSession() {
             val activeSession = sessionState.value ?: return
             val finalLocator = activeSession.navigator.currentLocator.value
-            (application as LeePeApplication).persistTtsProgress(
+            (application as LeePeApplication).persistReaderProgress(
                 uri = activeSession.bookUri,
                 locator = finalLocator.toJSON().toString(),
                 progress = finalLocator.locations.totalProgression,

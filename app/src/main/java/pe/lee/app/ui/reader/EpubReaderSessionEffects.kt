@@ -21,11 +21,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.readium.navigator.media.tts.TtsNavigator
 import org.readium.r2.navigator.Decoration
@@ -232,7 +230,35 @@ internal fun EpubReaderSessionEffects(
                             }
                         } catch (cancelled: CancellationException) {
                             throw cancelled
-                        } catch (error: Exception) {
+                        } catch (error: java.io.IOException) {
+                            android.util.Log.e("LeePeSelection", "Selection action failed", error)
+                            android.widget.Toast.makeText(
+                                context,
+                                R.string.epub_selection_action_failed,
+                                android.widget.Toast.LENGTH_LONG,
+                            ).show()
+                        } catch (error: SecurityException) {
+                            android.util.Log.e("LeePeSelection", "Selection action failed", error)
+                            android.widget.Toast.makeText(
+                                context,
+                                R.string.epub_selection_action_failed,
+                                android.widget.Toast.LENGTH_LONG,
+                            ).show()
+                        } catch (error: IllegalStateException) {
+                            android.util.Log.e("LeePeSelection", "Selection action failed", error)
+                            android.widget.Toast.makeText(
+                                context,
+                                R.string.epub_selection_action_failed,
+                                android.widget.Toast.LENGTH_LONG,
+                            ).show()
+                        } catch (error: android.content.ActivityNotFoundException) {
+                            android.util.Log.e("LeePeSelection", "Selection action failed", error)
+                            android.widget.Toast.makeText(
+                                context,
+                                R.string.epub_selection_action_failed,
+                                android.widget.Toast.LENGTH_LONG,
+                            ).show()
+                        } catch (error: android.database.sqlite.SQLiteException) {
                             android.util.Log.e("LeePeSelection", "Selection action failed", error)
                             android.widget.Toast.makeText(
                                 context,
@@ -404,11 +430,11 @@ internal fun EpubReaderSessionEffects(
             settings.apply(SettingsRepository.Store.LIBRARY) {
                 putString(ReaderActivity.locatorPreferenceKey(uri), locatorJson)
             }
-            viewModel.saveProgress(
+            (context.applicationContext as pe.lee.app.LeePeApplication).persistReaderProgress(
                 uri = uri.toString(),
-                locatorJson = locatorJson,
-                progress = totalProgression?.toFloat() ?: session.progress.value,
-                openedAt = System.currentTimeMillis(),
+                locator = locatorJson,
+                progress = (totalProgression?.toFloat() ?: session.progress.value).toDouble(),
+                at = System.currentTimeMillis(),
             )
         }
     }
@@ -417,23 +443,18 @@ internal fun EpubReaderSessionEffects(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_PAUSE) {
                 val locator = session.navigator.value?.currentLocator?.value ?: return@LifecycleEventObserver
-                coroutineScope.launch {
-                    val locatorJson = locator.toJSON().toString()
-                    val progress = locator.locations.totalProgression?.toFloat()
-                        ?.coerceIn(0f, 1f) ?: session.progress.value
-                    session.progress.value = progress
-                    withContext(Dispatchers.IO) {
-                        settings.apply(SettingsRepository.Store.LIBRARY) {
-                            putString(ReaderActivity.locatorPreferenceKey(uri), locatorJson)
-                        }
-                        viewModel.saveProgress(
-                            uri = uri.toString(),
-                            locatorJson = locatorJson,
-                            progress = progress,
-                            openedAt = System.currentTimeMillis(),
-                        )
-                    }
+                val progress = locator.locations.totalProgression?.toFloat()
+                    ?.coerceIn(0f, 1f) ?: session.progress.value
+                session.progress.value = progress
+                settings.apply(SettingsRepository.Store.LIBRARY) {
+                    putString(ReaderActivity.locatorPreferenceKey(uri), locator.toJSON().toString())
                 }
+                (context.applicationContext as pe.lee.app.LeePeApplication).persistReaderProgress(
+                    uri = uri.toString(),
+                    locator = locator.toJSON().toString(),
+                    progress = progress.toDouble(),
+                    at = System.currentTimeMillis(),
+                )
             }
         }
         activity.lifecycle.addObserver(observer)
