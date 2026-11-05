@@ -307,7 +307,8 @@ internal fun LibraryProcessDialogs(
                         backupBusy.value = true
                         coroutineScope.launch {
                             try {
-                                val report = LocalLibraryBackup.restore(context, selected, backupRepository)
+                                val restoreResult = LocalLibraryBackup.restore(context, selected, backupRepository)
+                                val report = restoreResult.merge
                                 Toast.makeText(
                                     context,
                                     context.getString(
@@ -330,6 +331,13 @@ internal fun LibraryProcessDialogs(
                                     ),
                                     Toast.LENGTH_LONG,
                                 ).show()
+                                if (!restoreResult.preferencesPersisted) {
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.backup_restore_preferences_failed),
+                                        Toast.LENGTH_LONG,
+                                    ).show()
+                                }
                                 backupPreview.value = null
                             } catch (cancelled: CancellationException) {
                                 throw cancelled
