@@ -75,7 +75,7 @@ internal fun EditorialQuoteCard(card: QuoteCard, modifier: Modifier, onFitsChang
                 onFitsChanged = { authorFits = it },
             )
         }
-        val brandMarkSize = (minOf(maxWidth, maxHeight) * .16f).coerceIn(38.dp, 72.dp)
+        val brandMarkSize = (minOf(maxWidth, maxHeight) * .22f).coerceIn(60.dp, 88.dp)
         QuoteCardBrandWatermark(
             Modifier.align(Alignment.BottomEnd)
                 .padding(end = horizontalMargin, bottom = 16.dp)
