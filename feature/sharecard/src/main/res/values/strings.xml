@@ -58,7 +58,7 @@
     <string name="share_card_theme_moss_garden">Montañas entre niebla</string>
     <string name="share_card_theme_sand">Calma al amanecer</string>
     <string name="share_card_theme_white_relief">Flor blanca</string>
-    <string name="share_card_templates_count">40 fondos · Elige una emoción</string>
+    <string name="share_card_templates_count">50 fondos · Elige una emoción</string>
     <string name="share_card_font">Tipografía</string>
     <string name="share_card_font_template">De la plantilla</string>
     <string name="share_card_font_serif">Clásica</string>
@@ -76,4 +76,15 @@
     <string name="share_card_mood_joy">Alegría</string>
     <string name="share_card_mood_strength">Fortaleza</string>
     <string name="share_card_format_portrait">Publicación 4:5</string>
+    <string name="share_card_theme_golden_night">Noche dorada</string>
+    <string name="share_card_theme_botanical_ivory">Marfil botánico</string>
+    <string name="share_card_theme_elegant_forest">Bosque elegante</string>
+    <string name="share_card_theme_paper_rose">Rosa de papel</string>
+    <string name="share_card_theme_stone_gold">Piedra y oro</string>
+    <string name="share_card_theme_living_parchment">Pergamino vivo</string>
+    <string name="share_card_theme_ink_moon">Luna de tinta</string>
+    <string name="share_card_theme_linen_feather">Lino y pluma</string>
+    <string name="share_card_theme_literary_leather">Cuero literario</string>
+    <string name="share_card_theme_light_sprout">Brote de luz</string>
+    <string name="share_card_mood_editorial">Sin recuadro</string>
 </resources>

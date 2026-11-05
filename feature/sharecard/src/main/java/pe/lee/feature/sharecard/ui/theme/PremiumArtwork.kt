@@ -32,8 +32,25 @@ internal val premiumThemes = listOf(
     QuoteCardThemeId.AZULEJOS, QuoteCardThemeId.CRYSTAL, QuoteCardThemeId.PROTAGONIST, QuoteCardThemeId.RETRO_POSTER,
 )
 
+internal val editorialThemes = listOf(
+    QuoteCardThemeId.GOLDEN_NIGHT,
+    QuoteCardThemeId.BOTANICAL_IVORY,
+    QuoteCardThemeId.ELEGANT_FOREST,
+    QuoteCardThemeId.PAPER_ROSE,
+    QuoteCardThemeId.STONE_GOLD,
+    QuoteCardThemeId.LIVING_PARCHMENT,
+    QuoteCardThemeId.INK_MOON,
+    QuoteCardThemeId.LINEN_FEATHER,
+    QuoteCardThemeId.LITERARY_LEATHER,
+    QuoteCardThemeId.LIGHT_SPROUT,
+)
+internal val allQuoteThemes = premiumThemes + editorialThemes
+internal fun isEditorialTheme(theme: QuoteCardThemeId): Boolean = theme in editorialThemes
+internal fun editorialLightPaper(theme: QuoteCardThemeId): Boolean = editorialThemes.indexOf(theme) in setOf(1, 3, 5, 7, 9)
+
 internal enum class QuoteMood(val labelRes: Int) {
     ALL(R.string.share_card_mood_all),
+    EDITORIAL(R.string.share_card_mood_editorial),
     LITERARY(R.string.share_card_mood_literary),
     CALM(R.string.share_card_mood_calm),
     REFLECTION(R.string.share_card_mood_reflection),
@@ -45,9 +62,20 @@ internal enum class QuoteMood(val labelRes: Int) {
 internal fun premiumThemeIndex(theme: QuoteCardThemeId): Int = premiumThemes.indexOf(theme).also { require(it >= 0) }
 internal fun premiumLightPaper(theme: QuoteCardThemeId): Boolean = premiumThemeIndex(theme) < 6
 internal fun premiumMatchesMood(theme: QuoteCardThemeId, mood: QuoteMood): Boolean {
+    if (isEditorialTheme(theme)) {
+        return mood == QuoteMood.ALL || mood == QuoteMood.EDITORIAL || mood == QuoteMood.LITERARY || when (mood) {
+            QuoteMood.CALM -> theme in setOf(QuoteCardThemeId.BOTANICAL_IVORY, QuoteCardThemeId.ELEGANT_FOREST, QuoteCardThemeId.LINEN_FEATHER)
+            QuoteMood.REFLECTION -> theme in setOf(QuoteCardThemeId.GOLDEN_NIGHT, QuoteCardThemeId.LIVING_PARCHMENT, QuoteCardThemeId.LITERARY_LEATHER)
+            QuoteMood.MELANCHOLY -> theme == QuoteCardThemeId.INK_MOON
+            QuoteMood.JOY -> theme in setOf(QuoteCardThemeId.PAPER_ROSE, QuoteCardThemeId.LIGHT_SPROUT)
+            QuoteMood.STRENGTH -> theme == QuoteCardThemeId.STONE_GOLD
+            else -> false
+        }
+    }
     val index = premiumThemeIndex(theme)
     return when (mood) {
         QuoteMood.ALL -> true
+        QuoteMood.EDITORIAL -> false
         QuoteMood.LITERARY -> index in 0..7 || index in 16..19 || index == 33
         QuoteMood.CALM -> index in setOf(8, 11, 12, 13, 22, 23, 24, 37, 38, 39)
         QuoteMood.REFLECTION -> index in setOf(16, 18, 19, 20, 24, 25, 31, 35, 37)
@@ -70,22 +98,33 @@ internal fun premiumCrop(theme: QuoteCardThemeId): PremiumCrop {
     return PremiumCrop(lefts[column], tops[row], rights[column] - lefts[column], bottoms[row] - tops[row])
 }
 
+internal fun editorialCrop(theme: QuoteCardThemeId): PremiumCrop {
+    val index = editorialThemes.indexOf(theme)
+    require(index >= 0)
+    val left = index % 5 * 1487 / 5
+    val right = (index % 5 + 1) * 1487 / 5
+    val top = index / 5 * 529
+    return PremiumCrop(left + 2, top + 2, right - left - 4, 525)
+}
+
 private object PremiumAtlasCache {
-    private var cached = SoftReference<ImageBitmap>(null)
+    private val cached = mutableMapOf<Int, SoftReference<ImageBitmap>>()
 
     @Synchronized
-    fun load(resources: Resources): ImageBitmap = cached.get() ?: BitmapFactory.decodeResource(
-        resources, R.drawable.quote_premium_atlas,
+    fun load(resources: Resources, resourceId: Int): ImageBitmap = cached[resourceId]?.get() ?: BitmapFactory.decodeResource(
+        resources, resourceId,
         BitmapFactory.Options().apply { inScaled = false },
-    ).asImageBitmap().also { cached = SoftReference(it) }
+    ).asImageBitmap().also { cached[resourceId] = SoftReference(it) }
 }
 
 /** A single shared atlas avoids decoding forty separate full-size bitmaps. */
 @Composable
 internal fun PremiumArtwork(theme: QuoteCardThemeId, modifier: Modifier = Modifier) {
     val resources = LocalContext.current.resources
-    val atlas = remember(resources) { PremiumAtlasCache.load(resources) }
-    val crop = remember(theme) { premiumCrop(theme) }
+    val editorial = isEditorialTheme(theme)
+    val resourceId = if (editorial) R.drawable.quote_editorial_atlas else R.drawable.quote_premium_atlas
+    val atlas = remember(resources, resourceId) { PremiumAtlasCache.load(resources, resourceId) }
+    val crop = remember(theme) { if (editorial) editorialCrop(theme) else premiumCrop(theme) }
     val sourceWidth = crop.width
     val sourceHeight = crop.height
     Canvas(modifier) {

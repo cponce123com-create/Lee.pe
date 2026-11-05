@@ -10,7 +10,7 @@ class PremiumArtworkTest {
     @Test
     fun everyStableThemeHasOneDistinctArtwork() {
         assertEquals(40, premiumThemes.size)
-        assertEquals(QuoteCardThemeId.entries.toSet(), premiumThemes.toSet())
+        assertEquals(QuoteCardThemeId.entries.toSet(), allQuoteThemes.toSet())
         assertEquals(40, premiumThemes.map(::premiumCrop).toSet().size)
     }
 
@@ -32,9 +32,30 @@ class PremiumArtworkTest {
     }
 
     @Test
+    fun tenEditorialAdditionsHaveDistinctSafeCropsAndBalancedPalettes() {
+        assertEquals(50, allQuoteThemes.size)
+        assertEquals(50, allQuoteThemes.toSet().size)
+        assertEquals(10, editorialThemes.size)
+        assertEquals(editorialThemes, allQuoteThemes.filter { premiumMatchesMood(it, QuoteMood.EDITORIAL) })
+        assertEquals(5, editorialThemes.count(::editorialLightPaper))
+        assertTrue(editorialThemes.all(::isEditorialTheme))
+        assertTrue(premiumThemes.none(::isEditorialTheme))
+        assertEquals(10, editorialThemes.map(::editorialCrop).toSet().size)
+        editorialThemes.forEach { theme ->
+            val crop = editorialCrop(theme)
+            assertTrue(crop.left >= 0 && crop.top >= 0)
+            assertTrue(crop.width > 0 && crop.height > 0)
+            assertTrue(crop.left + crop.width <= 1487)
+            assertTrue(crop.top + crop.height <= 1058)
+            assertTrue(premiumMatchesMood(theme, QuoteMood.ALL))
+            assertTrue(premiumMatchesMood(theme, QuoteMood.LITERARY))
+        }
+    }
+
+    @Test
     fun moodsAreUsableAndKeepAllFortyAccessible() {
         assertEquals(40, premiumThemes.count { premiumMatchesMood(it, QuoteMood.ALL) })
-        QuoteMood.entries.forEach { mood -> assertTrue(premiumThemes.any { premiumMatchesMood(it, mood) }) }
+        QuoteMood.entries.forEach { mood -> assertTrue(allQuoteThemes.any { premiumMatchesMood(it, mood) }) }
         assertTrue(premiumMatchesMood(QuoteCardThemeId.RAIN, QuoteMood.MELANCHOLY))
         assertTrue(premiumMatchesMood(QuoteCardThemeId.WATERCOLOR, QuoteMood.JOY))
         assertTrue(premiumMatchesMood(QuoteCardThemeId.PAPYRUS, QuoteMood.LITERARY))

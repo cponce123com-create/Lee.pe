@@ -58,6 +58,16 @@ internal data class QuoteCardPalette(
 )
 
 internal fun quoteCardPalette(theme: QuoteCardThemeId): QuoteCardPalette = when (theme) {
+    QuoteCardThemeId.GOLDEN_NIGHT,
+    QuoteCardThemeId.BOTANICAL_IVORY,
+    QuoteCardThemeId.ELEGANT_FOREST,
+    QuoteCardThemeId.PAPER_ROSE,
+    QuoteCardThemeId.STONE_GOLD,
+    QuoteCardThemeId.LIVING_PARCHMENT,
+    QuoteCardThemeId.INK_MOON,
+    QuoteCardThemeId.LINEN_FEATHER,
+    QuoteCardThemeId.LITERARY_LEATHER,
+    QuoteCardThemeId.LIGHT_SPROUT -> quoteCardPalette(QuoteCardThemeId.EDITORIAL)
     QuoteCardThemeId.EDITORIAL -> p(0xFFFFF9EF, 0xFFEADBC4, 0xFF342319, 0xFF5C3B24, 0xFF7A4B22, FontFamily.Serif, QuoteCardPattern.FRAME)
     QuoteCardThemeId.DARK_OLED -> p(
         0xFF0B111A,
