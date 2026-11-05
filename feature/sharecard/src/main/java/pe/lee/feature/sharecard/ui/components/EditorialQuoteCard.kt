@@ -42,10 +42,15 @@ internal fun EditorialQuoteCard(card: QuoteCard, modifier: Modifier, onFitsChang
     val accent = if (light) Color(0xFF755238) else Color(0xFFE7C787)
     val family = if (card.font == QuoteCardFont.SANS_SERIF) FontFamily.SansSerif else FontFamily.Serif
     BoxWithConstraints(modifier.fillMaxSize()) {
-        val horizontalMargin = maxWidth * .13f
-        // Relative reservations also protect corner decorations in square exports.
-        val topMargin = maxHeight * .18f
-        val bottomMargin = maxHeight * .23f
+        // Give longer selections more room while keeping the artwork's corner details clear.
+        val longQuote = card.text.length > 280
+        val horizontalMargin = maxWidth * if (longQuote) .09f else .13f
+        val brandMarkSize = (minOf(maxWidth, maxHeight) * .22f).coerceIn(60.dp, 88.dp)
+        val topMargin = maxHeight * if (longQuote) .10f else .18f
+        val bottomMargin = maxOf(
+            maxHeight * if (longQuote) .18f else .23f,
+            brandMarkSize + 32.dp,
+        )
         PremiumArtwork(card.themeId, Modifier.fillMaxSize())
         Column(
             Modifier.fillMaxSize().padding(
@@ -63,19 +68,18 @@ internal fun EditorialQuoteCard(card: QuoteCard, modifier: Modifier, onFitsChang
                 maximum = 32,
                 onFitsChanged = { quoteFits = it },
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(if (longQuote) 8.dp else 12.dp))
             Box(Modifier.width(28.dp).height(1.dp).background(accent))
             Spacer(Modifier.height(8.dp))
             FittedCardText(
                 text = card.author.ifBlank { stringResource(R.string.share_card_unknown_author) },
                 style = TextStyle(color = ink, fontFamily = family, textAlign = TextAlign.Start),
-                modifier = Modifier.fillMaxWidth().height(36.dp),
+                modifier = Modifier.fillMaxWidth().height(if (longQuote) 32.dp else 36.dp),
                 minimum = 9,
                 maximum = 14,
                 onFitsChanged = { authorFits = it },
             )
         }
-        val brandMarkSize = (minOf(maxWidth, maxHeight) * .22f).coerceIn(60.dp, 88.dp)
         QuoteCardBrandWatermark(
             Modifier.align(Alignment.BottomEnd)
                 .padding(end = horizontalMargin, bottom = 16.dp)
