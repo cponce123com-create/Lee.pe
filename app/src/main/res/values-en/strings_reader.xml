@@ -47,6 +47,9 @@
     <string name="reader_voice_spanish_argentina">Spanish (Argentina)</string>
     <string name="reader_voice_spanish_colombia">Spanish (Colombia)</string>
     <string name="reader_voice_spanish_us">Spanish (United States)</string>
+    <string name="reader_voice_spanish_peru">Spanish (Peru)</string>
+    <string name="reader_voice_spanish_chile">Spanish (Chile)</string>
+    <string name="reader_voice_spanish_region">Spanish (%1$s)</string>
     <string name="reader_voice_automatic">Automatic (Spanish)</string>
     <string name="reader_voice_none_local">No local Spanish voices</string>
     <string name="reader_voice_manage_device">Manage device voices</string>
