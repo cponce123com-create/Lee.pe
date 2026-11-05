@@ -17,7 +17,7 @@ import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.feature.sharecard.data.QuoteCardCacheCleaner
 
 class LeePeApplication : Application() {
-    private val readerProgressScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val readerProgressScope = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
     private val readerProgressMutex = Mutex()
 
     fun persistReaderProgress(uri: String, locator: String, progress: Double?, at: Long) {

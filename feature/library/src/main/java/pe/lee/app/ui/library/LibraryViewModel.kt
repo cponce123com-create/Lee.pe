@@ -144,7 +144,7 @@ class LibraryViewModel(
         scanGeneration++
         scanJob?.cancel()
         scanJob = null
-        mutableScanner.update { it.copy(busy = false) }
+        mutableScanner.update { it.copy(busy = false, preview = null, error = null) }
     }
 
     internal fun clearScanPreview() = mutableScanner.update { it.copy(preview = null) }
