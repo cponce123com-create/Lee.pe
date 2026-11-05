@@ -108,7 +108,7 @@ internal fun InteractiveMixedShelf(
     BoxWithConstraints(Modifier.fillMaxWidth().height(height)) {
         val availableWidth = minOf(maxWidth.value, maxHeight.value / 1.5f) * .83f
         val capacity = availableWidth / 45f
-        val shown = (0 until draft.shelfCount()).mapNotNull { shelf ->
+        val shown = draft.occupiedShelfIndices().mapNotNull { shelf ->
             val objects = draft.objectsOnShelf(shelf).filter { it !is ShelfObject.Book || it.placement.bookId in visibleIds }
             objects.takeIf { it.isNotEmpty() }?.let { ShelfDisplay(shelf, it) }
         }
@@ -138,7 +138,7 @@ internal fun InteractiveMixedShelf(
                 val destination = if (target.startsWith("zone:")) {
                     target.substringAfter("zone:").substringBefore(':').toIntOrNull()
                 } else {
-                    (0 until draft.shelfCount()).firstOrNull { shelf ->
+                    draft.occupiedShelfIndices().firstOrNull { shelf ->
                         draft.objectsOnShelf(shelf).any { it.stableKey == target }
                     }
                 }
