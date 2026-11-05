@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="annotation_sheet_title">Marcadores, notas y resaltados</string>
+    <string name="annotation_sheet_title">Marcadores, notas, resaltados, subrayados y frases</string>
     <string name="annotation_add_note">Añadir nota</string>
     <string name="annotation_save">Guardar</string>
     <string name="annotation_cancel">Cancelar</string>
@@ -8,15 +8,21 @@
     <string name="annotation_edit_note">Editar nota</string>
     <string name="annotation_new_note">Nueva nota</string>
     <string name="annotation_note_label">Nota para esta posición</string>
-    <string name="annotation_empty_list">Todavía no guardaste marcadores, notas ni resaltados en este libro.</string>
+    <string name="annotation_empty_list">Todavía no guardaste marcadores, notas, resaltados, subrayados ni frases en este libro.</string>
     <string name="annotation_open_note">Nota · abrir posición</string>
     <string name="annotation_open_highlight">Resaltado · abrir texto</string>
+    <string name="annotation_open_underline">Subrayado · abrir texto</string>
+    <string name="annotation_open_phrase">Frase guardada · abrir texto</string>
     <string name="annotation_open_bookmark">Marcador · abrir posición</string>
     <string name="annotation_highlight_date">Resaltado · %1$s</string>
+    <string name="annotation_underline_date">Subrayado · %1$s</string>
+    <string name="annotation_phrase_date">Frase guardada · %1$s</string>
     <string name="annotation_bookmark_date">Marcador · %1$s</string>
     <string name="annotation_delete_title">Eliminar %1$s</string>
     <string name="annotation_kind_note">la nota</string>
     <string name="annotation_kind_highlight">el resaltado</string>
+    <string name="annotation_kind_underline">el subrayado</string>
+    <string name="annotation_kind_phrase">la frase guardada</string>
     <string name="annotation_kind_bookmark">el marcador</string>
     <string name="annotation_delete_message">Esta anotación se eliminará del libro.</string>
 </resources>

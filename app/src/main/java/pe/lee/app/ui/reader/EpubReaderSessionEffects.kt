@@ -177,11 +177,25 @@ internal fun EpubReaderSessionEffects(
                         .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
                     menu.add(Menu.NONE, MENU_COPY_SELECTION, 2, context.getString(R.string.epub_selection_copy))
                         .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
+                    menu.add(Menu.NONE, MENU_UNDERLINE_SELECTION, 3, context.getString(R.string.epub_selection_underline))
+                        .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
+                    menu.add(Menu.NONE, MENU_SAVE_PHRASE, 4, context.getString(R.string.epub_selection_save_phrase))
+                        .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
+                    menu.add(Menu.NONE, MENU_DICTIONARY, 5, context.getString(R.string.epub_selection_dictionary))
+                        .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
                     return true
                 }
 
                 override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
-                    if (item.itemId !in setOf(MENU_HIGHLIGHT, MENU_COPY_SELECTION, MENU_SHARE_SELECTION)) return false
+                    if (item.itemId !in setOf(
+                            MENU_HIGHLIGHT,
+                            MENU_COPY_SELECTION,
+                            MENU_SHARE_SELECTION,
+                            MENU_UNDERLINE_SELECTION,
+                            MENU_SAVE_PHRASE,
+                            MENU_DICTIONARY,
+                        )
+                    ) return false
                     if (actionJob?.isActive != true) {
                         val actionId = item.itemId
                         actionJob = coroutineScope.launch {
@@ -193,16 +207,23 @@ internal fun EpubReaderSessionEffects(
                                     .map { it.localizedName.string }
                                     .filter(String::isNotBlank)
                                     .joinToString(", ")
-                                if (actionId == MENU_HIGHLIGHT && selectedLocator != null) {
+                                if (actionId in setOf(MENU_HIGHLIGHT, MENU_UNDERLINE_SELECTION, MENU_SAVE_PHRASE) &&
+                                    selectedLocator != null && selectedText.isNotEmpty()
+                                ) {
                                     val now = System.currentTimeMillis()
+                                    val kind = when (actionId) {
+                                        MENU_HIGHLIGHT -> "HIGHLIGHT"
+                                        MENU_UNDERLINE_SELECTION -> "UNDERLINE"
+                                        else -> "PHRASE"
+                                    }
                                     viewModel.saveAnnotation(
                                         ReaderAnnotation(
                                             id = UUID.randomUUID().toString(),
                                             bookUri = uri.toString(),
-                                            kind = "HIGHLIGHT",
+                                            kind = kind,
                                             locatorJson = selectedLocator.toJSON().toString(),
-                                            selectedText = selectedLocator.text.highlight?.take(12_000),
-                                            colorArgb = DEFAULT_HIGHLIGHT_COLOR,
+                                            selectedText = selectedText.take(12_000),
+                                            colorArgb = if (kind == "PHRASE") null else DEFAULT_HIGHLIGHT_COLOR,
                                             createdAt = now,
                                         ),
                                     )
@@ -231,6 +252,8 @@ internal fun EpubReaderSessionEffects(
                                             ),
                                         )
                                     }
+                                } else if (actionId == MENU_DICTIONARY && selectedText.isNotEmpty()) {
+                                    showOfflineDictionary(context, coroutineScope, selectedText)
                                 }
                             } catch (cancelled: CancellationException) {
                                 throw cancelled
@@ -338,7 +361,7 @@ internal fun EpubReaderSessionEffects(
     LaunchedEffect(annotations, session.navigator.value) {
         val reader = session.navigator.value ?: return@LaunchedEffect
         val highlights = annotations
-            .filter { it.kind == "HIGHLIGHT" }
+            .filter { it.kind == "HIGHLIGHT" || it.kind == "UNDERLINE" }
             .mapNotNull { annotation ->
                 val locator = runCatching {
                     Locator.fromJSON(JSONObject(annotation.locatorJson))
@@ -346,9 +369,11 @@ internal fun EpubReaderSessionEffects(
                 Decoration(
                     id = annotation.id,
                     locator = locator,
-                    style = Decoration.Style.Highlight(
-                        tint = annotation.colorArgb ?: DEFAULT_HIGHLIGHT_COLOR,
-                    ),
+                    style = if (annotation.kind == "UNDERLINE") {
+                        Decoration.Style.Underline(tint = annotation.colorArgb ?: DEFAULT_HIGHLIGHT_COLOR)
+                    } else {
+                        Decoration.Style.Highlight(tint = annotation.colorArgb ?: DEFAULT_HIGHLIGHT_COLOR)
+                    },
                 )
             }
         reader.applyDecorations(highlights, ANNOTATION_DECORATION_GROUP)

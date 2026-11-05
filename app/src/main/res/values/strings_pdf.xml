@@ -17,9 +17,11 @@
     <string name="pdf_annotations_title">Notas y marcadores PDF</string>
     <string name="pdf_add_note">Añadir nota</string>
     <string name="pdf_bookmark_page">Marcar página</string>
-    <string name="pdf_annotations_empty">Todavía no guardaste notas, marcadores ni resaltados para este PDF.</string>
+    <string name="pdf_annotations_empty">Todavía no guardaste notas, marcadores, resaltados, subrayados ni frases para este PDF.</string>
     <string name="pdf_note">Nota</string>
     <string name="pdf_annotation_highlight_text">Texto resaltado</string>
+    <string name="pdf_annotation_underline_text">Texto subrayado</string>
+    <string name="pdf_annotation_saved_phrase">Frase guardada</string>
     <string name="pdf_annotation_bookmarked_page">Página marcada</string>
     <string name="pdf_annotation_page_open">Página %1$d · abrir</string>
     <string name="pdf_highlight_color">Resaltado %1$s</string>
@@ -40,6 +42,8 @@
     <string name="pdf_clipboard_label">Texto PDF</string>
     <string name="pdf_copy">Copiar</string>
     <string name="pdf_highlight">Resaltar</string>
+    <string name="pdf_underline">Subrayar</string>
+    <string name="pdf_save_phrase">Guardar frase</string>
     <string name="pdf_close">Cerrar</string>
     <string name="pdf_go_to_page_title">Ir a una página</string>
     <string name="pdf_page_number_label">Número de página</string>

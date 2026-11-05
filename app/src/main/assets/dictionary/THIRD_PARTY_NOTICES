@@ -1,0 +1,21 @@
+Offline Spanish–English dictionary data
+
+Source: doozan/spanish_data, file es-en.data
+https://github.com/doozan/spanish_data/blob/master/es-en.data
+Raw source: https://raw.githubusercontent.com/doozan/spanish_data/master/es-en.data
+
+The source repository identifies es-en.data as CC-BY-SA and attributes its
+underlying content to Wiktionary (wiktionary.org). The repository also declares
+CC-BY-4.0. This derived data asset is distributed under the applicable source
+licence terms; retain this notice when redistributing it. The source repository
+and Wiktionary should be consulted for the authoritative licence and attribution
+terms.
+
+Attribution: Wiktionary contributors (wiktionary.org), via doozan/spanish_data.
+
+Changes made for this app: retained Spanish headwords having at least one gloss;
+consolidated headwords that normalize to the same lowercase, accent-insensitive
+key; retained up to eight glosses per normalized headword; removed empty and
+oversized gloss values, compacted whitespace, stripped simple template markup,
+and stored the result as sorted UTF-8 TSV compressed with gzip. The asset is
+intended for exact-match offline lookup. No network access is used at runtime.

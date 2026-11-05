@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Lee.pe</string>
+    <string name="dictionary_title">Diccionario sin conexión · Español–inglés</string>
+    <string name="dictionary_loading">Buscando en el diccionario local…</string>
+    <string name="dictionary_not_found">No se encontró “%1$s” en el diccionario offline.</string>
+    <string name="dictionary_close">Cerrar</string>
+    <string name="dictionary_lookup">Diccionario</string>
     <string name="annotation_highlight_color">Resaltado %1$s</string>
     <string name="annotation_color_yellow">Amarillo</string>
     <string name="annotation_color_blue">Azul</string>

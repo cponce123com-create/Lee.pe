@@ -230,11 +230,18 @@ internal fun PdfReaderDialogs(
                                         ?: when (annotation.kind) {
                                             "NOTE" -> stringResource(R.string.pdf_note)
                                             "HIGHLIGHT" -> stringResource(R.string.pdf_annotation_highlight_text)
+                                            "UNDERLINE" -> stringResource(R.string.pdf_annotation_underline_text)
+                                            "PHRASE" -> stringResource(R.string.pdf_annotation_saved_phrase)
                                             else -> stringResource(R.string.pdf_annotation_bookmarked_page)
                                         },
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis,
                                 )
+                                when (annotation.kind) {
+                                    "HIGHLIGHT" -> Text(stringResource(R.string.pdf_annotation_highlight_text), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                                    "UNDERLINE" -> Text(stringResource(R.string.pdf_annotation_underline_text), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                                    "PHRASE" -> Text(stringResource(R.string.pdf_annotation_saved_phrase), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                                }
                                 Text(
                                     stringResource(
                                         R.string.pdf_annotation_page_open,
@@ -403,6 +410,28 @@ internal fun PdfReaderDialogs(
                                 showSelectionDialog = false
                             },
                         ) { Text(stringResource(R.string.pdf_highlight)) }
+                    }
+                    Row {
+                        TextButton(
+                            enabled = selectedPdfRects.isNotEmpty(),
+                            onClick = {
+                                val now = System.currentTimeMillis()
+                                coroutineScope.launch {
+                                    viewModel.saveAnnotation(
+                                        ReaderAnnotation(
+                                            id = UUID.randomUUID().toString(),
+                                            bookUri = uri.toString(),
+                                            kind = "UNDERLINE",
+                                            locatorJson = pdfTextLocator(selectedPdfPage, selectedPdfRects),
+                                            selectedText = selectedPdfText?.take(12_000),
+                                            colorArgb = DEFAULT_PDF_HIGHLIGHT_COLOR,
+                                            createdAt = now,
+                                        ),
+                                    )
+                                }
+                                showSelectionDialog = false
+                            },
+                        ) { Text(stringResource(R.string.pdf_underline)) }
                         TextButton(onClick = {
                             quoteForNote = selectedPdfText
                             noteDraft = ""
@@ -410,6 +439,35 @@ internal fun PdfReaderDialogs(
                             showSelectionDialog = false
                             showNoteEditor = true
                         }) { Text(stringResource(R.string.pdf_note)) }
+                    }
+                    Row {
+                        TextButton(
+                            enabled = !selectedPdfText.isNullOrBlank(),
+                            onClick = {
+                                val selected = selectedPdfText.orEmpty().trim()
+                                if (selected.isNotEmpty()) {
+                                    val now = System.currentTimeMillis()
+                                    coroutineScope.launch {
+                                        viewModel.saveAnnotation(
+                                            ReaderAnnotation(
+                                                id = UUID.randomUUID().toString(),
+                                                bookUri = uri.toString(),
+                                                kind = "PHRASE",
+                                                locatorJson = pdfTextLocator(selectedPdfPage, selectedPdfRects),
+                                                selectedText = selected.take(12_000),
+                                                createdAt = now,
+                                            ),
+                                        )
+                                    }
+                                }
+                                showSelectionDialog = false
+                            },
+                        ) { Text(stringResource(R.string.pdf_save_phrase)) }
+                        TextButton(onClick = {
+                            showOfflineDictionary(context, coroutineScope, selectedPdfText.orEmpty())
+                        }) {
+                            Text(stringResource(R.string.dictionary_lookup))
+                        }
                     }
                     TextButton(onClick = {
                         val selected = selectedPdfText.orEmpty().trim()

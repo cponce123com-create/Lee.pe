@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Lee.pe</string>
+    <string name="dictionary_title">Offline dictionary · Spanish–English</string>
+    <string name="dictionary_loading">Searching the local dictionary…</string>
+    <string name="dictionary_not_found">“%1$s” was not found in the offline dictionary.</string>
+    <string name="dictionary_close">Close</string>
+    <string name="dictionary_lookup">Dictionary</string>
     <string name="annotation_highlight_color">%1$s highlight</string>
     <string name="annotation_color_yellow">Yellow</string>
     <string name="annotation_color_blue">Blue</string>

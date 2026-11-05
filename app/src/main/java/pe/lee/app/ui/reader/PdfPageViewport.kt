@@ -329,17 +329,24 @@ internal fun ColumnScope.PdfPageViewport(
                         val top = (size.height - displayedHeight) / 2f
                         currentPageOverlays.forEach { highlight ->
                             val rect = highlight.rect
-                            drawRect(
-                                color = Color(highlight.colorArgb).copy(alpha = 0.40f),
-                                topLeft = androidx.compose.ui.geometry.Offset(
-                                    left + rect.left * displayedWidth,
-                                    top + rect.top * displayedHeight,
-                                ),
-                                size = Size(
-                                    (rect.right - rect.left) * displayedWidth,
-                                    (rect.bottom - rect.top) * displayedHeight,
-                                ),
-                            )
+                            if (highlight.underline) {
+                                val y = top + rect.bottom * displayedHeight - 1.dp.toPx()
+                                drawLine(
+                                    color = Color(highlight.colorArgb),
+                                    start = Offset(left + rect.left * displayedWidth, y),
+                                    end = Offset(left + rect.right * displayedWidth, y),
+                                    strokeWidth = 2.dp.toPx(),
+                                )
+                            } else {
+                                drawRect(
+                                    color = Color(highlight.colorArgb).copy(alpha = 0.40f),
+                                    topLeft = Offset(left + rect.left * displayedWidth, top + rect.top * displayedHeight),
+                                    size = Size(
+                                        (rect.right - rect.left) * displayedWidth,
+                                        (rect.bottom - rect.top) * displayedHeight,
+                                    ),
+                                )
+                            }
                         }
                     }
                 }

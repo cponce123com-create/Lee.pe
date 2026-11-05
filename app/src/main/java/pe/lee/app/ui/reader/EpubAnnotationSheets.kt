@@ -96,19 +96,16 @@ internal fun EpubAnnotationSheets(
                                 Text(
                                     annotation.noteText?.takeIf { it.isNotBlank() }
                                         ?: annotation.selectedText?.takeIf { it.isNotBlank() }
-                                        ?: if (annotation.kind == "HIGHLIGHT") {
-                                            stringResource(
-                                                R.string.annotation_highlight_date,
-                                                java.text.DateFormat.getDateTimeInstance()
-                                                    .format(java.util.Date(annotation.createdAt)),
-                                            )
-                                        } else {
-                                            stringResource(
-                                                R.string.annotation_bookmark_date,
-                                                java.text.DateFormat.getDateTimeInstance()
-                                                    .format(java.util.Date(annotation.createdAt)),
-                                            )
-                                        },
+                                        ?: stringResource(
+                                            when (annotation.kind) {
+                                                "HIGHLIGHT" -> R.string.annotation_highlight_date
+                                                "UNDERLINE" -> R.string.annotation_underline_date
+                                                "PHRASE" -> R.string.annotation_phrase_date
+                                                else -> R.string.annotation_bookmark_date
+                                            },
+                                            java.text.DateFormat.getDateTimeInstance()
+                                                .format(java.util.Date(annotation.createdAt)),
+                                        ),
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis,
                                 )
@@ -143,6 +140,8 @@ internal fun EpubAnnotationSheets(
                                         when (annotation.kind) {
                                             "NOTE" -> R.string.annotation_open_note
                                             "HIGHLIGHT" -> R.string.annotation_open_highlight
+                                            "UNDERLINE" -> R.string.annotation_open_underline
+                                            "PHRASE" -> R.string.annotation_open_phrase
                                             else -> R.string.annotation_open_bookmark
                                         },
                                     ),
@@ -218,6 +217,8 @@ internal fun EpubAnnotationSheets(
             when (annotation.kind) {
                 "NOTE" -> R.string.annotation_kind_note
                 "HIGHLIGHT" -> R.string.annotation_kind_highlight
+                "UNDERLINE" -> R.string.annotation_kind_underline
+                "PHRASE" -> R.string.annotation_kind_phrase
                 else -> R.string.annotation_kind_bookmark
             },
         )

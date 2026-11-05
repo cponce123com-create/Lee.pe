@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="epub_selection_highlight">Resaltar</string>
+    <string name="epub_selection_underline">Subrayar</string>
+    <string name="epub_selection_save_phrase">Guardar frase</string>
+    <string name="epub_selection_dictionary">Diccionario</string>
     <string name="epub_selection_copy">Copiar</string>
     <string name="epub_navigator_create_failed">No se pudo crear el lector EPUB.</string>
     <string name="epub_search_not_supported">Este EPUB no permite búsquedas.</string>

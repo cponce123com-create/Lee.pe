@@ -58,7 +58,11 @@ internal data class PdfSelectedText(val text: String, val rects: List<PdfNormali
 
 internal data class PdfSearchResult(val pageIndex: Int, val text: String, val rects: List<PdfNormalizedRect>)
 
-internal data class PdfHighlightOverlay(val rect: PdfNormalizedRect, val colorArgb: Int)
+internal data class PdfHighlightOverlay(
+    val rect: PdfNormalizedRect,
+    val colorArgb: Int,
+    val underline: Boolean = false,
+)
 
 internal fun pdfTextLocator(pageIndex: Int, rects: List<PdfNormalizedRect>): String = JSONObject().apply {
     put("format", "pdf-text")
@@ -80,7 +84,7 @@ internal fun pdfTextLocator(pageIndex: Int, rects: List<PdfNormalizedRect>): Str
 }.toString()
 
 internal fun pdfHighlightOverlays(annotations: List<ReaderAnnotation>, pageIndex: Int): List<PdfHighlightOverlay> = annotations
-    .filter { it.kind == "HIGHLIGHT" }
+    .filter { it.kind == "HIGHLIGHT" || it.kind == "UNDERLINE" }
     .flatMap { annotation ->
         runCatching {
             val json = JSONObject(annotation.locatorJson)
@@ -96,6 +100,7 @@ internal fun pdfHighlightOverlays(annotations: List<ReaderAnnotation>, pageIndex
                         bottom = rect.optDouble("bottom").toFloat().coerceIn(0f, 1f),
                     ),
                     colorArgb = annotation.colorArgb ?: DEFAULT_PDF_HIGHLIGHT_COLOR,
+                    underline = annotation.kind == "UNDERLINE",
                 )
             }
         }.getOrDefault(emptyList())
@@ -222,17 +227,24 @@ internal fun PdfContinuousPage(
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     highlights.forEach { highlight ->
                         val rect = highlight.rect
-                        drawRect(
-                            color = Color(highlight.colorArgb).copy(alpha = 0.40f),
-                            topLeft = Offset(
-                                rect.left * size.width,
-                                rect.top * size.height,
-                            ),
-                            size = Size(
-                                (rect.right - rect.left) * size.width,
-                                (rect.bottom - rect.top) * size.height,
-                            ),
-                        )
+                        if (highlight.underline) {
+                            val y = rect.bottom * size.height - 1.dp.toPx()
+                            drawLine(
+                                color = Color(highlight.colorArgb),
+                                start = Offset(rect.left * size.width, y),
+                                end = Offset(rect.right * size.width, y),
+                                strokeWidth = 2.dp.toPx(),
+                            )
+                        } else {
+                            drawRect(
+                                color = Color(highlight.colorArgb).copy(alpha = 0.40f),
+                                topLeft = Offset(rect.left * size.width, rect.top * size.height),
+                                size = Size(
+                                    (rect.right - rect.left) * size.width,
+                                    (rect.bottom - rect.top) * size.height,
+                                ),
+                            )
+                        }
                     }
                 }
             }
