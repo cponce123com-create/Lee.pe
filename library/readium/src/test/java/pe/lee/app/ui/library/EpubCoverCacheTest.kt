@@ -8,9 +8,11 @@ import org.junit.Test
 
 class EpubCoverCacheTest {
     @Test fun cachedCoverReturnsWhileBothParsePermitsAreBusy() = runBlocking {
+        val permits = Semaphore(1)
+        permits.acquire()
         val result = withTimeout(500) {
             loadEpubCoverAfterCacheCheck(
-                permits = Semaphore(0),
+                permits = permits,
                 lookup = { EpubCoverCacheLookup.Hit("cached") },
                 extract = { error("No debe esperar ni volver a parsear una portada en caché") },
             )
