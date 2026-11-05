@@ -328,7 +328,11 @@ internal fun rememberLibraryDocumentActions(
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (error: Exception) {
-                    Toast.makeText(context, context.getString(backupErrorMessage(error, R.string.library_backup_invalid)), Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        context,
+                        context.getString(backupErrorMessage(error, R.string.library_backup_invalid)),
+                        Toast.LENGTH_LONG,
+                    ).show()
                 } finally {
                     backupBusy.value = false
                 }

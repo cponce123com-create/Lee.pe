@@ -32,12 +32,14 @@ object LocalBackupCipher {
     private const val SALT_BYTES = 16
     private const val IV_BYTES = 12
     private const val TAG_BITS = 128
+    private const val TAG_BYTES = 16
+    private const val COST_BYTES = 4
     private const val LEGACY_ITERATIONS = 120_000
     private const val ITERATIONS = 600_000
     private const val MAX_ITERATIONS = 1_200_000
     private const val MIN_PASSWORD_LENGTH = 8
     private const val V1_HEADER_BYTES = 8 + 1 + SALT_BYTES + IV_BYTES
-    private const val V2_HEADER_BYTES = V1_HEADER_BYTES + 4
+    private const val V2_HEADER_BYTES = V1_HEADER_BYTES + COST_BYTES
 
     fun isEncrypted(data: ByteArray): Boolean = data.size >= magic.size && data.copyOfRange(0, magic.size).contentEquals(magic)
 
@@ -70,23 +72,14 @@ object LocalBackupCipher {
     /** Wrong password and authentication failure deliberately share one error. */
     @Throws(IOException::class)
     fun decrypt(data: ByteArray, password: String): ByteArray {
-        if (password.length < MIN_PASSWORD_LENGTH || data.size < V1_HEADER_BYTES + TAG_BITS / 8 || !isEncrypted(data)) {
+        if (password.length < MIN_PASSWORD_LENGTH || data.size < V1_HEADER_BYTES + TAG_BYTES || !isEncrypted(data)) {
             throw invalidData()
         }
-        val version = data[magic.size].toInt() and 0xff
-        val headerSize = when (version) {
-            1 -> V1_HEADER_BYTES
-            VERSION -> V2_HEADER_BYTES
-            else -> throw BackupCipherException(BackupCipherException.Reason.UNSUPPORTED_VERSION)
-        }
-        if (data.size < headerSize + TAG_BITS / 8) throw invalidData()
-        val iterations = if (version == 1) LEGACY_ITERATIONS else {
-            ByteBuffer.wrap(data, magic.size + 1, 4).order(ByteOrder.BIG_ENDIAN).int.also {
-                // Validate before KDF work; bound both downgraded and hostile costs.
-                if (it !in ITERATIONS..MAX_ITERATIONS) throw invalidData()
-            }
-        }
-        val saltStart = if (version == 1) magic.size + 1 else magic.size + 1 + 4
+        val header = readHeader(data)
+        val version = header.version
+        val headerSize = header.size
+        val iterations = header.iterations
+        val saltStart = if (version == 1) magic.size + 1 else magic.size + 1 + COST_BYTES
         val ivStart = saltStart + SALT_BYTES
         val salt = data.copyOfRange(saltStart, ivStart)
         val iv = data.copyOfRange(ivStart, headerSize)
@@ -108,8 +101,28 @@ object LocalBackupCipher {
         }
     }
 
-    private fun invalidData(cause: Throwable? = null) =
-        BackupCipherException(BackupCipherException.Reason.INVALID_PASSWORD_OR_DATA, cause)
+    private data class Header(val version: Int, val size: Int, val iterations: Int)
+
+    private fun readHeader(data: ByteArray): Header {
+        val version = data[magic.size].toInt() and 0xff
+        val size = when (version) {
+            1 -> V1_HEADER_BYTES
+            VERSION -> V2_HEADER_BYTES
+            else -> throw BackupCipherException(BackupCipherException.Reason.UNSUPPORTED_VERSION)
+        }
+        if (data.size < size + TAG_BYTES) throw invalidData()
+        return Header(version, size, readIterations(data, version))
+    }
+
+    private fun readIterations(data: ByteArray, version: Int): Int {
+        if (version == 1) return LEGACY_ITERATIONS
+        val iterations = ByteBuffer.wrap(data, magic.size + 1, COST_BYTES).order(ByteOrder.BIG_ENDIAN).int
+        // Validate before KDF work; bound both downgraded and hostile costs.
+        if (iterations !in ITERATIONS..MAX_ITERATIONS) throw invalidData()
+        return iterations
+    }
+
+    private fun invalidData(cause: Throwable? = null) = BackupCipherException(BackupCipherException.Reason.INVALID_PASSWORD_OR_DATA, cause)
 }
 
 /** Native where available; the fallback keeps API 24–25 compatible without Android dependencies. */
