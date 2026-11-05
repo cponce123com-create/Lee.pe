@@ -127,7 +127,7 @@ internal fun pdfBitmapSize(
     maxHeightPx: Int? = null,
     maxPixels: Long = MAX_PDF_BITMAP_PIXELS,
 ): PdfBitmapSize {
-    require(pageWidth > 0 && pageHeight > 0) { "El PDF contiene una página sin dimensiones válidas." }
+    require(pageWidth > 0 && pageHeight > 0)
     val sourcePixels = pageWidth.toLong() * pageHeight.toLong()
     val budget = maxPixels.coerceAtLeast(1L)
     val memoryScale = sqrt(budget.toDouble() / sourcePixels).toFloat()
