@@ -34,7 +34,7 @@ import pe.lee.feature.sharecard.domain.model.QuoteCardThemeId
 import pe.lee.feature.sharecard.ui.theme.PremiumArtwork
 import pe.lee.feature.sharecard.ui.theme.QuoteMood
 import pe.lee.feature.sharecard.ui.theme.premiumMatchesMood
-import pe.lee.feature.sharecard.ui.theme.premiumThemes
+import pe.lee.feature.sharecard.ui.theme.allQuoteThemes
 
 @Composable
 internal fun ThemeSelector(selected: QuoteCardThemeId, onThemeSelected: (QuoteCardThemeId) -> Unit, modifier: Modifier = Modifier) {
@@ -54,7 +54,7 @@ internal fun ThemeSelector(selected: QuoteCardThemeId, onThemeSelected: (QuoteCa
             modifier = Modifier.fillMaxWidth().testTag("quote-theme-gallery"),
             horizontalArrangement = Arrangement.spacedBy(9.dp),
         ) {
-            items(premiumThemes.filter { premiumMatchesMood(it, mood) }, key = { it.name }) { theme ->
+            items(allQuoteThemes.filter { premiumMatchesMood(it, mood) }, key = { it.name }) { theme ->
                 val chosen = selected == theme
                 OutlinedCard(
                     onClick = { onThemeSelected(theme) },
@@ -71,6 +71,17 @@ internal fun ThemeSelector(selected: QuoteCardThemeId, onThemeSelected: (QuoteCa
 
 internal val QuoteCardThemeId.labelRes: Int
     get() = when (this) {
+        QuoteCardThemeId.GOLDEN_NIGHT -> R.string.share_card_theme_golden_night
+        QuoteCardThemeId.BOTANICAL_IVORY -> R.string.share_card_theme_botanical_ivory
+        QuoteCardThemeId.ELEGANT_FOREST -> R.string.share_card_theme_elegant_forest
+        QuoteCardThemeId.PAPER_ROSE -> R.string.share_card_theme_paper_rose
+        QuoteCardThemeId.STONE_GOLD -> R.string.share_card_theme_stone_gold
+        QuoteCardThemeId.LIVING_PARCHMENT -> R.string.share_card_theme_living_parchment
+        QuoteCardThemeId.INK_MOON -> R.string.share_card_theme_ink_moon
+        QuoteCardThemeId.LINEN_FEATHER -> R.string.share_card_theme_linen_feather
+        QuoteCardThemeId.LITERARY_LEATHER -> R.string.share_card_theme_literary_leather
+        QuoteCardThemeId.LIGHT_SPROUT -> R.string.share_card_theme_light_sprout
+
         QuoteCardThemeId.EDITORIAL -> R.string.share_card_theme_editorial
         QuoteCardThemeId.DARK_OLED -> R.string.share_card_theme_night
         QuoteCardThemeId.PAPER -> R.string.share_card_theme_paper

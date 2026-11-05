@@ -58,7 +58,7 @@
     <string name="share_card_theme_moss_garden">Misty mountains</string>
     <string name="share_card_theme_sand">Calm dawn</string>
     <string name="share_card_theme_white_relief">White flower</string>
-    <string name="share_card_templates_count">40 backgrounds · Choose a mood</string>
+    <string name="share_card_templates_count">50 backgrounds · Choose a mood</string>
     <string name="share_card_font">Typeface</string>
     <string name="share_card_font_template">Template default</string>
     <string name="share_card_font_serif">Classic</string>
@@ -76,4 +76,15 @@
     <string name="share_card_mood_joy">Joy</string>
     <string name="share_card_mood_strength">Strength</string>
     <string name="share_card_format_portrait">Portrait 4:5</string>
+    <string name="share_card_theme_golden_night">Golden night</string>
+    <string name="share_card_theme_botanical_ivory">Botanical ivory</string>
+    <string name="share_card_theme_elegant_forest">Elegant forest</string>
+    <string name="share_card_theme_paper_rose">Paper rose</string>
+    <string name="share_card_theme_stone_gold">Stone and gold</string>
+    <string name="share_card_theme_living_parchment">Living parchment</string>
+    <string name="share_card_theme_ink_moon">Ink moon</string>
+    <string name="share_card_theme_linen_feather">Linen and feather</string>
+    <string name="share_card_theme_literary_leather">Literary leather</string>
+    <string name="share_card_theme_light_sprout">Sprout of light</string>
+    <string name="share_card_mood_editorial">No text panel</string>
 </resources>

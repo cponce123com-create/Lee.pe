@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import pe.lee.feature.sharecard.R
 import pe.lee.feature.sharecard.domain.model.QuoteCard
 import pe.lee.feature.sharecard.domain.model.QuoteCardFont
+import pe.lee.feature.sharecard.ui.theme.isEditorialTheme
 import pe.lee.feature.sharecard.ui.theme.PremiumArtwork
 import pe.lee.feature.sharecard.ui.theme.premiumLightPaper
 import pe.lee.feature.sharecard.ui.theme.quoteCardPalette
@@ -46,6 +47,10 @@ import pe.lee.feature.sharecard.ui.theme.quoteCardPalette
 /** Card-only artwork. Quote and author are measured before they are rendered or exported. */
 @Composable
 fun QuoteCardPreview(card: QuoteCard, modifier: Modifier = Modifier, onFitsChanged: (Boolean) -> Unit = {}) {
+    if (isEditorialTheme(card.themeId)) {
+        EditorialQuoteCard(card, modifier, onFitsChanged)
+        return
+    }
     var quoteFits by remember(card) { mutableStateOf(false) }
     var authorFits by remember(card) { mutableStateOf(false) }
     val cardFits = quoteFits && authorFits
@@ -106,7 +111,7 @@ fun QuoteCardPreview(card: QuoteCard, modifier: Modifier = Modifier, onFitsChang
 }
 
 @Composable
-private fun FittedCardText(
+internal fun FittedCardText(
     text: String,
     style: TextStyle,
     modifier: Modifier,
@@ -114,6 +119,7 @@ private fun FittedCardText(
     maximum: Int,
     onFitsChanged: (Boolean) -> Unit,
 ) {
+    val alignment = if (style.textAlign == TextAlign.Unspecified) TextAlign.Center else style.textAlign
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
@@ -128,7 +134,7 @@ private fun FittedCardText(
                 val size = (low + high) / 2
                 val measured = measurer.measure(
                     text = text,
-                    style = style.copy(fontSize = size.sp, lineHeight = (size * 1.35f).sp, textAlign = TextAlign.Center),
+                    style = style.copy(fontSize = size.sp, lineHeight = (size * 1.35f).sp, textAlign = alignment),
                     constraints = Constraints(maxWidth = width, maxHeight = height),
                 )
                 if (!measured.hasVisualOverflow) {
@@ -142,6 +148,6 @@ private fun FittedCardText(
             best to fits
         }
         SideEffect { onFitsChanged(result.second) }
-        Text(text, style = style.copy(fontSize = result.first.sp, lineHeight = (result.first * 1.35f).sp, textAlign = TextAlign.Center))
+        Text(text, style = style.copy(fontSize = result.first.sp, lineHeight = (result.first * 1.35f).sp, textAlign = alignment))
     }
 }

@@ -25,6 +25,7 @@ import pe.lee.feature.sharecard.R
 import pe.lee.feature.sharecard.domain.ShareCardGenerator
 import pe.lee.feature.sharecard.domain.ShareCardSharer
 import pe.lee.feature.sharecard.domain.model.QuoteCard
+import pe.lee.feature.sharecard.domain.model.QuoteCardFormat
 import pe.lee.feature.sharecard.domain.model.QuoteCardRaster
 import pe.lee.feature.sharecard.domain.model.QuoteCardThemeId
 
@@ -118,6 +119,40 @@ class ShareCardScreenTest {
             assertEquals(1080, raster.width)
             assertEquals(1920, raster.height)
             saveExportPreview(name, raster)
+        }
+    }
+
+    @Test
+    fun editorialThemesExportWithoutPanelInAllSupportedFormats() {
+        val captured = AtomicReference<QuoteCardRaster?>(null)
+        val viewModel = ShareCardViewModel(
+            initialCard = QuoteCard("Hay historias que nos enseñan a volver a empezar.", "Libro", "Autor de ejemplo"),
+            generator = ShareCardGenerator { _, raster, _ ->
+                captured.set(raster)
+                byteArrayOf(1)
+            },
+            sharer = ShareCardSharer {},
+        )
+        composeRule.setContent { ShareCardScreen(viewModel, {}) }
+        val themes = pe.lee.feature.sharecard.ui.theme.editorialThemes
+        val cases = themes.map { it to QuoteCardFormat.STORY } + listOf(
+            QuoteCardThemeId.BOTANICAL_IVORY to QuoteCardFormat.SQUARE,
+            QuoteCardThemeId.INK_MOON to QuoteCardFormat.PORTRAIT,
+        )
+        cases.forEach { (theme, format) ->
+            captured.set(null)
+            composeRule.runOnIdle {
+                viewModel.selectTheme(theme)
+                viewModel.selectFormat(format)
+            }
+            composeRule.waitForIdle()
+            composeRule.onNodeWithText(text(R.string.share_card_share)).assertIsEnabled().performClick()
+            composeRule.waitUntil(30_000) { captured.get() != null && viewModel.state.value.status == ShareCardStatus.Ready }
+            val raster = requireNotNull(captured.get())
+            assertEquals(format.widthPx, raster.width)
+            assertEquals(format.heightPx, raster.height)
+            if (format == QuoteCardFormat.STORY && theme == QuoteCardThemeId.GOLDEN_NIGHT) saveExportPreview("editorial-night", raster)
+            if (format == QuoteCardFormat.STORY && theme == QuoteCardThemeId.BOTANICAL_IVORY) saveExportPreview("editorial-ivory", raster)
         }
     }
 

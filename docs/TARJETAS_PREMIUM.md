@@ -42,3 +42,25 @@ excesivo, captura exclusiva de la tarjeta y ejemplos PNG 1080 × 1920 con texto,
 autor y logo. La interfaz de selección debe comprobarse también en un teléfono real,
 porque su barra pertenece a Android/Readium y puede variar por fabricante.
 La estantería, libros, adornos y sus interacciones no se modifican en este lote.
+
+
+## Diez diseños editoriales aprobados (0.3.7)
+
+La galería suma 50 diseños: conserva los 40 previos y añade Noche dorada,
+Marfil botánico, Bosque elegante, Rosa de papel, Piedra y oro, Pergamino vivo,
+Luna de tinta, Lino y pluma, Cuero literario y Brote de luz. Los nuevos usan
+texto directamente sobre la textura, sin panel ni etiqueta opaca para la marca.
+La frase, el autor y el logo oficial se componen en la app y no forman parte del fondo.
+
+Se generó un atlas vacío a partir del boceto aprobado, sin texto ni logos, de
+1487×1058 píxeles, en cuadrícula 5×2. Cada región se selecciona proporcionalmente
+al dibujar; el archivo original se incluye intacto. No son diez originales HD:
+los fondos se amplían, mientras que texto y marca se dibujan a resolución de salida.
+La caché carga únicamente el atlas necesario y comparte cada bitmap.
+
+Cinco paletas claras y cinco oscuras, serif por defecto y opción sans serif.
+Márgenes relativos reservan las esquinas y los detalles inferiores en 9:16,
+1:1 y 4:5. Si el texto no cabe ni al tamaño mínimo, se mantiene el bloqueo
+existente de exportación. No se guarda una frase truncada silenciosamente.
+Las pruebas recorren los diez diseños en historias y las variantes cuadrada y 4:5;
+los ejemplos reales editorial-night y editorial-ivory se guardan en los diagnósticos.
