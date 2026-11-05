@@ -166,7 +166,6 @@ class AudioPlayerActivity : ComponentActivity() {
     }
 }
 
-@Composable
 private const val SLEEP_TIMER_15_MINUTES = 15
 private const val SLEEP_TIMER_30_MINUTES = 30
 private const val SLEEP_TIMER_45_MINUTES = 45
@@ -178,6 +177,7 @@ private val SLEEP_TIMER_OPTIONS_MINUTES = listOf(
     SLEEP_TIMER_60_MINUTES,
 )
 
+@Composable
 @Suppress("CyclomaticComplexMethod")
 private fun AudioPlayerScreen(
     title: String,
