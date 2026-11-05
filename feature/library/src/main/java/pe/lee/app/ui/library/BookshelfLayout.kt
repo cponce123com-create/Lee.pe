@@ -223,7 +223,7 @@ internal data class BookshelfLayout(
 
     /** Both object types share one insertion order, including during a drag preview. */
     fun moveObject(key: String, targetShelf: Int, targetIndex: Int): BookshelfLayout {
-        val sourceShelf = (0 until shelfCount()).firstOrNull { shelf ->
+        val sourceShelf = occupiedShelfIndices().firstOrNull { shelf ->
             objectsOnShelf(shelf).any { it.stableKey == key }
         } ?: return this
         val destination = targetShelf.coerceAtLeast(0)
@@ -244,6 +244,11 @@ internal data class BookshelfLayout(
             if (decoration.id == id) decoration.copy(type = type) else decoration
         },
     )
+
+    fun occupiedShelfIndices(): List<Int> = buildSet {
+        books.filterNot { it.bookId in hiddenBookIds }.forEach { add(it.shelf) }
+        decorations.forEach { add(it.shelf) }
+    }.sorted()
 
     fun objectsOnShelf(shelf: Int): List<ShelfObject> = buildList {
         books.filter { it.shelf == shelf && it.bookId !in hiddenBookIds }.forEach {
