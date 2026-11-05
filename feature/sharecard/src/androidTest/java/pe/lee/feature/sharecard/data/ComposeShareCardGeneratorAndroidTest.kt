@@ -38,4 +38,17 @@ class ComposeShareCardGeneratorAndroidTest {
         assertEquals(1920, bitmap.height)
         bitmap.recycle()
     }
+
+    @Test
+    fun generatesPortraitFeedPngWithFourByFiveDimensions() = runBlocking {
+        val bytes = ComposeShareCardGenerator().generate(
+            card = QuoteCard("Frase", "Libro", "Autora"),
+            raster = QuoteCardRaster(2, 2, intArrayOf(-1, -1, -1, -1)),
+            format = QuoteCardFormat.PORTRAIT,
+        )
+        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        assertEquals(1080, bitmap.width)
+        assertEquals(1350, bitmap.height)
+        bitmap.recycle()
+    }
 }

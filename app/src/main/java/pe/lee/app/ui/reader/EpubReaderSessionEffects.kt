@@ -169,9 +169,13 @@ internal fun EpubReaderSessionEffects(
 
             val selectionActionCallback = object : BaseActionModeCallback() {
                 override fun onCreateActionMode(mode: ActionMode, menu: Menu): Boolean {
-                    menu.add(Menu.NONE, MENU_HIGHLIGHT, Menu.NONE, context.getString(R.string.epub_selection_highlight))
-                    menu.add(Menu.NONE, MENU_COPY_SELECTION, Menu.NONE, context.getString(R.string.epub_selection_copy))
+                    // Reserve a visible slot for the primary quote-card action.
                     menu.add(Menu.NONE, MENU_SHARE_SELECTION, 0, context.getString(ShareCardR.string.share_card_create_action))
+                        .setIcon(android.R.drawable.ic_menu_gallery)
+                        .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS or MenuItem.SHOW_AS_ACTION_WITH_TEXT)
+                    menu.add(Menu.NONE, MENU_HIGHLIGHT, 1, context.getString(R.string.epub_selection_highlight))
+                        .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
+                    menu.add(Menu.NONE, MENU_COPY_SELECTION, 2, context.getString(R.string.epub_selection_copy))
                         .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
                     return true
                 }

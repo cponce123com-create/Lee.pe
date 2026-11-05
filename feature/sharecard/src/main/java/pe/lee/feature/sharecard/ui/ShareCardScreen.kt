@@ -11,6 +11,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -61,6 +65,41 @@ fun ShareCardScreen(viewModel: ShareCardViewModel, onBack: () -> Unit, modifier:
         Scaffold(
             topBar = { ShareCardTopBar(onBack = onBack) },
             modifier = modifier,
+            bottomBar = {
+                Column(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.navigationBars).padding(horizontal = 20.dp, vertical = 8.dp)) {
+                Button(
+                    enabled = contentFits &&
+                        state.card.text.isNotBlank() &&
+                        state.status !is ShareCardStatus.Generating &&
+                        !capturing,
+                    onClick = {
+                        capturing = true
+                        scope.launch {
+                            try {
+                                // Capture within Compose's frame-aware UI scope. The ViewModel
+                                // only handles pixel conversion and PNG encoding off the main thread.
+                                viewModel.shareImage(layer.toImageBitmap())
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (_: Exception) {
+                                viewModel.shareCaptureFailed()
+                            } finally {
+                                capturing = false
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    if (state.status is ShareCardStatus.Generating || capturing) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.share_card_generating))
+                    } else {
+                        Text(stringResource(R.string.share_card_share))
+                    }
+                }
+                }
+            },
         ) { insets ->
             Column(
                 modifier = Modifier
@@ -72,7 +111,7 @@ fun ShareCardScreen(viewModel: ShareCardViewModel, onBack: () -> Unit, modifier:
             ) {
                 QuoteCardCanvas(
                     card = state.card,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.align(Alignment.CenterHorizontally).fillMaxWidth(if (storyFormat) .64f else .85f),
                     onFitsChanged = { contentFits = it },
                     captureModifier = Modifier.drawWithContent {
                         layer.record { this@drawWithContent.drawContent() }
@@ -107,17 +146,19 @@ fun ShareCardScreen(viewModel: ShareCardViewModel, onBack: () -> Unit, modifier:
                 }
 
                 Text(stringResource(R.string.share_card_format), style = MaterialTheme.typography.titleSmall)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = storyFormat,
-                        onClick = { viewModel.selectFormat(QuoteCardFormat.STORY) },
-                        label = { Text(stringResource(R.string.share_card_format_story)) },
-                    )
-                    FilterChip(
-                        selected = !storyFormat,
-                        onClick = { viewModel.selectFormat(QuoteCardFormat.SQUARE) },
-                        label = { Text(stringResource(R.string.share_card_format_square)) },
-                    )
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    QuoteCardFormat.entries.forEach { format ->
+                        val label = when (format) {
+                            QuoteCardFormat.STORY -> R.string.share_card_format_story
+                            QuoteCardFormat.SQUARE -> R.string.share_card_format_square
+                            QuoteCardFormat.PORTRAIT -> R.string.share_card_format_portrait
+                        }
+                        FilterChip(
+                            selected = state.card.format == format,
+                            onClick = { viewModel.selectFormat(format) },
+                            label = { Text(stringResource(label)) },
+                        )
+                    }
                 }
 
                 Button(
@@ -143,37 +184,6 @@ fun ShareCardScreen(viewModel: ShareCardViewModel, onBack: () -> Unit, modifier:
                     )
                 }
 
-                Button(
-                    enabled = contentFits &&
-                        state.card.text.isNotBlank() &&
-                        state.status !is ShareCardStatus.Generating &&
-                        !capturing,
-                    onClick = {
-                        capturing = true
-                        scope.launch {
-                            try {
-                                // Capture within Compose's frame-aware UI scope. The ViewModel
-                                // only handles pixel conversion and PNG encoding off the main thread.
-                                viewModel.shareImage(layer.toImageBitmap())
-                            } catch (cancelled: CancellationException) {
-                                throw cancelled
-                            } catch (_: Exception) {
-                                viewModel.shareCaptureFailed()
-                            } finally {
-                                capturing = false
-                            }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    if (state.status is ShareCardStatus.Generating || capturing) {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                        Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.share_card_generating))
-                    } else {
-                        Text(stringResource(R.string.share_card_share))
-                    }
-                }
                 when (val status = state.status) {
                     ShareCardStatus.Idle, ShareCardStatus.Generating -> Unit
                     ShareCardStatus.Ready -> Text(
