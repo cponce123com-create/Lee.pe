@@ -7,12 +7,11 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import pe.lee.app.ui.reader.readerSafeDrawingInsets
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -46,6 +45,7 @@ import pe.lee.app.LeePeApplication
 import pe.lee.app.R
 import pe.lee.app.data.local.OfflineBookStore
 import pe.lee.app.data.repository.AudioProgressStore
+import pe.lee.app.ui.reader.readerSafeDrawingInsets
 import pe.lee.app.ui.theme.LeePeTheme
 
 class AudioPlayerActivity : ComponentActivity() {

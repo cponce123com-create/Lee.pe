@@ -24,8 +24,10 @@ class PremiumArtworkTest {
         }
         crops.forEachIndexed { index, a ->
             crops.drop(index + 1).forEach { b ->
-                val overlaps = a.left < b.left + b.width && a.left + a.width > b.left &&
-                    a.top < b.top + b.height && a.top + a.height > b.top
+                val overlaps = a.left < b.left + b.width &&
+                    a.left + a.width > b.left &&
+                    a.top < b.top + b.height &&
+                    a.top + a.height > b.top
                 assertFalse(overlaps)
             }
         }

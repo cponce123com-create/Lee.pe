@@ -149,6 +149,7 @@ class LocalLibraryBackupTest {
         )
         assertEquals(12_000, LocalLibraryBackup.parse(json).snapshot.annotations.single().noteText?.length)
     }
+
     @Test
     fun rejectsImpossibleSessionDay() {
         val session = """{"dayKey":"2026-13-45","bookUri":"content://example/test","durationSeconds":60}"""
@@ -178,5 +179,4 @@ class LocalLibraryBackupTest {
         }
         assertThrows(IOException::class.java) { LocalLibraryBackup.readArchivePayload(source) }
     }
-
 }

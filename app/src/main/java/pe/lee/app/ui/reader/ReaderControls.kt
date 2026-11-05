@@ -197,14 +197,8 @@ internal fun TtsControls(
     }
 }
 
-
 @Composable
-internal fun TtsMiniControls(
-    isPlaying: Boolean,
-    onTogglePlayback: () -> Unit,
-    onStop: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
+internal fun TtsMiniControls(isPlaying: Boolean, onTogglePlayback: () -> Unit, onStop: () -> Unit, modifier: Modifier = Modifier) {
     val status = stringResource(
         if (isPlaying) R.string.reader_tts_playing_status else R.string.reader_tts_paused_status,
     )

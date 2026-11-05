@@ -21,8 +21,8 @@ import pe.lee.app.data.local.ReadingSessionEntity
 import pe.lee.app.data.repository.AudioProgressStore
 import pe.lee.app.data.repository.LocalBackupRepository
 import pe.lee.app.data.repository.SettingsRepository
-import pe.lee.core.domain.LocalBackupCipher
 import pe.lee.core.domain.BackupArchiveException
+import pe.lee.core.domain.LocalBackupCipher
 import pe.lee.core.domain.LocalTextLimits
 import pe.lee.core.domain.library.ExportBackupUseCase
 import pe.lee.core.domain.library.ImportBackupUseCase
@@ -50,105 +50,105 @@ internal data class SanitizedBackupSnapshot(val snapshot: LocalBackupSnapshot, v
 internal object LocalLibraryBackup {
     suspend fun save(context: Context, uri: Uri, backupRepository: LocalBackupRepository, password: String) = withContext(Dispatchers.IO) {
         try {
-        val sanitized = sanitizeSnapshot(backupRepository.snapshot())
-        val snapshot = sanitized.snapshot
-        val settingsRepository = SettingsRepository(context)
-        val librarySettings = settingsRepository.all(SettingsRepository.Store.LIBRARY)
-        val goal = settingsRepository.getInt(SettingsRepository.Store.READING_STATS, "daily_goal_minutes", 30)
-        val root = JSONObject()
-            .put("schema", BACKUP_SCHEMA)
-            .put("version", BACKUP_VERSION)
-            .put("exportedAt", System.currentTimeMillis())
-            .put("dailyGoalMinutes", goal)
-        val books = JSONArray()
-        val annotations = JSONArray()
-        val sessions = JSONArray()
-        val collections = JSONArray()
-        val bookSettings = JSONObject()
-        // One read of the audio positions instead of one SharedPreferences lookup
-        // per audio book (A-11).
-        val audioPositions = SettingsRepository(context).all(SettingsRepository.Store.AUDIO_PROGRESS)
-        for (b in snapshot.books) {
-            val bookJson = JSONObject().put("uri", b.uri).put("title", b.title)
-                .put("format", b.format).put("importedAt", b.importedAt)
-                .put("lastOpenedAt", b.lastOpenedAt)
-                .put("epubLocator", b.epubLocator)
-                .put("readProgress", b.readProgress.toDouble())
-                .put("pdfPageIndex", b.pdfPageIndex)
-                .put("isFavorite", b.isFavorite).put("collectionId", b.collectionId)
-            // Version 2: every shelf of the book, not just the legacy single name.
-            val collectionNames = snapshot.bookCollectionNames[b.uri].orEmpty()
-            if (collectionNames.isNotEmpty()) {
-                bookJson.put("collections", JSONArray(collectionNames))
-            }
-            books.put(bookJson)
-            val extras = JSONObject()
-            for (key in listOf(
-                "epub-preferences:",
-                "reader-brightness:",
-                "keep-screen-on:",
-                "tts-speed:",
-                "tts-voice:",
-                "pdf-continuous:",
-            )) {
-                val source = key + b.uri
-                if (librarySettings.containsKey(source)) {
-                    extras.put(key, librarySettings[source])
+            val sanitized = sanitizeSnapshot(backupRepository.snapshot())
+            val snapshot = sanitized.snapshot
+            val settingsRepository = SettingsRepository(context)
+            val librarySettings = settingsRepository.all(SettingsRepository.Store.LIBRARY)
+            val goal = settingsRepository.getInt(SettingsRepository.Store.READING_STATS, "daily_goal_minutes", 30)
+            val root = JSONObject()
+                .put("schema", BACKUP_SCHEMA)
+                .put("version", BACKUP_VERSION)
+                .put("exportedAt", System.currentTimeMillis())
+                .put("dailyGoalMinutes", goal)
+            val books = JSONArray()
+            val annotations = JSONArray()
+            val sessions = JSONArray()
+            val collections = JSONArray()
+            val bookSettings = JSONObject()
+            // One read of the audio positions instead of one SharedPreferences lookup
+            // per audio book (A-11).
+            val audioPositions = SettingsRepository(context).all(SettingsRepository.Store.AUDIO_PROGRESS)
+            for (b in snapshot.books) {
+                val bookJson = JSONObject().put("uri", b.uri).put("title", b.title)
+                    .put("format", b.format).put("importedAt", b.importedAt)
+                    .put("lastOpenedAt", b.lastOpenedAt)
+                    .put("epubLocator", b.epubLocator)
+                    .put("readProgress", b.readProgress.toDouble())
+                    .put("pdfPageIndex", b.pdfPageIndex)
+                    .put("isFavorite", b.isFavorite).put("collectionId", b.collectionId)
+                // Version 2: every shelf of the book, not just the legacy single name.
+                val collectionNames = snapshot.bookCollectionNames[b.uri].orEmpty()
+                if (collectionNames.isNotEmpty()) {
+                    bookJson.put("collections", JSONArray(collectionNames))
                 }
+                books.put(bookJson)
+                val extras = JSONObject()
+                for (key in listOf(
+                    "epub-preferences:",
+                    "reader-brightness:",
+                    "keep-screen-on:",
+                    "tts-speed:",
+                    "tts-voice:",
+                    "pdf-continuous:",
+                )) {
+                    val source = key + b.uri
+                    if (librarySettings.containsKey(source)) {
+                        extras.put(key, librarySettings[source])
+                    }
+                }
+                if (b.format == "Audio") {
+                    extras.put(
+                        "audioPositionMs",
+                        audioPositions[AudioProgressStore.positionKey(b.uri)] ?: 0L,
+                    )
+                }
+                bookSettings.put(b.uri, extras)
             }
-            if (b.format == "Audio") {
-                extras.put(
-                    "audioPositionMs",
-                    audioPositions[AudioProgressStore.positionKey(b.uri)] ?: 0L,
+            for (collection in snapshot.collections) {
+                collections.put(
+                    JSONObject()
+                        .put("name", collection.name)
+                        .put("sortOrder", collection.sortOrder),
                 )
             }
-            bookSettings.put(b.uri, extras)
-        }
-        for (collection in snapshot.collections) {
-            collections.put(
-                JSONObject()
-                    .put("name", collection.name)
-                    .put("sortOrder", collection.sortOrder),
-            )
-        }
-        for (a in snapshot.annotations) {
-            annotations.put(
-                JSONObject().put("id", a.id).put("bookUri", a.bookUri)
-                    .put("kind", a.kind).put("locatorJson", a.locatorJson)
-                    .put("selectedText", a.selectedText).put("noteText", a.noteText)
-                    .put("colorArgb", a.colorArgb).put("createdAt", a.createdAt)
-                    .put("updatedAt", a.updatedAt),
-            )
-        }
-        for (s in snapshot.sessions) {
-            sessions.put(
-                JSONObject().put("dayKey", s.dayKey).put("bookUri", s.bookUri)
-                    .put("durationSeconds", s.durationSeconds),
-            )
-        }
-        root.put("books", books).put("annotations", annotations)
-            .put("sessions", sessions).put("settings", bookSettings)
-            .put("collections", collections)
-        val bytes = root.toString().toByteArray(Charsets.UTF_8)
-        if (bytes.size > MAX_ARCHIVE_BYTES - ENCRYPTED_BACKUP_OVERHEAD_BYTES) {
-            bytes.fill(0)
-            throw BackupArchiveException(BackupArchiveException.Reason.SIZE_LIMIT)
-        }
-        // Never write an archive that our own importer cannot read.
-        parse(bytes.toString(Charsets.UTF_8))
-        val encrypted = try {
-            ExportBackupUseCase()(bytes, password)
-        } finally {
-            bytes.fill(0)
-        }
-        try {
-            val output = context.contentResolver.openOutputStream(uri, "wt")
-                ?: throw BackupArchiveException(BackupArchiveException.Reason.DESTINATION_UNAVAILABLE)
-            output.use { it.write(encrypted) }
-        } finally {
-            encrypted.fill(0)
-        }
-        sanitized.adjustedRecords
+            for (a in snapshot.annotations) {
+                annotations.put(
+                    JSONObject().put("id", a.id).put("bookUri", a.bookUri)
+                        .put("kind", a.kind).put("locatorJson", a.locatorJson)
+                        .put("selectedText", a.selectedText).put("noteText", a.noteText)
+                        .put("colorArgb", a.colorArgb).put("createdAt", a.createdAt)
+                        .put("updatedAt", a.updatedAt),
+                )
+            }
+            for (s in snapshot.sessions) {
+                sessions.put(
+                    JSONObject().put("dayKey", s.dayKey).put("bookUri", s.bookUri)
+                        .put("durationSeconds", s.durationSeconds),
+                )
+            }
+            root.put("books", books).put("annotations", annotations)
+                .put("sessions", sessions).put("settings", bookSettings)
+                .put("collections", collections)
+            val bytes = root.toString().toByteArray(Charsets.UTF_8)
+            if (bytes.size > MAX_ARCHIVE_BYTES - ENCRYPTED_BACKUP_OVERHEAD_BYTES) {
+                bytes.fill(0)
+                throw BackupArchiveException(BackupArchiveException.Reason.SIZE_LIMIT)
+            }
+            // Never write an archive that our own importer cannot read.
+            parse(bytes.toString(Charsets.UTF_8))
+            val encrypted = try {
+                ExportBackupUseCase()(bytes, password)
+            } finally {
+                bytes.fill(0)
+            }
+            try {
+                val output = context.contentResolver.openOutputStream(uri, "wt")
+                    ?: throw BackupArchiveException(BackupArchiveException.Reason.DESTINATION_UNAVAILABLE)
+                output.use { it.write(encrypted) }
+            } finally {
+                encrypted.fill(0)
+            }
+            sanitized.adjustedRecords
         } catch (error: OutOfMemoryError) {
             throw BackupArchiveException(BackupArchiveException.Reason.SIZE_LIMIT, error)
         }
@@ -157,48 +157,46 @@ internal object LocalLibraryBackup {
     suspend fun preview(context: Context, uri: Uri, backupRepository: LocalBackupRepository, password: String? = null): LocalBackupPreview =
         withContext(Dispatchers.IO) {
             try {
-            val input = context.contentResolver.openInputStream(uri)
-                ?: throw BackupArchiveException(BackupArchiveException.Reason.SOURCE_UNAVAILABLE)
-            val payload = readArchivePayload(input)
-            val jsonBytes = try {
-                if (LocalBackupCipher.isEncrypted(payload)) {
-                    val suppliedPassword = password ?: throw BackupPasswordRequiredException()
-                    ImportBackupUseCase()(payload, suppliedPassword)
-                } else {
-                    payload
+                val input = context.contentResolver.openInputStream(uri)
+                    ?: throw BackupArchiveException(BackupArchiveException.Reason.SOURCE_UNAVAILABLE)
+                val payload = readArchivePayload(input)
+                val jsonBytes = try {
+                    if (LocalBackupCipher.isEncrypted(payload)) {
+                        val suppliedPassword = password ?: throw BackupPasswordRequiredException()
+                        ImportBackupUseCase()(payload, suppliedPassword)
+                    } else {
+                        payload
+                    }
+                } catch (error: Exception) {
+                    payload.fill(0)
+                    throw error
                 }
-            } catch (error: Exception) {
-                payload.fill(0)
-                throw error
-            }
-            val archive = try {
-                parse(jsonBytes.toString(Charsets.UTF_8))
-            } finally {
-                jsonBytes.fill(0)
-                if (jsonBytes !== payload) payload.fill(0)
-            }
-            val current = backupRepository.allBooks()
-            val matcher = LocalBackupMatcher(current)
-            val used = HashSet<String>()
-            var exact = 0
-            var byTitle = 0
-            archive.snapshot.books.forEach { book ->
-                val match = matcher.find(book)
-                if (match != null && used.add(match.uri)) {
-                    if (match.uri == book.uri) exact++ else byTitle++
+                val archive = try {
+                    parse(jsonBytes.toString(Charsets.UTF_8))
+                } finally {
+                    jsonBytes.fill(0)
+                    if (jsonBytes !== payload) payload.fill(0)
                 }
-            }
-            LocalBackupPreview(archive, exact, byTitle, archive.snapshot.books.size - exact - byTitle)
+                val current = backupRepository.allBooks()
+                val matcher = LocalBackupMatcher(current)
+                val used = HashSet<String>()
+                var exact = 0
+                var byTitle = 0
+                archive.snapshot.books.forEach { book ->
+                    val match = matcher.find(book)
+                    if (match != null && used.add(match.uri)) {
+                        if (match.uri == book.uri) exact++ else byTitle++
+                    }
+                }
+                LocalBackupPreview(archive, exact, byTitle, archive.snapshot.books.size - exact - byTitle)
             } catch (error: OutOfMemoryError) {
                 throw BackupArchiveException(BackupArchiveException.Reason.SIZE_LIMIT, error)
             }
         }
 
-    
-internal fun isValidBackupDayKey(value: String): Boolean =
-    DAY_KEY.matches(value) && runCatching { LocalDate.parse(value) }.isSuccess
+    internal fun isValidBackupDayKey(value: String): Boolean = DAY_KEY.matches(value) && runCatching { LocalDate.parse(value) }.isSuccess
 
-internal fun readArchivePayload(input: InputStream): ByteArray {
+    internal fun readArchivePayload(input: InputStream): ByteArray {
         val buffer = ByteArrayOutputStream(8 * 1024)
         input.use { stream ->
             val chunk = ByteArray(8 * 1024)

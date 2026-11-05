@@ -324,8 +324,10 @@ internal fun EpubReaderSessionEffects(
         speech.location.combine(speech.playback) { location, playback -> location to playback }
             .collect { (location, playback) ->
                 session.ttsSentence.value = location.utterance
-                val playing = playback.playWhenReady && playback.state !is TtsNavigator.State.Ended &&
-                    playback.state !is TtsNavigator.State.Failure && session.followNarration.value
+                val playing = playback.playWhenReady &&
+                    playback.state !is TtsNavigator.State.Ended &&
+                    playback.state !is TtsNavigator.State.Failure &&
+                    session.followNarration.value
                 follower.update(playing, location.utteranceLocator, location.tokenLocator)
             }
     }
@@ -350,7 +352,8 @@ internal fun EpubReaderSessionEffects(
         val speech = session.ttsNavigator.value ?: return@LaunchedEffect
         var wasPlaying = session.ttsIsPlaying.value
         speech.playback.collect { playback ->
-            val playing = playback.playWhenReady && playback.state !is TtsNavigator.State.Ended &&
+            val playing = playback.playWhenReady &&
+                playback.state !is TtsNavigator.State.Ended &&
                 playback.state !is TtsNavigator.State.Failure
             if (playing && !wasPlaying) {
                 session.followNarration.value = true

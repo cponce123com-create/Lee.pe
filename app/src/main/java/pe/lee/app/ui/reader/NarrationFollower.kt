@@ -5,10 +5,7 @@ package pe.lee.app.ui.reader
  * Pausing releases the last position so resuming can refocus the same word.
  * Rejected navigation is retried rather than silently losing synchronization.
  */
-internal class NarrationFollower<T>(
-    private val identity: (T) -> String,
-    private val navigate: (T) -> Boolean,
-) {
+internal class NarrationFollower<T>(private val identity: (T) -> String, private val navigate: (T) -> Boolean) {
     private var lastAccepted: String? = null
 
     fun update(isPlaying: Boolean, utterance: T, token: T?): Boolean {

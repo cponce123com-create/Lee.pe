@@ -1,11 +1,9 @@
 package pe.lee.feature.sharecard.ui.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,7 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -39,8 +36,8 @@ import androidx.compose.ui.unit.sp
 import pe.lee.feature.sharecard.R
 import pe.lee.feature.sharecard.domain.model.QuoteCard
 import pe.lee.feature.sharecard.domain.model.QuoteCardFont
-import pe.lee.feature.sharecard.ui.theme.isEditorialTheme
 import pe.lee.feature.sharecard.ui.theme.PremiumArtwork
+import pe.lee.feature.sharecard.ui.theme.isEditorialTheme
 import pe.lee.feature.sharecard.ui.theme.premiumLightPaper
 import pe.lee.feature.sharecard.ui.theme.quoteCardPalette
 
@@ -85,7 +82,9 @@ fun QuoteCardPreview(card: QuoteCard, modifier: Modifier = Modifier, onFitsChang
             FittedCardText(
                 text = card.text.trim(),
                 style = TextStyle(color = ink, fontFamily = family, fontStyle = palette.fontStyle),
-                modifier = Modifier.weight(1f).fillMaxWidth(), minimum = 8, maximum = 32,
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                minimum = 8,
+                maximum = 32,
                 onFitsChanged = { quoteFits = it },
             )
             Spacer(Modifier.height(10.dp))
@@ -94,7 +93,9 @@ fun QuoteCardPreview(card: QuoteCard, modifier: Modifier = Modifier, onFitsChang
             FittedCardText(
                 text = card.author.ifBlank { stringResource(R.string.share_card_unknown_author) },
                 style = TextStyle(color = metadataInk, fontFamily = family, fontWeight = FontWeight.Medium),
-                modifier = Modifier.fillMaxWidth().height(42.dp), minimum = 9, maximum = 16,
+                modifier = Modifier.fillMaxWidth().height(42.dp),
+                minimum = 9,
+                maximum = 16,
                 onFitsChanged = { authorFits = it },
             )
         }
