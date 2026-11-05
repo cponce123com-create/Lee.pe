@@ -20,6 +20,7 @@ import pe.lee.app.data.repository.AudioProgressStore
 import pe.lee.app.data.repository.LocalBackupRepository
 import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.core.domain.LocalBackupCipher
+import pe.lee.core.domain.BackupArchiveException
 import pe.lee.core.domain.LocalTextLimits
 import pe.lee.core.domain.library.ExportBackupUseCase
 import pe.lee.core.domain.library.ImportBackupUseCase
@@ -28,13 +29,13 @@ private const val BACKUP_SCHEMA = "lee.pe.local-library"
 private const val BACKUP_VERSION = 2
 private const val MIN_BACKUP_VERSION = 1
 private const val MAX_ARCHIVE_BYTES = 64 * 1024 * 1024
-private const val ENCRYPTED_BACKUP_OVERHEAD_BYTES = 53
+private const val ENCRYPTED_BACKUP_OVERHEAD_BYTES = 57
 private const val MAX_BOOKS = 20000
 private const val MAX_ANNOTATIONS = 60000
 private const val MAX_SESSIONS = 100000
 private const val MAX_COLLECTIONS = 2000
 
-internal class BackupPasswordRequiredException : IOException("Este respaldo está cifrado. Ingresa su contraseña para continuar.")
+internal class BackupPasswordRequiredException : IOException("PASSWORD_REQUIRED")
 
 internal data class LocalBackupArchive(val snapshot: LocalBackupSnapshot, val settings: Map<String, JSONObject>, val dailyGoalMinutes: Int?)
 
@@ -126,7 +127,7 @@ internal object LocalLibraryBackup {
         val bytes = root.toString().toByteArray(Charsets.UTF_8)
         if (bytes.size > MAX_ARCHIVE_BYTES - ENCRYPTED_BACKUP_OVERHEAD_BYTES) {
             bytes.fill(0)
-            throw IOException("El respaldo supera el límite de 64 MB.")
+            throw BackupArchiveException(BackupArchiveException.Reason.SIZE_LIMIT)
         }
         // Never write an archive that our own importer cannot read.
         parse(bytes.toString(Charsets.UTF_8))
@@ -137,7 +138,7 @@ internal object LocalLibraryBackup {
         }
         try {
             val output = context.contentResolver.openOutputStream(uri, "wt")
-                ?: throw IOException("No se pudo abrir el destino del respaldo.")
+                ?: throw BackupArchiveException(BackupArchiveException.Reason.DESTINATION_UNAVAILABLE)
             output.use { it.write(encrypted) }
         } finally {
             encrypted.fill(0)
@@ -148,23 +149,28 @@ internal object LocalLibraryBackup {
     suspend fun preview(context: Context, uri: Uri, backupRepository: LocalBackupRepository, password: String? = null): LocalBackupPreview =
         withContext(Dispatchers.IO) {
             val input = context.contentResolver.openInputStream(uri)
-                ?: throw IOException("No se pudo abrir el respaldo.")
+                ?: throw BackupArchiveException(BackupArchiveException.Reason.SOURCE_UNAVAILABLE)
             val buffer = ByteArrayOutputStream()
             input.use { stream ->
                 val chunk = ByteArray(8192)
                 while (true) {
                     val n = stream.read(chunk)
                     if (n < 0) break
-                    if (buffer.size() + n > MAX_ARCHIVE_BYTES) throw IOException("Respaldo demasiado grande (máximo 64 MB).")
+                    if (buffer.size() + n > MAX_ARCHIVE_BYTES) throw BackupArchiveException(BackupArchiveException.Reason.SIZE_LIMIT)
                     buffer.write(chunk, 0, n)
                 }
             }
             val payload = buffer.toByteArray()
-            val jsonBytes = if (LocalBackupCipher.isEncrypted(payload)) {
-                val suppliedPassword = password ?: throw BackupPasswordRequiredException()
-                ImportBackupUseCase()(payload, suppliedPassword)
-            } else {
-                payload
+            val jsonBytes = try {
+                if (LocalBackupCipher.isEncrypted(payload)) {
+                    val suppliedPassword = password ?: throw BackupPasswordRequiredException()
+                    ImportBackupUseCase()(payload, suppliedPassword)
+                } else {
+                    payload
+                }
+            } catch (error: Exception) {
+                payload.fill(0)
+                throw error
             }
             val archive = try {
                 parse(jsonBytes.toString(Charsets.UTF_8))
@@ -247,7 +253,7 @@ internal object LocalLibraryBackup {
             if (root.getString("schema") != BACKUP_SCHEMA ||
                 version !in MIN_BACKUP_VERSION..BACKUP_VERSION
             ) {
-                throw IOException("Este archivo no es un respaldo Lee.pe compatible (versión 1 o 2).")
+                throw BackupArchiveException(BackupArchiveException.Reason.UNSUPPORTED_FORMAT)
             }
             val rawBooks = root.getJSONArray("books")
             val rawNotes = root.getJSONArray("annotations")
@@ -256,16 +262,16 @@ internal object LocalLibraryBackup {
                 rawNotes.length() > MAX_ANNOTATIONS ||
                 rawSessions.length() > MAX_SESSIONS
             ) {
-                throw IOException("El respaldo contiene demasiados registros.")
+                throw BackupArchiveException(BackupArchiveException.Reason.RECORD_LIMIT)
             }
 
             fun JSONObject.text(name: String, max: Int): String = getString(name).takeIf { it.length in 1..max }
-                ?: throw IOException("Campo $name incorrecto.")
+                ?: throw BackupArchiveException(BackupArchiveException.Reason.INVALID_DATA)
             fun JSONObject.maybeText(name: String, max: Int): String? = if (!has(name) || isNull(name)) {
                 null
             } else {
                 getString(name)
-                    .also { if (it.length > max) throw IOException("Campo $name demasiado largo.") }
+                    .also { if (it.length > max) throw BackupArchiveException(BackupArchiveException.Reason.INVALID_DATA) }
             }
 
             val books = ArrayList<BookEntity>()
@@ -276,23 +282,23 @@ internal object LocalLibraryBackup {
                 val bookUri = o.text("uri", 4096)
                 val format = o.text("format", 12)
                 if (format !in setOf("EPUB", "PDF", "Audio") || !uniqueUris.add(bookUri)) {
-                    throw IOException("Libro o formato duplicado o incorrecto en el respaldo.")
+                    throw BackupArchiveException(BackupArchiveException.Reason.INVALID_DATA)
                 }
                 val progression = o.getDouble("readProgress")
                 if (!progression.isFinite() || progression !in 0.0..1.0) {
-                    throw IOException("Progreso de lectura no válido.")
+                    throw BackupArchiveException(BackupArchiveException.Reason.INVALID_DATA)
                 }
                 val page = o.getInt("pdfPageIndex")
-                if (page < 0) throw IOException("Página PDF no válida.")
+                if (page < 0) throw BackupArchiveException(BackupArchiveException.Reason.INVALID_DATA)
                 val savedCollections = o.optJSONArray("collections")?.let { array ->
                     buildList {
                         if (array.length() > MAX_COLLECTIONS) {
-                            throw IOException("El libro tiene demasiadas colecciones.")
+                            throw BackupArchiveException(BackupArchiveException.Reason.INVALID_DATA)
                         }
                         for (index in 0 until array.length()) {
                             val name = array.getString(index).trim()
                             if (name.isEmpty() || name.length > LocalTextLimits.COLLECTION_NAME) {
-                                throw IOException("Nombre de colección no válido.")
+                                throw BackupArchiveException(BackupArchiveException.Reason.INVALID_DATA)
                             }
                             add(name)
                         }
@@ -316,7 +322,7 @@ internal object LocalLibraryBackup {
             val restoredCollections = ArrayList<CollectionEntity>()
             root.optJSONArray("collections")?.let { array ->
                 if (array.length() > MAX_COLLECTIONS) {
-                    throw IOException("El respaldo contiene demasiadas colecciones.")
+                    throw BackupArchiveException(BackupArchiveException.Reason.INVALID_DATA)
                 }
                 val seenNames = HashSet<String>()
                 for (index in 0 until array.length()) {
@@ -345,7 +351,7 @@ internal object LocalLibraryBackup {
                     bookUri !in validUris ||
                     kind !in setOf("NOTE", "HIGHLIGHT", "BOOKMARK")
                 ) {
-                    throw IOException("Anotación inválida o repetida.")
+                    throw BackupArchiveException(BackupArchiveException.Reason.INVALID_DATA)
                 }
                 notes.add(
                     ReadingAnnotationEntity(
@@ -369,7 +375,7 @@ internal object LocalLibraryBackup {
                     !day.matches(Regex("\\d{4}-\\d{2}-\\d{2}")) ||
                     amount !in 0L..86_400L
                 ) {
-                    throw IOException("Sesión de lectura inválida.")
+                    throw BackupArchiveException(BackupArchiveException.Reason.INVALID_DATA)
                 }
                 sessions.add(ReadingSessionEntity(day, uri, amount))
             }
@@ -381,7 +387,7 @@ internal object LocalLibraryBackup {
                     if (!o.has(key) || o.isNull(key)) return
                     val value = o.get(key)
                     if (value !is String || value.length > maxLength) {
-                        throw IOException("Preferencia $key no válida.")
+                        throw BackupArchiveException(BackupArchiveException.Reason.INVALID_DATA)
                     }
                 }
                 fun validFloat(key: String, low: Double, high: Double) {
@@ -391,12 +397,12 @@ internal object LocalLibraryBackup {
                         !value.toDouble().isFinite() ||
                         value.toDouble() !in low..high
                     ) {
-                        throw IOException("Preferencia $key no válida.")
+                        throw BackupArchiveException(BackupArchiveException.Reason.INVALID_DATA)
                     }
                 }
                 fun validBoolean(key: String) {
                     if (o.has(key) && !o.isNull(key) && o.get(key) !is Boolean) {
-                        throw IOException("Preferencia $key no válida.")
+                        throw BackupArchiveException(BackupArchiveException.Reason.INVALID_DATA)
                     }
                 }
                 validText("epub-preferences:", 32000)
@@ -408,7 +414,7 @@ internal object LocalLibraryBackup {
                 if (o.has("audioPositionMs") && !o.isNull("audioPositionMs")) {
                     val value = o.get("audioPositionMs")
                     if (value !is Number || value.toLong() !in 0L..315_360_000_000L) {
-                        throw IOException("Posición de audio no válida.")
+                        throw BackupArchiveException(BackupArchiveException.Reason.INVALID_DATA)
                     }
                 }
                 extras[uri] = o
@@ -432,7 +438,7 @@ internal object LocalLibraryBackup {
         } catch (error: IOException) {
             throw error
         } catch (error: Exception) {
-            throw IOException("El respaldo no tiene el formato esperado o está dañado.", error)
+            throw BackupArchiveException(BackupArchiveException.Reason.INVALID_DATA, error)
         }
     }
 

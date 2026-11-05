@@ -106,7 +106,7 @@ internal fun rememberLibraryDocumentActions(
                 } catch (e: Exception) {
                     Toast.makeText(
                         context,
-                        context.getString(R.string.library_export_backup_failed),
+                        context.getString(backupErrorMessage(e, R.string.library_export_backup_failed)),
                         Toast.LENGTH_LONG,
                     ).show()
                 } finally {
@@ -130,7 +130,7 @@ internal fun rememberLibraryDocumentActions(
                 } catch (e: Exception) {
                     Toast.makeText(
                         context,
-                        context.getString(R.string.library_backup_invalid),
+                        context.getString(backupErrorMessage(e, R.string.library_backup_invalid)),
                         Toast.LENGTH_LONG,
                     ).show()
                 } finally {
@@ -328,7 +328,11 @@ internal fun rememberLibraryDocumentActions(
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (error: Exception) {
-                    Toast.makeText(context, context.getString(R.string.library_backup_invalid), Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        context,
+                        context.getString(backupErrorMessage(error, R.string.library_backup_invalid)),
+                        Toast.LENGTH_LONG,
+                    ).show()
                 } finally {
                     backupBusy.value = false
                 }

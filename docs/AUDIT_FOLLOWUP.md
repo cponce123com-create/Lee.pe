@@ -60,3 +60,27 @@ de introducir `Build.VERSION` en el dominio. El coste propuesto debe contrastars
 con [OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
 y con medidas del dispositivo objetivo. Este lote no cambia todavía el formato
 de los respaldos ni migra los datos persistidos.
+
+## Lote de seguridad: envelope v2 (0.3.2)
+
+Implementado en código; la aceptación física y el resto de la fase A continúan abiertos:
+
+- Exportación AES-256-GCM v2, PBKDF2-HMAC-SHA256 a 600 000 iteraciones.
+- Cabecera completa como AAD: magic, versión, coste, salt e IV.
+- Importación v1 preservada a 120 000 iteraciones y con su codificación UTF-8 original.
+- Proveedor `SecretKeyFactory` por disponibilidad, sin dependencias Android en dominio;
+  fallback para API 24–25 y contraseñas con UTF-16 inválido.
+- Validación del coste antes de derivar: v2 admite 600 000–1 200 000; fuera de ese
+  intervalo falla sin trabajo KDF. Un aumento futuro exige revisar explícitamente el límite.
+- Límite total de archivo conservado en 64 MB; overhead v2 corregido a 57 bytes.
+- Errores tipados para cifrado y archivo de respaldo, traducidos en recursos ES/EN.
+  Errores de `OfflineBookStore`, escáner y libro incluido siguen pendientes; no se
+  considera cerrado el hallazgo global de internacionalización.
+- Fixture v1 independiente generado con Python hashlib y AESGCM, interoperabilidad
+  v2 con JCA, equivalencia nativo/fallback Unicode, manipulación y límites de coste.
+- Exportación e importación siguen ejecutándose en `Dispatchers.IO` en `LocalLibraryBackup`.
+
+Falta medir duración y respuesta en teléfono de gama baja/API 24–25 y realizar una
+restauración real antes de dar por cerrado el P0. Los lectores antiguos solo abren
+v1: los nuevos respaldos v2 requieren Lee.pe 0.3.2 o posterior; no se modifica ningún
+respaldo existente. Pruebas y compilación se acreditan mediante el CI del PR.
