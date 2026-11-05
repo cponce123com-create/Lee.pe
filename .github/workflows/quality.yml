@@ -58,6 +58,7 @@ jobs:
           branch: ${{ github.head_ref }}
           commit_message: 'style: apply ktlint formatting'
           file_pattern: '*.kt *.kts'
+          disable_globbing: true
       - name: Require formatting changes to be applied to source
         if: >-
           steps.initial.outcome == 'failure' &&
