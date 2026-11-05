@@ -3,6 +3,8 @@ package pe.lee.app.ui.reader
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.setContent
 import androidx.lifecycle.ViewModelProvider
 import pe.lee.app.LeePeApplication
@@ -14,6 +16,10 @@ class PdfReaderActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(0xFF07111F.toInt()),
+            navigationBarStyle = SystemBarStyle.dark(0xFF07111F.toInt()),
+        )
         val uri = intent.data
         if (uri == null) {
             finish()

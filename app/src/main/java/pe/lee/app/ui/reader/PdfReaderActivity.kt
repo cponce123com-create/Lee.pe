@@ -288,7 +288,8 @@ internal fun PdfReaderScreen(
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF07111F)),
+            .background(Color(0xFF07111F))
+            .readerSafeDrawingInsets(),
     ) {
         val availableWidth = with(density) { maxWidth.roundToPx() - 32.dp.roundToPx() }
 

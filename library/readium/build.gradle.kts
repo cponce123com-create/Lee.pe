@@ -31,4 +31,5 @@ dependencies {
     implementation(libs.readium.shared)
     implementation(libs.readium.streamer)
     implementation(libs.kotlinx.coroutines.core)
+    testImplementation(libs.junit)
 }

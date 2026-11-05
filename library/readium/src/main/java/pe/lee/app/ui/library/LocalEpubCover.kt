@@ -38,6 +38,28 @@ import org.readium.r2.streamer.parser.DefaultPublicationParser
  * Extracts actual EPUB cover metadata through the project's existing Readium engine.
  * Does not download cover art or rely on a cover API. Only visible cards trigger work.
  */
+internal sealed interface EpubCoverCacheLookup<out T> {
+    data object Miss : EpubCoverCacheLookup<Nothing>
+    data object Failed : EpubCoverCacheLookup<Nothing>
+    data class Hit<T>(val value: T) : EpubCoverCacheLookup<T>
+}
+
+internal suspend fun <T : Any> loadEpubCoverAfterCacheCheck(
+    permits: Semaphore,
+    lookup: () -> EpubCoverCacheLookup<T>,
+    extract: suspend () -> T?,
+): T? = when (val first = lookup()) {
+    is EpubCoverCacheLookup.Hit -> first.value
+    EpubCoverCacheLookup.Failed -> null
+    EpubCoverCacheLookup.Miss -> permits.withPermit {
+        when (val second = lookup()) {
+            is EpubCoverCacheLookup.Hit -> second.value
+            EpubCoverCacheLookup.Failed -> null
+            EpubCoverCacheLookup.Miss -> extract()
+        }
+    }
+}
+
 private object EpubCoverCache {
     /**
      * At most two EPUB parses at a time: enough to fill a visible grid row
@@ -52,17 +74,24 @@ private object EpubCoverCache {
 
     suspend fun get(context: Context, uri: Uri): Bitmap? = withContext(Dispatchers.IO) {
         val key = uri.toString()
-        permits.withPermit {
+        loadEpubCoverAfterCacheCheck(
+            permits = permits,
+            lookup = {
+                synchronized(images) {
+                    images.get(key)?.let { EpubCoverCacheLookup.Hit(it) }
+                        ?: if (failures.get(key) == true) EpubCoverCacheLookup.Failed else EpubCoverCacheLookup.Miss
+                }
+            },
+        ) {
             coroutineContext.ensureActive()
-            images.get(key)?.let { return@withPermit it }
-            if (failures.get(key) == true) return@withPermit null
+            var cacheFailure = true
             val bitmap = try {
-                val assetUrl = uri.toAbsoluteUrl() ?: return@withPermit null
+                val assetUrl = uri.toAbsoluteUrl() ?: return@loadEpubCoverAfterCacheCheck null
                 val httpClient = DefaultHttpClient()
                 val retriever = AssetRetriever(context.contentResolver, httpClient)
                 val asset = retriever.retrieve(assetUrl).getOrElse {
                     failures.put(key, true)
-                    return@withPermit null
+                    return@loadEpubCoverAfterCacheCheck null
                 }
                 val parser = DefaultPublicationParser(
                     context = context,
@@ -74,24 +103,27 @@ private object EpubCoverCache {
                     .open(asset, allowUserInteraction = false).getOrElse {
                         asset.close()
                         failures.put(key, true)
-                        return@withPermit null
+                        return@loadEpubCoverAfterCacheCheck null
                     }
                 try {
-                    // Readium 3.2: Size is android.util.Size, not a custom type.
-                    // The result can be null when the EPUB has no declared cover.
                     publication.coverFitting(Size(160, 220))
                 } finally {
                     publication.close()
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
+            } catch (_: SecurityException) {
+                cacheFailure = false
+                null
             } catch (_: Exception) {
                 null
             }
-            if (bitmap != null && bitmap.width > 0 && bitmap.height > 0) {
-                images.put(key, bitmap)
-            } else {
-                failures.put(key, true)
+            synchronized(images) {
+                if (bitmap != null && bitmap.width > 0 && bitmap.height > 0) {
+                    images.put(key, bitmap)
+                } else if (cacheFailure) {
+                    failures.put(key, true)
+                }
             }
             bitmap
         }

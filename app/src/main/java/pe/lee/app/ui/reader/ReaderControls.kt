@@ -44,6 +44,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -187,6 +191,44 @@ internal fun TtsControls(
                         tint = Color.White,
                     )
                 }
+            }
+        }
+    }
+}
+
+
+@Composable
+internal fun TtsMiniControls(
+    isPlaying: Boolean,
+    onTogglePlayback: () -> Unit,
+    onStop: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val status = stringResource(
+        if (isPlaying) R.string.reader_tts_playing_status else R.string.reader_tts_paused_status,
+    )
+    Surface(
+        modifier = modifier.fillMaxWidth().padding(horizontal = 12.dp),
+        color = Color(0xF20A1423),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite }
+                .padding(horizontal = 12.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(status, modifier = Modifier.weight(1f), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            IconButton(onClick = onTogglePlayback, modifier = Modifier.semantics { role = Role.Button }) {
+                Icon(
+                    if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = stringResource(
+                        if (isPlaying) R.string.reader_tts_pause_voice else R.string.reader_tts_continue_voice,
+                    ),
+                    tint = Color.White,
+                )
+            }
+            IconButton(onClick = onStop, modifier = Modifier.semantics { role = Role.Button }) {
+                Icon(Icons.Default.Stop, contentDescription = stringResource(R.string.reader_tts_stop), tint = Color.White)
             }
         }
     }

@@ -343,6 +343,13 @@ internal fun EpubReaderScreen(
                         .navigationBarsPadding()
                         .padding(bottom = 96.dp),
                 )
+            } else if (ttsNavigator != null) {
+                TtsMiniControls(
+                    isPlaying = ttsIsPlaying,
+                    onTogglePlayback = { sessionActions.toggleTts() },
+                    onStop = { sessionActions.stopTts() },
+                    modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 16.dp),
+                )
             } else if (ttsError != null) {
                 Surface(
                     modifier = Modifier
