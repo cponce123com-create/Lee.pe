@@ -8,6 +8,10 @@ import androidx.room3.Transaction
 import java.util.Locale
 import kotlinx.coroutines.flow.Flow
 
+class CollectionValidationException(val reason: Reason) : IllegalArgumentException(reason.name) {
+    enum class Reason { EMPTY_NAME, DUPLICATE_NAME }
+}
+
 @Dao
 interface BookDao {
     @Query("SELECT * FROM library_books ORDER BY title COLLATE NOCASE ASC")
@@ -152,10 +156,12 @@ interface BookDao {
     @Transaction
     suspend fun renameCollection(id: Long, newName: String) {
         val displayName = newName.trim()
-        require(displayName.isNotEmpty()) { "El nombre de la colección no puede estar vacío." }
+        if (displayName.isEmpty()) throw CollectionValidationException(CollectionValidationException.Reason.EMPTY_NAME)
         val normalized = displayName.lowercase(Locale.ROOT)
         val existing = findCollectionId(normalized)
-        require(existing == null || existing == id) { "Ya existe una colección con ese nombre." }
+        if (existing != null && existing != id) {
+            throw CollectionValidationException(CollectionValidationException.Reason.DUPLICATE_NAME)
+        }
         renameCollectionRow(id, displayName, normalized)
         // Keep the legacy export field in sync until the next backup format removes it.
         val books = booksInCollection(id)
