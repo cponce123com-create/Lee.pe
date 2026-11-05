@@ -13,7 +13,13 @@ import pe.lee.feature.sharecard.domain.model.QuoteCard
 
 /** Renders at export resolution; only its presentation is scaled to fit the screen. */
 @Composable
-internal fun QuoteCardCanvas(card: QuoteCard, captureModifier: Modifier, onFitsChanged: (Boolean) -> Unit, modifier: Modifier = Modifier, onAuthorFitsChanged: (Boolean) -> Unit = {}) {
+internal fun QuoteCardCanvas(
+    card: QuoteCard,
+    captureModifier: Modifier,
+    onFitsChanged: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    onAuthorFitsChanged: (Boolean) -> Unit = {},
+) {}) {
     Layout(
         modifier = modifier,
         content = {
