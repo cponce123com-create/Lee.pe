@@ -227,4 +227,5 @@
     <string name="book_organize_collection">Organizar en colección</string>
     <string name="reader_tts_playing_status">Narración en curso</string>
     <string name="reader_tts_paused_status">Narración pausada</string>
+    <string name="epub_selection_action_failed">No se pudo completar la acción. Selecciona el texto y vuelve a intentarlo.</string>
 </resources>
