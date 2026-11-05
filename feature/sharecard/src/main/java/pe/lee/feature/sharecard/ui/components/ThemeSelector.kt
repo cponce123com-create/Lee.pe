@@ -1,38 +1,75 @@
 package pe.lee.feature.sharecard.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import pe.lee.feature.sharecard.R
 import pe.lee.feature.sharecard.domain.model.QuoteCardThemeId
+import pe.lee.feature.sharecard.ui.theme.PremiumArtwork
+import pe.lee.feature.sharecard.ui.theme.QuoteMood
+import pe.lee.feature.sharecard.ui.theme.premiumMatchesMood
+import pe.lee.feature.sharecard.ui.theme.premiumThemes
 
 @Composable
 internal fun ThemeSelector(selected: QuoteCardThemeId, onThemeSelected: (QuoteCardThemeId) -> Unit, modifier: Modifier = Modifier) {
-    FlowRow(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(7.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        QuoteCardThemeId.entries.forEach { theme ->
-            FilterChip(
-                selected = selected == theme,
-                onClick = { onThemeSelected(theme) },
-                label = { Text(stringResource(theme.labelRes), maxLines = 1) },
-                modifier = Modifier.semantics { role = Role.RadioButton },
-            )
+    var mood by remember { mutableStateOf(QuoteMood.ALL) }
+    val gallery = rememberLazyListState()
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            items(QuoteMood.entries) { category ->
+                FilterChip(
+                    selected = mood == category, onClick = { mood = category },
+                    label = { Text(stringResource(category.labelRes)) },
+                )
+            }
+        }
+        LazyRow(
+            state = gallery,
+            modifier = Modifier.fillMaxWidth().testTag("quote-theme-gallery"),
+            horizontalArrangement = Arrangement.spacedBy(9.dp),
+        ) {
+            items(premiumThemes.filter { premiumMatchesMood(it, mood) }, key = { it.name }) { theme ->
+                val chosen = selected == theme
+                OutlinedCard(
+                    onClick = { onThemeSelected(theme) },
+                    modifier = Modifier.width(90.dp).semantics { this.selected = chosen; role = Role.RadioButton },
+                    border = BorderStroke(if (chosen) 2.dp else 1.dp, if (chosen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                ) {
+                    PremiumArtwork(theme, Modifier.fillMaxWidth().height(112.dp).clip(RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp)))
+                    Text(stringResource(theme.labelRes), Modifier.padding(6.dp), maxLines = 2, style = MaterialTheme.typography.labelSmall)
+                }
+            }
         }
     }
 }
 
-private val QuoteCardThemeId.labelRes: Int
+internal val QuoteCardThemeId.labelRes: Int
     get() = when (this) {
         QuoteCardThemeId.EDITORIAL -> R.string.share_card_theme_editorial
         QuoteCardThemeId.DARK_OLED -> R.string.share_card_theme_night

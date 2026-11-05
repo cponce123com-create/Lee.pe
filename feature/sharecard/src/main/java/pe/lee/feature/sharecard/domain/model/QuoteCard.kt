@@ -7,7 +7,7 @@ data class QuoteCard(
     val author: String,
     val bookId: String? = null,
     val locatorJson: String? = null,
-    val themeId: QuoteCardThemeId = QuoteCardThemeId.PAPER,
+    val themeId: QuoteCardThemeId = QuoteCardThemeId.PAPYRUS,
     val format: QuoteCardFormat = QuoteCardFormat.STORY,
     val font: QuoteCardFont = QuoteCardFont.TEMPLATE,
 )
@@ -16,6 +16,7 @@ data class QuoteCard(
 enum class QuoteCardFormat(val widthPx: Int, val heightPx: Int) {
     STORY(widthPx = 1080, heightPx = 1920),
     SQUARE(widthPx = 1080, heightPx = 1080),
+    PORTRAIT(widthPx = 1080, heightPx = 1350),
 }
 
 /** Optional system font overrides; no font downloads are needed. */
