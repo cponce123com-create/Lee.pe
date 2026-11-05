@@ -169,7 +169,7 @@ class ShareCardScreenTest {
 
     @Test
     fun longerQuotesRemainAvailableAcrossAllEditorialTemplates() {
-        val quote = List(5) {
+        val quote = List(20) {
             "Leer nos permite escuchar otras vidas, comprender nuestras preguntas y encontrar luz incluso en los días difíciles."
         }.joinToString(" ")
         val viewModel = createViewModel(QuoteCard(quote, "Libro", "Autor"))
