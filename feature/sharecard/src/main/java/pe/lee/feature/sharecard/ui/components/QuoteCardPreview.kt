@@ -43,15 +43,23 @@ import pe.lee.feature.sharecard.ui.theme.quoteCardPalette
 
 /** Card-only artwork. Quote and author are measured before they are rendered or exported. */
 @Composable
-fun QuoteCardPreview(card: QuoteCard, modifier: Modifier = Modifier, onFitsChanged: (Boolean) -> Unit = {}) {
+fun QuoteCardPreview(
+    card: QuoteCard,
+    modifier: Modifier = Modifier,
+    onFitsChanged: (Boolean) -> Unit = {},
+    onAuthorFitsChanged: (Boolean) -> Unit = {},
+) {
     if (isEditorialTheme(card.themeId)) {
-        EditorialQuoteCard(card, modifier, onFitsChanged)
+        EditorialQuoteCard(card, modifier, onFitsChanged, onAuthorFitsChanged)
         return
     }
     var quoteFits by remember(card) { mutableStateOf(false) }
     var authorFits by remember(card) { mutableStateOf(false) }
     val cardFits = quoteFits && authorFits
-    SideEffect { onFitsChanged(cardFits) }
+    SideEffect {
+        onFitsChanged(cardFits)
+        onAuthorFitsChanged(authorFits)
+    }
 
     val palette = quoteCardPalette(card.themeId)
     val family = when (card.font) {

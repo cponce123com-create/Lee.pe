@@ -14,11 +14,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -34,7 +36,12 @@ import pe.lee.feature.sharecard.ui.theme.editorialLightPaper
 
 /** Text is drawn directly on the approved artwork, without a panel or logo badge. */
 @Composable
-internal fun EditorialQuoteCard(card: QuoteCard, modifier: Modifier, onFitsChanged: (Boolean) -> Unit) {
+internal fun EditorialQuoteCard(
+    card: QuoteCard,
+    modifier: Modifier,
+    onFitsChanged: (Boolean) -> Unit,
+    onAuthorFitsChanged: (Boolean) -> Unit = {},
+) {
     val light = editorialLightPaper(card.themeId)
     val ink = if (light) Color(0xFF30251B) else Color(0xFFFFF2D6)
     val accent = if (light) Color(0xFF755238) else Color(0xFFE7C787)
@@ -56,19 +63,21 @@ internal fun EditorialQuoteCard(card: QuoteCard, modifier: Modifier, onFitsChang
         val quoteGap = if (longQuote) 8.dp else 12.dp
         val quoteHeight = (maxHeight - topMargin - bottomMargin - authorHeight - quoteGap - 9.dp).coerceAtLeast(0.dp)
         val textWidth = (maxWidth - horizontalMargin * 2).coerceAtLeast(0.dp)
-        fun fit(text: String, color: Color, height: androidx.compose.ui.unit.Dp, minimum: Int, maximum: Int): Pair<TextStyle, Boolean> {
-            val widthPx = with(density) { textWidth.roundToPx() }.coerceAtLeast(1)
-            val heightPx = with(density) { height.roundToPx() }
-            for (size in maximum downTo minimum) {
-                val style = TextStyle(color = color, fontFamily = family, textAlign = TextAlign.Start, fontSize = size.sp, lineHeight = (size * 1.35f).sp)
-                val layout = measurer.measure(text, style, constraints = Constraints(maxWidth = widthPx))
-                if (!layout.didOverflowWidth && layout.size.height <= heightPx) return style to true
-            }
-            return TextStyle(color = color, fontFamily = family, textAlign = TextAlign.Start, fontSize = minimum.sp, lineHeight = (minimum * 1.35f).sp) to false
+        val textConstraints = Constraints(
+            maxWidth = with(density) { textWidth.roundToPx() }.coerceAtLeast(1),
+            maxHeight = with(density) { quoteHeight.roundToPx() }.coerceAtLeast(0),
+        )
+        val authorConstraints = textConstraints.copy(maxHeight = with(density) { authorHeight.roundToPx() })
+        val textStyle = TextStyle(color = ink, fontFamily = family, textAlign = TextAlign.Start)
+        val layouts = remember(card.text, author, ink, quoteHeight, authorHeight, textWidth, density, family, measurer) {
+            fitEditorialText(card.text.trim(), textStyle, measurer, textConstraints, 8, 32) to
+                fitEditorialText(author, textStyle, measurer, authorConstraints, 9, 14)
         }
-        val quoteLayout = fit(card.text.trim(), ink, quoteHeight, 8, 32)
-        val authorLayout = fit(author, ink, authorHeight, 9, 14)
-        SideEffect { onFitsChanged(quoteLayout.second && authorLayout.second) }
+        val (quoteLayout, authorLayout) = layouts
+        SideEffect {
+            onFitsChanged(quoteLayout.second && authorLayout.second)
+            onAuthorFitsChanged(authorLayout.second)
+        }
         PremiumArtwork(card.themeId, Modifier.fillMaxSize())
         Column(
             Modifier.fillMaxSize().padding(
@@ -98,4 +107,20 @@ internal fun EditorialQuoteCard(card: QuoteCard, modifier: Modifier, onFitsChang
                 .size(brandMarkSize),
         )
     }
+}
+
+private fun fitEditorialText(
+    text: String,
+    style: TextStyle,
+    measurer: TextMeasurer,
+    available: Constraints,
+    minimum: Int,
+    maximum: Int,
+): Pair<TextStyle, Boolean> {
+    for (size in maximum downTo minimum) {
+        val candidate = style.copy(fontSize = size.sp, lineHeight = (size * 1.35f).sp)
+        val layout = measurer.measure(text, candidate, constraints = Constraints(maxWidth = available.maxWidth))
+        if (!layout.didOverflowWidth && layout.size.height <= available.maxHeight) return candidate to true
+    }
+    return style.copy(fontSize = minimum.sp, lineHeight = (minimum * 1.35f).sp) to false
 }

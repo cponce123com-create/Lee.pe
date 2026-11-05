@@ -8,6 +8,7 @@ import org.junit.Test
 import pe.lee.app.data.local.BookEntity
 import pe.lee.app.data.local.LocalBackupSnapshot
 import pe.lee.app.data.local.ReadingAnnotationEntity
+import pe.lee.app.data.local.ReadingSessionEntity
 
 class LocalLibraryBackupTest {
     private fun root(books: String = "[]", notes: String = "[]", settings: String = "{}") =
@@ -178,5 +179,30 @@ class LocalLibraryBackupTest {
             }
         }
         assertThrows(IOException::class.java) { LocalLibraryBackup.readArchivePayload(source) }
+    }
+
+    @Test
+    fun truncatedBooksDoNotLeaveOrphanedBackupRecords() {
+        val books = List(20_001) { index ->
+            BookEntity(uri = "content://books/$index", title = "Libro $index", format = "EPUB", importedAt = 1L)
+        }
+        val omittedUri = books.last().uri
+        val snapshot = LocalBackupSnapshot(
+            books = books,
+            annotations = listOf(
+                ReadingAnnotationEntity(
+                    id = "omitted-note", bookUri = omittedUri, kind = "NOTE", locatorJson = "{}",
+                    selectedText = null, noteText = "Nota", colorArgb = null, createdAt = 1L, updatedAt = 1L,
+                ),
+            ),
+            sessions = listOf(ReadingSessionEntity("2026-11-05", omittedUri, 30L)),
+            bookCollectionNames = mapOf(omittedUri to listOf("Novela")),
+        )
+        val sanitized = LocalLibraryBackup.sanitizeSnapshot(snapshot)
+        assertEquals(20_000, sanitized.snapshot.books.size)
+        assertTrue(sanitized.snapshot.annotations.isEmpty())
+        assertTrue(sanitized.snapshot.sessions.isEmpty())
+        assertTrue(sanitized.snapshot.bookCollectionNames.isEmpty())
+        assertTrue(sanitized.adjustedRecords >= 3)
     }
 }

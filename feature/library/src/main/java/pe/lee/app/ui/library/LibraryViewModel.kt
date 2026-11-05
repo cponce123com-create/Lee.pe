@@ -90,8 +90,12 @@ class LibraryViewModel(
     internal val scanner: StateFlow<ScannerUiState> = mutableScanner.asStateFlow()
     private var scanJob: Job? = null
 
+    @Volatile
+    private var scanGeneration = 0L
+
     internal fun scanFolder(context: Context, treeUri: Uri, alreadyImported: List<String>) {
         scanJob?.cancel()
+        val generation = ++scanGeneration
         val appContext = context.applicationContext
         mutableScanner.update {
             it.copy(
@@ -111,6 +115,7 @@ class LibraryViewModel(
             try {
                 val result = LocalFolderScanner.scan(appContext, treeUri, alreadyImported) { progress ->
                     mutableScanner.update {
+                        if (generation != scanGeneration) return@update it
                         it.copy(
                             folders = progress.folders,
                             files = progress.files,
@@ -118,10 +123,11 @@ class LibraryViewModel(
                         )
                     }
                 }
-                mutableScanner.update { it.copy(preview = result) }
+                if (generation == scanGeneration) mutableScanner.update { it.copy(preview = result) }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
+                if (generation != scanGeneration) return@launch
                 mutableScanner.update {
                     it.copy(
                         error = appContext.getString(storageErrorMessage(error, R.string.scanner_import_failed)),
@@ -129,12 +135,13 @@ class LibraryViewModel(
                     )
                 }
             } finally {
-                mutableScanner.update { it.copy(busy = false) }
+                if (generation == scanGeneration) mutableScanner.update { it.copy(busy = false) }
             }
         }
     }
 
     internal fun cancelScan() {
+        scanGeneration++
         scanJob?.cancel()
         scanJob = null
         mutableScanner.update { it.copy(busy = false) }

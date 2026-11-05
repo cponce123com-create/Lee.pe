@@ -3,52 +3,16 @@ name: Android debug APK
 on:
   push:
     branches: [main]
-    paths:
-      - "app/**"
-      - "core/**"
-      - "data/**"
-      - "feature/**"
-      - "library/**"
-      - "gradle/**"
-      - "config/**"
-      - ".editorconfig"
-      - "*.gradle.kts"
-      - "gradle.properties"
-      - "version.properties"
-      - "scripts/verify_debug_apk.py"
-      - "scripts/test_verify_debug_apk.py"
-      - "scripts/test_verify_release_signing.py"
-      - "scripts/verify_release_signing.py"
-      - "scripts/verify_exception_resources.py"
-      - "scripts/run_instrumentation.sh"
-      - "scripts/verify_sharecard_locale_parity.py"
-      - ".github/workflows/android-build.yml"
   pull_request:
     branches: [main]
-    paths:
-      - "app/**"
-      - "core/**"
-      - "data/**"
-      - "feature/**"
-      - "library/**"
-      - "gradle/**"
-      - "config/**"
-      - ".editorconfig"
-      - "*.gradle.kts"
-      - "gradle.properties"
-      - "version.properties"
-      - "scripts/verify_debug_apk.py"
-      - "scripts/test_verify_debug_apk.py"
-      - "scripts/test_verify_release_signing.py"
-      - "scripts/verify_release_signing.py"
-      - "scripts/verify_exception_resources.py"
-      - "scripts/run_instrumentation.sh"
-      - "scripts/verify_sharecard_locale_parity.py"
-      - ".github/workflows/android-build.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: android-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -93,7 +57,7 @@ jobs:
         # module and would be skipped silently without the explicit task.
         # Avoid parallel packaging of every library test APK; it exhausted the
         # Gradle heap in :feature:library:packageDebugAndroidTest.
-        run: ./gradlew --no-daemon --stacktrace --max-workers=2 -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs=-Xmx4g clean lintDebug testDebugUnitTest :core:domain:test assembleDebug koverHtmlReportAll
+        run: ./gradlew --no-daemon --stacktrace --max-workers=2 -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs=-Xmx4g lintDebug testDebugUnitTest :core:domain:test assembleDebug koverHtmlReportAll
 
       - name: Build and smoke-check minified release APK
         run: |

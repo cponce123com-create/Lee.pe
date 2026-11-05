@@ -7,12 +7,22 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   static-analysis:
+    permissions:
+      contents: write
+      actions: write
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.head_ref || github.ref }}
+          persist-credentials: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
         with:
           distribution: temurin
@@ -21,14 +31,50 @@ jobs:
       - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
         with:
           packages: 'platforms;android-36'
-      - name: Static analysis and API documentation
-        run: ./gradlew --no-daemon --stacktrace --continue detekt ktlintCheck :core:domain:dokkaGenerate
-      - name: Prepare reviewable formatting patch
-        if: failure()
+      - name: Check style and static analysis
+        id: initial
+        continue-on-error: true
+        run: ./gradlew --no-daemon --stacktrace --continue ktlintCheck detekt
+      - name: Correct formatting
+        if: steps.initial.outcome == 'failure'
+        run: ./gradlew --no-daemon --stacktrace ktlintFormat
+      - name: Record formatting patch
+        if: always()
         run: |
-          ./gradlew --no-daemon --continue ktlintFormat || true
           mkdir -p build/reports
           git diff --binary > build/reports/formatting.patch
+      - name: Require clean style and static analysis
+        run: ./gradlew --no-daemon --stacktrace --continue ktlintCheck detekt
+      - name: Generate API documentation
+        run: ./gradlew --no-daemon :core:domain:dokkaGenerate
+      - name: Commit corrected formatting to trusted PR
+        id: format_commit
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          steps.initial.outcome == 'failure'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          branch: ${{ github.head_ref }}
+          commit_message: 'style: apply ktlint formatting'
+          file_pattern: '*.kt *.kts'
+          disable_globbing: true
+      - name: Require formatting changes to be applied to source
+        if: >-
+          steps.initial.outcome == 'failure' &&
+          (github.event_name != 'pull_request' ||
+           github.event.pull_request.head.repo.full_name != github.repository)
+        run: git diff --exit-code -- '*.kt' '*.kts'
+      # GITHUB_TOKEN pushes do not create a new push workflow. Explicitly
+      # validate the resulting head so its checks are not left pending.
+      - name: Validate automatic commit
+        if: steps.format_commit.outputs.changes_detected == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_BRANCH: ${{ github.head_ref }}
+        run: |
+          gh workflow run quality.yml --ref "$TARGET_BRANCH"
+          gh workflow run android-build.yml --ref "$TARGET_BRANCH"
       - name: Upload analysis and API documentation
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -59,7 +105,7 @@ jobs:
       - name: Audit resolved dependencies (CVSS >= 7 fails)
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
-        run: ./gradlew --no-daemon --stacktrace dependencyCheckAggregate
+        run: ./gradlew --no-daemon --stacktrace --no-parallel dependencyCheckAggregate
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

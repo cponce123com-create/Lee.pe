@@ -25,7 +25,7 @@ El lector abre archivos EPUB, PDF y audio desde `content://` mediante Storage Ac
 | Posición PDF | Número de página (base documentada) | Número de página tras consentimiento |
 | Preferencias de presentación | Local, por libro | Optativo |
 | Marcadores y resaltados | Room, IDs estables | Optativo, por cuenta |
-| Notas | Room | Optativo, cifrado en tránsito |
+| Notas | Room | Exportación local optativa, cifrada con contraseña; sin transmisión de red |
 | Estadísticas | Room | No habilitar por defecto |
 | Portadas | Caché local | Cloudinary, únicamente si hay permiso y necesidad |
 | Credenciales | Almacenamiento seguro Android | Tokens revocables con caducidad |

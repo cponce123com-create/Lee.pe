@@ -489,7 +489,12 @@ internal object LocalLibraryBackup {
             if (title != book.title || collection != book.collectionId || locator != book.epubLocator) adjusted++
             book.copy(title = title, collectionId = collection, epubLocator = locator)
         }.also { if (snapshot.books.size > MAX_BOOKS) adjusted += snapshot.books.size - MAX_BOOKS }
+        val retainedUris = books.mapTo(HashSet()) { it.uri }
         val notes = snapshot.annotations.asSequence().mapNotNull { note ->
+            if (note.bookUri !in retainedUris) {
+                adjusted++
+                return@mapNotNull null
+            }
             if (note.locatorJson.length > LocalTextLimits.LOCATOR_JSON) {
                 adjusted++
                 return@mapNotNull null
@@ -506,14 +511,16 @@ internal object LocalLibraryBackup {
             if (name != collection.name) adjusted++
             collection.copy(name = name, normalizedName = name.lowercase(Locale.ROOT))
         }.also { if (snapshot.collections.size > MAX_COLLECTIONS) adjusted += snapshot.collections.size - MAX_COLLECTIONS }
-        val bookCollectionNames = snapshot.bookCollectionNames.mapValues { (_, names) ->
+        val bookCollectionNames = snapshot.bookCollectionNames.filterKeys { it in retainedUris }.mapValues { (_, names) ->
             names.mapNotNull { name ->
                 if (name.length > LocalTextLimits.COLLECTION_NAME) adjusted++
                 name.take(LocalTextLimits.COLLECTION_NAME).takeIf(String::isNotBlank)
             }.distinctBy { it.lowercase(Locale.ROOT) }.take(MAX_COLLECTIONS)
         }
-        val sessions = snapshot.sessions.take(MAX_SESSIONS).also {
-            if (snapshot.sessions.size > MAX_SESSIONS) adjusted += snapshot.sessions.size - MAX_SESSIONS
+        val retainedSessions = snapshot.sessions.filter { it.bookUri in retainedUris }
+        adjusted += snapshot.sessions.size - retainedSessions.size
+        val sessions = retainedSessions.take(MAX_SESSIONS).also {
+            if (retainedSessions.size > MAX_SESSIONS) adjusted += retainedSessions.size - MAX_SESSIONS
         }
         return SanitizedBackupSnapshot(
             snapshot.copy(

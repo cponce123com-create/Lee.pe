@@ -195,7 +195,7 @@ F6                                                              ░░░░░�
 | T2.7 | Registrar tiempo de lectura solo con `!loading && error == null` (EPUB y PDF) | A-28 | 0,5 d | Abrir un EPUB inexistente 5 min no suma tiempo |
 | T2.8 | Cambio de día a medianoche (reprogramar `todayKey`) | A-37 | 0,5 d | Con la app abierta a las 23:59, «hoy» pasa a 0 sin reiniciar |
 | T2.9 | Outbox de limpieza drenado en `Application` + `ON_RESUME`, revisión incrementada una sola vez | A-38 | 0,5 d | Fallo de limpieza se reintenta al volver a la app; un solo escaneo del directorio |
-| T2.10 | Cifrado opcional del respaldo (v3, AES-GCM con contraseña). El aviso de que el archivo no está cifrado **ya existe** en el diálogo (A-12 retirado) | — | 0,5 d | ADR de cifrado documentado; el aviso actual se conserva |
+| T2.10 | Implementado: exportación cifrada AES-256-GCM v2 con contraseña; lectura de JSON antiguos sin cifrar | — | Hecho | Validar exportación/restauración y compatibilidad en dispositivo |
 | T2.11 | Política de migraciones: ningún cambio de esquema sin `LeeDatabaseMigrationTest` + esquema exportado | — | 1 d | Checklist en PR; CI compara `git diff core/database/schemas` |
 
 **Criterio de salida F2:** escenario «cambio de teléfono» completo — exportar, reinstalar, importar libros, restaurar y verificar progreso, notas, colecciones y estadísticas en un segundo dispositivo o emulador.
