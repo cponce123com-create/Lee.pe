@@ -39,7 +39,7 @@ private const val MAX_ANNOTATIONS = 60000
 private const val MAX_SESSIONS = 100000
 private const val MAX_COLLECTIONS = 2000
 
-internal class BackupPasswordRequiredException : IOException("PASSWORD_REQUIRED")
+internal class BackupPasswordRequiredException : IOException()
 
 internal data class LocalBackupArchive(val snapshot: LocalBackupSnapshot, val settings: Map<String, JSONObject>, val dailyGoalMinutes: Int?)
 internal data class LocalLibraryRestoreResult(

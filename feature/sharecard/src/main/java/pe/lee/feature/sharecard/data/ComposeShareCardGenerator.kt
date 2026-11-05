@@ -13,11 +13,9 @@ import pe.lee.feature.sharecard.domain.model.QuoteCardRaster
 class ComposeShareCardGenerator : ShareCardGenerator {
     override suspend fun generate(card: QuoteCard, raster: QuoteCardRaster, format: QuoteCardFormat): ByteArray =
         withContext(Dispatchers.Default) {
-            require(card.text.isNotBlank()) { "La cita está vacía." }
-            require(raster.width > 0 && raster.height > 0) { "La captura de la tarjeta está vacía." }
-            require(raster.argbPixels.size >= raster.width * raster.height) {
-                "Los píxeles capturados no coinciden con el tamaño de la tarjeta."
-            }
+            require(card.text.isNotBlank())
+            require(raster.width > 0 && raster.height > 0)
+            require(raster.argbPixels.size >= raster.width * raster.height)
             val source = Bitmap.createBitmap(
                 raster.argbPixels,
                 raster.width,
@@ -28,9 +26,7 @@ class ComposeShareCardGenerator : ShareCardGenerator {
             try {
                 output = Bitmap.createScaledBitmap(source, format.widthPx, format.heightPx, true)
                 ByteArrayOutputStream().use { stream ->
-                    check(output.compress(Bitmap.CompressFormat.PNG, 100, stream)) {
-                        "No se pudo codificar la imagen PNG."
-                    }
+                    check(output.compress(Bitmap.CompressFormat.PNG, 100, stream))
                     stream.toByteArray()
                 }
             } finally {

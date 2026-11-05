@@ -61,6 +61,7 @@ import org.readium.r2.navigator.preferences.TextAlign as ReadiumTextAlign
 import org.readium.r2.navigator.preferences.Theme as ReadiumTheme
 import org.readium.r2.shared.ExperimentalReadiumApi
 import pe.lee.app.R
+import pe.lee.app.ui.formatPlaybackSpeed
 
 @OptIn(ExperimentalReadiumApi::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
@@ -120,7 +121,7 @@ internal fun TtsControls(
                 TextButton(onClick = {
                     val index = speeds.indexOf(speed).coerceAtLeast(0)
                     onSpeedChange(speeds[(index + 1) % speeds.size])
-                }) { Text("${speed}x") }
+                }) { Text("${formatPlaybackSpeed(speed)}×") }
                 Box {
                     TextButton(onClick = { voiceMenuExpanded = true }) {
                         Text(
