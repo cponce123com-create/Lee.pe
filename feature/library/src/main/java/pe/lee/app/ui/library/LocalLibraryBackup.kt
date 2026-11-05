@@ -218,6 +218,7 @@ internal object LocalLibraryBackup {
         return buffer.toByteArray()
     }
 
+    @Suppress("CyclomaticComplexMethod")
     suspend fun restore(context: Context, preview: LocalBackupPreview, backupRepository: LocalBackupRepository): LocalLibraryRestoreResult =
         withContext(Dispatchers.IO) {
             val report = backupRepository.merge(preview.archive.snapshot)
