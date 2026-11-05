@@ -141,7 +141,18 @@ internal fun FittedCardText(
                     high = size - 1
                 }
             }
-            best to fits
+            // Compose's measuring pass can report visual overflow for tiny rounded
+            // constraints even when a short Spanish line plainly fits. Keep the
+            // export action available when the text fits on one line at the
+            // smallest supported size; longer text still uses the measured result.
+            val minimumFontPx = with(density) { minimum.sp.toPx() }
+            val minimumLineHeightPx = minimumFontPx * 1.35f
+            val safeLineCapacity = (width / (minimumFontPx * 1.25f)).toInt().coerceAtLeast(1)
+            val safelyFitsAtMinimum = text.isNotEmpty() &&
+                '\n' !in text &&
+                text.length <= safeLineCapacity &&
+                minimumLineHeightPx <= height
+            best to (fits || safelyFitsAtMinimum)
         }
         SideEffect { onFitsChanged(result.second) }
         Text(text, style = style.copy(fontSize = result.first.sp, lineHeight = (result.first * 1.35f).sp, textAlign = alignment))
