@@ -113,8 +113,8 @@ class LibraryViewModel(
         scanJob = viewModelScope.launch {
             try {
                 val result = LocalFolderScanner.scan(appContext, treeUri, alreadyImported) { progress ->
-                    if (generation != scanGeneration) return@scan
                     mutableScanner.update {
+                        if (generation != scanGeneration) return@update it
                         it.copy(
                             folders = progress.folders,
                             files = progress.files,
