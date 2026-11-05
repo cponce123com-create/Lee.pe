@@ -34,7 +34,7 @@ import pe.lee.feature.sharecard.ui.theme.editorialLightPaper
 
 /** Text is drawn directly on the approved artwork, without a panel or logo badge. */
 @Composable
-internal fun EditorialQuoteCard(card: QuoteCard, modifier: Modifier, onFitsChanged: (Boolean) -> Unit) {
+internal fun EditorialQuoteCard(card: QuoteCard, modifier: Modifier, onFitsChanged: (Boolean) -> Unit, onAuthorFitsChanged: (Boolean) -> Unit = {}) {
     val light = editorialLightPaper(card.themeId)
     val ink = if (light) Color(0xFF30251B) else Color(0xFFFFF2D6)
     val accent = if (light) Color(0xFF755238) else Color(0xFFE7C787)
@@ -68,7 +68,10 @@ internal fun EditorialQuoteCard(card: QuoteCard, modifier: Modifier, onFitsChang
         }
         val quoteLayout = fit(card.text.trim(), ink, quoteHeight, 8, 32)
         val authorLayout = fit(author, ink, authorHeight, 9, 14)
-        SideEffect { onFitsChanged(quoteLayout.second && authorLayout.second) }
+        SideEffect {
+            onFitsChanged(quoteLayout.second && authorLayout.second)
+            onAuthorFitsChanged(authorLayout.second)
+        }
         PremiumArtwork(card.themeId, Modifier.fillMaxSize())
         Column(
             Modifier.fillMaxSize().padding(

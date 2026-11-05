@@ -231,11 +231,13 @@ internal fun rememberLibraryDocumentActions(
                         Intent.FLAG_GRANT_READ_URI_PERMISSION,
                     )
                     PersistableUriGrants.warnIfNearLimit(context)
-                    context.contentResolver.openInputStream(pickedUri)?.use { input ->
-                        require(input.read() >= 0) {
-                            context.getString(R.string.library_relink_empty_file)
-                        }
-                    } ?: error(context.getString(R.string.library_relink_unreadable))
+                    withContext(Dispatchers.IO) {
+                        context.contentResolver.openInputStream(pickedUri)?.use { input ->
+                            require(input.read() >= 0) {
+                                context.getString(R.string.library_relink_empty_file)
+                            }
+                        } ?: error(context.getString(R.string.library_relink_unreadable))
+                    }
 
                     val rebound = viewModel.rebindUri(targetBook.id, pickedUri.toString())
                     require(rebound) { context.getString(R.string.library_relink_already_linked) }

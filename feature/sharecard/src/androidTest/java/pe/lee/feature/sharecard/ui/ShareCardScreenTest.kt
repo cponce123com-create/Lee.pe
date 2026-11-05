@@ -185,6 +185,17 @@ class ShareCardScreenTest {
         }
     }
 
+    @Test
+    fun oversizedAuthorHasSpecificFeedbackAndCannotBeExported() {
+        val card = QuoteCard("Una frase breve.", "Libro", "Autor ".repeat(2_000))
+            .copy(themeId = QuoteCardThemeId.BOTANICAL_IVORY)
+        val viewModel = createViewModel(card)
+        composeRule.setContent { ShareCardScreen(viewModel, {}) }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText(text(R.string.share_card_author_too_long)).assertExists()
+        composeRule.onNodeWithText(text(R.string.share_card_share)).assertIsNotEnabled()
+    }
+
     private fun saveExportPreview(name: String, raster: QuoteCardRaster) {
         if (Build.VERSION.SDK_INT < 29) return
         val bitmap = Bitmap.createBitmap(raster.argbPixels, raster.width, raster.height, Bitmap.Config.ARGB_8888)

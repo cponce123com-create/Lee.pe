@@ -40,7 +40,7 @@ La previsualización puede mostrar libros que queden pendientes. El usuario cons
 }
 ```
 
-El JSON interno conserva el esquema v1/v2 y no acepta versiones desconocidas. El sobre cifrado tiene una versión propia; la validación limita el archivo a 64 MiB y el número de registros. Estos límites protegen los teléfonos de bibliotecas corruptas o archivos maliciosos; son cuotas **por archivo de respaldo**, no límites al número de usuarios ni a la lectura normal.
+El JSON interno conserva el esquema v1/v2 y no acepta versiones desconocidas. El sobre cifrado tiene una versión propia; la validación limita el archivo a 16 MiB y el número de registros. Estos límites protegen los teléfonos de bibliotecas corruptas o archivos maliciosos; son cuotas **por archivo de respaldo**, no límites al número de usuarios ni a la lectura normal.
 
 ### Sobre binario desde Lee.pe 0.3.2
 
@@ -62,13 +62,13 @@ original de 120.000 y sin AAD; los archivos existentes no se reescriben.
 
 Los lectores anteriores a **0.3.2 no abren los nuevos sobres v2**. El esquema JSON
 interno y la versión del sobre son independientes: un JSON v2 no implica un sobre v2.
-La sobrecarga de v2 es 57 bytes, incluida en el límite total de 64 MiB.
+La sobrecarga de v2 es 57 bytes, incluida en el límite total de 16 MiB.
 
 ## Pruebas necesarias en teléfonos
 
 - Exportar, modificar una nota y restaurar; comprobar que la nota nueva no se reemplaza.
 - Desinstalar/reinstalar: importar libros de nuevo, restaurar JSON, comprobar que no hay entradas rotas ni pérdida de anotaciones vinculadas.
-- Probar duplicados de título, ediciones diferentes, EPUB frente a PDF, URI revocada, archivo JSON inválido, archivo mayor de 64 MiB y cancelación del selector.
+- Probar duplicados de título, ediciones diferentes, EPUB frente a PDF, URI revocada, archivo JSON inválido, archivo mayor de 16 MiB y cancelación del selector.
 - Probar una exportación cifrada, cancelar el selector de destino, importar con contraseña correcta/incorrecta, alterar el archivo y comprobar el error; confirmar que un JSON v1/v2 anterior sigue restaurándose. Probar más de 1.000 libros: tiempo de vista previa, CPU, memoria y duración de transacción.
 - Abrir EPUB, PDF y audio restaurados; comprobar progreso, voz, temporizador y preferencias.
 

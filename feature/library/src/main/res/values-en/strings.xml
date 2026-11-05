@@ -349,7 +349,7 @@
     <string name="backup_password_or_data_invalid">The password is incorrect or the backup is damaged.</string>
     <string name="backup_version_unsupported">This backup version is not supported. Update Lee.pe to open it.</string>
     <string name="backup_password_required">Enter the backup password.</string>
-    <string name="backup_size_limit">The backup exceeds the 64 MB limit.</string>
+    <string name="backup_size_limit">The backup exceeds the 16 MiB limit.</string>
     <string name="backup_record_limit">The backup contains too many records.</string>
     <string name="backup_source_unavailable">Could not open the backup. Check the file permission.</string>
     <string name="backup_destination_unavailable">Could not open the backup destination.</string>

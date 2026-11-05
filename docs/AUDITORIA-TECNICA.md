@@ -1,3 +1,5 @@
+> Actualización de estado: esta auditoría conserva hallazgos históricos. Los respaldos nuevos usan AES-256-GCM con contraseña; los JSON antiguos siguen siendo legibles y no están cifrados. Véase RESPALDO_LOCAL.md para el formato actual.
+
 # Auditoría técnica — Lee.pe (Android)
 
 **Repositorio:** [cponce123com-create/Lee.pe](https://github.com/cponce123com-create/Lee.pe) · rama `main` · commit `f050bec`

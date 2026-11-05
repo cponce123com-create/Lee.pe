@@ -166,6 +166,8 @@ internal fun EpubReaderSessionEffects(
             }
 
             val selectionActionCallback = object : BaseActionModeCallback() {
+                private var actionJob: kotlinx.coroutines.Job? = null
+
                 override fun onCreateActionMode(mode: ActionMode, menu: Menu): Boolean {
                     // Reserve a visible slot for the primary quote-card action.
                     menu.add(Menu.NONE, MENU_SHARE_SELECTION, 0, context.getString(ShareCardR.string.share_card_create_action))
@@ -180,7 +182,9 @@ internal fun EpubReaderSessionEffects(
 
                 override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
                     if (item.itemId !in setOf(MENU_HIGHLIGHT, MENU_COPY_SELECTION, MENU_SHARE_SELECTION)) return false
-                    coroutineScope.launch {
+                    if (actionJob?.isActive == true) return true
+                    val actionId = item.itemId
+                    actionJob = coroutineScope.launch {
                         try {
                             val selectedLocator = session.navigator.value?.currentSelection()?.locator
                             val selectedText = selectedLocator?.text?.highlight?.trim().orEmpty()
@@ -189,7 +193,7 @@ internal fun EpubReaderSessionEffects(
                                 .map { it.localizedName.string }
                                 .filter(String::isNotBlank)
                                 .joinToString(", ")
-                            if (item.itemId == MENU_HIGHLIGHT && selectedLocator != null) {
+                            if (actionId == MENU_HIGHLIGHT && selectedLocator != null) {
                                 val now = System.currentTimeMillis()
                                 viewModel.saveAnnotation(
                                     ReaderAnnotation(
@@ -202,7 +206,7 @@ internal fun EpubReaderSessionEffects(
                                         createdAt = now,
                                     ),
                                 )
-                            } else if (item.itemId == MENU_COPY_SELECTION) {
+                            } else if (actionId == MENU_COPY_SELECTION) {
                                 selectedLocator?.text?.highlight?.let { selectedText ->
                                     val clipboard = context.getSystemService(ClipboardManager::class.java)
                                     clipboard?.setPrimaryClip(
@@ -212,7 +216,7 @@ internal fun EpubReaderSessionEffects(
                                         ),
                                     )
                                 }
-                            } else if (item.itemId == MENU_SHARE_SELECTION) {
+                            } else if (actionId == MENU_SHARE_SELECTION) {
                                 if (selectedText.isNotEmpty()) {
                                     context.startActivity(
                                         shareCardIntent(

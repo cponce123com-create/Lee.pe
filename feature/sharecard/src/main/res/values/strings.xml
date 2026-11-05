@@ -87,4 +87,5 @@
     <string name="share_card_theme_literary_leather">Cuero literario</string>
     <string name="share_card_theme_light_sprout">Brote de luz</string>
     <string name="share_card_mood_editorial">Sin recuadro</string>
+    <string name="share_card_author_too_long">El nombre del autor no cabe en esta plantilla. Acórtalo o cambia el formato.</string>
 </resources>

@@ -87,4 +87,5 @@
     <string name="share_card_theme_literary_leather">Literary leather</string>
     <string name="share_card_theme_light_sprout">Sprout of light</string>
     <string name="share_card_mood_editorial">No text panel</string>
+    <string name="share_card_author_too_long">The author name does not fit this template. Shorten it or change the format.</string>
 </resources>

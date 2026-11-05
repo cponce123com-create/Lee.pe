@@ -74,7 +74,7 @@ Implementado en código; la aceptación física y el resto de la fase A continú
   fallback para API 24–25 y contraseñas con UTF-16 inválido.
 - Validación del coste antes de derivar: v2 admite 600 000–1 200 000; fuera de ese
   intervalo falla sin trabajo KDF. Un aumento futuro exige revisar explícitamente el límite.
-- Límite total de archivo conservado en 64 MB; overhead v2 corregido a 57 bytes.
+- Límite total de archivo conservado en 16 MiB; overhead v2 corregido a 57 bytes.
 - Errores tipados para cifrado y archivo de respaldo, traducidos en recursos ES/EN.
   Errores de `OfflineBookStore`, escáner y libro incluido siguen pendientes; no se
   considera cerrado el hallazgo global de internacionalización.

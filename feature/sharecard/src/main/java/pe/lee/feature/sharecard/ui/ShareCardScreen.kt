@@ -58,6 +58,7 @@ fun ShareCardScreen(viewModel: ShareCardViewModel, onBack: () -> Unit, modifier:
         val scope = rememberCoroutineScope()
         var editingQuote by remember { mutableStateOf(false) }
         var contentFits by remember(state.card) { mutableStateOf(false) }
+        var authorFits by remember(state.card) { mutableStateOf(true) }
         var capturing by remember { mutableStateOf(false) }
         val storyFormat = state.card.format == QuoteCardFormat.STORY
 
@@ -114,13 +115,17 @@ fun ShareCardScreen(viewModel: ShareCardViewModel, onBack: () -> Unit, modifier:
                     card = state.card,
                     modifier = Modifier.align(Alignment.CenterHorizontally).fillMaxWidth(if (storyFormat) .64f else .85f),
                     onFitsChanged = { contentFits = it },
+                    onAuthorFitsChanged = { authorFits = it },
                     captureModifier = Modifier.drawWithContent {
                         layer.record { this@drawWithContent.drawContent() }
                         drawLayer(layer)
                     },
                 )
                 if (!contentFits) {
-                    Text(stringResource(R.string.share_card_too_long), color = MaterialTheme.colorScheme.error)
+                    Text(
+                        stringResource(if (authorFits) R.string.share_card_too_long else R.string.share_card_author_too_long),
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
 
                 Text(stringResource(R.string.share_card_templates_count), style = MaterialTheme.typography.titleSmall)

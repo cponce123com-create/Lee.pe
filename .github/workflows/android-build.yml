@@ -50,6 +50,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: android-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build debug APK
@@ -93,7 +97,7 @@ jobs:
         # module and would be skipped silently without the explicit task.
         # Avoid parallel packaging of every library test APK; it exhausted the
         # Gradle heap in :feature:library:packageDebugAndroidTest.
-        run: ./gradlew --no-daemon --stacktrace --max-workers=2 -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs=-Xmx4g clean lintDebug testDebugUnitTest :core:domain:test assembleDebug koverHtmlReportAll
+        run: ./gradlew --no-daemon --stacktrace --max-workers=2 -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs=-Xmx4g lintDebug testDebugUnitTest :core:domain:test assembleDebug koverHtmlReportAll
 
       - name: Build and smoke-check minified release APK
         run: |
