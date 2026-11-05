@@ -82,8 +82,8 @@ class LeeDatabaseMigrationTest {
                 .addMigrations(*LeeDatabase.ALL_MIGRATIONS)
                 .build()
             try {
-                assertSessionBookUriIndex(databaseName)
                 val snapshot = database.localBackupDao().snapshot()
+                assertSessionBookUriIndex(databaseName)
                 assertEquals("version $startingVersion books", 2, snapshot.books.size)
                 assertEquals("version $startingVersion title", "Libro de prueba", snapshot.books.first().title)
                 assertEquals("version $startingVersion progress", 0.65f, snapshot.books.first().readProgress)
