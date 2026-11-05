@@ -9,6 +9,9 @@
     <string name="audio_rewind_10">Rewind 10 seconds</string>
     <string name="audio_forward_10">Forward 10 seconds</string>
     <string name="audio_speed">Speed</string>
+    <string name="audio_sleep_timer">Sleep timer</string>
+    <string name="audio_sleep_timer_minutes">Stop in %1$d min</string>
+    <string name="audio_sleep_timer_cancel">Cancel timer</string>
     <string name="audio_pause">Pause</string>
     <string name="audio_play">Play</string>
     <string name="audio_playback_failed">Could not play this file. Check that it is not damaged or protected.</string>
