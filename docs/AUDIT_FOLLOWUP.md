@@ -1,8 +1,10 @@
 # Seguimiento de la auditoría del 4 de noviembre de 2026
 
-La auditoría aportada es una revisión estática de una instantánea 0.3.0. Sus
-notas son valoraciones del revisor; no representan una medición del APK actual.
-Esta hoja separa lo implementado de lo que todavía requiere trabajo y evidencia.
+Esta hoja registra el seguimiento de una auditoría estática de noviembre de 2026,
+referida a una instantánea anterior (0.3.0/0.3.1 según el bloque revisado). Sus
+notas son valoraciones del revisor y no miden el APK 0.3.7. Los estados `[x]` y
+`[ ]` reflejan el seguimiento de esa fecha; deben contrastarse con el código y CI
+actuales antes de tomarse como una lista vigente.
 
 ## Lote inmediato: lectura por voz y presentación
 
