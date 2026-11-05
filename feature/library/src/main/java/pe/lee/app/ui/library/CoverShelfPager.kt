@@ -225,12 +225,13 @@ internal fun ShelfPlank(modifier: Modifier = Modifier) {
 internal fun CabinetPagerControls(page: Int, pages: Int, onPrevious: () -> Unit, onNext: () -> Unit) {
     BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         val pageDescription = stringResource(R.string.shelf_page_position, page + 1, pages)
+        val compact = maxWidth < 120.dp
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
             IconButton(onClick = onPrevious, enabled = page > 0, modifier = Modifier.size(28.dp)) {
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, stringResource(R.string.cabinet_previous_page))
             }
             Text(
-                if (maxWidth < 120.dp) "${page + 1} / $pages" else pageDescription,
+                if (compact) "${page + 1} / $pages" else pageDescription,
                 color = Color(0xFFFFE6B8), fontSize = 9.sp, maxLines = 1,
                 modifier = Modifier.weight(1f).semantics { contentDescription = pageDescription },
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
