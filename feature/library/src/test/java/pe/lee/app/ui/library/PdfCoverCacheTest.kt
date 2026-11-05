@@ -8,9 +8,11 @@ import org.junit.Test
 
 class PdfCoverCacheTest {
     @Test fun cachedThumbnailReturnsWhileBothRenderPermitsAreBusy() = runBlocking {
+        val permits = Semaphore(1)
+        permits.acquire()
         val result = withTimeout(500) {
             loadPdfCoverAfterCacheCheck(
-                permits = Semaphore(0),
+                permits = permits,
                 lookup = { PdfCoverCacheLookup.Hit("cached") },
                 render = { error("No debe esperar ni renderizar un resultado en caché") },
             )

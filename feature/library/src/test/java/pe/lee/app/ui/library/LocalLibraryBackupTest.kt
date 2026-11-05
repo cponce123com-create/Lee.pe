@@ -142,7 +142,10 @@ class LocalLibraryBackupTest {
         val exportedNote = sanitized.snapshot.annotations.single().noteText
         val json = root(
             books = "[$book]",
-            notes = """[{"id":"n1","bookUri":"content://example/test","kind":"NOTE","locatorJson":"{}","selectedText":null,"noteText":"$exportedNote","colorArgb":null,"createdAt":1,"updatedAt":1}]""",
+            notes = """[{
+                "id":"n1","bookUri":"content://example/test","kind":"NOTE","locatorJson":"{}",
+                "selectedText":null,"noteText":"$exportedNote","colorArgb":null,"createdAt":1,"updatedAt":1
+            }]""",
         )
         assertEquals(12_000, LocalLibraryBackup.parse(json).snapshot.annotations.single().noteText?.length)
     }
