@@ -63,7 +63,7 @@ class LibraryBenchmarks {
         setupBlock = {
             killProcess()
             startActivityAndWait()
-            check(device.wait(Until.hasObject(By.text("Benchmark 00")), TIMEOUT))
+            check(device.wait(Until.hasObject(By.desc("Benchmark 00")), TIMEOUT))
         },
     ) {
         val catalog = device.findObject(By.res("library_catalog"))
@@ -82,10 +82,10 @@ class LibraryBenchmarks {
         setupBlock = {
             killProcess()
             startActivityAndWait()
-            check(device.wait(Until.hasObject(By.text("Benchmark 00")), TIMEOUT))
+            check(device.wait(Until.hasObject(By.desc("Benchmark 00")), TIMEOUT))
         },
     ) {
-        device.findObject(By.text("Benchmark 00")).click()
+        device.findObject(By.desc("Benchmark 00")).click()
         check(device.wait(Until.hasObject(By.clazz("android.webkit.WebView")), TIMEOUT))
         device.waitForIdle()
     }
