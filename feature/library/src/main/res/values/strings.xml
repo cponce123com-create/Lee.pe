@@ -232,6 +232,7 @@
     <string name="backup_restore_safety_notice">Solo se incorporarán datos de libros que ya estén en tu biblioteca. No se borrarán libros ni se sobrescribirán anotaciones existentes. Comprueba que las coincidencias por título sean la misma edición. Podrás volver a restaurar el archivo después de importar libros faltantes.</string>
     <string name="backup_restore_result">Recuperados: %1$s; %2$s. Pendientes: %3$s</string>
     <string name="backup_restore_failed">No se pudo restaurar el respaldo</string>
+    <string name="backup_restore_preferences_failed">Los datos de la biblioteca se recuperaron, pero algunos ajustes no se pudieron guardar. Vuelve a importar el respaldo para reintentarlo.</string>
     <string name="backup_restoring">Restaurando…</string>
     <string name="backup_restore_data">Restaurar datos</string>
     <plurals name="backup_books_short">
