@@ -3,48 +3,8 @@ name: Android debug APK
 on:
   push:
     branches: [main]
-    paths:
-      - "app/**"
-      - "core/**"
-      - "data/**"
-      - "feature/**"
-      - "library/**"
-      - "gradle/**"
-      - "config/**"
-      - ".editorconfig"
-      - "*.gradle.kts"
-      - "gradle.properties"
-      - "version.properties"
-      - "scripts/verify_debug_apk.py"
-      - "scripts/test_verify_debug_apk.py"
-      - "scripts/test_verify_release_signing.py"
-      - "scripts/verify_release_signing.py"
-      - "scripts/verify_exception_resources.py"
-      - "scripts/run_instrumentation.sh"
-      - "scripts/verify_sharecard_locale_parity.py"
-      - ".github/workflows/android-build.yml"
   pull_request:
     branches: [main]
-    paths:
-      - "app/**"
-      - "core/**"
-      - "data/**"
-      - "feature/**"
-      - "library/**"
-      - "gradle/**"
-      - "config/**"
-      - ".editorconfig"
-      - "*.gradle.kts"
-      - "gradle.properties"
-      - "version.properties"
-      - "scripts/verify_debug_apk.py"
-      - "scripts/test_verify_debug_apk.py"
-      - "scripts/test_verify_release_signing.py"
-      - "scripts/verify_release_signing.py"
-      - "scripts/verify_exception_resources.py"
-      - "scripts/run_instrumentation.sh"
-      - "scripts/verify_sharecard_locale_parity.py"
-      - ".github/workflows/android-build.yml"
   workflow_dispatch:
 
 permissions:
