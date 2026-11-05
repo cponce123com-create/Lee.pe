@@ -200,9 +200,9 @@ internal fun InteractiveMixedShelf(
                                             group.objects.asReversed().forEachIndexed { index, item ->
                                                 key(item.stableKey) {
                                                     val objectHeight = if (group.objects.size > 1 && index > 0) {
-                                                        rowHeight * .22f
+                                                        rowHeight * .28f
                                                     } else {
-                                                        rowHeight * (1f - (group.objects.size - 1) * .22f)
+                                                        rowHeight * (1f - (group.objects.size - 1) * .28f)
                                                     }
                                                     MixedShelfObject(
                                                         item, booksById,
@@ -251,62 +251,9 @@ private fun MixedShelfObject(
                 contentAlignment = Alignment.BottomCenter,
             ) {
                 if (upright) {
-                    Box(
-                        Modifier.fillMaxSize().padding(top = 5.dp).shadow(5.dp, RoundedCornerShape(4.dp))
-                            .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                            .background(Brush.horizontalGradient(listOf(base.copy(alpha = .78f), base, Color(0xFF183B35)))),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Box(Modifier.fillMaxWidth().height(5.dp).align(Alignment.TopCenter)
-                            .background(Brush.verticalGradient(listOf(Color(0xFFE7D2A8), Color(0xFFFFF0CF)))))
-                        Canvas(Modifier.fillMaxSize()) {
-                            val depth = 5.dp.toPx()
-                            val top = 7.dp.toPx()
-                            val pages = Path().apply {
-                                moveTo(0f, top)
-                                lineTo(depth, 0f)
-                                lineTo(size.width, 0f)
-                                lineTo(size.width - depth, top)
-                                close()
-                            }
-                            drawPath(pages, Color(0xFFF8E9C8))
-                            drawLine(
-                                Color(0xFFCAB48A), Offset(depth, top / 2f), Offset(size.width - depth / 2f, top / 2f),
-                                strokeWidth = 1.dp.toPx(),
-                            )
-                            val side = Path().apply {
-                                moveTo(size.width - depth, top)
-                                lineTo(size.width, 0f)
-                                lineTo(size.width, size.height - depth)
-                                lineTo(size.width - depth, size.height)
-                                close()
-                            }
-                            drawPath(side, Color(0xFF173C36))
-                        }
-                        Box(Modifier.width(2.dp).fillMaxHeight().align(Alignment.CenterStart).background(Color(0x55FFFFFF)))
-                        Text(
-                            book.title.replace('_', ' '),
-                            modifier = Modifier.requiredWidth(116.dp).graphicsLayer { rotationZ = 270f },
-                            color = Color(0xFFFFF1D6), fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
-                            textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis,
-                        )
-                    }
+                    UprightBookVolume(book, base, Modifier.fillMaxSize())
                 } else {
-                    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom) {
-                        if (flatTop) {
-                            ShelfCoverArt(book, Modifier.weight(1f).fillMaxWidth().graphicsLayer {
-                                rotationX = 50f
-                                cameraDistance = 18f * density
-                                transformOrigin = TransformOrigin(.5f, 1f)
-                            }, portrait = false)
-                        }
-                        Text(
-                            book.title.replace('_', ' '),
-                            Modifier.fillMaxWidth().shadow(3.dp, RoundedCornerShape(3.dp)).background(base, RoundedCornerShape(3.dp))
-                                .padding(horizontal = 5.dp, vertical = 4.dp),
-                            color = Color(0xFFFFF1D6), fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                        )
-                    }
+                    StackedBookVolume(book, base, flatTop, Modifier.fillMaxSize())
                 }
             }
         }
