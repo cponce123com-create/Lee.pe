@@ -20,8 +20,8 @@ import pe.lee.feature.sharecard.domain.ShareCardSharer
 import pe.lee.feature.sharecard.domain.model.QuoteCard
 import pe.lee.feature.sharecard.domain.model.QuoteCardFont
 import pe.lee.feature.sharecard.domain.model.QuoteCardFormat
-import pe.lee.feature.sharecard.domain.model.QuoteCardThemeId
 import pe.lee.feature.sharecard.domain.model.QuoteCardRaster
+import pe.lee.feature.sharecard.domain.model.QuoteCardThemeId
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ShareCardViewModelTest {
