@@ -228,4 +228,7 @@
     <string name="reader_tts_playing_status">Narración en curso</string>
     <string name="reader_tts_paused_status">Narración pausada</string>
     <string name="epub_selection_action_failed">No se pudo completar la acción. Selecciona el texto y vuelve a intentarlo.</string>
+    <string name="epub_permission_lost">Lee.pe ya no tiene permiso para leer este archivo. Vuelve a la biblioteca y vincula el libro nuevamente desde sus opciones.</string>
+    <string name="epub_file_unavailable">El archivo no está disponible. Puede haberse movido o el almacenamiento estar desconectado. Revisa el archivo y vuelve a vincularlo desde la biblioteca.</string>
+    <string name="epub_storage_read_failed">No se pudo leer el archivo desde su almacenamiento. Comprueba que esté disponible y vuelve a abrir el libro.</string>
 </resources>
