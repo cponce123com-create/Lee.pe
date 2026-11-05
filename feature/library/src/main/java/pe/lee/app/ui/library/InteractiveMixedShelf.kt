@@ -113,8 +113,8 @@ internal fun InteractiveMixedShelf(
             objects.takeIf { it.isNotEmpty() }?.let { ShelfDisplay(shelf, it) }
         }
         val lines = packMixedShelves(shown, capacity, gapUnits = 3f / 45f).let { packed ->
-            val emptyShelf = beforeDrag.shelfCount()
-            if (drag.activeKey != null && shown.none { it.index == emptyShelf }) {
+            val emptyShelf = beforeDrag.nextEmptyShelfIndex()
+            if (drag.activeKey != null && emptyShelf != null && shown.none { it.index == emptyShelf }) {
                 packed + MixedShelfLine(emptyShelf, emptyList())
             } else {
                 packed

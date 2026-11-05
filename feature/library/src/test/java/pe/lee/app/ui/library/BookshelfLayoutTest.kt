@@ -7,6 +7,31 @@ import org.junit.Test
 
 class BookshelfLayoutTest {
     @Test
+    fun movingBeyondLastShelfPreservesDestinationAfterReload() {
+        val initial = BookshelfLayout()
+            .addToShelf("book")
+            .addDecoration(ShelfDecorationType.PLANT, 4095, 0)
+        assertEquals(null, initial.nextEmptyShelfIndex())
+
+        val moved = initial.moveObject("book:book", initial.shelfCount(), 1)
+        val restored = requireNotNull(BookshelfLayout.decode(BookshelfLayout.encode(moved)))
+
+        assertEquals(4095, moved.books.single().shelf)
+        assertEquals(moved.objectsByShelf(), restored.objectsByShelf())
+    }
+
+    @Test
+    fun addingBooksAndDecorationsRespectsLastShelf() {
+        val initial = BookshelfLayout()
+            .addToShelf("a", 4096)
+            .addDecoration(ShelfDecorationType.PLANT, 4096, 1)
+        val reconciled = initial.reconcile(listOf("a", "b", "c", "d", "e", "f"))
+
+        assertEquals(listOf(4095), reconciled.occupiedShelfIndices())
+        assertEquals(7, reconciled.objectsOnShelf(4095).size)
+    }
+
+    @Test
     fun sparseDisplayReadsEachDecorationOnlyOnce() {
         val items = listOf(
             ShelfDecoration("high", ShelfDecorationType.PLANT, 4095, 0),

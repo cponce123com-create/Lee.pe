@@ -143,7 +143,7 @@ internal data class BookshelfLayout(
         bookIds.filter { it !in keptIds && it !in retainedHidden }.forEach { id ->
             val lastShelf = (keptBooks + additions).maxOfOrNull { it.shelf } ?: 0
             val lastOrder = (keptBooks + additions).filter { it.shelf == lastShelf }.maxOfOrNull { it.order } ?: -1
-            val shelf = if (lastOrder + 1 >= INITIAL_BOOKS_PER_SHELF) lastShelf + 1 else lastShelf
+            val shelf = if (lastOrder + 1 >= INITIAL_BOOKS_PER_SHELF) (lastShelf + 1).coerceAtMost(MAX_PERSISTED_SHELF_INDEX) else lastShelf
             val order = if (shelf == lastShelf) lastOrder + 1 else 0
             additions += BookshelfBookPlacement(id, shelf, order, BookOrientation.UPRIGHT)
         }
@@ -203,16 +203,17 @@ internal data class BookshelfLayout(
 
     fun addToShelf(bookId: String, shelf: Int = 0): BookshelfLayout {
         if (books.any { it.bookId == bookId }) return copy(hiddenBookIds = hiddenBookIds - bookId)
-        val order = (objectsOnShelf(shelf).maxOfOrNull { it.order } ?: -1) + 1
+        val destination = shelf.coerceIn(0, MAX_PERSISTED_SHELF_INDEX)
+        val order = (objectsOnShelf(destination).maxOfOrNull { it.order } ?: -1) + 1
         return copy(
-            books = books + BookshelfBookPlacement(bookId, shelf, order, BookOrientation.UPRIGHT),
+            books = books + BookshelfBookPlacement(bookId, destination, order, BookOrientation.UPRIGHT),
             hiddenBookIds = hiddenBookIds - bookId,
         ).normalizedObjectOrders()
     }
 
     fun addDecoration(type: ShelfDecorationType, shelf: Int, order: Int): BookshelfLayout {
         if (decorations.size >= MAX_SHELF_DECORATIONS) return this
-        val decoration = ShelfDecoration(UUID.randomUUID().toString(), type, shelf.coerceAtLeast(0), order.coerceAtLeast(0))
+        val decoration = ShelfDecoration(UUID.randomUUID().toString(), type, shelf.coerceIn(0, MAX_PERSISTED_SHELF_INDEX), order.coerceAtLeast(0))
         return copy(decorations = decorations + decoration).normalizedObjectOrders()
     }
 
@@ -233,7 +234,7 @@ internal data class BookshelfLayout(
         val sourceShelf = groupedObjects.entries.firstOrNull { (_, objects) ->
             objects.any { it.stableKey == key }
         }?.key ?: return this
-        val destination = targetShelf.coerceAtLeast(0)
+        val destination = targetShelf.coerceIn(0, MAX_PERSISTED_SHELF_INDEX)
         val source = groupedObjects.getValue(sourceShelf).toMutableList()
         val moving = source.firstOrNull { it.stableKey == key } ?: return this
         source.remove(moving)
@@ -275,6 +276,8 @@ internal data class BookshelfLayout(
         }
         decorations.filter { it.shelf == shelf }.forEach { add(ShelfObject.Decor(it)) }
     }.sortedWith(shelfObjectOrder)
+
+    fun nextEmptyShelfIndex(): Int? = shelfCount().takeIf { it <= MAX_PERSISTED_SHELF_INDEX }
 
     fun shelfCount(): Int = maxOf(
         books.filterNot { it.bookId in hiddenBookIds }.maxOfOrNull { it.shelf + 1 } ?: 0,
