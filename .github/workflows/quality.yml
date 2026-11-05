@@ -105,7 +105,7 @@ jobs:
       - name: Audit resolved dependencies (CVSS >= 7 fails)
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
-        run: ./gradlew --no-daemon --stacktrace dependencyCheckAggregate
+        run: ./gradlew --no-daemon --stacktrace --no-parallel dependencyCheckAggregate
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
