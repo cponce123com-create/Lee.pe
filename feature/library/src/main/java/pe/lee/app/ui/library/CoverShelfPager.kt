@@ -25,20 +25,18 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -91,8 +89,14 @@ internal fun CoverShelfPager(
                 draft = draft.toMutableList().apply { add(targetIndex, removeAt(sourceIndex)) }
             }
         },
-        onDrop = { edge = 0; onReorder(draft.map { it.id }) },
-        onCancel = { edge = 0; draft = beforeDrag },
+        onDrop = {
+            edge = 0
+            onReorder(draft.map { it.id })
+        },
+        onCancel = {
+            edge = 0
+            draft = beforeDrag
+        },
         onDragPosition = { point ->
             edge = when {
                 point.x < edgePx -> -1
@@ -109,7 +113,8 @@ internal fun CoverShelfPager(
             height = height,
             footer = {
                 CabinetPagerControls(
-                    page = pager.currentPage, pages = pages,
+                    page = pager.currentPage,
+                    pages = pages,
                     onPrevious = { scope.launch { pager.animateScrollToPage(pager.currentPage - 1) } },
                     onNext = { scope.launch { pager.animateScrollToPage(pager.currentPage + 1) } },
                 )
@@ -177,8 +182,10 @@ internal fun ShelfCoverArt(book: LocalBook, modifier: Modifier = Modifier, portr
             Box(
                 Modifier.align(Alignment.BottomCenter).size(width.dp, 5.dp)
                     .shadow(2.dp, RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                    .background(Brush.verticalGradient(listOf(Color(0xFFE7B66A), Color(0xFF543219), Color(0xFFAA7437))),
-                        RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)),
+                    .background(
+                        Brush.verticalGradient(listOf(Color(0xFFE7B66A), Color(0xFF543219), Color(0xFFAA7437))),
+                        RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp),
+                    ),
             )
         }
     }
@@ -194,13 +201,21 @@ private fun ShelfCoverFace(book: LocalBook, modifier: Modifier) {
                 "EPUB" -> LocalEpubCover(book.uri, book.offlineCopyUri, Modifier.fillMaxSize())
                 "PDF" -> LocalPdfCover(book.uri, book.offlineCopyUri, Modifier.fillMaxSize())
                 else -> Text(
-                    bookSpineTitle(book.title), modifier = Modifier.fillMaxSize().padding(5.dp),
-                    color = Color(0xFF174E44), fontSize = 10.sp, maxLines = 6, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    bookSpineTitle(book.title),
+                    modifier = Modifier.fillMaxSize().padding(5.dp),
+                    color = Color(0xFF174E44),
+                    fontSize = 10.sp,
+                    maxLines = 6,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 )
             }
         }
         if (book.readProgress > 0f) {
-            Box(Modifier.align(Alignment.BottomStart).fillMaxWidth(book.readProgress.coerceIn(0f, 1f)).height(2.dp).background(Color(0xFF075B50)))
+            Box(
+                Modifier.align(
+                    Alignment.BottomStart,
+                ).fillMaxWidth(book.readProgress.coerceIn(0f, 1f)).height(2.dp).background(Color(0xFF075B50)),
+            )
         }
     }
 }
@@ -229,7 +244,9 @@ internal fun CabinetPagerControls(page: Int, pages: Int, onPrevious: () -> Unit,
             }
             Text(
                 if (compact) "${page + 1} / $pages" else pageDescription,
-                color = Color(0xFFFFE6B8), fontSize = 9.sp, maxLines = 1,
+                color = Color(0xFFFFE6B8),
+                fontSize = 9.sp,
+                maxLines = 1,
                 modifier = Modifier.weight(1f).semantics { contentDescription = pageDescription },
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )

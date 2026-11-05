@@ -4,6 +4,11 @@ import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -37,6 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CancellationException
@@ -49,7 +55,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import pe.lee.app.LeePeApplication
 import pe.lee.app.R
+import pe.lee.app.data.local.OfflineBookStore
 import pe.lee.app.data.repository.SettingsRepository
 import pe.lee.app.ui.reader.PdfReaderViewModel
 
@@ -410,5 +418,70 @@ internal fun PdfReaderScreen(
                 }
             }
         }
+    }
+}
+class PdfReaderActivity : ComponentActivity() {
+    private var readingSessionRecorder: ReadingSessionRecorder? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(0xFF07111F.toInt()),
+            navigationBarStyle = SystemBarStyle.dark(0xFF07111F.toInt()),
+        )
+        val uri = intent.data
+        if (uri == null) {
+            finish()
+            return
+        }
+
+        val container = (application as LeePeApplication).container
+        val readerViewModel = ViewModelProvider(this, container.viewModelFactory)
+            .get(PdfReaderViewModel::class.java)
+        readingSessionRecorder = ReadingSessionRecorder(
+            bookUri = uri.toString(),
+            repository = container.readingStats,
+        )
+        val documentUri = intent.getStringExtra(OfflineBookStore.EXTRA_COPY_URI)?.let(Uri::parse) ?: uri
+        val title = intent.getStringExtra(EXTRA_TITLE) ?: "Documento PDF"
+        setContent {
+            pe.lee.app.ui.theme.LeePeTheme {
+                PdfReaderScreen(
+                    uri = uri,
+                    documentUri = documentUri,
+                    title = title,
+                    viewModel = readerViewModel,
+                    settings = container.settings,
+                    onReadingVisibilityChange = { active ->
+                        if (active) {
+                            readingSessionRecorder?.onResume()
+                        } else {
+                            readingSessionRecorder?.onPause()
+                        }
+                    },
+                    onBack = { finish() },
+                )
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        readingSessionRecorder?.onResume()
+    }
+
+    override fun onPause() {
+        readingSessionRecorder?.onPause()
+        super.onPause()
+    }
+
+    override fun onDestroy() {
+        readingSessionRecorder?.close()
+        readingSessionRecorder = null
+        super.onDestroy()
+    }
+
+    companion object {
+        const val EXTRA_TITLE = "pe.lee.app.pdf.TITLE"
     }
 }

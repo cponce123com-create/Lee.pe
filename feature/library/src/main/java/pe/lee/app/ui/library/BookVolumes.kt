@@ -58,20 +58,26 @@ internal fun UprightBookVolume(book: LocalBook, base: Color, modifier: Modifier 
         Canvas(Modifier.fillMaxSize()) {
             val d = depth.toPx()
             val t = top.toPx()
-            drawPath(Path().apply {
-                moveTo(size.width - d, t)
-                lineTo(size.width, 0f)
-                lineTo(size.width, size.height - t / 2)
-                lineTo(size.width - d, size.height)
-                close()
-            }, lerp(base, Color.Black, .48f))
-            drawPath(Path().apply {
-                moveTo(0f, t)
-                lineTo(d, 0f)
-                lineTo(size.width, 0f)
-                lineTo(size.width - d, t)
-                close()
-            }, Paper)
+            drawPath(
+                Path().apply {
+                    moveTo(size.width - d, t)
+                    lineTo(size.width, 0f)
+                    lineTo(size.width, size.height - t / 2)
+                    lineTo(size.width - d, size.height)
+                    close()
+                },
+                lerp(base, Color.Black, .48f),
+            )
+            drawPath(
+                Path().apply {
+                    moveTo(0f, t)
+                    lineTo(d, 0f)
+                    lineTo(size.width, 0f)
+                    lineTo(size.width - d, t)
+                    close()
+                },
+                Paper,
+            )
             repeat(5) { line ->
                 val fraction = (line + 1) / 6f
                 val y = t * fraction
@@ -173,13 +179,16 @@ internal fun CoverBookVolume(base: Color, modifier: Modifier, content: @Composab
         ) { content() }
         Canvas(Modifier.fillMaxSize()) {
             val d = depth.toPx()
-            drawPath(Path().apply {
-                moveTo(size.width - d, 1.dp.toPx())
-                lineTo(size.width, d)
-                lineTo(size.width, size.height - 2.dp.toPx())
-                lineTo(size.width - d, size.height - 4.dp.toPx())
-                close()
-            }, Paper)
+            drawPath(
+                Path().apply {
+                    moveTo(size.width - d, 1.dp.toPx())
+                    lineTo(size.width, d)
+                    lineTo(size.width, size.height - 2.dp.toPx())
+                    lineTo(size.width - d, size.height - 4.dp.toPx())
+                    close()
+                },
+                Paper,
+            )
             repeat(4) { line ->
                 val x = size.width - d + d * (line + 1) / 5f
                 drawLine(PaperLine.copy(alpha = .5f), Offset(x, d), Offset(x, size.height - 3.dp.toPx()), .35.dp.toPx())

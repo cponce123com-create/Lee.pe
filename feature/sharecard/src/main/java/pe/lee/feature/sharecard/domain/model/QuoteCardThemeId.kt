@@ -43,6 +43,7 @@ enum class QuoteCardThemeId {
     MOSS_GARDEN,
     SAND,
     WHITE_RELIEF,
+
     // Editorial additions keep text directly on the artwork.
     GOLDEN_NIGHT,
     BOTANICAL_IVORY,

@@ -8,13 +8,13 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.platform.app.InstrumentationRegistry
 import java.util.concurrent.atomic.AtomicReference
 import org.junit.Assert.assertEquals
@@ -102,7 +102,10 @@ class ShareCardScreenTest {
         val captured = AtomicReference<QuoteCardRaster?>(null)
         val viewModel = ShareCardViewModel(
             initialCard = QuoteCard("Incluso la noche más larga deja paso a un nuevo amanecer.", "Libro", "Autor de ejemplo"),
-            generator = ShareCardGenerator { _, raster, _ -> captured.set(raster); byteArrayOf(1) },
+            generator = ShareCardGenerator { _, raster, _ ->
+                captured.set(raster)
+                byteArrayOf(1)
+            },
             sharer = ShareCardSharer {},
         )
         composeRule.setContent { ShareCardScreen(viewModel, {}) }
@@ -113,7 +116,11 @@ class ShareCardScreenTest {
         )) {
             composeRule.runOnIdle { viewModel.selectTheme(theme) }
             composeRule.waitForIdle()
-            composeRule.onNodeWithText(text(R.string.share_card_share)).assertIsEnabled().performClick()
+            val shareButton = composeRule.onNodeWithText(text(R.string.share_card_share))
+            composeRule.waitUntil(30_000) {
+                runCatching { shareButton.assertIsEnabled() }.isSuccess
+            }
+            shareButton.performClick()
             composeRule.waitUntil(30_000) { viewModel.state.value.status == ShareCardStatus.Ready }
             val raster = requireNotNull(captured.get())
             assertEquals(1080, raster.width)
@@ -146,7 +153,11 @@ class ShareCardScreenTest {
                 viewModel.selectFormat(format)
             }
             composeRule.waitForIdle()
-            composeRule.onNodeWithText(text(R.string.share_card_share)).assertIsEnabled().performClick()
+            val shareButton = composeRule.onNodeWithText(text(R.string.share_card_share))
+            composeRule.waitUntil(30_000) {
+                runCatching { shareButton.assertIsEnabled() }.isSuccess
+            }
+            shareButton.performClick()
             composeRule.waitUntil(30_000) { captured.get() != null && viewModel.state.value.status == ShareCardStatus.Ready }
             val raster = requireNotNull(captured.get())
             assertEquals(format.widthPx, raster.width)

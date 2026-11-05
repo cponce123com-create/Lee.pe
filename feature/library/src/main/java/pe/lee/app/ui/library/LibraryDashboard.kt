@@ -24,10 +24,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -71,22 +71,37 @@ internal fun LibraryDashboardHeader(
         Spacer(Modifier.size(8.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                "Lee.pe", fontSize = 23.sp, fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                "Lee.pe",
+                fontSize = 23.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
-            Text(stringResource(R.string.shelf_book_count, totalBooks), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                stringResource(R.string.shelf_book_count, totalBooks),
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         IconButton(onClick = onSearch, modifier = Modifier.size(40.dp)) {
             Icon(Icons.Default.Search, stringResource(R.string.accessibility_search), tint = MaterialTheme.colorScheme.primary)
         }
         Box {
             IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Default.MoreVert, stringResource(R.string.accessibility_library_more_options), tint = MaterialTheme.colorScheme.primary)
+                Icon(
+                    Icons.Default.MoreVert,
+                    stringResource(R.string.accessibility_library_more_options),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
             }
             DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.accessibility_reading_statistics)) },
-                    onClick = { menuExpanded = false; onStats() },
+                    onClick = {
+                        menuExpanded = false
+                        onStats()
+                    },
                 )
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.library_version, appVersion)) },
@@ -96,11 +111,17 @@ internal fun LibraryDashboardHeader(
                 DropdownMenuItem(
                     text = { Text(stringResource(if (busy) R.string.library_scanning else R.string.library_scan)) },
                     enabled = !busy,
-                    onClick = { menuExpanded = false; onScan() },
+                    onClick = {
+                        menuExpanded = false
+                        onScan()
+                    },
                 )
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.library_backup_restore)) },
-                    onClick = { menuExpanded = false; onBackup() },
+                    onClick = {
+                        menuExpanded = false
+                        onBackup()
+                    },
                 )
             }
         }

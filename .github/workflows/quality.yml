@@ -37,6 +37,7 @@ jobs:
           path: |
             **/build/reports/detekt*
             **/build/reports/ktlint/
+            config/detekt/baseline.xml
             core/domain/build/dokka/
             build/reports/formatting.patch
           retention-days: 30

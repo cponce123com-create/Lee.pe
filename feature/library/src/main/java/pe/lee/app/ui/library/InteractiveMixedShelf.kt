@@ -1,8 +1,6 @@
 package pe.lee.app.ui.library
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -10,49 +8,33 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -66,12 +48,25 @@ internal fun packMixedShelves(shelves: List<ShelfDisplay>, capacity: Float): Lis
         shelf.objects.forEach { item ->
             val stacked = item is ShelfObject.Book && item.placement.orientation == BookOrientation.STACKED
             val previous = groups.lastOrNull()
-            if (stacked && previous != null && previous.objects.size < 3 && previous.objects.all {
+            if (stacked &&
+                previous != null &&
+                previous.objects.size < 3 &&
+                previous.objects.all {
                     it is ShelfObject.Book && it.placement.orientation == BookOrientation.STACKED
-                }) {
+                }
+            ) {
                 groups[groups.lastIndex] = previous.copy(objects = previous.objects + item)
             } else {
-                groups += MixedShelfGroup(listOf(item), if (stacked) 2f else if (item is ShelfObject.Decor) 1.7f else .82f)
+                groups += MixedShelfGroup(
+                    listOf(item),
+                    if (stacked) {
+                        2f
+                    } else if (item is ShelfObject.Decor) {
+                        1.7f
+                    } else {
+                        .82f
+                    },
+                )
             }
         }
         var line = mutableListOf<MixedShelfGroup>()
@@ -152,8 +147,14 @@ internal fun InteractiveMixedShelf(
                     draft = draft.moveObject(moving, destination, index)
                 }
             },
-            onDrop = { edgeDirection = 0; onCommit(draft) },
-            onCancel = { edgeDirection = 0; draft = beforeDrag },
+            onDrop = {
+                edgeDirection = 0
+                onCommit(draft)
+            },
+            onCancel = {
+                edgeDirection = 0
+                draft = beforeDrag
+            },
             onDragPosition = { point ->
                 edgeDirection = when {
                     point.x < edge -> -1
@@ -171,7 +172,8 @@ internal fun InteractiveMixedShelf(
                 height = height,
                 footer = {
                     CabinetPagerControls(
-                        page = pager.currentPage, pages = pages,
+                        page = pager.currentPage,
+                        pages = pages,
                         onPrevious = { scope.launch { pager.animateScrollToPage(pager.currentPage - 1) } },
                         onNext = { scope.launch { pager.animateScrollToPage(pager.currentPage + 1) } },
                     )
@@ -193,8 +195,10 @@ internal fun InteractiveMixedShelf(
                                     horizontalArrangement = Arrangement.spacedBy(3.dp),
                                     verticalAlignment = Alignment.Bottom,
                                 ) {
-                                    val unit = ((availableWidth - line.groups.size * 3f) /
-                                        line.groups.sumOf { it.units.toDouble() }.toFloat().coerceAtLeast(1f)).coerceAtMost(45f)
+                                    val unit = (
+                                        (availableWidth - line.groups.size * 3f) /
+                                            line.groups.sumOf { it.units.toDouble() }.toFloat().coerceAtLeast(1f)
+                                        ).coerceAtMost(45f)
                                     line.groups.forEach { group ->
                                         Column(Modifier.width((group.units * unit).dp), verticalArrangement = Arrangement.Bottom) {
                                             group.objects.asReversed().forEachIndexed { index, item ->
@@ -205,9 +209,14 @@ internal fun InteractiveMixedShelf(
                                                         rowHeight * (1f - (group.objects.size - 1) * .28f)
                                                     }
                                                     MixedShelfObject(
-                                                        item, booksById,
-                                                        Modifier.fillMaxWidth().height(objectHeight).then(drag.itemModifier(item.stableKey)),
-                                                        onOpen, onDecorationClick, flatTop = index == 0,
+                                                        item,
+                                                        booksById,
+                                                        Modifier.fillMaxWidth().height(
+                                                            objectHeight,
+                                                        ).then(drag.itemModifier(item.stableKey)),
+                                                        onOpen,
+                                                        onDecorationClick,
+                                                        flatTop = index == 0,
                                                         onToggle = { id -> onCommit(draft.toggleOrientation(id)) },
                                                     )
                                                 }
@@ -247,7 +256,10 @@ private fun MixedShelfObject(
             val base = palette[(book.id.hashCode() and Int.MAX_VALUE) % palette.size]
             val upright = item.placement.orientation == BookOrientation.UPRIGHT
             Box(
-                modifier.combinedClickable(onClick = { onOpen(book) }, onDoubleClick = { onToggle(book.id) }).semantics { contentDescription = book.title },
+                modifier.combinedClickable(onClick = { onOpen(book) }, onDoubleClick = { onToggle(book.id) }).semantics {
+                    contentDescription =
+                        book.title
+                },
                 contentAlignment = Alignment.BottomCenter,
             ) {
                 if (upright) {

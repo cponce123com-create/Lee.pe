@@ -63,14 +63,21 @@ internal fun premiumThemeIndex(theme: QuoteCardThemeId): Int = premiumThemes.ind
 internal fun premiumLightPaper(theme: QuoteCardThemeId): Boolean = premiumThemeIndex(theme) < 6
 internal fun premiumMatchesMood(theme: QuoteCardThemeId, mood: QuoteMood): Boolean {
     if (isEditorialTheme(theme)) {
-        return mood == QuoteMood.ALL || mood == QuoteMood.EDITORIAL || mood == QuoteMood.LITERARY || when (mood) {
-            QuoteMood.CALM -> theme in setOf(QuoteCardThemeId.BOTANICAL_IVORY, QuoteCardThemeId.ELEGANT_FOREST, QuoteCardThemeId.LINEN_FEATHER)
-            QuoteMood.REFLECTION -> theme in setOf(QuoteCardThemeId.GOLDEN_NIGHT, QuoteCardThemeId.LIVING_PARCHMENT, QuoteCardThemeId.LITERARY_LEATHER)
-            QuoteMood.MELANCHOLY -> theme == QuoteCardThemeId.INK_MOON
-            QuoteMood.JOY -> theme in setOf(QuoteCardThemeId.PAPER_ROSE, QuoteCardThemeId.LIGHT_SPROUT)
-            QuoteMood.STRENGTH -> theme == QuoteCardThemeId.STONE_GOLD
-            else -> false
-        }
+        return mood == QuoteMood.ALL ||
+            mood == QuoteMood.EDITORIAL ||
+            mood == QuoteMood.LITERARY ||
+            when (mood) {
+                QuoteMood.CALM ->
+                    theme in
+                        setOf(QuoteCardThemeId.BOTANICAL_IVORY, QuoteCardThemeId.ELEGANT_FOREST, QuoteCardThemeId.LINEN_FEATHER)
+                QuoteMood.REFLECTION ->
+                    theme in
+                        setOf(QuoteCardThemeId.GOLDEN_NIGHT, QuoteCardThemeId.LIVING_PARCHMENT, QuoteCardThemeId.LITERARY_LEATHER)
+                QuoteMood.MELANCHOLY -> theme == QuoteCardThemeId.INK_MOON
+                QuoteMood.JOY -> theme in setOf(QuoteCardThemeId.PAPER_ROSE, QuoteCardThemeId.LIGHT_SPROUT)
+                QuoteMood.STRENGTH -> theme == QuoteCardThemeId.STONE_GOLD
+                else -> false
+            }
     }
     val index = premiumThemeIndex(theme)
     return when (mood) {
@@ -112,7 +119,8 @@ private object PremiumAtlasCache {
 
     @Synchronized
     fun load(resources: Resources, resourceId: Int): ImageBitmap = cached[resourceId]?.get() ?: BitmapFactory.decodeResource(
-        resources, resourceId,
+        resources,
+        resourceId,
         BitmapFactory.Options().apply { inScaled = false },
     ).asImageBitmap().also { cached[resourceId] = SoftReference(it) }
 }

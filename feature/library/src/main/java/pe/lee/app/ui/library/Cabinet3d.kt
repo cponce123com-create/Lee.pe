@@ -43,7 +43,10 @@ internal fun Cabinet3d(height: Dp, footer: @Composable () -> Unit, content: @Com
             )
             content()
             Box(
-                Modifier.offset(maxWidth * DRAWER_CONTROL_LEFT, maxHeight * DRAWER_CONTROL_TOP).size(maxWidth * DRAWER_CONTROL_WIDTH, maxHeight * DRAWER_CONTROL_HEIGHT),
+                Modifier.offset(maxWidth * DRAWER_CONTROL_LEFT, maxHeight * DRAWER_CONTROL_TOP).size(
+                    maxWidth * DRAWER_CONTROL_WIDTH,
+                    maxHeight * DRAWER_CONTROL_HEIGHT,
+                ),
                 contentAlignment = Alignment.Center,
             ) { footer() }
         }

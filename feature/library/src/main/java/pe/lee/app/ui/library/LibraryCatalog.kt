@@ -209,43 +209,45 @@ internal fun LibraryCatalog(
             )
         }
         if (searchExpanded || query.value.isNotBlank()) {
-        item(key = "search") {
-            Row(
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
-                    .background(if (darkTheme) colors.surfaceVariant else colors.surfaceVariant).padding(horizontal = 13.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(Icons.Default.Search, contentDescription = context.getString(R.string.accessibility_search), tint = colors.primary)
-                Spacer(Modifier.width(9.dp))
-                BasicTextField(
-                    value = query.value,
-                    onValueChange = { query.value = it },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f).semantics {
-                        contentDescription = context.getString(R.string.accessibility_search_books)
-                    },
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.onSurface),
-                    decorationBox = { inner ->
-                        if (query.value.isEmpty()) {
-                            Text(
-                                stringResource(R.string.library_search_placeholder),
-                                color = colors.onSurfaceVariant,
+            item(key = "search") {
+                Row(
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+                        .background(
+                            if (darkTheme) colors.surfaceVariant else colors.surfaceVariant,
+                        ).padding(horizontal = 13.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Default.Search, contentDescription = context.getString(R.string.accessibility_search), tint = colors.primary)
+                    Spacer(Modifier.width(9.dp))
+                    BasicTextField(
+                        value = query.value,
+                        onValueChange = { query.value = it },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f).semantics {
+                            contentDescription = context.getString(R.string.accessibility_search_books)
+                        },
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.onSurface),
+                        decorationBox = { inner ->
+                            if (query.value.isEmpty()) {
+                                Text(
+                                    stringResource(R.string.library_search_placeholder),
+                                    color = colors.onSurfaceVariant,
+                                )
+                            }
+                            inner()
+                        },
+                    )
+                    if (query.value.isNotBlank()) {
+                        IconButton(onClick = { query.value = "" }, modifier = Modifier.size(36.dp)) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = context.getString(R.string.accessibility_clear_search),
+                                tint = colors.primary,
                             )
                         }
-                        inner()
-                    },
-                )
-                if (query.value.isNotBlank()) {
-                    IconButton(onClick = { query.value = "" }, modifier = Modifier.size(36.dp)) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = context.getString(R.string.accessibility_clear_search),
-                            tint = colors.primary,
-                        )
                     }
                 }
             }
-        }
         }
         item(key = "filters") {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -253,13 +255,23 @@ internal fun LibraryCatalog(
                     FilterChip(
                         selected = selectedFilter.value == filter,
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFFF6CD73), selectedLabelColor = Color(0xFF392614),
-                            labelColor = Color(0xFFFFEBD0), containerColor = Color(0x44271D17),
+                            selectedContainerColor = Color(0xFFF6CD73),
+                            selectedLabelColor = Color(0xFF392614),
+                            labelColor = Color(0xFFFFEBD0),
+                            containerColor = Color(0x44271D17),
                         ),
                         onClick = { selectedFilter.value = filter },
                         label = {
                             Text(
-                                stringResource(if (filter == LibraryFilter.COMPLETED) R.string.library_filter_completed_short else filter.labelRes),
+                                stringResource(
+                                    if (filter ==
+                                        LibraryFilter.COMPLETED
+                                    ) {
+                                        R.string.library_filter_completed_short
+                                    } else {
+                                        filter.labelRes
+                                    },
+                                ),
                                 fontSize = if (screenWidth < 360) 10.sp else 12.sp,
                                 maxLines = 1,
                             )
@@ -281,7 +293,10 @@ internal fun LibraryCatalog(
                     TextButton(onClick = { sortMenuExpanded.value = true }, contentPadding = PaddingValues(horizontal = 4.dp)) {
                         Text(
                             stringResource(R.string.library_sort_order, stringResource(sortMode.value.labelRes)),
-                            color = colors.primary, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            color = colors.primary,
+                            fontSize = 12.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                     DropdownMenu(expanded = sortMenuExpanded.value, onDismissRequest = { sortMenuExpanded.value = false }) {
@@ -331,11 +346,14 @@ internal fun LibraryCatalog(
                 }
                 if (viewMode.value == LibraryViewMode.MIXED_BOOKSHELF) {
                     TextButton(onClick = { showBookshelfCustomizer = true }, contentPadding = PaddingValues(horizontal = 5.dp)) {
-                        Text(stringResource(R.string.shelf_decoration_count, bookshelfLayout.decorations.size), color = colors.primary, fontSize = 12.sp)
+                        Text(
+                            stringResource(R.string.shelf_decoration_count, bookshelfLayout.decorations.size),
+                            color = colors.primary,
+                            fontSize = 12.sp,
+                        )
                     }
                 }
             }
-
         }
         if (visibleBooks.isEmpty()) {
             item(key = "empty") {
@@ -361,7 +379,9 @@ internal fun LibraryCatalog(
         } else if (viewMode.value == LibraryViewMode.COVERS) {
             item(key = "cover-pages") {
                 CoverShelfPager(
-                    books = orderedBooks, height = shelfHeight, savingBookUri = savingBookUri.value,
+                    books = orderedBooks,
+                    height = shelfHeight,
+                    savingBookUri = savingBookUri.value,
                     onBookAction = ::handleBookAction,
                     onReorder = { ids ->
                         onBookshelfLayoutChange(bookshelfLayout.reorderBooks(ids))
@@ -372,7 +392,10 @@ internal fun LibraryCatalog(
         } else {
             item(key = "interactive-shelves") {
                 InteractiveMixedShelf(
-                    layout = bookshelfLayout, shelves = shelves, booksById = booksById, height = shelfHeight,
+                    layout = bookshelfLayout,
+                    shelves = shelves,
+                    booksById = booksById,
+                    height = shelfHeight,
                     onOpen = { handleBookAction(it, LibraryBookAction.OPEN) },
                     onCommit = {
                         onBookshelfLayoutChange(it)
@@ -455,11 +478,11 @@ internal fun LibraryCatalog(
                 if (bookshelfLayout.decorations.size >= MAX_SHELF_DECORATIONS) {
                     Toast.makeText(context, R.string.shelf_decoration_limit, Toast.LENGTH_SHORT).show()
                 } else {
-                val shelf = (bookshelfLayout.shelfCount() - 1).coerceAtLeast(0)
-                val nextOrder = (bookshelfLayout.objectsOnShelf(shelf).maxOfOrNull(ShelfObject::order) ?: -1) + 1
-                onBookshelfLayoutChange(bookshelfLayout.addDecoration(type, shelf, nextOrder))
-                onCustomLayoutSelected()
-                showBookshelfCustomizer = false
+                    val shelf = (bookshelfLayout.shelfCount() - 1).coerceAtLeast(0)
+                    val nextOrder = (bookshelfLayout.objectsOnShelf(shelf).maxOfOrNull(ShelfObject::order) ?: -1) + 1
+                    onBookshelfLayoutChange(bookshelfLayout.addDecoration(type, shelf, nextOrder))
+                    onCustomLayoutSelected()
+                    showBookshelfCustomizer = false
                 }
             },
             onAddBooks = { showHiddenBooks = true },

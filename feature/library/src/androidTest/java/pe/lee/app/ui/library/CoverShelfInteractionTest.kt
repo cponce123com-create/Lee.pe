@@ -1,29 +1,29 @@
 package pe.lee.app.ui.library
 
-import android.net.Uri
-import android.graphics.Bitmap
 import android.content.ContentValues
+import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
-import androidx.test.platform.app.InstrumentationRegistry
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.test.captureToImage
-import androidx.compose.ui.test.onRoot
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.unit.dp
+import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -39,7 +39,8 @@ class CoverShelfInteractionTest {
                 "5 noticias del Perú", "Documentos educativos", "El_tesoro_de_los_Incas.epub",
                 "El sistema solar", "Ciencias naturales", "Green English", "Informática básica",
                 "Principios de matemáticas", "Tecnología e innovación",
-            ).getOrElse(index) { "Libro $index" }, format = "TXT", isFavorite = false,
+            ).getOrElse(index) { "Libro $index" },
+            format = "TXT", isFavorite = false,
             importedAt = index.toLong(), lastOpenedAt = null, readProgress = 0f,
             collectionId = null, offlineCopyUri = null,
         )
@@ -133,8 +134,13 @@ class CoverShelfInteractionTest {
         compose.setContent {
             LibraryShelfTheme {
                 InteractiveMixedShelf(
-                    layout, buildShelfDisplay(catalog, layout, true), catalog.associateBy { it.id }, 450.dp,
-                    {}, { committed = it }, {},
+                    layout,
+                    buildShelfDisplay(catalog, layout, true),
+                    catalog.associateBy { it.id },
+                    450.dp,
+                    {},
+                    { committed = it },
+                    {},
                 )
             }
         }

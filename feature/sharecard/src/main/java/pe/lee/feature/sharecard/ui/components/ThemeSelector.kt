@@ -17,9 +17,9 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
@@ -33,8 +33,8 @@ import pe.lee.feature.sharecard.R
 import pe.lee.feature.sharecard.domain.model.QuoteCardThemeId
 import pe.lee.feature.sharecard.ui.theme.PremiumArtwork
 import pe.lee.feature.sharecard.ui.theme.QuoteMood
-import pe.lee.feature.sharecard.ui.theme.premiumMatchesMood
 import pe.lee.feature.sharecard.ui.theme.allQuoteThemes
+import pe.lee.feature.sharecard.ui.theme.premiumMatchesMood
 
 @Composable
 internal fun ThemeSelector(selected: QuoteCardThemeId, onThemeSelected: (QuoteCardThemeId) -> Unit, modifier: Modifier = Modifier) {
@@ -44,7 +44,8 @@ internal fun ThemeSelector(selected: QuoteCardThemeId, onThemeSelected: (QuoteCa
         LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             items(QuoteMood.entries) { category ->
                 FilterChip(
-                    selected = mood == category, onClick = { mood = category },
+                    selected = mood == category,
+                    onClick = { mood = category },
                     label = { Text(stringResource(category.labelRes)) },
                 )
             }
@@ -58,8 +59,14 @@ internal fun ThemeSelector(selected: QuoteCardThemeId, onThemeSelected: (QuoteCa
                 val chosen = selected == theme
                 OutlinedCard(
                     onClick = { onThemeSelected(theme) },
-                    modifier = Modifier.width(90.dp).semantics { this.selected = chosen; role = Role.RadioButton },
-                    border = BorderStroke(if (chosen) 2.dp else 1.dp, if (chosen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                    modifier = Modifier.width(90.dp).semantics {
+                        this.selected = chosen
+                        role = Role.RadioButton
+                    },
+                    border = BorderStroke(
+                        if (chosen) 2.dp else 1.dp,
+                        if (chosen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                    ),
                 ) {
                     PremiumArtwork(theme, Modifier.fillMaxWidth().height(112.dp).clip(RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp)))
                     Text(stringResource(theme.labelRes), Modifier.padding(6.dp), maxLines = 2, style = MaterialTheme.typography.labelSmall)

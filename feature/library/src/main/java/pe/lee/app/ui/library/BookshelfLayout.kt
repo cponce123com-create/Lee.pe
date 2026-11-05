@@ -166,13 +166,15 @@ internal data class BookshelfLayout(
         val ordered = ids.distinct().mapNotNull(byId::get).iterator()
         val selected = ids.toSet()
         val slots = books.sortedWith(compareBy({ it.shelf }, { it.order }))
-        return copy(books = slots.map { slot ->
-            if (slot.bookId in selected && ordered.hasNext()) {
-                ordered.next().copy(shelf = slot.shelf, order = slot.order)
-            } else {
-                slot
-            }
-        }).normalizedObjectOrders()
+        return copy(
+            books = slots.map { slot ->
+                if (slot.bookId in selected && ordered.hasNext()) {
+                    ordered.next().copy(shelf = slot.shelf, order = slot.order)
+                } else {
+                    slot
+                }
+            },
+        ).normalizedObjectOrders()
     }
 
     fun toggleOrientation(bookId: String): BookshelfLayout = copy(
