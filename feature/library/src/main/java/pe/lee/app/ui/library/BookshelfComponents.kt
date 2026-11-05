@@ -57,7 +57,7 @@ internal data class ShelfDisplay(val index: Int, val objects: List<ShelfObject>)
 internal fun buildShelfDisplay(orderedBooks: List<LocalBook>, layout: BookshelfLayout, customOrder: Boolean): List<ShelfDisplay> {
     val booksById = orderedBooks.associateBy { it.id }
     if (customOrder) {
-        return (0 until layout.shelfCount()).mapNotNull { shelf ->
+        return layout.occupiedShelfIndices().mapNotNull { shelf ->
             val objects = layout.objectsOnShelf(shelf).filter { item ->
                 when (item) {
                     is ShelfObject.Book -> item.placement.bookId in booksById
