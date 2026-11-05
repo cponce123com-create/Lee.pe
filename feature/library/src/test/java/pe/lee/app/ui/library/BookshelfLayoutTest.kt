@@ -1,10 +1,70 @@
 package pe.lee.app.ui.library
 
+import kotlin.random.Random
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
 
 class BookshelfLayoutTest {
+    @Test
+    fun sparseDisplayReadsEachDecorationOnlyOnce() {
+        val items = listOf(
+            ShelfDecoration("high", ShelfDecorationType.PLANT, 4095, 0),
+            ShelfDecoration("low", ShelfDecorationType.MUG, 0, 0),
+        )
+        var reads = 0
+        val counted = object : AbstractList<ShelfDecoration>() {
+            override val size: Int get() = items.size
+
+            override fun get(index: Int): ShelfDecoration {
+                reads++
+                return items[index]
+            }
+        }
+        val layout = BookshelfLayout(
+            books = listOf(BookshelfBookPlacement("hidden", 12, 0, BookOrientation.UPRIGHT)),
+            decorations = counted,
+            hiddenBookIds = setOf("hidden"),
+        )
+
+        assertEquals(listOf(0, 4095), layout.occupiedShelfIndices())
+        reads = 0
+        val display = buildShelfDisplay(emptyList(), layout, customOrder = true)
+        assertEquals(listOf(0, 4095), display.map { it.index })
+        assertEquals(listOf("decor:low", "decor:high"), display.flatMap { it.objects }.map { it.stableKey })
+        assertEquals(items.size, reads)
+    }
+
+    @Test
+    fun mixedMovesPreserveUniqueObjectsContiguousOrdersAndRoundTrip() {
+        val shelves = listOf(0, 1, 12, 4095)
+        val books = (0..7).map { "book-$it" }
+        val keys = books.map { "book:$it" } + shelves.map { "decor:decor-$it" }
+
+        for (seed in 0..9) {
+            val random = Random(seed)
+            var layout = BookshelfLayout(
+                decorations = shelves.map { ShelfDecoration("decor-$it", ShelfDecorationType.PLANT, it, 0) },
+            ).reconcile(books)
+
+            repeat(40) {
+                val key = keys.random(random)
+                val destination = shelves.random(random)
+                layout = layout.moveObject(key, destination, random.nextInt(-1, keys.size + 1))
+                val grouped = layout.objectsByShelf()
+                val objects = grouped.values.flatten()
+
+                assertEquals(keys.sorted(), objects.map { it.stableKey }.sorted())
+                assertEquals(1, grouped.getValue(destination).count { it.stableKey == key })
+                grouped.values.forEach { shelf ->
+                    assertEquals(shelf.indices.toList(), shelf.map { it.order })
+                }
+                val restored = requireNotNull(BookshelfLayout.decode(BookshelfLayout.encode(layout)))
+                assertEquals(grouped, restored.objectsByShelf())
+            }
+        }
+    }
+
     @Test
     fun decodingExtremeShelfIndicesKeepsBooksAndDecorationsInRange() {
         val raw = """

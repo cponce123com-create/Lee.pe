@@ -108,8 +108,8 @@ internal fun InteractiveMixedShelf(
     BoxWithConstraints(Modifier.fillMaxWidth().height(height)) {
         val availableWidth = minOf(maxWidth.value, maxHeight.value / 1.5f) * .83f
         val capacity = availableWidth / 45f
-        val shown = draft.occupiedShelfIndices().mapNotNull { shelf ->
-            val objects = draft.objectsOnShelf(shelf).filter { it !is ShelfObject.Book || it.placement.bookId in visibleIds }
+        val shown = draft.objectsByShelf().mapNotNull { (shelf, items) ->
+            val objects = items.filter { it !is ShelfObject.Book || it.placement.bookId in visibleIds }
             objects.takeIf { it.isNotEmpty() }?.let { ShelfDisplay(shelf, it) }
         }
         val lines = packMixedShelves(shown, capacity, gapUnits = 3f / 45f).let { packed ->
@@ -135,17 +135,18 @@ internal fun InteractiveMixedShelf(
             modifier = Modifier.fillMaxSize().onGloballyPositioned { viewportWidth = it.size.width.toFloat() },
             onStart = { beforeDrag = draft },
             onHover = { moving, target ->
+                val grouped = draft.objectsByShelf()
                 val destination = if (target.startsWith("zone:")) {
                     target.substringAfter("zone:").substringBefore(':').toIntOrNull()
                 } else {
-                    draft.occupiedShelfIndices().firstOrNull { shelf ->
-                        draft.objectsOnShelf(shelf).any { it.stableKey == target }
-                    }
+                    grouped.entries.firstOrNull { (_, objects) ->
+                        objects.any { it.stableKey == target }
+                    }?.key
                 }
                 if (destination != null) {
-                    val objects = draft.objectsOnShelf(destination)
+                    val objects = grouped[destination].orEmpty()
                     val index = if (target.startsWith("zone:")) objects.size else objects.indexOfFirst { it.stableKey == target }
-                    draft = draft.moveObject(moving, destination, index)
+                    draft = draft.moveObject(moving, destination, index, grouped)
                 }
             },
             onDrop = {

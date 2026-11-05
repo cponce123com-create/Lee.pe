@@ -156,8 +156,9 @@ internal data class BookshelfLayout(
 
     fun moveBook(bookId: String, shelfDelta: Int = 0, orderDelta: Int = 0): BookshelfLayout {
         val current = books.firstOrNull { it.bookId == bookId } ?: return this
-        val sourceIndex = objectsOnShelf(current.shelf).indexOfFirst { it.stableKey == "book:$bookId" }
-        return moveObject("book:$bookId", current.shelf + shelfDelta, sourceIndex + orderDelta)
+        val grouped = objectsByShelf()
+        val sourceIndex = grouped[current.shelf].orEmpty().indexOfFirst { it.stableKey == "book:$bookId" }
+        return moveObject("book:$bookId", current.shelf + shelfDelta, sourceIndex + orderDelta, grouped)
     }
 
     /** Reorders cover slots while preserving ornaments and books outside the active filter. */
@@ -217,20 +218,26 @@ internal data class BookshelfLayout(
 
     fun moveDecoration(id: String, shelfDelta: Int = 0, orderDelta: Int = 0): BookshelfLayout {
         val current = decorations.firstOrNull { it.id == id } ?: return this
-        val sourceIndex = objectsOnShelf(current.shelf).indexOfFirst { it.stableKey == "decor:$id" }
-        return moveObject("decor:$id", current.shelf + shelfDelta, sourceIndex + orderDelta)
+        val grouped = objectsByShelf()
+        val sourceIndex = grouped[current.shelf].orEmpty().indexOfFirst { it.stableKey == "decor:$id" }
+        return moveObject("decor:$id", current.shelf + shelfDelta, sourceIndex + orderDelta, grouped)
     }
 
     /** Both object types share one insertion order, including during a drag preview. */
-    fun moveObject(key: String, targetShelf: Int, targetIndex: Int): BookshelfLayout {
-        val sourceShelf = occupiedShelfIndices().firstOrNull { shelf ->
-            objectsOnShelf(shelf).any { it.stableKey == key }
-        } ?: return this
+    fun moveObject(
+        key: String,
+        targetShelf: Int,
+        targetIndex: Int,
+        groupedObjects: Map<Int, List<ShelfObject>> = objectsByShelf(),
+    ): BookshelfLayout {
+        val sourceShelf = groupedObjects.entries.firstOrNull { (_, objects) ->
+            objects.any { it.stableKey == key }
+        }?.key ?: return this
         val destination = targetShelf.coerceAtLeast(0)
-        val source = objectsOnShelf(sourceShelf).toMutableList()
+        val source = groupedObjects.getValue(sourceShelf).toMutableList()
         val moving = source.firstOrNull { it.stableKey == key } ?: return this
         source.remove(moving)
-        val target = if (destination == sourceShelf) source else objectsOnShelf(destination).toMutableList()
+        val target = if (destination == sourceShelf) source else groupedObjects[destination].orEmpty().toMutableList()
         target.add(targetIndex.coerceIn(0, target.size), moving)
         return withShelfObjects(
             if (destination == sourceShelf) mapOf(sourceShelf to target) else mapOf(sourceShelf to source, destination to target),
@@ -246,16 +253,28 @@ internal data class BookshelfLayout(
     )
 
     fun occupiedShelfIndices(): List<Int> = buildSet {
-        books.filterNot { it.bookId in hiddenBookIds }.forEach { add(it.shelf) }
+        books.forEach { if (it.bookId !in hiddenBookIds) add(it.shelf) }
         decorations.forEach { add(it.shelf) }
     }.sorted()
+
+    /** Groups the current snapshot once and retains the shared book/decoration order. */
+    fun objectsByShelf(): Map<Int, List<ShelfObject>> {
+        val grouped = sortedMapOf<Int, MutableList<ShelfObject>>()
+        books.forEach { book ->
+            if (book.bookId !in hiddenBookIds) grouped.getOrPut(book.shelf) { mutableListOf() }.add(ShelfObject.Book(book))
+        }
+        decorations.forEach { decor ->
+            grouped.getOrPut(decor.shelf) { mutableListOf() }.add(ShelfObject.Decor(decor))
+        }
+        return grouped.mapValues { (_, objects) -> objects.sortedWith(shelfObjectOrder) }
+    }
 
     fun objectsOnShelf(shelf: Int): List<ShelfObject> = buildList {
         books.filter { it.shelf == shelf && it.bookId !in hiddenBookIds }.forEach {
             add(ShelfObject.Book(it))
         }
         decorations.filter { it.shelf == shelf }.forEach { add(ShelfObject.Decor(it)) }
-    }.sortedWith(compareBy({ it.order }, { if (it is ShelfObject.Book) 0 else 1 }))
+    }.sortedWith(shelfObjectOrder)
 
     fun shelfCount(): Int = maxOf(
         books.filterNot { it.bookId in hiddenBookIds }.maxOfOrNull { it.shelf + 1 } ?: 0,
@@ -263,8 +282,10 @@ internal data class BookshelfLayout(
         1,
     )
 
-    private fun normalizedObjectOrders(): BookshelfLayout =
-        withShelfObjects((books.map { it.shelf } + decorations.map { it.shelf }).distinct().associateWith(::objectsOnShelf))
+    private fun normalizedObjectOrders(): BookshelfLayout {
+        val grouped = objectsByShelf()
+        return withShelfObjects((books.map { it.shelf } + decorations.map { it.shelf }).associateWith { grouped[it].orEmpty() })
+    }
 
     private fun withShelfObjects(shelves: Map<Int, List<ShelfObject>>): BookshelfLayout = copy(
         books = books.filterNot { it.shelf in shelves } + shelves.flatMap { (shelf, objects) ->
@@ -280,6 +301,7 @@ internal data class BookshelfLayout(
     )
 
     companion object {
+        private val shelfObjectOrder = compareBy<ShelfObject>({ it.order }, { if (it is ShelfObject.Book) 0 else 1 })
         private const val INITIAL_BOOKS_PER_SHELF = 5
         private const val MAX_PERSISTED_SHELF_INDEX = 4095
 

@@ -57,8 +57,8 @@ internal data class ShelfDisplay(val index: Int, val objects: List<ShelfObject>)
 internal fun buildShelfDisplay(orderedBooks: List<LocalBook>, layout: BookshelfLayout, customOrder: Boolean): List<ShelfDisplay> {
     val booksById = orderedBooks.associateBy { it.id }
     if (customOrder) {
-        return layout.occupiedShelfIndices().mapNotNull { shelf ->
-            val objects = layout.objectsOnShelf(shelf).filter { item ->
+        return layout.objectsByShelf().mapNotNull { (shelf, items) ->
+            val objects = items.filter { item ->
                 when (item) {
                     is ShelfObject.Book -> item.placement.bookId in booksById
                     is ShelfObject.Decor -> true
@@ -69,6 +69,7 @@ internal fun buildShelfDisplay(orderedBooks: List<LocalBook>, layout: BookshelfL
     }
 
     val placements = layout.books.associateBy { it.bookId }
+    val decorationsByShelf = layout.decorations.groupBy { it.shelf }
     return orderedBooks.chunked(5).mapIndexed { shelf, books ->
         val bookObjects = books.mapIndexed { index, book ->
             ShelfObject.Book(
@@ -76,7 +77,7 @@ internal fun buildShelfDisplay(orderedBooks: List<LocalBook>, layout: BookshelfL
                     ?: BookshelfBookPlacement(book.id, shelf, index * 2, BookOrientation.UPRIGHT),
             )
         }
-        val decorationObjects = layout.decorations.filter { it.shelf == shelf }.map { decor ->
+        val decorationObjects = decorationsByShelf[shelf].orEmpty().map { decor ->
             ShelfObject.Decor(decor.copy(order = decor.order * 2 + 1))
         }
         ShelfDisplay(shelf, (bookObjects + decorationObjects).sortedBy(ShelfObject::order))
