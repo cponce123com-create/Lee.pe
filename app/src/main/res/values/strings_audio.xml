@@ -9,6 +9,9 @@
     <string name="audio_rewind_10">Retroceder 10 segundos</string>
     <string name="audio_forward_10">Avanzar 10 segundos</string>
     <string name="audio_speed">Velocidad</string>
+    <string name="audio_sleep_timer">Temporizador de apagado</string>
+    <string name="audio_sleep_timer_minutes">Detener en %1$d min</string>
+    <string name="audio_sleep_timer_cancel">Cancelar temporizador</string>
     <string name="audio_pause">Pausar</string>
     <string name="audio_play">Reproducir</string>
     <string name="audio_playback_failed">No se pudo reproducir este archivo. Comprueba que no esté dañado o protegido.</string>
