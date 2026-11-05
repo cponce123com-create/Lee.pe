@@ -2,6 +2,7 @@ package pe.lee.feature.sharecard.ui.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.layout.Layout
@@ -19,7 +20,9 @@ internal fun QuoteCardCanvas(card: QuoteCard, captureModifier: Modifier, onFitsC
             // Artwork has a stable physical pixel size, independent of device density/font scale.
             // The surrounding editor continues to respect the user's accessibility settings.
             CompositionLocalProvider(LocalDensity provides Density(3f, 1f)) {
-                QuoteCardPreview(card, captureModifier, onFitsChanged)
+                key(card) {
+                    QuoteCardPreview(card, captureModifier, onFitsChanged)
+                }
             }
         },
     ) { measurables, constraints ->
