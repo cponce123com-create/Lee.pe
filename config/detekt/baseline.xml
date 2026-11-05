@@ -1,0 +1,486 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:EpubSearchSheet.kt:!searching.value &amp;&amp; searchResults.value.isEmpty() &amp;&amp; searchError.value == null &amp;&amp; searchQuery.value.isBlank()</ID>
+    <ID>ComplexCondition:InteractiveMixedShelf.kt:stacked &amp;&amp; previous != null &amp;&amp; previous.objects.size &lt; 3 &amp;&amp; previous.objects.all { it is ShelfObject.Book &amp;&amp; it.placement.orientation == BookOrientation.STACKED }</ID>
+    <ID>ComplexCondition:LocalBackupDao.kt:LocalBackupDao$(book.lastOpenedAt ?: -1L) > (match.lastOpenedAt ?: -1L) || (match.readProgress == 0f &amp;&amp; book.readProgress > 0f &amp;&amp; match.lastOpenedAt == null)</ID>
+    <ID>ComplexCondition:PdfPageViewport.kt:Build.VERSION.SDK_INT >= 35 &amp;&amp; current != null &amp;&amp; pageBitmap != null &amp;&amp; rotationDegrees == 0 &amp;&amp; zoomScale == 1f</ID>
+    <ID>CyclomaticComplexMethod:BookshelfCustomizer.kt:@Composable internal fun BookshelfCustomizerDialog</ID>
+    <ID>CyclomaticComplexMethod:BundledWelcomeBook.kt:BundledWelcomeBook$suspend fun installIfNeeded: Boolean</ID>
+    <ID>CyclomaticComplexMethod:CatalogPipeline.kt:internal fun matchesCatalogFilter: Boolean</ID>
+    <ID>CyclomaticComplexMethod:EpubAnnotationSheets.kt:@Composable @OptIn(ExperimentalMaterial3Api::class) internal fun EpubAnnotationSheets</ID>
+    <ID>CyclomaticComplexMethod:EpubReaderSessionActions.kt:@OptIn(ExperimentalReadiumApi::class) private fun createEpubReaderSessionActions: EpubReaderSessionActions</ID>
+    <ID>CyclomaticComplexMethod:EpubReaderSessionEffects.kt:@OptIn(ExperimentalReadiumApi::class) @Composable internal fun EpubReaderSessionEffects: EpubReaderSessionActions</ID>
+    <ID>CyclomaticComplexMethod:EpubSearchSheet.kt:@OptIn(ExperimentalMaterial3Api::class, ExperimentalReadiumApi::class) @Composable internal fun EpubSearchSheet</ID>
+    <ID>CyclomaticComplexMethod:InteractiveMixedShelf.kt:@Composable internal fun InteractiveMixedShelf</ID>
+    <ID>CyclomaticComplexMethod:InteractiveMixedShelf.kt:internal fun packMixedShelves: List&lt;MixedShelfLine></ID>
+    <ID>CyclomaticComplexMethod:LibraryBookCards.kt:@Composable internal fun BookCard</ID>
+    <ID>CyclomaticComplexMethod:LibraryCatalog.kt:@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class) @Composable internal fun LibraryCatalog</ID>
+    <ID>CyclomaticComplexMethod:LibraryDocumentActions.kt:@Composable internal fun rememberLibraryDocumentActions: LibraryDocumentActions</ID>
+    <ID>CyclomaticComplexMethod:LibraryManagementDialogs.kt:@Composable internal fun LibraryManagementDialogs</ID>
+    <ID>CyclomaticComplexMethod:LibraryProcessDialogs.kt:@Composable internal fun LibraryProcessDialogs</ID>
+    <ID>CyclomaticComplexMethod:LibraryScreenState.kt:@Composable internal fun rememberLibraryScreenState: LibraryScreenState</ID>
+    <ID>CyclomaticComplexMethod:LocalBackupDao.kt:LocalBackupDao$@Transaction suspend fun merge: LocalBackupMergeReport</ID>
+    <ID>CyclomaticComplexMethod:LocalFolderScanner.kt:LocalFolderScanner$suspend fun scan: Result</ID>
+    <ID>CyclomaticComplexMethod:LocalLibraryBackup.kt:LocalLibraryBackup$internal fun parse: LocalBackupArchive</ID>
+    <ID>CyclomaticComplexMethod:LocalLibraryBackup.kt:LocalLibraryBackup$internal fun sanitizeSnapshot: SanitizedBackupSnapshot</ID>
+    <ID>CyclomaticComplexMethod:LocalLibraryBackup.kt:LocalLibraryBackup$suspend fun restore: LocalBackupMergeReport</ID>
+    <ID>CyclomaticComplexMethod:LocalPdfCover.kt:PdfThumbnailCache$suspend fun load: Bitmap?</ID>
+    <ID>CyclomaticComplexMethod:PdfPageViewport.kt:@Composable internal fun ColumnScope.PdfPageViewport</ID>
+    <ID>CyclomaticComplexMethod:PdfReaderActivity.kt:@Composable @OptIn(ExperimentalMaterial3Api::class) internal fun PdfReaderScreen</ID>
+    <ID>CyclomaticComplexMethod:PdfReaderDialogs.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable internal fun PdfReaderDialogs</ID>
+    <ID>CyclomaticComplexMethod:PdfRendering.kt:internal suspend fun openPdf: PdfHandle</ID>
+    <ID>CyclomaticComplexMethod:PdfSearchOutcome.kt:@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM) internal suspend fun searchPdfDocument: PdfSearchOutcome</ID>
+    <ID>CyclomaticComplexMethod:PremiumArtwork.kt:internal fun premiumMatchesMood: Boolean</ID>
+    <ID>CyclomaticComplexMethod:QuoteCardTheme.kt:internal fun quoteCardPalette: QuoteCardPalette</ID>
+    <ID>CyclomaticComplexMethod:ReaderActivity.kt:@OptIn(ExperimentalReadiumApi::class) @Composable internal fun EpubReaderScreen</ID>
+    <ID>CyclomaticComplexMethod:ReaderChrome.kt:@Composable @OptIn(ExperimentalMaterial3Api::class, ExperimentalReadiumApi::class) internal fun ReaderChrome</ID>
+    <ID>CyclomaticComplexMethod:ShareCardScreen.kt:@Composable fun ShareCardScreen</ID>
+    <ID>LongMethod:EpubReaderSessionActions.kt:fun startOrToggleTts</ID>
+    <ID>LongMethod:LeeDatabase.kt:LeeDatabase.Companion.&lt;no name provided>$override suspend fun migrate</ID>
+    <ID>LongMethod:LeeDatabaseMigrationTest.kt:LeeDatabaseMigrationTest$@Test fun deletingBookRemovesAnnotationsSessionsAndCollectionLinksInOneRoomTransaction</ID>
+    <ID>LongMethod:LocalBackupDao.kt:LocalBackupDao$@Transaction suspend fun merge: LocalBackupMergeReport</ID>
+    <ID>LongMethod:LocalFolderScanner.kt:LocalFolderScanner$suspend fun scan: Result</ID>
+    <ID>LongMethod:LocalLibraryBackup.kt:LocalLibraryBackup$internal fun parse: LocalBackupArchive</ID>
+    <ID>LongMethod:LocalLibraryBackup.kt:LocalLibraryBackup$suspend fun save</ID>
+    <ID>LongMethod:PdfSearchOutcome.kt:@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM) internal suspend fun searchPdfDocument: PdfSearchOutcome</ID>
+    <ID>LongMethod:QuoteCardTheme.kt:internal fun quoteCardPalette: QuoteCardPalette</ID>
+    <ID>LoopWithTooManyJumpStatements:LocalBackupDao.kt:LocalBackupDao$for</ID>
+    <ID>LoopWithTooManyJumpStatements:LocalFolderScanner.kt:LocalFolderScanner$while</ID>
+    <ID>LoopWithTooManyJumpStatements:PdfSearchOutcome.kt:for</ID>
+    <ID>MagicNumber:AnnotationMarkdownExporter.kt:AnnotationMarkdownExporter$16</ID>
+    <ID>MagicNumber:AnnotationMarkdownExporter.kt:AnnotationMarkdownExporter$8</ID>
+    <ID>MagicNumber:AudioPlayerActivity.kt:0xFF087FAF</ID>
+    <ID>MagicNumber:AudioPlayerActivity.kt:0xFF702EFF</ID>
+    <ID>MagicNumber:AudioPlayerActivity.kt:10_000L</ID>
+    <ID>MagicNumber:AudioPlayerActivity.kt:AudioPlayerActivity$33</ID>
+    <ID>MagicNumber:AudioPlayerViewModel.kt:AudioPlayerViewModel$500</ID>
+    <ID>MagicNumber:BookVolumes.kt:.12f</ID>
+    <ID>MagicNumber:BookVolumes.kt:.2f</ID>
+    <ID>MagicNumber:BookVolumes.kt:.48f</ID>
+    <ID>MagicNumber:BookVolumes.kt:.4f</ID>
+    <ID>MagicNumber:BookVolumes.kt:.5f</ID>
+    <ID>MagicNumber:BookVolumes.kt:0x66000000</ID>
+    <ID>MagicNumber:BookVolumes.kt:0xFFFFF5DF</ID>
+    <ID>MagicNumber:BookVolumes.kt:0xFFFFFCF4</ID>
+    <ID>MagicNumber:BookVolumes.kt:24f</ID>
+    <ID>MagicNumber:BookVolumes.kt:270f</ID>
+    <ID>MagicNumber:BookVolumes.kt:32f</ID>
+    <ID>MagicNumber:BookVolumes.kt:3f</ID>
+    <ID>MagicNumber:BookVolumes.kt:4</ID>
+    <ID>MagicNumber:BookVolumes.kt:4f</ID>
+    <ID>MagicNumber:BookVolumes.kt:5</ID>
+    <ID>MagicNumber:BookshelfComponents.kt:0x66FFF0C7</ID>
+    <ID>MagicNumber:BookshelfComponents.kt:0xFFFFF0C8</ID>
+    <ID>MagicNumber:BookshelfComponents.kt:270f</ID>
+    <ID>MagicNumber:BookshelfComponents.kt:5</ID>
+    <ID>MagicNumber:BookshelfCustomizer.kt:.97f</ID>
+    <ID>MagicNumber:BookshelfCustomizer.kt:0xFF00695F</ID>
+    <ID>MagicNumber:BookshelfCustomizer.kt:0xFF064F48</ID>
+    <ID>MagicNumber:BookshelfCustomizer.kt:0xFF073D39</ID>
+    <ID>MagicNumber:BookshelfCustomizer.kt:0xFF443D35</ID>
+    <ID>MagicNumber:BookshelfCustomizer.kt:0xFFDB8A00</ID>
+    <ID>MagicNumber:BookshelfCustomizer.kt:0xFFE5F4EE</ID>
+    <ID>MagicNumber:BookshelfCustomizer.kt:0xFFFFB81C</ID>
+    <ID>MagicNumber:BookshelfCustomizer.kt:0xFFFFF0D9</ID>
+    <ID>MagicNumber:BookshelfCustomizer.kt:0xFFFFFBF6</ID>
+    <ID>MagicNumber:BookshelfLayout.kt:BookshelfLayout.Companion$4</ID>
+    <ID>MagicNumber:Cabinet3d.kt:3f</ID>
+    <ID>MagicNumber:CoverShelfPager.kt:.035f</ID>
+    <ID>MagicNumber:CoverShelfPager.kt:.155f</ID>
+    <ID>MagicNumber:CoverShelfPager.kt:.69f</ID>
+    <ID>MagicNumber:CoverShelfPager.kt:0xB33A2418</ID>
+    <ID>MagicNumber:CoverShelfPager.kt:0xFF075B50</ID>
+    <ID>MagicNumber:CoverShelfPager.kt:0xFF174E44</ID>
+    <ID>MagicNumber:CoverShelfPager.kt:0xFF543219</ID>
+    <ID>MagicNumber:CoverShelfPager.kt:0xFFA36731</ID>
+    <ID>MagicNumber:CoverShelfPager.kt:0xFFAA7437</ID>
+    <ID>MagicNumber:CoverShelfPager.kt:0xFFD69B56</ID>
+    <ID>MagicNumber:CoverShelfPager.kt:0xFFE7B66A</ID>
+    <ID>MagicNumber:CoverShelfPager.kt:0xFFFFDCA4</ID>
+    <ID>MagicNumber:CoverShelfPager.kt:0xFFFFE6B8</ID>
+    <ID>MagicNumber:CoverShelfPager.kt:0xFFFFE7B3</ID>
+    <ID>MagicNumber:CoverShelfPager.kt:0xFFFFECC8</ID>
+    <ID>MagicNumber:CoverShelfPager.kt:3</ID>
+    <ID>MagicNumber:CoverShelfPager.kt:650</ID>
+    <ID>MagicNumber:EpubAnnotationSheets.kt:12_000</ID>
+    <ID>MagicNumber:EpubReaderSessionActions.kt:33</ID>
+    <ID>MagicNumber:InteractiveMixedShelf.kt:.085f</ID>
+    <ID>MagicNumber:InteractiveMixedShelf.kt:.82f</ID>
+    <ID>MagicNumber:InteractiveMixedShelf.kt:.83f</ID>
+    <ID>MagicNumber:InteractiveMixedShelf.kt:1.7f</ID>
+    <ID>MagicNumber:InteractiveMixedShelf.kt:3</ID>
+    <ID>MagicNumber:InteractiveMixedShelf.kt:650</ID>
+    <ID>MagicNumber:LibraryBookCards.kt:0.68f</ID>
+    <ID>MagicNumber:LibraryBookCards.kt:0xFF075B50</ID>
+    <ID>MagicNumber:LibraryBookCards.kt:0xFF145D67</ID>
+    <ID>MagicNumber:LibraryBookCards.kt:0xFF1F4C70</ID>
+    <ID>MagicNumber:LibraryBookCards.kt:0xFF204D74</ID>
+    <ID>MagicNumber:LibraryBookCards.kt:0xFF26396F</ID>
+    <ID>MagicNumber:LibraryBookCards.kt:0xFF5C2A70</ID>
+    <ID>MagicNumber:LibraryBookCards.kt:0xFF603680</ID>
+    <ID>MagicNumber:LibraryBookCards.kt:0xFFFFD54F</ID>
+    <ID>MagicNumber:LibraryBookCards.kt:18f</ID>
+    <ID>MagicNumber:LibraryBookCards.kt:2.5f</ID>
+    <ID>MagicNumber:LibraryCatalog.kt:0x44271D17</ID>
+    <ID>MagicNumber:LibraryCatalog.kt:0xDD2C1E18</ID>
+    <ID>MagicNumber:LibraryCatalog.kt:0xFF392614</ID>
+    <ID>MagicNumber:LibraryCatalog.kt:0xFFF6CD73</ID>
+    <ID>MagicNumber:LibraryCatalog.kt:0xFFFFEBD0</ID>
+    <ID>MagicNumber:LibraryDashboard.kt:0x77342217</ID>
+    <ID>MagicNumber:LibraryDashboard.kt:0xFF007C69</ID>
+    <ID>MagicNumber:LibraryDashboard.kt:0xFFFFE7B3</ID>
+    <ID>MagicNumber:LibraryManagementDialogs.kt:120</ID>
+    <ID>MagicNumber:LibraryManagementDialogs.kt:500</ID>
+    <ID>MagicNumber:LibraryReadingState.kt:1_000L</ID>
+    <ID>MagicNumber:LibraryResumeCards.kt:0xFF16A8D8</ID>
+    <ID>MagicNumber:LibraryResumeCards.kt:0xFF8547F5</ID>
+    <ID>MagicNumber:LibraryStatisticsDialogs.kt:3</ID>
+    <ID>MagicNumber:LocalLibraryBackup.kt:LocalLibraryBackup$0.5</ID>
+    <ID>MagicNumber:LocalLibraryBackup.kt:LocalLibraryBackup$0.5f</ID>
+    <ID>MagicNumber:LocalLibraryBackup.kt:LocalLibraryBackup$240</ID>
+    <ID>MagicNumber:LocalLibraryBackup.kt:LocalLibraryBackup$315_360_000_000L</ID>
+    <ID>MagicNumber:LocalLibraryBackup.kt:LocalLibraryBackup$32000</ID>
+    <ID>MagicNumber:LocalLibraryBackup.kt:LocalLibraryBackup$5</ID>
+    <ID>MagicNumber:LocalLibraryBackup.kt:LocalLibraryBackup$512</ID>
+    <ID>MagicNumber:LocalLibraryBackup.kt:LocalLibraryBackup$86_400L</ID>
+    <ID>MagicNumber:MainActivity.kt:MainActivity$0xFF2C1E18</ID>
+    <ID>MagicNumber:PdfPageViewport.kt:1600</ID>
+    <ID>MagicNumber:PdfPageViewport.kt:35</ID>
+    <ID>MagicNumber:PdfReaderActivity.kt:0xFF07111F</ID>
+    <ID>MagicNumber:PdfReaderActivity.kt:0xFF15253A</ID>
+    <ID>MagicNumber:PdfReaderActivity.kt:0xFFD3DCEC</ID>
+    <ID>MagicNumber:PdfReaderActivity.kt:35</ID>
+    <ID>MagicNumber:PdfReaderActivity.kt:3f</ID>
+    <ID>MagicNumber:PdfReaderControls.kt:0xE60A1423</ID>
+    <ID>MagicNumber:PdfReaderControls.kt:0xFF0A1423</ID>
+    <ID>MagicNumber:PdfReaderControls.kt:0xFF75DFFF</ID>
+    <ID>MagicNumber:PdfReaderControls.kt:35</ID>
+    <ID>MagicNumber:PdfReaderDialogs.kt:0xFF75DFFF</ID>
+    <ID>MagicNumber:PdfReaderDialogs.kt:0xFFD3DCEC</ID>
+    <ID>MagicNumber:PdfReaderDialogs.kt:12_000</ID>
+    <ID>MagicNumber:PdfReaderDialogs.kt:35</ID>
+    <ID>MagicNumber:PdfReaderScreenState.kt:360</ID>
+    <ID>MagicNumber:PdfReaderScreenState.kt:90</ID>
+    <ID>MagicNumber:PersistableUriGrants.kt:PersistableUriGrants$8</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:10</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:11</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:12</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:13</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:14</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:15</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:16</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:18</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:19</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:20</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:21</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:22</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:23</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:24</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:25</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:26</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:27</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:28</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:29</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:3</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:30</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:31</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:32</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:33</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:34</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:35</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:36</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:37</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:38</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:39</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:4</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:5</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:525</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:6</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:7</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:8</ID>
+    <ID>MagicNumber:PremiumArtwork.kt:9</ID>
+    <ID>MagicNumber:QuoteCardBrandWatermark.kt:0xFF0B5662</ID>
+    <ID>MagicNumber:QuoteCardCanvas.kt:3f</ID>
+    <ID>MagicNumber:QuoteCardPreview.kt:0xCC080B10</ID>
+    <ID>MagicNumber:QuoteCardPreview.kt:0xE6FFF3DD</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF071520</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF071D19</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF08090B</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF082D5B</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF0B111A</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF0E183D</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF101216</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF102E4A</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF111111</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF12304C</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF123D76</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF145188</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF151719</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF152C41</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF16090D</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF161616</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF17202A</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF172454</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF172530</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF172D20</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF172D4A</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF173858</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF173E60</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF183A2D</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF194B8C</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF1B2822</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF1F211E</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF20291E</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF21130C</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF211A1A</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF211F1B</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF222222</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF222A35</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF243D58</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF261914</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF261C18</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF26231E</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF27112D</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF28231F</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF29180F</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF2A1812</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF2D251B</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF2D62A0</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF2E190E</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF2F2417</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF30291F</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF314B2B</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF31537A</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF321017</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF32251A</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF342319</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF35281F</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF373B42</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF376989</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF38213B</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF397A9A</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF3A2919</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF3C2228</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF3F5836</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF41443D</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF422A38</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF47555E</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF4B3227</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF4E137B</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF4E2C20</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF4E3323</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF50413D</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF514035</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF51463A</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF536C54</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF542B2C</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF565851</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF574633</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF5C3825</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF5C3B24</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF5D201C</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF5F361C</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF5F7D45</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF60391F</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF604526</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF624725</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF64704B</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF655142</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF665E54</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF67472A</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF72445D</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF7A4B22</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF7D9A69</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF8E79B9</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF8F6544</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF93612D</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF9A622D</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF9B6833</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF9B7554</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF9B9A91</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF9D31D3</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF9E5142</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFF9FC8E4</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFA3382B</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFA46D55</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFA85D42</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFA99B87</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFA9D4E5</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFB17B37</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFB54535</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFB6C0C7</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFB72A22</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFB83D24</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFB8C87C</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFBCCBD2</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFC0E3EE</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFC18A42</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFC37A55</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFC58D48</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFC8DCC7</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFC9AF68</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFD0AF76</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFD1A248</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFD3AD54</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFD3B545</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFD5A64A</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFD6B26F</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFD7A943</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFD7B76B</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFD7B779</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFD7E8F6</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFD89369</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFD9C7A4</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFD9D9E6</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFD9E0C4</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFDDC987</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFDFC18B</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFE3B95C</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFE4B934</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFE4D8B6</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFE4DED4</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFE5C58D</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFE5D6AF</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFE6B86F</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFE6C56D</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFE6C8BB</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFE6D5B8</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFE6E8DE</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFE78078</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFE7D8B9</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFE8D9C2</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFE8E0C7</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFE8E8E8</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFE8F1DE</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFE9B176</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFE9CE9E</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFE9DFCE</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFEA3B9D</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFEAD8B6</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFEADBC4</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFED5A23</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFED632A</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFEDE1C7</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFEFE5CF</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFF0D29B</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFF1E0D3</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFF1E5D7</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFF2A82B</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFF2E9D8</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFF3F5F2</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFF4E9FA</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFF4F0E9</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFF4F4E8</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFF6E3B9</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFF7C1A5</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFF7EEDB</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFF7F0DD</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFF7F2E8</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFF9F8EF</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFF6C77</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFC365</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFC85E</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFD16B</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFD4F1</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFE073</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFE2A1</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFE6B5</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFEBC5</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFF3D3</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFF4D6</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFF4DE</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFF5D8</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFF5DF</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFF5E7</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFF5E9</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFF7E9</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFF8E8</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFF8E9</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFF8EB</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFF9EF</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFF9F0</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFFDF6</ID>
+    <ID>MagicNumber:QuoteCardTheme.kt:0xFFFFFFFF</ID>
+    <ID>MagicNumber:ReaderActivity.kt:0xEE24152A</ID>
+    <ID>MagicNumber:ReaderActivity.kt:0xFF07111F</ID>
+    <ID>MagicNumber:ReaderActivity.kt:0xFFD1D8E5</ID>
+    <ID>MagicNumber:ReaderChrome.kt:0xD90A1423</ID>
+    <ID>MagicNumber:ReaderChrome.kt:0xE60A1423</ID>
+    <ID>MagicNumber:ReaderChrome.kt:0xFF56D7FF</ID>
+    <ID>MagicNumber:ReaderChrome.kt:0xFFD3DCEC</ID>
+    <ID>MagicNumber:ReaderControls.kt:0.15f</ID>
+    <ID>MagicNumber:ReaderControls.kt:0xF20A1423</ID>
+    <ID>MagicNumber:ReaderControls.kt:0xFFFFB4AB</ID>
+    <ID>MagicNumber:ShareCardScreen.kt:.64f</ID>
+    <ID>MagicNumber:ShareCardScreen.kt:.85f</ID>
+    <ID>MagicNumber:ShelfDragSurface.kt:1.07f</ID>
+    <ID>MagicNumber:ShelfDragSurface.kt:16f</ID>
+    <ID>MagicNumber:ShelfDragSurface.kt:2f</ID>
+    <ID>MagicNumber:TtsPlaybackService.kt:TtsPlaybackService.ReaderBinder$3_000L</ID>
+    <ID>MagicNumber:TtsPlaybackService.kt:TtsPlaybackService.ReaderBinder$60_000L</ID>
+    <ID>MatchingDeclarationName:BookshelfComponents.kt:ShelfDisplay</ID>
+    <ID>MatchingDeclarationName:CatalogPipeline.kt:CatalogResult</ID>
+    <ID>MatchingDeclarationName:LibraryBookCards.kt:LibraryBookAction</ID>
+    <ID>MatchingDeclarationName:LocalEpubCover.kt:EpubCoverCacheLookup&lt;out T></ID>
+    <ID>MatchingDeclarationName:LocalPdfCover.kt:PdfCoverCacheLookup&lt;out T></ID>
+    <ID>MatchingDeclarationName:ShareCardNavigation.kt:ShareCardArgs</ID>
+    <ID>MatchingDeclarationName:ShelfDragSurface.kt:ShelfDragState</ID>
+    <ID>MatchingDeclarationName:Theme.kt:LeePeSpacing</ID>
+    <ID>MaxLineLength:BookDao.kt:BookDao$"SELECT collections.name FROM collections JOIN book_collections ON collections.id = book_collections.collectionId JOIN library_books ON library_books.id = book_collections.bookId WHERE library_books.uri = :uri ORDER BY collections.sortOrder, collections.name COLLATE NOCASE"</ID>
+    <ID>MaxLineLength:BookDao.kt:BookDao$"SELECT library_books.* FROM library_books JOIN book_collections ON library_books.id = book_collections.bookId WHERE book_collections.collectionId = :collectionId"</ID>
+    <ID>MaxLineLength:LocalBackupDao.kt:LocalBackupDao$"SELECT collections.name FROM collections JOIN book_collections ON collections.id = book_collections.collectionId WHERE book_collections.bookId = :bookId"</ID>
+    <ID>ReturnCount:BookDao.kt:BookDao$@Transaction suspend fun rebindUri: Boolean</ID>
+    <ID>ReturnCount:BookshelfLayout.kt:BookshelfLayout$fun moveObject: BookshelfLayout</ID>
+    <ID>ReturnCount:LibraryStatisticsDialogs.kt:private fun formatReadingDuration: String</ID>
+    <ID>ReturnCount:NarrationFollower.kt:NarrationFollower$fun update: Boolean</ID>
+    <ID>ReturnCount:OfflineBookStore.kt:OfflineBookStore$@Synchronized fun rebindCopy</ID>
+    <ID>ReturnCount:OfflineBookStore.kt:OfflineBookStore$fun deleteCopy: Boolean</ID>
+    <ID>ReturnCount:PdfReaderActivity.kt:fun searchPdf</ID>
+    <ID>ReturnCount:ReadingSessionRecorder.kt:ReadingSessionRecorder$private fun persistElapsed</ID>
+    <ID>SwallowedException:EpubReaderSessionEffects.kt:error: Exception</ID>
+    <ID>SwallowedException:EpubSearchSheet.kt:error: Exception</ID>
+    <ID>SwallowedException:LibraryDocumentActions.kt:error: Exception</ID>
+    <ID>SwallowedException:LibraryProcessDialogs.kt:e: Exception</ID>
+    <ID>SwallowedException:LibraryProcessDialogs.kt:error: Exception</ID>
+    <ID>SwallowedException:PdfRendering.kt:error: IllegalArgumentException</ID>
+    <ID>SwallowedException:ShareCardViewModel.kt:ShareCardViewModel$timeout: TimeoutCancellationException</ID>
+    <ID>ThrowsCount:BundledWelcomeBook.kt:BundledWelcomeBook$suspend fun installIfNeeded: Boolean</ID>
+    <ID>ThrowsCount:EpubSearchSheet.kt:@OptIn(ExperimentalMaterial3Api::class, ExperimentalReadiumApi::class) @Composable internal fun EpubSearchSheet</ID>
+    <ID>ThrowsCount:LibraryDocumentActions.kt:@Composable internal fun rememberLibraryDocumentActions: LibraryDocumentActions</ID>
+    <ID>ThrowsCount:LocalLibraryBackup.kt:LocalLibraryBackup$internal fun parse: LocalBackupArchive</ID>
+    <ID>ThrowsCount:ReaderActivity.kt:ReaderActivity$suspend fun openFrom: Publication</ID>
+    <ID>ThrowsCount:TtsPlaybackService.kt:TtsPlaybackService.Companion$suspend fun bind: ServiceBinding</ID>
+    <ID>TooGenericExceptionCaught:EpubReaderSessionActions.kt:error: Exception</ID>
+    <ID>TooGenericExceptionCaught:EpubReaderSessionEffects.kt:error: Exception</ID>
+    <ID>TooGenericExceptionCaught:EpubSearchSheet.kt:error: Exception</ID>
+    <ID>TooGenericExceptionCaught:LibraryCatalog.kt:error: Exception</ID>
+    <ID>TooGenericExceptionCaught:LibraryDocumentActions.kt:e: Exception</ID>
+    <ID>TooGenericExceptionCaught:LibraryDocumentActions.kt:error: Exception</ID>
+    <ID>TooGenericExceptionCaught:LibraryProcessDialogs.kt:e: Exception</ID>
+    <ID>TooGenericExceptionCaught:LibraryProcessDialogs.kt:error: Exception</ID>
+    <ID>TooGenericExceptionCaught:LibraryViewModel.kt:LibraryViewModel$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:LocalLibraryBackup.kt:LocalLibraryBackup$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:OfflineBookStore.kt:OfflineBookStore$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:PdfRendering.kt:copyError: Exception</ID>
+    <ID>TooGenericExceptionCaught:TtsPlaybackService.kt:TtsPlaybackService.Companion$error: Exception</ID>
+    <ID>TooManyFunctions:AnnotationRepository.kt:AnnotationRepository : ReaderAnnotationRepository</ID>
+    <ID>TooManyFunctions:BookDao.kt:BookDao</ID>
+    <ID>TooManyFunctions:BookRepository.kt:BookRepository : ReaderBookRepository</ID>
+    <ID>TooManyFunctions:BookshelfLayout.kt:BookshelfLayout</ID>
+    <ID>TooManyFunctions:LibraryViewModel.kt:LibraryViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:LocalBackupDao.kt:LocalBackupDao</ID>
+    <ID>TooManyFunctions:SettingsRepository.kt:SettingsRepository</ID>
+    <ID>TooManyFunctions:ShareCardViewModel.kt:ShareCardViewModel : ViewModel</ID>
+    <ID>UnusedParameter:BookshelfCustomizer.kt:booksById: Map&lt;String, LocalBook></ID>
+    <ID>UnusedParameter:BookshelfCustomizer.kt:onMoveBook: (String, Int, Int) -> Unit</ID>
+    <ID>UnusedParameter:BookshelfCustomizer.kt:onMoveDecoration: (String, Int, Int) -> Unit</ID>
+    <ID>UnusedParameter:BookshelfCustomizer.kt:onRemoveBook: (String) -> Unit</ID>
+    <ID>UnusedParameter:BookshelfCustomizer.kt:onToggleOrientation: (String) -> Unit</ID>
+    <ID>UnusedParameter:BookshelfCustomizer.kt:shelves: List&lt;ShelfDisplay></ID>
+    <ID>WildcardImport:AudioPlayerActivity.kt:import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:AudioPlayerActivity.kt:import androidx.compose.material3.*</ID>
+    <ID>WildcardImport:AudioPlayerActivity.kt:import androidx.compose.runtime.*</ID>
+  </CurrentIssues>
+</SmellBaseline>

@@ -22,7 +22,7 @@ jobs:
         with:
           packages: 'platforms;android-36'
       - name: Static analysis and API documentation
-        run: ./gradlew --no-daemon --stacktrace --continue detektBaseline ktlintCheck :core:domain:dokkaGenerate
+        run: ./gradlew --no-daemon --stacktrace --continue detekt ktlintCheck :core:domain:dokkaGenerate
       - name: Prepare reviewable formatting patch
         if: failure()
         run: |
