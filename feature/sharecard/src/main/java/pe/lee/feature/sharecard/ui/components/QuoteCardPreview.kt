@@ -149,7 +149,7 @@ internal fun FittedCardText(
             val minimumLineHeightPx = minimumFontPx * 1.35f
             val safeLineCapacity = (width / (minimumFontPx * 1.25f)).toInt().coerceAtLeast(1)
             val safelyFitsAtMinimum = text.isNotEmpty() &&
-                '\\n' !in text &&
+                '\n' !in text &&
                 text.length <= safeLineCapacity &&
                 minimumLineHeightPx <= height
             best to (fits || safelyFitsAtMinimum)
