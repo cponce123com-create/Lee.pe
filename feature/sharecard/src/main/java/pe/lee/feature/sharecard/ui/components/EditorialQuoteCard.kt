@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,7 +35,12 @@ import pe.lee.feature.sharecard.ui.theme.editorialLightPaper
 
 /** Text is drawn directly on the approved artwork, without a panel or logo badge. */
 @Composable
-internal fun EditorialQuoteCard(card: QuoteCard, modifier: Modifier, onFitsChanged: (Boolean) -> Unit, onAuthorFitsChanged: (Boolean) -> Unit = {}) {
+internal fun EditorialQuoteCard(
+    card: QuoteCard,
+    modifier: Modifier,
+    onFitsChanged: (Boolean) -> Unit,
+    onAuthorFitsChanged: (Boolean) -> Unit = {},
+) {}) {
     val light = editorialLightPaper(card.themeId)
     val ink = if (light) Color(0xFF30251B) else Color(0xFFFFF2D6)
     val accent = if (light) Color(0xFF755238) else Color(0xFFE7C787)
@@ -60,14 +66,22 @@ internal fun EditorialQuoteCard(card: QuoteCard, modifier: Modifier, onFitsChang
             val widthPx = with(density) { textWidth.roundToPx() }.coerceAtLeast(1)
             val heightPx = with(density) { height.roundToPx() }
             for (size in maximum downTo minimum) {
-                val style = TextStyle(color = color, fontFamily = family, textAlign = TextAlign.Start, fontSize = size.sp, lineHeight = (size * 1.35f).sp)
+                val style = TextStyle(
+                    color = color, fontFamily = family, textAlign = TextAlign.Start,
+                    fontSize = size.sp, lineHeight = (size * 1.35f).sp,
+                )
                 val layout = measurer.measure(text, style, constraints = Constraints(maxWidth = widthPx))
                 if (!layout.didOverflowWidth && layout.size.height <= heightPx) return style to true
             }
-            return TextStyle(color = color, fontFamily = family, textAlign = TextAlign.Start, fontSize = minimum.sp, lineHeight = (minimum * 1.35f).sp) to false
+            return TextStyle(
+                color = color, fontFamily = family, textAlign = TextAlign.Start,
+                fontSize = minimum.sp, lineHeight = (minimum * 1.35f).sp,
+            ) to false
         }
-        val quoteLayout = fit(card.text.trim(), ink, quoteHeight, 8, 32)
-        val authorLayout = fit(author, ink, authorHeight, 9, 14)
+        val layouts = remember(card.text, author, ink, quoteHeight, authorHeight, textWidth, density, family, measurer) {
+            fit(card.text.trim(), ink, quoteHeight, 8, 32) to fit(author, ink, authorHeight, 9, 14)
+        }
+        val (quoteLayout, authorLayout) = layouts
         SideEffect {
             onFitsChanged(quoteLayout.second && authorLayout.second)
             onAuthorFitsChanged(authorLayout.second)
