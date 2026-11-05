@@ -35,7 +35,11 @@ class CoverShelfInteractionTest {
     private fun books(count: Int) = (0 until count).map { index ->
         LocalBook(
             id = "b$index", uri = Uri.parse("file:///test-$index.txt"),
-            title = "Book $index", format = "TXT", isFavorite = false,
+            title = listOf(
+                "5 noticias del Perú", "Documentos educativos", "El_tesoro_de_los_Incas.epub",
+                "El sistema solar", "Ciencias naturales", "Green English", "Informática básica",
+                "Principios de matemáticas", "Tecnología e innovación",
+            ).getOrElse(index) { "Libro $index" }, format = "TXT", isFavorite = false,
             importedAt = index.toLong(), lastOpenedAt = null, readProgress = 0f,
             collectionId = null, offlineCopyUri = null,
         )
@@ -119,6 +123,32 @@ class CoverShelfInteractionTest {
         }
         compose.onNodeWithContentDescription(catalog.first().title).assertIsDisplayed()
         savePreview("mixed.png")
+    }
+
+    @Test
+    fun doubleTapStillRotatesTheSameBookAfterItsVisualRedesign() {
+        val catalog = books(1)
+        val layout = BookshelfLayout.automatic(catalog.map { it.id })
+        var committed: BookshelfLayout? = null
+        compose.setContent {
+            LibraryShelfTheme {
+                InteractiveMixedShelf(
+                    layout, buildShelfDisplay(catalog, layout, true), catalog.associateBy { it.id }, 450.dp,
+                    {}, { committed = it }, {},
+                )
+            }
+        }
+        compose.onNodeWithContentDescription(catalog.first().title).performTouchInput {
+            down(center)
+            up()
+            advanceEventTime(80)
+            down(center)
+            up()
+        }
+        compose.runOnIdle {
+            assertEquals("b0", committed?.books?.single()?.bookId)
+            assertEquals(BookOrientation.STACKED, committed?.books?.single()?.orientation)
+        }
     }
 
     private fun savePreview(name: String) {

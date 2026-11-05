@@ -186,24 +186,19 @@ internal fun ShelfCoverArt(book: LocalBook, modifier: Modifier = Modifier, portr
 
 @Composable
 private fun ShelfCoverFace(book: LocalBook, modifier: Modifier) {
-    Box(
-        modifier.padding(start = 2.dp, end = 3.dp, top = 3.dp, bottom = 2.dp)
-            .semantics { contentDescription = book.title }
-            .shadow(5.dp, RoundedCornerShape(3.dp))
-            .background(Color(0xFFE0C9A4), RoundedCornerShape(3.dp)).padding(end = 3.dp, bottom = 2.dp),
-    ) {
-        Box(
-            Modifier.fillMaxSize().graphicsLayer { rotationY = -3f; cameraDistance = 24f * density }
-                .clip(RoundedCornerShape(2.dp)).background(Color(0xFFFFFCF4)),
-            contentAlignment = Alignment.Center,
-        ) {
+    val palette = listOf(Color(0xFF235145), Color(0xFF284D6A), Color(0xFF60415C), Color(0xFF815D28))
+    val base = palette[(book.id.hashCode() and Int.MAX_VALUE) % palette.size]
+    Box(modifier.semantics { contentDescription = book.title }) {
+        CoverBookVolume(base, Modifier.fillMaxSize()) {
             when (book.format) {
                 "EPUB" -> LocalEpubCover(book.uri, book.offlineCopyUri, Modifier.fillMaxSize())
                 "PDF" -> LocalPdfCover(book.uri, book.offlineCopyUri, Modifier.fillMaxSize())
-                else -> Text(book.title, modifier = Modifier.padding(6.dp), color = Color(0xFF174E44), fontSize = 12.sp)
+                else -> Text(
+                    bookSpineTitle(book.title), modifier = Modifier.fillMaxSize().padding(5.dp),
+                    color = Color(0xFF174E44), fontSize = 10.sp, maxLines = 6, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                )
             }
         }
-        Box(Modifier.width(3.dp).fillMaxHeight().background(Color(0x33000000)))
         if (book.readProgress > 0f) {
             Box(Modifier.align(Alignment.BottomStart).fillMaxWidth(book.readProgress.coerceIn(0f, 1f)).height(2.dp).background(Color(0xFF075B50)))
         }
