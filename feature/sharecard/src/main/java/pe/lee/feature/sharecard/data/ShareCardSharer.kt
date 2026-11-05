@@ -16,11 +16,11 @@ class ShareCardSharer(context: Context) : ShareCardSharerContract {
     private val appContext = context.applicationContext
 
     override suspend fun share(pngBytes: ByteArray) {
-        require(pngBytes.isNotEmpty()) { "La imagen está vacía." }
+        require(pngBytes.isNotEmpty())
         val file = withContext(Dispatchers.IO) {
             val directory = File(appContext.cacheDir, QUOTE_CARD_DIRECTORY)
             if (!directory.exists() && !directory.mkdirs()) {
-                throw IOException("No se pudo preparar el espacio temporal para la tarjeta.")
+                throw IOException()
             }
             QuoteCardCacheCleaner.removeExpired(appContext)
             File(directory, "leepe-${UUID.randomUUID()}.png").apply {
