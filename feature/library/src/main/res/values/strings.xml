@@ -346,4 +346,11 @@
     <string name="shelf_mixed_drag_hint">Mantén pulsado y arrastra. Doble toque para girar un libro.</string>
     <string name="library_filter_completed_short">Leídos</string>
     <string name="library_version">Versión %1$s</string>
+    <string name="backup_password_or_data_invalid">La contraseña no es correcta o el respaldo está dañado.</string>
+    <string name="backup_version_unsupported">Esta versión de respaldo no es compatible. Actualiza Lee.pe para abrirla.</string>
+    <string name="backup_password_required">Ingresa la contraseña del respaldo.</string>
+    <string name="backup_size_limit">El respaldo supera el límite de 64 MB.</string>
+    <string name="backup_record_limit">El respaldo contiene demasiados registros.</string>
+    <string name="backup_source_unavailable">No se pudo abrir el respaldo. Revisa el permiso del archivo.</string>
+    <string name="backup_destination_unavailable">No se pudo abrir el destino del respaldo.</string>
 </resources>
