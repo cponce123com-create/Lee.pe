@@ -40,7 +40,7 @@ internal fun EditorialQuoteCard(
     modifier: Modifier,
     onFitsChanged: (Boolean) -> Unit,
     onAuthorFitsChanged: (Boolean) -> Unit = {},
-) {}) {
+) {
     val light = editorialLightPaper(card.themeId)
     val ink = if (light) Color(0xFF30251B) else Color(0xFFFFF2D6)
     val accent = if (light) Color(0xFF755238) else Color(0xFFE7C787)

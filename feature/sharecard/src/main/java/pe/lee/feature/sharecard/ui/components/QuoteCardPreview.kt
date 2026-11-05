@@ -48,7 +48,7 @@ fun QuoteCardPreview(
     modifier: Modifier = Modifier,
     onFitsChanged: (Boolean) -> Unit = {},
     onAuthorFitsChanged: (Boolean) -> Unit = {},
-) {}, onAuthorFitsChanged: (Boolean) -> Unit = {}) {
+) {
     if (isEditorialTheme(card.themeId)) {
         EditorialQuoteCard(card, modifier, onFitsChanged, onAuthorFitsChanged)
         return

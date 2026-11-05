@@ -19,7 +19,7 @@ internal fun QuoteCardCanvas(
     onFitsChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     onAuthorFitsChanged: (Boolean) -> Unit = {},
-) {}) {
+) {
     Layout(
         modifier = modifier,
         content = {
