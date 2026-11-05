@@ -1,8 +1,10 @@
 package pe.lee.app.ui.library
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 
 private val CabinetColors = darkColorScheme(
@@ -25,5 +27,7 @@ private val CabinetColors = darkColorScheme(
 /** Library-only cabinet palette; reader appearance stays independently configurable. */
 @Composable
 internal fun LibraryShelfTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = CabinetColors, typography = MaterialTheme.typography, content = content)
+    MaterialTheme(colorScheme = CabinetColors, typography = MaterialTheme.typography) {
+        CompositionLocalProvider(LocalContentColor provides CabinetColors.onSurface, content = content)
+    }
 }

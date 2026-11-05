@@ -110,7 +110,7 @@ internal fun LibraryDashboardHeader(
                 .semantics { role = Role.Button },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Default.Add, stringResource(R.string.accessibility_library_add_book), tint = Color.White)
+            Icon(Icons.Default.Add, stringResource(R.string.accessibility_library_add_book), tint = MaterialTheme.colorScheme.onPrimary)
         }
     }
 }
