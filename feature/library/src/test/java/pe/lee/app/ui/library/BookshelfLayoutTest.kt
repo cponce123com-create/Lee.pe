@@ -6,6 +6,23 @@ import org.junit.Test
 
 class BookshelfLayoutTest {
     @Test
+    fun decodingExtremeShelfIndicesKeepsBooksAndDecorationsInRange() {
+        val raw = """
+            {
+              "books": [{"id":"book","shelf":-42}],
+              "decorations": [{"id":"plant","type":"PLANT","shelf":9223372036854775807}]
+            }
+        """.trimIndent()
+        val layout = requireNotNull(BookshelfLayout.decode(raw))
+
+        assertEquals(0, layout.books.single().shelf)
+        assertEquals(4095, layout.decorations.single().shelf)
+        assertEquals(4096, layout.shelfCount())
+        assertEquals(layout, BookshelfLayout.decode(BookshelfLayout.encode(layout)))
+        assertEquals(null, BookshelfLayout.decode("{"))
+    }
+
+    @Test
     fun ornamentGalleryContainsAllThirtyFiveReferenceItems() {
         assertEquals(35, SHELF_DECORATION_GALLERY_TYPES.size)
         assertEquals(9, ShelfDecorationCategory.entries.size)

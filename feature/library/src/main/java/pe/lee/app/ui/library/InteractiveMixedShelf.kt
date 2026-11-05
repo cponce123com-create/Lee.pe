@@ -42,7 +42,7 @@ internal data class MixedShelfGroup(val objects: List<ShelfObject>, val units: F
 internal data class MixedShelfLine(val logicalShelf: Int, val groups: List<MixedShelfGroup>)
 
 /** Capacity is measured before layout so every visual line gets its own supporting plank. */
-internal fun packMixedShelves(shelves: List<ShelfDisplay>, capacity: Float): List<MixedShelfLine> = buildList {
+internal fun packMixedShelves(shelves: List<ShelfDisplay>, capacity: Float, gapUnits: Float = 0f): List<MixedShelfLine> = buildList {
     shelves.forEach { shelf ->
         val groups = mutableListOf<MixedShelfGroup>()
         shelf.objects.forEach { item ->
@@ -72,11 +72,12 @@ internal fun packMixedShelves(shelves: List<ShelfDisplay>, capacity: Float): Lis
         var line = mutableListOf<MixedShelfGroup>()
         var used = 0f
         groups.forEach { group ->
-            if (line.isNotEmpty() && used + group.units > capacity) {
+            if (line.isNotEmpty() && used + gapUnits + group.units > capacity) {
                 add(MixedShelfLine(shelf.index, line.toList()))
                 line = mutableListOf()
                 used = 0f
             }
+            if (line.isNotEmpty()) used += gapUnits
             line += group
             used += group.units
         }
@@ -105,13 +106,13 @@ internal fun InteractiveMixedShelf(
     val edge = with(LocalDensity.current) { 28.dp.toPx() }
     LaunchedEffect(layout, shelves) { if (drag.activeKey == null) draft = initial }
     BoxWithConstraints(Modifier.fillMaxWidth().height(height)) {
-        val availableWidth = minOf(maxWidth.value, maxHeight.value / 1.5f) * .84f
-        val capacity = (availableWidth / 45f).coerceAtLeast(2f)
+        val availableWidth = minOf(maxWidth.value, maxHeight.value / 1.5f) * .83f
+        val capacity = availableWidth / 45f
         val shown = (0 until draft.shelfCount()).mapNotNull { shelf ->
             val objects = draft.objectsOnShelf(shelf).filter { it !is ShelfObject.Book || it.placement.bookId in visibleIds }
             objects.takeIf { it.isNotEmpty() }?.let { ShelfDisplay(shelf, it) }
         }
-        val lines = packMixedShelves(shown, capacity).let { packed ->
+        val lines = packMixedShelves(shown, capacity, gapUnits = 3f / 45f).let { packed ->
             val emptyShelf = beforeDrag.shelfCount()
             if (drag.activeKey != null && shown.none { it.index == emptyShelf }) {
                 packed + MixedShelfLine(emptyShelf, emptyList())
@@ -196,7 +197,7 @@ internal fun InteractiveMixedShelf(
                                     verticalAlignment = Alignment.Bottom,
                                 ) {
                                     val unit = (
-                                        (availableWidth - line.groups.size * 3f) /
+                                        (cabinetWidth.value * .83f - (line.groups.size - 1).coerceAtLeast(0) * 3f).coerceAtLeast(0f) /
                                             line.groups.sumOf { it.units.toDouble() }.toFloat().coerceAtLeast(1f)
                                         ).coerceAtMost(45f)
                                     line.groups.forEach { group ->
