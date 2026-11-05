@@ -336,7 +336,24 @@ internal fun LibraryCatalog(
         }
         if (visibleBooks.isEmpty()) {
             item(key = "empty") {
-                EmptyLibraryCard(hasBooks = books.isNotEmpty(), onImport = onImport)
+                Box(Modifier.fillMaxWidth()) {
+                    CoverShelfPager(emptyList(), shelfHeight, null, { _, _ -> }, {})
+                    TextButton(
+                        onClick = {
+                            if (books.isEmpty()) {
+                                onImport()
+                            } else {
+                                query.value = ""
+                                selectedFilter.value = LibraryFilter.ALL
+                                selectedCollection.value = null
+                            }
+                        },
+                        modifier = Modifier.align(Alignment.Center)
+                            .background(Color(0xDD2C1E18), RoundedCornerShape(12.dp)),
+                    ) {
+                        Text(stringResource(if (books.isEmpty()) R.string.library_choose_files else R.string.library_try_another_search))
+                    }
+                }
             }
         } else if (viewMode.value == LibraryViewMode.COVERS) {
             item(key = "cover-pages") {

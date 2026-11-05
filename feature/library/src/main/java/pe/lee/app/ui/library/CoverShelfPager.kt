@@ -148,8 +148,10 @@ internal fun CoverShelfPager(
                                             BookActions(
                                                 book = book,
                                                 savingBookUri = savingBookUri,
-                                                modifier = Modifier.align(Alignment.TopEnd).size(24.dp)
+                                                modifier = Modifier.align(Alignment.TopEnd).size(18.dp)
                                                     .background(Color(0xB33A2418), RoundedCornerShape(8.dp)),
+                                                iconSize = 12.dp,
+                                                iconTint = Color(0xFFFFE7B3),
                                                 onAction = { onBookAction(book, it) },
                                             )
                                         }

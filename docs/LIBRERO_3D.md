@@ -11,6 +11,8 @@ sin recortarlo. Portadas, lomos y adornos usan el mismo espacio de coordenadas;
 los tres suelos coinciden con la plantilla. Los cambios de ancho no estiran las
 portadas. El paginador es interactivo y se sitúa entre los cajones.
 
+- La biblioteca vacía muestra también el mueble original, con un acceso discreto
+  al selector de archivos. Una búsqueda sin resultados permite restablecer filtros.
 - Portadas: tres columnas y tres filas, nueve libros por página; la última página
   conserva sus huecos. Deslizamiento horizontal, botones anterior/siguiente y
   arrastre para ordenar, también al borde para pasar de página.

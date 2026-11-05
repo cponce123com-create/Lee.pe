@@ -334,6 +334,7 @@ internal fun BookActions(
     savingBookUri: String?,
     modifier: Modifier = Modifier,
     iconTint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    iconSize: androidx.compose.ui.unit.Dp = 24.dp,
     onAction: (LibraryBookAction) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -343,6 +344,7 @@ internal fun BookActions(
                 Icons.Default.MoreVert,
                 contentDescription = stringResource(R.string.accessibility_book_options, book.title),
                 tint = iconTint,
+                modifier = Modifier.size(iconSize),
             )
         }
         DropdownMenu(
