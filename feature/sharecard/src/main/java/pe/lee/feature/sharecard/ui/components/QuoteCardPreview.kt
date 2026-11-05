@@ -98,15 +98,10 @@ fun QuoteCardPreview(card: QuoteCard, modifier: Modifier = Modifier, onFitsChang
                 onFitsChanged = { authorFits = it },
             )
         }
-        Row(
-            Modifier.align(Alignment.BottomEnd).padding(16.dp)
-                .background(Color(0xEDFFF8EB), RoundedCornerShape(7.dp)).padding(horizontal = 7.dp, vertical = 5.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Image(painterResource(R.drawable.leepe_logo_mark), null, Modifier.size(18.dp))
-            Spacer(Modifier.width(4.dp))
-            Text(stringResource(R.string.share_card_brand), color = Color(0xFF133F3A), fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
-        }
+        val brandMarkSize = (minOf(maxWidth, maxHeight) * .16f).coerceIn(38.dp, 72.dp)
+        QuoteCardBrandWatermark(
+            Modifier.align(Alignment.BottomEnd).padding(14.dp).size(brandMarkSize),
+        )
     }
 }
 

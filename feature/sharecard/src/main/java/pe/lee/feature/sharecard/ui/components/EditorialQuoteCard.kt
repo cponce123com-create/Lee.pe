@@ -75,13 +75,11 @@ internal fun EditorialQuoteCard(card: QuoteCard, modifier: Modifier, onFitsChang
                 onFitsChanged = { authorFits = it },
             )
         }
-        Row(
-            Modifier.align(Alignment.BottomEnd).padding(end = horizontalMargin, bottom = 22.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Image(painterResource(R.drawable.leepe_logo_mark), null, Modifier.size(18.dp))
-            Spacer(Modifier.width(4.dp))
-            Text(stringResource(R.string.share_card_brand), color = ink, fontSize = 10.sp, fontWeight = FontWeight.Medium)
-        }
+        val brandMarkSize = (minOf(maxWidth, maxHeight) * .16f).coerceIn(38.dp, 72.dp)
+        QuoteCardBrandWatermark(
+            Modifier.align(Alignment.BottomEnd)
+                .padding(end = horizontalMargin, bottom = 16.dp)
+                .size(brandMarkSize),
+        )
     }
 }
