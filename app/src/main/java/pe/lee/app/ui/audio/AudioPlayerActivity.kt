@@ -97,7 +97,6 @@ class AudioPlayerActivity : ComponentActivity() {
                         .setMediaMetadata(
                             MediaMetadata.Builder()
                                 .setTitle(title)
-                                .setArtist("Lee.pe")
                                 .build(),
                         )
                         .build()

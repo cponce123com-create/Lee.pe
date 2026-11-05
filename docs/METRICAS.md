@@ -32,7 +32,7 @@ Registro de las cifras medidas durante la ejecución del plan de mejora. Cada n�
 
 La diferencia entre 31,8 MB (debug) y 6,4 MB (release) es el efecto conjunto de R8, `isShrinkResources` y la eliminación de los iconos de `material-icons-extended` que no se usan.
 
-**Firma:** `app/build.gradle.kts` lee `LEE_PE_KEYSTORE`, `LEE_PE_KEYSTORE_PASSWORD`, `LEE_PE_KEY_ALIAS` y `LEE_PE_KEY_PASSWORD` del entorno. Sin esas variables el release se genera **sin firmar**, lo que permite validar R8 en CI sin secretos. Nunca se versiona un keystore; el de prueba de esta auditoría vive en `buildtools/`, fuera del repositorio. La versión sale de `version.properties` (`versionCode=2`, `versionName=0.2.0`).
+**Firma:** `app/build.gradle.kts` lee `LEE_PE_KEYSTORE`, `LEE_PE_KEYSTORE_PASSWORD`, `LEE_PE_KEY_ALIAS` y `LEE_PE_KEY_PASSWORD` del entorno. Sin esas variables el release se genera **sin firmar**, lo que permite validar R8 en CI sin secretos. Nunca se versiona un keystore; el de prueba de esta auditoría vive en `buildtools/`, fuera del repositorio. La versión sale de `version.properties`. Los valores `versionCode=2`, `versionName=0.2.0` corresponden a la medición histórica de esta sección, no al paquete actual. No se han repetido esas mediciones por cambiar la versión.
 
 ## Catálogo (P-06)
 

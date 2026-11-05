@@ -23,6 +23,7 @@ import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -72,21 +73,14 @@ internal fun EpubReaderSessionEffects(
         onDispose { session.ttsServiceBinding.value?.unbind() }
     }
 
-    // The Readium Publication owns the EPUB container handles. Without closing it
-    // every rotation leaks a file descriptor and the whole archive. It is kept
-    // alive only while the TTS service is narrating this same book, because the
-    // media session holds the navigator built from this publication.
+    // UI and media service retain independent owners. Closing voice must not
+    // invalidate the displayed book; closing the screen must not stop narration.
     DisposableEffect(uri) {
         onDispose {
-            val ttsOwnsPublication = session.ttsServiceBinding.value
-                ?.binder
-                ?.currentSession
-                ?.bookUri == uri.toString()
-            if (!ttsOwnsPublication) {
-                session.publication.value?.let { runCatching { it.close() } }
-                session.publication.value = null
-                session.navigator.value = null
-            }
+            session.publicationOwner.value?.let { runCatching { it.close() } }
+            session.publicationOwner.value = null
+            session.publication.value = null
+            session.navigator.value = null
         }
     }
 
@@ -137,6 +131,7 @@ internal fun EpubReaderSessionEffects(
     LaunchedEffect(uri, containerId) {
         try {
             val opened = openPublication()
+            session.publicationOwner.value = SharedResourceLease(opened) { it.close() }
             session.publication.value = opened
 
             val savedBook = viewModel.findBook(uri.toString())
@@ -311,23 +306,24 @@ internal fun EpubReaderSessionEffects(
         reader.applyDecorations(highlights, ANNOTATION_DECORATION_GROUP)
     }
 
-    LaunchedEffect(session.ttsNavigator.value, session.navigator.value) {
-        val speech = session.ttsNavigator.value ?: return@LaunchedEffect
+    LaunchedEffect(session.ttsNavigator.value, session.navigator.value, session.followNarration.value) {
         val reader = session.navigator.value ?: return@LaunchedEffect
-        speech.location.collect { location ->
-            session.ttsSentence.value = location.utterance
-            reader.applyDecorations(
-                listOf(
-                    Decoration(
-                        id = "tts-current-utterance",
-                        locator = location.utteranceLocator,
-                        style = Decoration.Style.Highlight(tint = 0xFF56D7FF.toInt()),
-                    ),
-                ),
-                TTS_DECORATION_GROUP,
-            )
-            reader.go(location.utteranceLocator, animated = false)
-        }
+        // Narration is transient UI, never a saved annotation. Remove the old
+        // cyan sentence marker on attach, pause, stop, end and service changes.
+        reader.applyDecorations(emptyList(), TTS_DECORATION_GROUP)
+        val speech = session.ttsNavigator.value ?: return@LaunchedEffect
+        if (!session.followNarration.value) return@LaunchedEffect
+        val follower = NarrationFollower<Locator>(
+            identity = { it.toJSON().toString() },
+            navigate = { reader.go(it, animated = false) },
+        )
+        speech.location.combine(speech.playback) { location, playback -> location to playback }
+            .collect { (location, playback) ->
+                session.ttsSentence.value = location.utterance
+                val playing = playback.playWhenReady && playback.state !is TtsNavigator.State.Ended &&
+                    playback.state !is TtsNavigator.State.Failure && session.followNarration.value
+                follower.update(playing, location.utteranceLocator, location.tokenLocator)
+            }
     }
 
     LaunchedEffect(session.ttsServiceBinding.value) {
@@ -348,9 +344,16 @@ internal fun EpubReaderSessionEffects(
 
     LaunchedEffect(session.ttsNavigator.value) {
         val speech = session.ttsNavigator.value ?: return@LaunchedEffect
+        var wasPlaying = session.ttsIsPlaying.value
         speech.playback.collect { playback ->
-            session.ttsIsPlaying.value = playback.playWhenReady
-            if (playback.state is TtsNavigator.State.Ended) session.ttsIsPlaying.value = false
+            val playing = playback.playWhenReady && playback.state !is TtsNavigator.State.Ended &&
+                playback.state !is TtsNavigator.State.Failure
+            if (playing && !wasPlaying) {
+                session.followNarration.value = true
+                session.chromeVisible.value = false
+            }
+            session.ttsIsPlaying.value = playing
+            wasPlaying = playing
             if (playback.state is TtsNavigator.State.Failure) {
                 session.ttsError.value = context.getString(R.string.tts_voice_unavailable)
             }

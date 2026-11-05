@@ -54,7 +54,7 @@
     <string name="library_view_mixed">Mixed</string>
     <string name="library_my_books">My library</string>
     <string name="library_adornments">Decor</string>
-    <string name="library_sort_custom">Custom arrangement</string>
+    <string name="library_sort_custom">My order</string>
     <string name="shelf_add_books">Add books</string>
     <string name="shelf_reset">Reset bookshelf</string>
     <string name="shelf_move_left">Move left</string>
@@ -344,4 +344,6 @@
     <string name="shelf_book_count">%1$d books</string>
     <string name="shelf_drop_here">Drop here to create a shelf</string>
     <string name="shelf_mixed_drag_hint">Hold and drag. Double-tap to rotate a book.</string>
+    <string name="library_filter_completed_short">Read</string>
+    <string name="library_version">Version %1$s</string>
 </resources>

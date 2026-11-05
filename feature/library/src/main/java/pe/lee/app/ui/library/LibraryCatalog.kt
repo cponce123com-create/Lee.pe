@@ -171,7 +171,7 @@ internal fun LibraryCatalog(
     }
 
     val coverRows = remember(orderedBooks) { orderedBooks.chunked(3) }
-    val shelfHeight = (LocalConfiguration.current.screenHeightDp - 320).coerceIn(260, 720).dp
+    val shelfHeight = (LocalConfiguration.current.screenHeightDp - 340).coerceIn(260, 720).dp
     val customOrder = sortMode.value == LibrarySortMode.CUSTOM
     val shelfBooks = remember(orderedBooks, bookshelfLayout.hiddenBookIds, customOrder) {
         if (customOrder) orderedBooks.filterNot { it.id in bookshelfLayout.hiddenBookIds } else orderedBooks
@@ -243,7 +243,7 @@ internal fun LibraryCatalog(
                         onClick = { selectedFilter.value = filter },
                         label = {
                             Text(
-                                stringResource(filter.labelRes),
+                                stringResource(if (filter == LibraryFilter.COMPLETED) R.string.library_filter_completed_short else filter.labelRes),
                                 fontSize = if (screenWidth < 360) 10.sp else 12.sp,
                                 maxLines = 1,
                             )

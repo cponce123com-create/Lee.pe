@@ -57,15 +57,15 @@ Actualizado el 4 de noviembre de 2026. La corrección del arranque del PR #38 es
 | A-19 accesibilidad | **Parcial** | 48 dp en colores, `liveRegion`, slider etiquetado, `FlowRow` del TTS, insets reales y tema claro; falta la pasada con TalkBack en dispositivo |
 | A-16 release/firma | **Hecho** | `release` con R8 + shrink, firma por variables de entorno, versión desde `version.properties`, workflow `release.yml` |
 | A-17 FileProvider | **Hecho** | EPUB incluido con `content://` propio y migración del URI `file://` existente; `NOTICE` con atribuciones |
-| A-15 licencia | **Pendiente** | Requiere decisión legal del autor (no es código) |
+| A-15 licencia | **Hecho: declaración del repositorio** | `LICENSE` y README declaran Apache-2.0; el inventario de licencias transitivas sigue pendiente |
 | A-35 orden con acentos | **Hecho** | `Collator` + pruebas |
 | P-01/P-02 flujos y ciclo de vida | **Hecho** | Flujos memorizados y `collectAsStateWithLifecycle` |
 
 **Métricas tras el lote 16:** 64 pruebas, 0 fallos, 0 warnings. Release: APK 6,4 MB, AAB 11,8 MB.
 
-**Cierre del plan:** de las 53 tareas, **49 cerradas**, 2 retiradas (A-12, A-13) y 2 bloqueadas por decisión externa: **A-15** (licencia) y la publicación en Play Console. Queda una parcial (A-19: falta la pasada con TalkBack en dispositivo físico).
+**Cierre histórico del lote 16:** de las 53 tareas, **49 cerradas**, 2 retiradas (A-12, A-13) y 2 bloqueadas por decisión externa: **A-15** (licencia) y la publicación en Play Console. Queda una parcial (A-19: falta la pasada con TalkBack en dispositivo físico).
 
-**Siguiente lote:** actualizar `README.md` con el estado real (release, bilingüe, licencia pendiente), revisar `docs/` para que no contradiga al código y dejar el repositorio listo para que el autor solo tenga que decidir la licencia y subir el AAB.
+**Actualización del 4 de noviembre de 2026:** la declaración A-15 queda resuelta por `LICENSE` (Apache-2.0). El cierre numérico anterior es un registro histórico, no el estado actual. Falta revisar las licencias transitivas y la publicación en Play Console. El trabajo posterior se sigue en [AUDIT_FOLLOWUP.md](AUDIT_FOLLOWUP.md).
 
 ---
 

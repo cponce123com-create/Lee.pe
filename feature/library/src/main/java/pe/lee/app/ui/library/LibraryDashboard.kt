@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -56,6 +57,10 @@ internal fun LibraryDashboardHeader(
     onBackup: () -> Unit,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val appVersion = remember(context) {
+        context.packageManager.getPackageInfo(context.packageName, 0).versionName.orEmpty()
+    }
     Row(Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Image(
             painterResource(R.drawable.leepe_logo),
@@ -79,6 +84,11 @@ internal fun LibraryDashboardHeader(
                 Icon(Icons.Default.MoreVert, stringResource(R.string.accessibility_library_more_options), tint = MaterialTheme.colorScheme.primary)
             }
             DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.library_version, appVersion)) },
+                    enabled = false,
+                    onClick = {},
+                )
                 DropdownMenuItem(
                     text = { Text(stringResource(if (busy) R.string.library_scanning else R.string.library_scan)) },
                     enabled = !busy,

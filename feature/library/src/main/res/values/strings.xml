@@ -54,7 +54,7 @@
     <string name="library_view_mixed">Mixta</string>
     <string name="library_my_books">Mi biblioteca</string>
     <string name="library_adornments">Adornos</string>
-    <string name="library_sort_custom">Disposición personalizada</string>
+    <string name="library_sort_custom">Mi orden</string>
     <string name="shelf_add_books">Añadir libros</string>
     <string name="shelf_reset">Restablecer estantería</string>
     <string name="shelf_move_left">Mover a la izquierda</string>
@@ -344,4 +344,6 @@
     <string name="shelf_book_count">%1$d libros</string>
     <string name="shelf_drop_here">Suelta aquí para crear una repisa</string>
     <string name="shelf_mixed_drag_hint">Mantén pulsado y arrastra. Doble toque para girar un libro.</string>
+    <string name="library_filter_completed_short">Leídos</string>
+    <string name="library_version">Versión %1$s</string>
 </resources>
