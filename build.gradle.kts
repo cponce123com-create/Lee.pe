@@ -88,6 +88,9 @@ tasks.register("coverageGoals") {
 dependencyCheck {
     failBuildOnCVSS = 7.0f
     formats = listOf("HTML", "JSON", "SARIF")
+    // Scan the dependency graphs shipped in the app and libraries. AGP's
+    // androidJdkImage is an internal transform configuration, not an app dependency.
+    scanConfigurations = listOf("debugRuntimeClasspath", "releaseRuntimeClasspath")
     nvd.apiKey = providers.environmentVariable("NVD_API_KEY").orNull.orEmpty()
     // No credentials are required for the local JVM/Android dependency graph.
     analyzers.assemblyEnabled = false
