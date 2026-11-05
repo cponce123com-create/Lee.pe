@@ -4,6 +4,7 @@ package pe.lee.app.ui.reader
 
 import android.content.Context
 import android.net.Uri
+import java.util.Locale
 import org.readium.navigator.media.tts.android.AndroidTtsEngine
 import org.readium.r2.shared.publication.Link
 import pe.lee.app.R
@@ -22,17 +23,26 @@ internal fun AndroidTtsEngine.Voice.isLocalSpanishVoice(): Boolean {
 }
 
 internal fun spanishVoiceLabel(context: Context, voice: AndroidTtsEngine.Voice): String {
-    val tag = voice.language.toString().uppercase()
-    val label = when {
-        tag.contains("MX") -> R.string.reader_voice_spanish_mexico
-        tag.contains("ES") -> R.string.reader_voice_spanish_spain
-        tag.contains("AR") -> R.string.reader_voice_spanish_argentina
-        tag.contains("CO") -> R.string.reader_voice_spanish_colombia
-        tag.contains("US") -> R.string.reader_voice_spanish_us
-        else -> R.string.reader_language_spanish
+    val region = spanishVoiceRegion(voice.language.toString())
+    val label = when (region) {
+        "MX" -> R.string.reader_voice_spanish_mexico
+        "ES" -> R.string.reader_voice_spanish_spain
+        "AR" -> R.string.reader_voice_spanish_argentina
+        "CO" -> R.string.reader_voice_spanish_colombia
+        "US" -> R.string.reader_voice_spanish_us
+        "PE" -> R.string.reader_voice_spanish_peru
+        "CL" -> R.string.reader_voice_spanish_chile
+        else -> return if (region.isBlank()) {
+            context.getString(R.string.reader_language_spanish)
+        } else {
+            context.getString(R.string.reader_voice_spanish_region, region)
+        }
     }
     return context.getString(label)
 }
+
+internal fun spanishVoiceRegion(languageTag: String): String =
+    Locale.forLanguageTag(languageTag.replace('_', '-')).country.uppercase(Locale.ROOT)
 
 internal const val TTS_DECORATION_GROUP = "lee_pe_tts"
 internal fun ttsSpeedPreferenceKey(uri: Uri): String = "tts-speed:$uri"
