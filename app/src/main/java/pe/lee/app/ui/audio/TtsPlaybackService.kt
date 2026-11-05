@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.readium.navigator.media.common.Media3Adapter
 import org.readium.navigator.media.tts.AndroidTtsNavigator
@@ -33,7 +34,6 @@ import org.readium.r2.shared.publication.Publication
 import pe.lee.app.LeePeApplication
 import pe.lee.app.R
 import pe.lee.app.ui.reader.ReaderActivity
-import pe.lee.core.domain.readingProgressOr
 
 @OptIn(ExperimentalReadiumApi::class)
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
@@ -87,27 +87,27 @@ class TtsPlaybackService : MediaSessionService() {
 
             activeSession.scope.launch {
                 var lastSavedAt = 0L
-                val container = (application as LeePeApplication).container
-                // Books without a page list report a null progression; keep the last
-                // known value instead of resetting the user's progress to 0 %.
-                var knownProgress = runCatching { container.books.findByUri(bookUri)?.readProgress }
-                    .getOrNull() ?: 0f
                 navigator.currentLocator.collect { locator ->
                     val now = System.currentTimeMillis()
                     if (now - lastSavedAt >= 3_000L) {
-                        val progression = readingProgressOr(
-                            locator.locations.totalProgression,
-                            knownProgress,
-                        )
-                        knownProgress = progression
-                        container.books.saveEpubProgress(
+                        (application as LeePeApplication).persistTtsProgress(
                             uri = bookUri,
                             locator = locator.toJSON().toString(),
-                            progress = progression,
+                            progress = locator.locations.totalProgression,
                             at = now,
                         )
                         lastSavedAt = now
                     }
+                }
+            }
+            activeSession.scope.launch {
+                while (isActive) {
+                    delay(WAKE_LOCK_RENEW_INTERVAL_MS)
+                    val playback = navigator.playback.value
+                    val playing = playback.playWhenReady &&
+                        playback.state !is TtsNavigator.State.Ended &&
+                        playback.state !is TtsNavigator.State.Failure
+                    if (sessionState.value === activeSession) updateWakeLock(playing)
                 }
             }
             activeSession.scope.launch {
@@ -143,6 +143,13 @@ class TtsPlaybackService : MediaSessionService() {
 
         fun closeSession() {
             val activeSession = sessionState.value ?: return
+            val finalLocator = activeSession.navigator.currentLocator.value
+            (application as LeePeApplication).persistTtsProgress(
+                uri = activeSession.bookUri,
+                locator = finalLocator.toJSON().toString(),
+                progress = finalLocator.locations.totalProgression,
+                at = System.currentTimeMillis(),
+            )
             sessionState.value = null
             activeBookUri = null
             activeSession.sleepTimerJob?.cancel()
@@ -212,7 +219,7 @@ class TtsPlaybackService : MediaSessionService() {
 
     private fun updateWakeLock(shouldHold: Boolean) {
         val lock = wakeLock ?: return
-        if (shouldHold && !lock.isHeld) {
+        if (shouldHold) {
             lock.acquire(WAKE_LOCK_TIMEOUT_MS)
         } else if (!shouldHold && lock.isHeld) {
             lock.release()
@@ -231,6 +238,7 @@ class TtsPlaybackService : MediaSessionService() {
             private set
 
         /** Safety net: a stuck session must never keep the CPU awake forever. */
+        private const val WAKE_LOCK_RENEW_INTERVAL_MS = 10L * 60L * 1000L
         private const val WAKE_LOCK_TIMEOUT_MS = 30L * 60L * 1000L
 
         private fun serviceIntent(application: Application) =
