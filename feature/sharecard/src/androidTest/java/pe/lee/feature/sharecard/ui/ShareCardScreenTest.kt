@@ -153,7 +153,11 @@ class ShareCardScreenTest {
                 viewModel.selectFormat(format)
             }
             composeRule.waitForIdle()
-            composeRule.onNodeWithText(text(R.string.share_card_share)).assertIsEnabled().performClick()
+            val shareButton = composeRule.onNodeWithText(text(R.string.share_card_share))
+            composeRule.waitUntil(30_000) {
+                runCatching { shareButton.assertIsEnabled() }.isSuccess
+            }
+            shareButton.performClick()
             composeRule.waitUntil(30_000) { captured.get() != null && viewModel.state.value.status == ShareCardStatus.Ready }
             val raster = requireNotNull(captured.get())
             assertEquals(format.widthPx, raster.width)
