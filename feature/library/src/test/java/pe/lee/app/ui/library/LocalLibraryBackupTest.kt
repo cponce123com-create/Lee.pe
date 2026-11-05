@@ -2,6 +2,7 @@ package pe.lee.app.ui.library
 
 import java.io.IOException
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -156,6 +157,38 @@ class LocalLibraryBackupTest {
         val session = """{"dayKey":"2026-13-45","bookUri":"content://example/test","durationSeconds":60}"""
         assertThrows(IOException::class.java) {
             LocalLibraryBackup.parse(root(books = "[$book]").replace("\"sessions\":[]", "\"sessions\":[$session]"))
+        }
+    }
+
+    @Test
+    fun acceptsRealSessionDaysIncludingLeapYears() {
+        for (day in listOf("2026-11-05", "2024-02-29", "2000-02-29")) {
+            assertTrue("Should accept real day: $day", LocalLibraryBackup.isValidBackupDayKey(day))
+            val session = """{"dayKey":"$day","bookUri":"content://example/test","durationSeconds":60}"""
+            val json = root(books = "[$book]").replace("\"sessions\":[]", "\"sessions\":[$session]")
+            val restored = LocalLibraryBackup.parse(json)
+            assertEquals(day, restored.snapshot.sessions.single().dayKey)
+        }
+    }
+
+    @Test
+    fun rejectsMalformedOrNonexistentSessionDays() {
+        val invalidDays = listOf(
+            "dddd-dd-dd",
+            "2026-2-05",
+            "2026-02-5",
+            "2026-02-30",
+            "2026-13-01",
+            "2025-02-29",
+            "2026-00-01",
+            "2026-01-00",
+            "2026-11-05x",
+        )
+        for (day in invalidDays) {
+            assertFalse("Should reject invalid day: $day", LocalLibraryBackup.isValidBackupDayKey(day))
+            val session = """{"dayKey":"$day","bookUri":"content://example/test","durationSeconds":60}"""
+            val json = root(books = "[$book]").replace("\"sessions\":[]", "\"sessions\":[$session]")
+            assertThrows(IOException::class.java) { LocalLibraryBackup.parse(json) }
         }
     }
 
