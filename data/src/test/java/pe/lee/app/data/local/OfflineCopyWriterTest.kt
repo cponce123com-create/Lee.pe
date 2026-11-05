@@ -21,7 +21,11 @@ class OfflineCopyWriterTest {
     private fun target() = File(folder.root, "book.epub")
 
     private fun write(bytes: ByteArray, size: Long = bytes.size.toLong()): File = OfflineCopyWriter.write(
-        target(), size, { ByteArrayInputStream(bytes) }, { Long.MAX_VALUE }, {},
+        target(),
+        size,
+        { ByteArrayInputStream(bytes) },
+        { Long.MAX_VALUE },
+        {},
     )
 
     private fun assertNothingPublished() {

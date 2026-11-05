@@ -72,20 +72,7 @@ object OfflineBookStore {
             RandomAccessFile(lockFile, "rw").channel.use { channel ->
                 channel.lock().use {
                     findCopy(context, originalUri)?.let { return@withContext it }
-                    val sourceSize = context.contentResolver.query(
-                        originalUri,
-                        arrayOf(OpenableColumns.SIZE),
-                        null,
-                        null,
-                        null,
-                    )?.use { cursor ->
-                        if (cursor.moveToFirst()) {
-                            val index = cursor.getColumnIndex(OpenableColumns.SIZE)
-                            if (index >= 0 && !cursor.isNull(index)) cursor.getLong(index) else -1L
-                        } else {
-                            -1L
-                        }
-                    } ?: -1L
+                    val sourceSize = querySourceSize(context, originalUri)
                     // Empty remnants are never a usable copy. Repair them under the URI lock.
                     if (target.exists() && target.length() == 0L && !target.delete()) {
                         throw StorageException(StorageException.Reason.FINALIZATION_FAILED)
@@ -105,6 +92,21 @@ object OfflineBookStore {
             }
         }
     }
+
+    private fun querySourceSize(context: Context, originalUri: Uri): Long = context.contentResolver.query(
+        originalUri,
+        arrayOf(OpenableColumns.SIZE),
+        null,
+        null,
+        null,
+    )?.use { cursor ->
+        if (cursor.moveToFirst()) {
+            val index = cursor.getColumnIndex(OpenableColumns.SIZE)
+            if (index >= 0 && !cursor.isNull(index)) cursor.getLong(index) else -1L
+        } else {
+            -1L
+        }
+    } ?: -1L
 
     fun deleteCopy(context: Context, originalUri: Uri): Boolean {
         val prefix = "${sha256(originalUri.toString())}."
