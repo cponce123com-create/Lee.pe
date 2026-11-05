@@ -325,7 +325,7 @@ internal fun EpubReaderSessionEffects(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
-            session.errorMessage.value = context.getString(R.string.epub_open_failed)
+            session.errorMessage.value = context.getString(readerOpenFailureMessage(error))
             session.loading.value = false
         }
     }
