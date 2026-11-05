@@ -204,6 +204,8 @@ Que el proyecto compile no demuestra por sí solo el comportamiento en un teléf
 
 ## Documentación
 
+Consulta el [índice completo de documentación](docs/README.md) para encontrar guías de producto, arquitectura, compilación, calidad, auditorías y planes.
+
 | Guía | Contenido |
 |---|---|
 | [Arquitectura](ARCHITECTURE.md) | Módulos y límites |

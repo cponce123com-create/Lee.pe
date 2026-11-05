@@ -1,7 +1,7 @@
 ﻿# Plan de trabajo — Lee.pe 1.0
 
 **Objetivo:** llevar Lee.pe del estado actual (prototipo avanzado) a una **1.0 publicable**: estable, bilingüe, con rendimiento aceptable en gama baja y un proceso de release reproducible.
-**Base:** [AUDITORIA-TECNICA.md](AUDITORIA-TECNICA.md), captura histórica del 3 de noviembre. `main` actual está en `versionCode=3` / `versionName=0.3.0`, ya contiene release con R8 y firma opcional; su línea base registrada es 64 pruebas unitarias + 12 instrumentadas. Las cifras y tareas históricas se conservan como contexto, no como estado vigente.
+**Base:** [AUDITORIA-TECNICA.md](AUDITORIA-TECNICA.md), captura histórica del 3 de noviembre. En la fecha de esa captura, `main` estaba en `versionCode=3` / `versionName=0.3.0`; esa referencia no representa la versión actual del repositorio. Este plan conserva cifras y tareas de su periodo como contexto: verifica el código, la rama y las ejecuciones de CI antes de usar cualquier estado como vigente.
 **Horizonte:** 11-12 semanas con 1 desarrollador a tiempo completo (≈58 días de esfuerzo); 6-7 semanas con 2 desarrolladores en paralelo.
 **Regla de oro:** cada fase termina con un criterio de salida **medible**, no con «ya está hecho».
 
