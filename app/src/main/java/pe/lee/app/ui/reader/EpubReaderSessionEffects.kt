@@ -183,53 +183,65 @@ internal fun EpubReaderSessionEffects(
                 override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
                     if (item.itemId !in setOf(MENU_HIGHLIGHT, MENU_COPY_SELECTION, MENU_SHARE_SELECTION)) return false
                     coroutineScope.launch {
-                        val selectedLocator = session.navigator.value?.currentSelection()?.locator
-                        val selectedText = selectedLocator?.text?.highlight?.trim().orEmpty()
-                        val selectedLocatorJson = selectedLocator?.toJSON()?.toString()
-                        val selectedAuthor = opened.metadata.authors
-                            .map { it.localizedName.string }
-                            .filter(String::isNotBlank)
-                            .joinToString(", ")
-                        if (item.itemId == MENU_HIGHLIGHT && selectedLocator != null) {
-                            val now = System.currentTimeMillis()
-                            viewModel.saveAnnotation(
-                                ReaderAnnotation(
-                                    id = UUID.randomUUID().toString(),
-                                    bookUri = uri.toString(),
-                                    kind = "HIGHLIGHT",
-                                    locatorJson = selectedLocator.toJSON().toString(),
-                                    selectedText = selectedLocator.text.highlight?.take(12_000),
-                                    colorArgb = DEFAULT_HIGHLIGHT_COLOR,
-                                    createdAt = now,
-                                ),
-                            )
-                        } else if (item.itemId == MENU_COPY_SELECTION) {
-                            selectedLocator?.text?.highlight?.let { selectedText ->
-                                val clipboard = context.getSystemService(ClipboardManager::class.java)
-                                clipboard?.setPrimaryClip(
-                                    ClipData.newPlainText(
-                                        context.getString(R.string.epub_selection_clip_label),
-                                        selectedText,
+                        try {
+                            val selectedLocator = session.navigator.value?.currentSelection()?.locator
+                            val selectedText = selectedLocator?.text?.highlight?.trim().orEmpty()
+                            val selectedLocatorJson = selectedLocator?.toJSON()?.toString()
+                            val selectedAuthor = opened.metadata.authors
+                                .map { it.localizedName.string }
+                                .filter(String::isNotBlank)
+                                .joinToString(", ")
+                            if (item.itemId == MENU_HIGHLIGHT && selectedLocator != null) {
+                                val now = System.currentTimeMillis()
+                                viewModel.saveAnnotation(
+                                    ReaderAnnotation(
+                                        id = UUID.randomUUID().toString(),
+                                        bookUri = uri.toString(),
+                                        kind = "HIGHLIGHT",
+                                        locatorJson = selectedLocator.toJSON().toString(),
+                                        selectedText = selectedLocator.text.highlight?.take(12_000),
+                                        colorArgb = DEFAULT_HIGHLIGHT_COLOR,
+                                        createdAt = now,
                                     ),
                                 )
-                            }
-                        } else if (item.itemId == MENU_SHARE_SELECTION) {
-                            if (selectedText.isNotEmpty()) {
-                                context.startActivity(
-                                    shareCardIntent(
-                                        context,
-                                        ShareCardArgs(
-                                            text = selectedText,
-                                            bookId = uri.toString(),
-                                            bookTitle = title,
-                                            author = selectedAuthor,
-                                            locatorJson = selectedLocatorJson,
+                            } else if (item.itemId == MENU_COPY_SELECTION) {
+                                selectedLocator?.text?.highlight?.let { selectedText ->
+                                    val clipboard = context.getSystemService(ClipboardManager::class.java)
+                                    clipboard?.setPrimaryClip(
+                                        ClipData.newPlainText(
+                                            context.getString(R.string.epub_selection_clip_label),
+                                            selectedText,
                                         ),
-                                    ),
-                                )
+                                    )
+                                }
+                            } else if (item.itemId == MENU_SHARE_SELECTION) {
+                                if (selectedText.isNotEmpty()) {
+                                    context.startActivity(
+                                        shareCardIntent(
+                                            context,
+                                            ShareCardArgs(
+                                                text = selectedText,
+                                                bookId = uri.toString(),
+                                                bookTitle = title,
+                                                author = selectedAuthor,
+                                                locatorJson = selectedLocatorJson,
+                                            ),
+                                        ),
+                                    )
+                                }
                             }
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (error: Exception) {
+                            android.util.Log.e("LeePeSelection", "Selection action failed", error)
+                            android.widget.Toast.makeText(
+                                context,
+                                R.string.epub_selection_action_failed,
+                                android.widget.Toast.LENGTH_LONG,
+                            ).show()
+                        } finally {
+                            mode.finish()
                         }
-                        mode.finish()
                     }
                     return true
                 }
