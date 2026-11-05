@@ -32,9 +32,9 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material3.Icon
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -67,10 +67,10 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
-import pe.lee.app.data.local.OfflineBookStore
-import pe.lee.app.data.repository.AudioProgressStore
 import pe.lee.app.LeePeApplication
 import pe.lee.app.R
+import pe.lee.app.data.local.OfflineBookStore
+import pe.lee.app.data.repository.AudioProgressStore
 import pe.lee.app.ui.formatPlaybackSpeed
 import pe.lee.app.ui.reader.readerSafeDrawingInsets
 import pe.lee.app.ui.theme.LeePeTheme

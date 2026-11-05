@@ -167,6 +167,24 @@ class ShareCardScreenTest {
         }
     }
 
+    @Test
+    fun longerQuotesRemainAvailableAcrossAllEditorialTemplates() {
+        val quote = List(20) {
+            "Leer nos permite escuchar otras vidas, comprender nuestras preguntas y encontrar luz incluso en los días difíciles."
+        }.joinToString(" ")
+        val viewModel = createViewModel(QuoteCard(quote, "Libro", "Autor"))
+        composeRule.setContent { ShareCardScreen(viewModel = viewModel, onBack = {}) }
+        val shareButton = composeRule.onNodeWithText(text(R.string.share_card_share))
+        for (theme in pe.lee.feature.sharecard.ui.theme.editorialThemes) {
+            composeRule.runOnIdle { viewModel.selectTheme(theme) }
+            composeRule.waitForIdle()
+            composeRule.waitUntil(30_000) {
+                runCatching { shareButton.assertIsEnabled() }.isSuccess
+            }
+            shareButton.assertIsEnabled()
+        }
+    }
+
     private fun saveExportPreview(name: String, raster: QuoteCardRaster) {
         if (Build.VERSION.SDK_INT < 29) return
         val bitmap = Bitmap.createBitmap(raster.argbPixels, raster.width, raster.height, Bitmap.Config.ARGB_8888)

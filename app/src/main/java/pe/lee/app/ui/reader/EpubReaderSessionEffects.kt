@@ -184,6 +184,12 @@ internal fun EpubReaderSessionEffects(
                     if (item.itemId !in setOf(MENU_HIGHLIGHT, MENU_COPY_SELECTION, MENU_SHARE_SELECTION)) return false
                     coroutineScope.launch {
                         val selectedLocator = session.navigator.value?.currentSelection()?.locator
+                        val selectedText = selectedLocator?.text?.highlight?.trim().orEmpty()
+                        val selectedLocatorJson = selectedLocator?.toJSON()?.toString()
+                        val selectedAuthor = opened.metadata.authors
+                            .map { it.localizedName.string }
+                            .filter(String::isNotBlank)
+                            .joinToString(", ")
                         if (item.itemId == MENU_HIGHLIGHT && selectedLocator != null) {
                             val now = System.currentTimeMillis()
                             viewModel.saveAnnotation(
@@ -208,12 +214,7 @@ internal fun EpubReaderSessionEffects(
                                 )
                             }
                         } else if (item.itemId == MENU_SHARE_SELECTION) {
-                            val selectedText = selectedLocator?.text?.highlight?.trim().orEmpty()
                             if (selectedText.isNotEmpty()) {
-                                val author = opened.metadata.authors
-                                    .map { it.localizedName.string }
-                                    .filter(String::isNotBlank)
-                                    .joinToString(", ")
                                 context.startActivity(
                                     shareCardIntent(
                                         context,
@@ -221,8 +222,8 @@ internal fun EpubReaderSessionEffects(
                                             text = selectedText,
                                             bookId = uri.toString(),
                                             bookTitle = title,
-                                            author = author,
-                                            locatorJson = selectedLocator?.toJSON()?.toString(),
+                                            author = selectedAuthor,
+                                            locatorJson = selectedLocatorJson,
                                         ),
                                     ),
                                 )
