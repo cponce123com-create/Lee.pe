@@ -89,6 +89,7 @@ class LibraryViewModel(
     private val mutableScanner = MutableStateFlow(ScannerUiState())
     internal val scanner: StateFlow<ScannerUiState> = mutableScanner.asStateFlow()
     private var scanJob: Job? = null
+
     @Volatile
     private var scanGeneration = 0L
 

@@ -180,6 +180,7 @@ class LocalLibraryBackupTest {
         }
         assertThrows(IOException::class.java) { LocalLibraryBackup.readArchivePayload(source) }
     }
+
     @Test
     fun truncatedBooksDoNotLeaveOrphanedBackupRecords() {
         val books = List(20_001) { index ->
@@ -204,5 +205,4 @@ class LocalLibraryBackupTest {
         assertTrue(sanitized.snapshot.bookCollectionNames.isEmpty())
         assertTrue(sanitized.adjustedRecords >= 3)
     }
-
 }
