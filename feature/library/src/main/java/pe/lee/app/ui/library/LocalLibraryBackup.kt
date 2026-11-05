@@ -41,19 +41,10 @@ private const val MAX_COLLECTIONS = 2000
 
 internal class BackupPasswordRequiredException : IOException()
 
-internal data class LocalBackupArchive(
-    val snapshot: LocalBackupSnapshot,
-    val settings: Map<String, JSONObject>,
-    val dailyGoalMinutes: Int?,
-)
+internal data class LocalBackupArchive(val snapshot: LocalBackupSnapshot, val settings: Map<String, JSONObject>, val dailyGoalMinutes: Int?)
 internal data class LocalLibraryRestoreResult(val merge: LocalBackupMergeReport, val preferencesPersisted: Boolean)
 
-internal data class LocalBackupPreview(
-    val archive: LocalBackupArchive,
-    val exactMatches: Int,
-    val titleMatches: Int,
-    val unavailable: Int,
-)
+internal data class LocalBackupPreview(val archive: LocalBackupArchive, val exactMatches: Int, val titleMatches: Int, val unavailable: Int)
 
 internal data class SanitizedBackupSnapshot(val snapshot: LocalBackupSnapshot, val adjustedRecords: Int)
 
