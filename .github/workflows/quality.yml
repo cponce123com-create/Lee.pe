@@ -58,6 +58,12 @@ jobs:
           branch: ${{ github.head_ref }}
           commit_message: 'style: apply ktlint formatting'
           file_pattern: '*.kt *.kts'
+      - name: Require formatting changes to be applied to source
+        if: >-
+          steps.initial.outcome == 'failure' &&
+          (github.event_name != 'pull_request' ||
+           github.event.pull_request.head.repo.full_name != github.repository)
+        run: git diff --exit-code -- '*.kt' '*.kts'
       # GITHUB_TOKEN pushes do not create a new push workflow. Explicitly
       # validate the resulting head so its checks are not left pending.
       - name: Validate automatic commit
