@@ -5,7 +5,7 @@
 **Alcance:** 153 archivos versionados · 88 archivos Kotlin de producción (10.614 líneas) · 10 módulos Gradle · 1 APK de depuración (CI)
 **Naturaleza:** revisión estática de código, configuración de build, datos, seguridad, CI y documentación, más una **compilación completa verificada** (`testDebugUnitTest assembleDebug`, 35 pruebas verdes). No se ejecutó la app en dispositivo o emulador (ver §2).
 
-> **Actualización del estado (4 de noviembre de 2026):** el informe detallado que sigue es una captura histórica del commit `f050bec` del 3 de noviembre; sus descripciones de `versionCode`, `buildTypes`, CI y recuentos no describen `main` actual. `main` ya usa `versionCode=3`, contiene `buildTypes.release` con R8/minificación y firma opcional por variables de entorno, y la línea base más reciente registrada es 64 pruebas unitarias + 12 instrumentadas. El PR #38 corrigió además el cierre al iniciar y pasó lint, pruebas unitarias, `assembleDebug` y una prueba instrumentada de arranque en API 35. Los pendientes de dispositivo físico y la revalidación de release se mantienen explícitos.
+> **Actualización registrada el 4 de noviembre de 2026:** el informe detallado que sigue es una captura histórica del commit `f050bec` del 3 de noviembre. En la fecha de esta nota, `main` usaba `versionCode=3` y `versionName=0.3.0`. El repositorio avanzó después: al 5 de noviembre de 2026, el README del proyecto registra `versionCode=10` y `versionName=0.3.7`. Las descripciones de versión, CI, recuentos y estado de tareas de esta auditoría no describen el código actual; consulta el código y las ejecuciones recientes de CI. El PR #38 y sus pruebas se conservan como evidencia histórica, no como validación de la versión actual.
 
 ---
 
