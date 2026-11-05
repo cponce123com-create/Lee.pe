@@ -28,6 +28,18 @@ dependencies {
     kover(project(":library:readium"))
 }
 
+// Apply the same generated-code exclusions to the aggregate denominator.
+// Production UI and repositories remain included.
+kover {
+    reports {
+        filters {
+            excludes {
+                classes("*.BuildConfig", "*.R", "*.R\$*", "*_Impl", "*_Impl\$*")
+            }
+        }
+    }
+}
+
 tasks.register("koverHtmlReportAll") {
     group = "verification"
     description = "Generates aggregate HTML coverage for the project's JVM unit tests."
@@ -70,7 +82,15 @@ allprojects {
 
 tasks.register("koverXmlReportAll") {
     group = "verification"
-    dependsOn("koverXmlReport")
+    dependsOn(
+        "koverXmlReport",
+        ":core:domain:koverXmlReport",
+        ":data:koverXmlReportDebug",
+        ":app:koverXmlReportDebug",
+        ":feature:library:koverXmlReportDebug",
+        ":feature:notes:koverXmlReportDebug",
+        ":feature:sharecard:koverXmlReportDebug",
+    )
 }
 tasks.register("coverageGoals") {
     group = "verification"
@@ -91,7 +111,10 @@ dependencyCheck {
     // Scan the dependency graphs shipped in the app and libraries. AGP's
     // androidJdkImage is an internal transform configuration, not an app dependency.
     scanConfigurations = listOf("debugRuntimeClasspath", "releaseRuntimeClasspath")
-    nvd.apiKey = providers.environmentVariable("NVD_API_KEY").orNull.orEmpty()
+    // Absence is different from an explicitly empty (invalid) NVD credential.
+    providers.environmentVariable("NVD_API_KEY").orNull?.trim()?.takeIf { it.isNotEmpty() }?.let {
+        nvd.apiKey = it
+    }
     // No credentials are required for the local JVM/Android dependency graph.
     analyzers.assemblyEnabled = false
 }

@@ -51,4 +51,28 @@ class ReadingSessionRecorderTest {
     fun ignoresEmptyDuration() {
         assertEquals(emptyList<Pair<String, Long>>(), splitSecondsByLocalDay(0L, 0L, lima))
     }
+
+    @Test
+    fun daylightSavingDaysPreserveActualElapsedSeconds() {
+        val zone = ZoneId.of("America/New_York")
+        for ((date, hours) in listOf(LocalDate.of(2026, 3, 8) to 23L, LocalDate.of(2026, 11, 1) to 25L)) {
+            val start = date.atStartOfDay(zone).toInstant().toEpochMilli()
+            val duration = hours * 3_600L
+            assertEquals(
+                listOf(date.toString() to duration, date.plusDays(1).toString() to 60L),
+                splitSecondsByLocalDay(start, duration + 60L, zone),
+            )
+        }
+    }
+
+    @Test
+    fun multiDaySessionPreservesAllSeconds() {
+        val date = LocalDate.of(2026, 11, 2)
+        val start = date.atStartOfDay(lima).toInstant().toEpochMilli()
+        assertEquals(
+            listOf("2026-11-02" to 86_400L, "2026-11-03" to 86_400L, "2026-11-04" to 1L),
+            splitSecondsByLocalDay(start, 172_801L, lima),
+        )
+        assertEquals(emptyList<Pair<String, Long>>(), splitSecondsByLocalDay(start, -1L, lima))
+    }
 }
