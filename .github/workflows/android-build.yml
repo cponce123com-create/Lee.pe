@@ -47,6 +47,7 @@ jobs:
       - name: Test signing certificate checks and exception resource policy
         run: |
           python scripts/test_verify_release_signing.py
+          python scripts/test_coverage_summary.py
           python scripts/verify_exception_resources.py
 
       - name: Verify Spanish and English quote-card resources
