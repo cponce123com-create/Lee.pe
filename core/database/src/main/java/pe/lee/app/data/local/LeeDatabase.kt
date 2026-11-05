@@ -17,7 +17,7 @@ import androidx.sqlite.execSQL
         BookCollectionCrossRef::class,
         PendingBookCleanupEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 abstract class LeeDatabase : RoomDatabase() {
@@ -178,8 +178,16 @@ abstract class LeeDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override suspend fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_reading_sessions_bookUri` ON `reading_sessions` (`bookUri`)",
+                )
+            }
+        }
+
         /** Supported migration chain for custom database builders and integration tests. */
-        val ALL_MIGRATIONS get() = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+        val ALL_MIGRATIONS get() = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
 
         @Volatile
         private var instance: LeeDatabase? = null

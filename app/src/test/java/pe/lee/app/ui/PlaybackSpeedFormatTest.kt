@@ -4,8 +4,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class PlaybackSpeedFormatTest {
-    @Test fun formatsFractionalSpeedWithSpanishDecimalSeparator() {
-        assertEquals("1,25", formatPlaybackSpeed(1.25f))
+    @Test fun formatsFractionalSpeedWithPeruvianDecimalSeparator() {
+        assertEquals("1.25", formatPlaybackSpeed(1.25f))
     }
 
     @Test fun omitsUnnecessaryFractionForWholeSpeed() {
