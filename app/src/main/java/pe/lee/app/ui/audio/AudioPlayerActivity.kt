@@ -69,9 +69,9 @@ import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import pe.lee.app.LeePeApplication
 import pe.lee.app.R
-import pe.lee.app.ui.formatPlaybackSpeed
 import pe.lee.app.data.local.OfflineBookStore
 import pe.lee.app.data.repository.AudioProgressStore
+import pe.lee.app.ui.formatPlaybackSpeed
 import pe.lee.app.ui.reader.readerSafeDrawingInsets
 import pe.lee.app.ui.theme.LeePeTheme
 
@@ -167,6 +167,18 @@ class AudioPlayerActivity : ComponentActivity() {
 }
 
 @Composable
+private const val SLEEP_TIMER_15_MINUTES = 15
+private const val SLEEP_TIMER_30_MINUTES = 30
+private const val SLEEP_TIMER_45_MINUTES = 45
+private const val SLEEP_TIMER_60_MINUTES = 60
+private val SLEEP_TIMER_OPTIONS_MINUTES = listOf(
+    SLEEP_TIMER_15_MINUTES,
+    SLEEP_TIMER_30_MINUTES,
+    SLEEP_TIMER_45_MINUTES,
+    SLEEP_TIMER_60_MINUTES,
+)
+
+@Suppress("CyclomaticComplexMethod")
 private fun AudioPlayerScreen(
     title: String,
     controller: MediaController?,
@@ -327,7 +339,7 @@ private fun AudioPlayerScreen(
                         expanded = sleepTimerMenuExpanded,
                         onDismissRequest = { sleepTimerMenuExpanded = false },
                     ) {
-                        listOf(15, 30, 45, 60).forEach { minutes ->
+                        SLEEP_TIMER_OPTIONS_MINUTES.forEach { minutes ->
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.audio_sleep_timer_minutes, minutes)) },
                                 onClick = {
