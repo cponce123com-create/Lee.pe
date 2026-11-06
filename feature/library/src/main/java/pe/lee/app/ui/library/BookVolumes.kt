@@ -55,10 +55,15 @@ private val Foil = Color(0xFFE7CB91)
 
 private enum class BindingMaterial { LEATHER, CLOTH, SMOOTH, VINTAGE }
 
-private fun bindingMaterial(id: String): BindingMaterial =
-    BindingMaterial.entries[(id.hashCode() ushr 2) % BindingMaterial.entries.size]
+private fun bindingMaterial(id: String): BindingMaterial = BindingMaterial.entries[(id.hashCode() ushr 2) % BindingMaterial.entries.size]
+
+private const val MIN_TRIM_BAND_EDGES = 6
+private const val BEVEL_HIGHLIGHT = .23f
+private const val BEVEL_SHADE = .32f
+private val SpineInkShadow = Color(0x99000000)
 
 /** Cached grain and filigree use the same warm light direction at either orientation. */
+@Suppress("CyclomaticComplexMethod")
 private fun Modifier.bindingFace(base: Color, material: BindingMaterial, upright: Boolean) = drawWithCache {
     val radius = 4.dp.toPx()
     val brushColors = listOf(lerp(base, Color.Black, .28f), lerp(base, Color.White, .17f), base, lerp(base, Color.Black, .48f))
@@ -80,7 +85,7 @@ private fun Modifier.bindingFace(base: Color, material: BindingMaterial, upright
     fun point(along: Float, across: Float) = if (upright) Offset(across, along) else Offset(along, across)
     val trim = Path()
     val filigree = Path()
-    if (material != BindingMaterial.SMOOTH && cross > 2 * edge && band > 6 * edge) {
+    if (material != BindingMaterial.SMOOTH && cross > 2 * edge && band > MIN_TRIM_BAND_EDGES * edge) {
         for (end in listOf(edge * 2, band - edge * 2)) {
             for (line in listOf(end - edge, end + edge)) {
                 val start = point(line, edge)
@@ -204,7 +209,7 @@ internal fun StackedBookVolume(book: LocalBook, base: Color, flatTop: Boolean, m
                     lineTo(size.width, size.height)
                     close()
                 },
-                Brush.verticalGradient(listOf(lerp(base, Color.White, .23f), lerp(base, Color.Black, .32f))),
+                Brush.verticalGradient(listOf(lerp(base, Color.White, BEVEL_HIGHLIGHT), lerp(base, Color.Black, BEVEL_SHADE))),
             )
         }
         Box(
@@ -233,7 +238,7 @@ private fun SpineLabel(title: String, material: BindingMaterial, modifier: Modif
             fontFamily = if (material == BindingMaterial.SMOOTH) FontFamily.SansSerif else FontFamily.Serif,
             fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center,
-            shadow = Shadow(Color(0x99000000), Offset(0f, 1f), 1f),
+            shadow = Shadow(SpineInkShadow, Offset(0f, 1f), 1f),
         ),
         maxLines = maxLines,
         overflow = TextOverflow.Ellipsis,

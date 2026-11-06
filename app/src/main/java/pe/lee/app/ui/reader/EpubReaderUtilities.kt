@@ -25,10 +25,9 @@ internal fun AndroidTtsEngine.Voice.isLocalSpanishVoice(): Boolean {
     return languageCode.equals("es", ignoreCase = true)
 }
 
-internal fun sortedLocalSpanishVoices(voices: Collection<AndroidTtsEngine.Voice>): List<AndroidTtsEngine.Voice> =
-    voices
-        .filter { it.isLocalSpanishVoice() }
-        .sortedWith(compareBy({ it.language.toString() }, { it.id.value }))
+internal fun sortedLocalSpanishVoices(voices: Collection<AndroidTtsEngine.Voice>): List<AndroidTtsEngine.Voice> = voices
+    .filter { it.isLocalSpanishVoice() }
+    .sortedWith(compareBy({ it.language.toString() }, { it.id.value }))
 
 /** Prefer the third installed es-US voice, falling back safely on this device's catalog. */
 internal fun defaultSpanishUsVoice(voices: Collection<AndroidTtsEngine.Voice>): AndroidTtsEngine.Voice? {

@@ -111,6 +111,7 @@ internal fun PdfReaderScreen(
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val density = LocalDensity.current
+    val pdfPermissionLostMessage = stringResource(R.string.epub_permission_lost)
     val pdfOpenFailedMessage = stringResource(R.string.pdf_open_failed)
     val pdfRenderFailedMessage = stringResource(R.string.pdf_render_failed)
     val pdfSearchEmptyQueryMessage = stringResource(R.string.pdf_search_empty_query)
@@ -157,7 +158,7 @@ internal fun PdfReaderScreen(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: SecurityException) {
-            errorMessage = context.getString(R.string.epub_permission_lost)
+            errorMessage = pdfPermissionLostMessage
             loading = false
         } catch (_: Exception) {
             errorMessage = pdfOpenFailedMessage

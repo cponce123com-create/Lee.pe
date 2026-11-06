@@ -238,9 +238,21 @@ internal fun PdfReaderDialogs(
                                     overflow = TextOverflow.Ellipsis,
                                 )
                                 when (annotation.kind) {
-                                    "HIGHLIGHT" -> Text(stringResource(R.string.pdf_annotation_highlight_text), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
-                                    "UNDERLINE" -> Text(stringResource(R.string.pdf_annotation_underline_text), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
-                                    "PHRASE" -> Text(stringResource(R.string.pdf_annotation_saved_phrase), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                                    "HIGHLIGHT" -> Text(
+                                        stringResource(R.string.pdf_annotation_highlight_text),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = 12.sp,
+                                    )
+                                    "UNDERLINE" -> Text(
+                                        stringResource(R.string.pdf_annotation_underline_text),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = 12.sp,
+                                    )
+                                    "PHRASE" -> Text(
+                                        stringResource(R.string.pdf_annotation_saved_phrase),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = 12.sp,
+                                    )
                                 }
                                 Text(
                                     stringResource(

@@ -11,10 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /** An exact-match result from the bundled Spanish-English dictionary. */
-data class OfflineDictionaryEntry(
-    val headword: String,
-    val definitions: List<String>,
-)
+data class OfflineDictionaryEntry(val headword: String, val definitions: List<String>)
 
 /**
  * Local exact-match lookup. The bundled asset is expanded once into app-private storage;
@@ -35,8 +32,8 @@ internal class OfflineDictionaryRepository(context: Context) {
                 keyOf = { it.substringBefore('\t') },
                 compare = { it.compareTo(normalized) },
             ) ?: return@use null
-            val fields = row.split('\t', limit = 3)
-            if (fields.size != 3) return@use null
+            val fields = row.split('\t', limit = ROW_FIELD_COUNT)
+            if (fields.size != ROW_FIELD_COUNT) return@use null
             val definitions = fields[2].split(UNIT_SEPARATOR).filter(String::isNotBlank).take(MAX_DEFINITIONS)
             if (definitions.isEmpty()) null else OfflineDictionaryEntry(fields[1], definitions)
         }
@@ -63,6 +60,7 @@ internal class OfflineDictionaryRepository(context: Context) {
     }
 
     /** Finds the containing line for an arbitrary byte offset without decoding partial UTF-8. */
+    @Suppress("ReturnCount")
     private fun readRowAt(file: RandomAccessFile, requestedOffset: Long): String? {
         if (requestedOffset < 0L || requestedOffset >= file.length()) return null
         var start = requestedOffset
@@ -98,6 +96,7 @@ internal class OfflineDictionaryRepository(context: Context) {
     private companion object {
         const val ASSET_PATH = "dictionary/es-en.tsv.gz"
         const val UNIT_SEPARATOR = '\u001f'
+        const val ROW_FIELD_COUNT = 3
         const val MAX_TERM_LENGTH = 160
         const val MAX_DEFINITIONS = 8
         val CACHE_LOCK = Any()
@@ -112,7 +111,9 @@ internal fun normalizeDictionaryTerm(term: String): String = buildString(term.le
         if (type != Character.NON_SPACING_MARK.toInt() &&
             type != Character.COMBINING_SPACING_MARK.toInt() &&
             type != Character.ENCLOSING_MARK.toInt()
-        ) append(String(Character.toChars(codePoint)).lowercase(Locale.ROOT))
+        ) {
+            append(String(Character.toChars(codePoint)).lowercase(Locale.ROOT))
+        }
     }
 }
 
@@ -126,11 +127,12 @@ private inline fun binarySearchRows(
     var low = 0L
     var high = byteLength - 1L
     while (low <= high) {
-        val row = rowAt((low + high) ushr 1) ?: return null
         val middle = (low + high) ushr 1
+        val row = rowAt(middle) ?: break
+        val comparison = compare(keyOf(row))
         when {
-            compare(keyOf(row)) < 0 -> low = middle + 1L
-            compare(keyOf(row)) > 0 -> high = middle - 1L
+            comparison < 0 -> low = middle + 1L
+            comparison > 0 -> high = middle - 1L
             else -> return row
         }
     }
