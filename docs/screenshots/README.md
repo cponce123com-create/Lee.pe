@@ -1,12 +1,11 @@
 # Capturas de Lee.pe
 
-Sustituye los marcadores de la galería del README principal por imágenes reales cuando estén disponibles.
+Cada archivo `.png.gitkeep` reserva una ruta. Sustitúyelo por la captura PNG real sin el sufijo `.gitkeep` y cambia su enlace en el README principal a una imagen con texto alternativo. Usa libros de prueba y registra la versión y API de Android.
 
-| Archivo previsto | Pantalla |
+| Archivo | Pantalla |
 |---|---|
-| `library-dark.png` | Biblioteca, tema oscuro |
-| `epub-reader.png` | Lector EPUB |
-| `pdf-reader.png` | Lector PDF |
-| `quote-card-editor.png` | Editor de tarjetas |
-
-Usa libros de prueba y registra la versión de la app y la API de Android. Conserva el texto alternativo al insertar cada imagen, por ejemplo: `![Biblioteca en tema oscuro](docs/screenshots/library-dark.png)`.
+| `library-light.png` | Biblioteca clara |
+| `library-dark.png` | Biblioteca oscura |
+| `reader-epub.png` | Lector EPUB |
+| `reader-pdf.png` | Lector PDF |
+| `sharecard-editor.png` | Editor de tarjetas |

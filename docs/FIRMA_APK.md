@@ -2,8 +2,7 @@
 
 El workflow `Release bundle` usa una clave persistente cuando la configuración
 de firma está completa y verifica el certificado del APK. Si no hay ninguna
-configuración de firma, genera un APK sin firmar. Una configuración parcial
-detiene el flujo. Un APK sin firmar requiere firma para instalarlo.
+configuración de firma, genera un APK de prueba con firma debug y lo publica como preliminar. Una configuración parcial detiene el flujo.
 
 ## Configuración del repositorio
 
@@ -30,11 +29,10 @@ cambio de instalación; no hace falta desinstalar para comprobar una huella.
 
 ## Publicación y comprobación
 
-Ejecuta `Release bundle` manualmente para validar y descargar artefactos. Para
-publicar, actualiza `version.properties` y empuja una etiqueta `vMAJOR.MINOR.PATCH`
+Para publicar, actualiza `version.properties` y empuja una etiqueta `vMAJOR.MINOR.PATCH`
 que coincida con `versionName`. El flujo publica el APK, `version.properties`
 y `SHA256SUMS`. Con firma también incluye el AAB y `signing.json`. Sin firma,
-publica una versión preliminar con el APK identificado como no instalable.
+publica una versión preliminar con `lee-pe-debug-preview.apk`.
 
 Después de descargar los assets, ejecuta `sha256sum --check SHA256SUMS` en su
 directorio. La verificación de firma comprueba la huella del certificado fijada

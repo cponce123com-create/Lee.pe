@@ -95,14 +95,15 @@ El repositorio aún no contiene capturas completas de las pantallas tomadas en l
 
 ### Capturas de la app
 
-| Vista | Captura prevista |
+| Vista | Marcador |
 |---|---|
-| Biblioteca en tema oscuro | `docs/screenshots/library-dark.png` |
-| Lector EPUB | `docs/screenshots/epub-reader.png` |
-| Lector PDF | `docs/screenshots/pdf-reader.png` |
-| Editor de tarjetas | `docs/screenshots/quote-card-editor.png` |
+| Biblioteca clara | [library-light.png](docs/screenshots/library-light.png.gitkeep) |
+| Biblioteca oscura | [library-dark.png](docs/screenshots/library-dark.png.gitkeep) |
+| Lector EPUB | [reader-epub.png](docs/screenshots/reader-epub.png.gitkeep) |
+| Lector PDF | [reader-pdf.png](docs/screenshots/reader-pdf.png.gitkeep) |
+| Editor de tarjetas | [sharecard-editor.png](docs/screenshots/sharecard-editor.png.gitkeep) |
 
-Los nombres son marcadores hasta incorporar capturas reales. Consulta las [instrucciones de la galería](docs/screenshots/README.md) y la [matriz de QA manual](docs/QA-MANUAL-TESTING.md).
+Consulta las [instrucciones de la galería](docs/screenshots/README.md) y la [matriz de QA manual](docs/QA-MANUAL-TESTING.md).
 
 ## Flujos
 

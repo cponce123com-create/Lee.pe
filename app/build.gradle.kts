@@ -45,7 +45,14 @@ android {
     }
 
     buildTypes {
+        // Keep x86 test emulators working while limiting distributed APKs to ARM.
+        debug {
+            if (providers.gradleProperty("distributionArmOnly").orNull == "true") {
+                ndk.abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a"))
+            }
+        }
         release {
+            ndk.abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a"))
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -59,6 +66,7 @@ android {
     if (providers.gradleProperty("enableBenchmarks").orNull == "true") {
         buildTypes.create("benchmark") {
             initWith(buildTypes.getByName("release"))
+            ndk.abiFilters.clear()
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += listOf("release")
             isDebuggable = false
