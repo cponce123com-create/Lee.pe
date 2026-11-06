@@ -9,30 +9,33 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.random.Random
 
 private val BookFileExtension = Regex("\\.(epub|pdf|mobi|azw3|txt|fb2|cbz|cbr)$", RegexOption.IGNORE_CASE)
 private val BookTitleSpaces = Regex("\\s+")
@@ -48,6 +51,73 @@ private val Paper = Color(0xFFFFF0D0)
 private val PaperLine = Color(0xFFB7A27B)
 private val Foil = Color(0xFFE7CB91)
 
+private enum class BindingMaterial { LEATHER, CLOTH, SMOOTH, VINTAGE }
+
+private fun bindingMaterial(id: String): BindingMaterial =
+    BindingMaterial.entries[(id.hashCode() ushr 2) % BindingMaterial.entries.size]
+
+/** Cached grain and filigree use the same warm light direction at either orientation. */
+private fun Modifier.bindingFace(base: Color, material: BindingMaterial, upright: Boolean) = drawWithCache {
+    val radius = 4.dp.toPx()
+    val brushColors = listOf(lerp(base, Color.Black, .28f), lerp(base, Color.White, .17f), base, lerp(base, Color.Black, .48f))
+    val binding = if (upright) Brush.horizontalGradient(brushColors) else Brush.verticalGradient(brushColors)
+    val grain = Path()
+    if (material != BindingMaterial.SMOOTH) {
+        val random = Random(37)
+        val count = (size.width * size.height / (3.dp.toPx() * 3.dp.toPx())).toInt().coerceIn(0, 900)
+        repeat(count) {
+            val x = random.nextFloat() * size.width
+            val y = random.nextFloat() * size.height
+            grain.moveTo(x, y)
+            grain.lineTo(x + if (material == BindingMaterial.CLOTH) 1.8.dp.toPx() else .65.dp.toPx(), y + .35.dp.toPx())
+        }
+    }
+    val edge = 3.dp.toPx()
+    val band = if (upright) size.height else size.width
+    val cross = if (upright) size.width else size.height
+    fun point(along: Float, across: Float) = if (upright) Offset(across, along) else Offset(along, across)
+    val trim = Path()
+    val filigree = Path()
+    if (material != BindingMaterial.SMOOTH && cross > 2 * edge && band > 6 * edge) {
+        for (end in listOf(edge * 2, band - edge * 2)) {
+            for (line in listOf(end - edge, end + edge)) {
+                val start = point(line, edge)
+                val finish = point(line, cross - edge)
+                trim.moveTo(start.x, start.y)
+                trim.lineTo(finish.x, finish.y)
+            }
+            if (material != BindingMaterial.CLOTH) {
+                for (petal in -1..1) {
+                    val center = cross / 2f + petal * cross / 5f
+                    val start = point(end, center - cross / 10f)
+                    val control = point(end - edge, center)
+                    val finish = point(end, center + cross / 10f)
+                    val lower = point(end + edge, center)
+                    filigree.moveTo(start.x, start.y)
+                    filigree.quadraticTo(control.x, control.y, finish.x, finish.y)
+                    filigree.quadraticTo(lower.x, lower.y, start.x, start.y)
+                }
+            }
+        }
+    }
+    val fine = androidx.compose.ui.graphics.drawscope.Stroke(.55.dp.toPx())
+    onDrawBehind {
+        drawRoundRect(binding, cornerRadius = CornerRadius(radius))
+        drawPath(grain, Color.White.copy(alpha = .16f), style = fine)
+        drawPath(trim, Foil.copy(alpha = .9f), style = fine)
+        drawPath(filigree, Foil.copy(alpha = .8f), style = fine)
+        if (size.width > edge * 2 && size.height > edge * 2) {
+            drawRoundRect(
+                Foil.copy(alpha = .24f),
+                topLeft = Offset(edge, edge),
+                size = Size(size.width - edge * 2, size.height - edge * 2),
+                cornerRadius = CornerRadius(radius),
+                style = fine,
+            )
+        }
+    }
+}
+
 @Composable
 internal fun UprightBookVolume(book: LocalBook, base: Color, modifier: Modifier = Modifier) {
     BoxWithConstraints(modifier.shadow(4.dp, RoundedCornerShape(3.dp))) {
@@ -55,7 +125,7 @@ internal fun UprightBookVolume(book: LocalBook, base: Color, modifier: Modifier 
         val top = minOf(8.dp, maxHeight * .08f)
         val faceWidth = maxWidth - depth
         val faceHeight = maxHeight - top
-        val dark = lerp(base, Color.Black, .28f)
+        val material = bindingMaterial(book.id)
         Canvas(Modifier.fillMaxSize()) {
             val d = depth.toPx()
             val t = top.toPx()
@@ -87,28 +157,22 @@ internal fun UprightBookVolume(book: LocalBook, base: Color, modifier: Modifier 
         }
         Box(
             Modifier.offset(y = top).size(faceWidth, faceHeight)
-                .background(
-                    Brush.horizontalGradient(listOf(dark, base, lerp(base, Color.Black, .12f), dark)),
-                    RoundedCornerShape(3.dp),
-                ),
+                .bindingFace(base, material, upright = true),
         ) {
-            Canvas(Modifier.fillMaxSize()) {
-                val seam = 3.dp.toPx()
-                drawLine(Color.White.copy(alpha = .22f), Offset(seam, 2f), Offset(seam, size.height - 2f), .7.dp.toPx())
-                for (y in listOf(6.dp.toPx(), size.height - 6.dp.toPx())) {
-                    drawLine(Foil.copy(alpha = .65f), Offset(5.dp.toPx(), y), Offset(size.width - 4.dp.toPx(), y), .6.dp.toPx())
-                }
-            }
-            RotatedSpineTitle(bookSpineTitle(book.title), Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 11.dp))
+            RotatedSpineTitle(
+                bookSpineTitle(book.title),
+                Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 14.dp),
+                material,
+            )
         }
     }
 }
 
 /** Measure the label along the actual book height, then rotate it inside its spine. */
 @Composable
-private fun RotatedSpineTitle(title: String, modifier: Modifier) {
+private fun RotatedSpineTitle(title: String, modifier: Modifier, material: BindingMaterial) {
     BoxWithConstraints(modifier) {
-        val font = if (maxWidth < 23.dp) 9.5.sp else 10.5.sp
+        val font = if (maxWidth < 23.dp) 10.sp else 12.sp
         Layout(
             modifier = Modifier.fillMaxSize(),
             content = {
@@ -116,6 +180,7 @@ private fun RotatedSpineTitle(title: String, modifier: Modifier) {
                     title,
                     modifier = Modifier.graphicsLayer { rotationZ = 270f }.clearAndSetSemantics {},
                     color = Color(0xFFFFF5DF), fontSize = font, lineHeight = font * 1.12f,
+                    fontFamily = if (material == BindingMaterial.SMOOTH) FontFamily.SansSerif else FontFamily.Serif,
                     fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center,
                     maxLines = 2, overflow = TextOverflow.Ellipsis,
                     style = androidx.compose.ui.text.TextStyle(shadow = Shadow(Color(0x66000000), Offset(0f, 1f), 1f)),
@@ -133,90 +198,49 @@ private fun RotatedSpineTitle(title: String, modifier: Modifier) {
 @Composable
 internal fun StackedBookVolume(book: LocalBook, base: Color, flatTop: Boolean, modifier: Modifier = Modifier) {
     BoxWithConstraints(modifier) {
-        val spineHeight = if (flatTop) minOf(27.dp, maxOf(21.dp, maxHeight * .35f)) else maxHeight
-        val coverHeight = (maxHeight - spineHeight).coerceAtLeast(0.dp)
-        val dark = lerp(base, Color.Black, .25f)
-        if (flatTop && coverHeight > 0.dp) {
-            StackedBookTopCover(
-                book,
-                base,
-                Modifier.fillMaxWidth().height(coverHeight).graphicsLayer {
-                    rotationX = 32f
-                    rotationY = -4f
-                    cameraDistance = 24f * density
-                    transformOrigin = TransformOrigin(.5f, 1f)
+        val depth = if (flatTop) minOf(6.dp, maxHeight * .18f) else 1.dp
+        val spineHeight = (maxHeight - depth).coerceAtLeast(0.dp)
+        val material = bindingMaterial(book.id)
+        Canvas(Modifier.fillMaxWidth().height(depth)) {
+            val bevel = minOf(size.height, size.width / 4f)
+            drawPath(
+                Path().apply {
+                    moveTo(0f, size.height)
+                    lineTo(bevel, 0f)
+                    lineTo(size.width - bevel, 0f)
+                    lineTo(size.width, size.height)
+                    close()
                 },
+                Brush.verticalGradient(listOf(lerp(base, Color.White, .23f), lerp(base, Color.Black, .32f))),
             )
         }
         Box(
             Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(spineHeight)
-                .shadow(3.dp, RoundedCornerShape(3.dp))
-                .background(Brush.verticalGradient(listOf(base, dark, lerp(base, Color.Black, .4f))), RoundedCornerShape(3.dp)),
+                .shadow(3.dp, RoundedCornerShape(4.dp))
+                .bindingFace(base, material, upright = false),
             contentAlignment = Alignment.Center,
         ) {
-            Canvas(Modifier.fillMaxSize()) {
-                drawLine(Foil.copy(alpha = .7f), Offset(3f, 1f), Offset(size.width - 3f, 1f), .7.dp.toPx())
-                drawLine(Color.Black.copy(alpha = .35f), Offset(0f, size.height - 1f), Offset(size.width, size.height - 1f), 1.dp.toPx())
-            }
-            Box(
-                Modifier.align(Alignment.Center).fillMaxWidth(.96f)
-                    .height(spineHeight * .78f)
-                    .background(Color.Black.copy(alpha = .17f), RoundedCornerShape(3.dp)),
-            )
             BoxWithConstraints(
-                Modifier.fillMaxWidth().padding(horizontal = 5.dp, vertical = 1.dp),
+                Modifier.fillMaxWidth().padding(horizontal = 13.dp, vertical = 1.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 val font = when {
-                    maxWidth < 70.dp -> 9.5.sp
+                    maxWidth < 70.dp -> 10.sp
                     maxHeight < 23.dp -> 10.sp
-                    else -> 10.5.sp
+                    else -> 12.sp
                 }
                 val titleLines = if (maxHeight >= 24.dp && maxWidth >= 70.dp) 2 else 1
                 Text(
                     bookSpineTitle(book.title),
                     modifier = Modifier.fillMaxWidth().clearAndSetSemantics {},
                     color = Color(0xFFFFF5DF), fontSize = font, lineHeight = font * 1.12f,
+                    fontFamily = if (material == BindingMaterial.SMOOTH) FontFamily.SansSerif else FontFamily.Serif,
                     fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
                     maxLines = titleLines, overflow = TextOverflow.Ellipsis,
                     style = androidx.compose.ui.text.TextStyle(
                         shadow = Shadow(Color(0xCC000000), Offset(0f, 1f), 1.5f),
                     ),
                 )
-            }
-        }
-    }
-}
-
-/** Keep portrait cover artwork proportional while presenting it across a flat book. */
-@Composable
-private fun StackedBookTopCover(book: LocalBook, base: Color, modifier: Modifier) {
-    BoxWithConstraints(
-        modifier.background(
-            Brush.horizontalGradient(listOf(lerp(base, Color.White, .13f), base, lerp(base, Color.Black, .2f))),
-            RoundedCornerShape(3.dp),
-        ),
-        contentAlignment = Alignment.Center,
-    ) {
-        val coverDepth = maxHeight
-        val coverLength = minOf(maxWidth, coverDepth / .68f)
-        Box(
-            Modifier.requiredSize(width = coverDepth, height = coverLength)
-                .graphicsLayer { rotationZ = 90f },
-        ) {
-            CoverBookVolume(base, Modifier.fillMaxSize()) {
-                when (book.format) {
-                    "EPUB" -> LocalEpubCover(book.uri, book.offlineCopyUri, Modifier.fillMaxSize())
-                    "PDF" -> LocalPdfCover(book.uri, book.offlineCopyUri, Modifier.fillMaxSize())
-                    else -> Text(
-                        bookSpineTitle(book.title),
-                        modifier = Modifier.fillMaxSize().padding(5.dp),
-                        color = Color(0xFF174E44),
-                        fontSize = 10.sp,
-                        maxLines = 6,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
             }
         }
     }

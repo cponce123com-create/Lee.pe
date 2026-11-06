@@ -41,9 +41,18 @@ import kotlinx.coroutines.launch
 internal data class MixedShelfGroup(val objects: List<ShelfObject>, val units: Float)
 internal data class MixedShelfLine(val logicalShelf: Int, val groups: List<MixedShelfGroup>)
 
+private val mixedBookPalette = listOf(
+    Color(0xFF234F3D),
+    Color(0xFF214C70),
+    Color(0xFF702F37),
+    Color(0xFF164B4C),
+    Color(0xFF75432B),
+)
+
 private const val MIXED_ROWS_PER_PAGE = 2
-private val mixedRowTops = listOf(.175f, .485f)
-private val mixedRowBottoms = listOf(.435f, .790f)
+private const val MIXED_ROW_WIDTH = .80f
+private val mixedRowTops = listOf(.138f, .504f)
+private val mixedRowBottoms = listOf(.463f, .824f)
 
 /** Capacity is measured before layout so every visual line gets its own supporting plank. */
 internal fun packMixedShelves(shelves: List<ShelfDisplay>, capacity: Float, gapUnits: Float = 0f): List<MixedShelfLine> = buildList {
@@ -64,9 +73,9 @@ internal fun packMixedShelves(shelves: List<ShelfDisplay>, capacity: Float, gapU
                 groups += MixedShelfGroup(
                     listOf(item),
                     if (stacked) {
-                        2f
+                        2.85f
                     } else if (item is ShelfObject.Decor) {
-                        1.7f
+                        1.45f
                     } else {
                         .82f
                     },
@@ -110,7 +119,7 @@ internal fun InteractiveMixedShelf(
     val edge = with(LocalDensity.current) { 28.dp.toPx() }
     LaunchedEffect(layout, shelves) { if (drag.activeKey == null) draft = initial }
     BoxWithConstraints(Modifier.fillMaxWidth().height(height)) {
-        val availableWidth = minOf(maxWidth.value, maxHeight.value / 1.5f) * .83f
+        val availableWidth = minOf(maxWidth.value, maxHeight.value * MIXED_CABINET_ASPECT) * MIXED_ROW_WIDTH
         val capacity = availableWidth / 45f
         val shown = draft.objectsByShelf().mapNotNull { (shelf, items) ->
             val objects = items.filter { it !is ShelfObject.Book || it.placement.bookId in visibleIds }
@@ -176,6 +185,7 @@ internal fun InteractiveMixedShelf(
         ) {
             Cabinet3d(
                 height = height,
+                mixed = true,
                 footer = {
                     CabinetPagerControls(
                         page = pager.currentPage,
@@ -195,24 +205,29 @@ internal fun InteractiveMixedShelf(
                             val rowHeight = cabinetHeight * (mixedRowBottoms[row] - mixedRowTops[row])
                             if (line != null) {
                                 Row(
-                                    Modifier.offset(cabinetWidth * .085f, cabinetHeight * mixedRowTops[row])
-                                        .size(cabinetWidth * .83f, rowHeight)
+                                    Modifier.offset(cabinetWidth * .10f, cabinetHeight * mixedRowTops[row])
+                                        .size(cabinetWidth * MIXED_ROW_WIDTH, rowHeight)
                                         .then(drag.targetModifier("zone:${line.logicalShelf}:$lineIndex")),
                                     horizontalArrangement = Arrangement.spacedBy(3.dp),
                                     verticalAlignment = Alignment.Bottom,
                                 ) {
                                     val unit = (
-                                        (cabinetWidth.value * .83f - (line.groups.size - 1).coerceAtLeast(0) * 3f).coerceAtLeast(0f) /
+                                        (cabinetWidth.value * MIXED_ROW_WIDTH - (line.groups.size - 1).coerceAtLeast(0) * 3f).coerceAtLeast(0f) /
                                             line.groups.sumOf { it.units.toDouble() }.toFloat().coerceAtLeast(1f)
                                         ).coerceAtMost(45f)
                                     line.groups.forEach { group ->
                                         Column(Modifier.width((group.units * unit).dp), verticalArrangement = Arrangement.Bottom) {
                                             group.objects.asReversed().forEachIndexed { index, item ->
                                                 key(item.stableKey) {
-                                                    val objectHeight = if (group.objects.size > 1 && index > 0) {
-                                                        rowHeight * .28f
-                                                    } else {
-                                                        rowHeight * (1f - (group.objects.size - 1) * .28f)
+                                                    val book = item as? ShelfObject.Book
+                                                    val variation = (item.stableKey.hashCode() ushr 1) % 7
+                                                    val objectHeight = when (book?.placement?.orientation) {
+                                                        BookOrientation.STACKED -> minOf(
+                                                            (32 + variation).dp,
+                                                            rowHeight / group.objects.size,
+                                                        )
+                                                        BookOrientation.UPRIGHT -> rowHeight * (.92f + variation * .012f)
+                                                        null -> rowHeight * .75f
                                                     }
                                                     MixedShelfObject(
                                                         item,
@@ -258,7 +273,7 @@ private fun MixedShelfObject(
             contentScale = ContentScale.Fit,
         )
         is ShelfObject.Book -> booksById[item.placement.bookId]?.let { book ->
-            val palette = listOf(Color(0xFF28654A), Color(0xFF245474), Color(0xFF64405D), Color(0xFFAA752D), Color(0xFF315A53))
+            val palette = mixedBookPalette
             val base = palette[(book.id.hashCode() and Int.MAX_VALUE) % palette.size]
             val upright = item.placement.orientation == BookOrientation.UPRIGHT
             Box(
