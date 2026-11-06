@@ -104,8 +104,9 @@ class ShareCardViewModel(
 
     internal fun shareRasterForTest(raster: QuoteCardRaster) = startSharing { raster }
 
-    internal suspend fun downloadRasterForTest(raster: QuoteCardRaster, destination: String) =
+    internal suspend fun downloadRasterForTest(raster: QuoteCardRaster, destination: String) {
         startDownloading(destination) { raster }
+    }
 
     private fun startSharing(capture: suspend () -> QuoteCardRaster) {
         val current = mutableState.value

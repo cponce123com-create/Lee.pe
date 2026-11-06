@@ -15,8 +15,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
@@ -91,7 +91,7 @@ internal fun ReaderQuickThemeButton(
 
     Surface(
         modifier = modifier,
-        color = Color(0xE60A1423),
+        color = Color(READER_QUICK_THEME_BACKGROUND),
         shape = CircleShape,
         shadowElevation = 5.dp,
     ) {
@@ -509,6 +509,8 @@ internal fun EpubAppearanceSheet(
 }
 
 private enum class ReaderThemeChoice { LIGHT, SEPIA, DARK, OLED }
+
+private const val READER_QUICK_THEME_BACKGROUND = 0xE60A1423L
 
 private fun selectedReaderTheme(preferences: EpubPreferences): ReaderThemeChoice = when {
     preferences.theme == ReadiumTheme.DARK &&

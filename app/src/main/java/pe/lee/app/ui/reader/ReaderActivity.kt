@@ -87,6 +87,8 @@ internal fun EpubReaderScreen(
     val annotations by viewModel.annotationState.collectAsStateWithLifecycle()
     val activity = context as? FragmentActivity ?: return
     val containerId = remember { View.generateViewId() }
+    var readerContainer by remember { mutableStateOf<FrameLayout?>(null) }
+    val skipNextPageTurn = remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -116,6 +118,23 @@ internal fun EpubReaderScreen(
     var loading by session.loading
     var errorMessage by session.errorMessage
     var seekJob by remember { mutableStateOf<Job?>(null) }
+    var skipPageTurnResetJob by remember { mutableStateOf<Job?>(null) }
+    fun suppressPageTurnForJump() {
+        skipNextPageTurn.value = true
+        skipPageTurnResetJob?.cancel()
+        skipPageTurnResetJob = coroutineScope.launch {
+            kotlinx.coroutines.delay(PAGE_TURN_SKIP_TIMEOUT_MS)
+            skipNextPageTurn.value = false
+        }
+    }
+    val pageTurnFrame = rememberEpubPageTurnFrame(
+        navigator = navigator,
+        pageView = readerContainer,
+        enabled = !loading && errorMessage == null && epubPreferences.scroll != true,
+        preferences = epubPreferences,
+        autoFollowingNarration = session.followNarration.value && ttsIsPlaying,
+        skipNextTurn = skipNextPageTurn,
+    )
     // Large books used to re-flatten the whole table of contents on every
     // recomposition (each page turn and each narrated sentence) (A-30).
     val tableOfContents = remember(publication) {
@@ -161,9 +180,16 @@ internal fun EpubReaderScreen(
             .background(Color(0xFF07111F)),
     ) {
         AndroidView(
-            factory = { FrameLayout(it).apply { id = containerId } },
+            factory = {
+                FrameLayout(it).apply {
+                    id = containerId
+                    readerContainer = this
+                }
+            },
+            update = { readerContainer = it },
             modifier = Modifier.fillMaxSize(),
         )
+        pageTurnFrame?.let { frame -> EpubPageTurnOverlay(frame) }
 
         if (loading) {
             Column(
@@ -272,21 +298,23 @@ internal fun EpubReaderScreen(
                     onBack = onBack,
                     onPrevious = {
                         sessionActions.pauseTtsForNavigation()
-                        navigator?.goBackward(animated = true)
+                        navigator?.goBackward(animated = false)
                     },
                     onNext = {
                         sessionActions.pauseTtsForNavigation()
-                        navigator?.goForward(animated = true)
+                        navigator?.goForward(animated = false)
                     },
                     contents = tableOfContents,
                     searchPublication = publication,
                     onSelectContent = { link ->
                         sessionActions.pauseTtsForNavigation()
-                        navigator?.go(link, animated = true)
+                        suppressPageTurnForJump()
+                        navigator?.go(link, animated = false)
                     },
                     onSelectSearchResult = { locator ->
                         sessionActions.pauseTtsForNavigation()
-                        navigator?.go(locator, animated = true)
+                        suppressPageTurnForJump()
+                        navigator?.go(locator, animated = false)
                     },
                     onSeek = { progression ->
                         // Narration would drag the page back to the spoken sentence.
@@ -296,7 +324,10 @@ internal fun EpubReaderScreen(
                             val locator = withContext(Dispatchers.IO) {
                                 publication?.locateProgression(progression.toDouble())
                             }
-                            if (locator != null) navigator?.go(locator)
+                            if (locator != null) {
+                                suppressPageTurnForJump()
+                                navigator?.go(locator, animated = false)
+                            }
                         }
                     },
                     onProgressChange = { progress = it },
@@ -493,6 +524,7 @@ class ReaderActivity : FragmentActivity() {
     }
 
     companion object {
+        private const val PAGE_TURN_SKIP_TIMEOUT_MS = 2_000L
         const val EXTRA_TITLE = "pe.lee.app.reader.TITLE"
 
         fun locatorPreferenceKey(uri: Uri): String = "locator:$uri"

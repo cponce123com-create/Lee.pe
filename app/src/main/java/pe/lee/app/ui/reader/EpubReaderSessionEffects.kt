@@ -195,7 +195,9 @@ internal fun EpubReaderSessionEffects(
                             MENU_SAVE_PHRASE,
                             MENU_DICTIONARY,
                         )
-                    ) return false
+                    ) {
+                        return false
+                    }
                     if (actionJob?.isActive != true) {
                         val actionId = item.itemId
                         actionJob = coroutineScope.launch {
@@ -207,9 +209,13 @@ internal fun EpubReaderSessionEffects(
                                     .map { it.localizedName.string }
                                     .filter(String::isNotBlank)
                                     .joinToString(", ")
-                                if (actionId in setOf(MENU_HIGHLIGHT, MENU_UNDERLINE_SELECTION, MENU_SAVE_PHRASE) &&
-                                    selectedLocator != null && selectedText.isNotEmpty()
-                                ) {
+                                val savesSelection = actionId in setOf(
+                                    MENU_HIGHLIGHT,
+                                    MENU_UNDERLINE_SELECTION,
+                                    MENU_SAVE_PHRASE,
+                                )
+                                val hasSelection = selectedLocator != null && selectedText.isNotEmpty()
+                                if (savesSelection && hasSelection) {
                                     val now = System.currentTimeMillis()
                                     val kind = when (actionId) {
                                         MENU_HIGHLIGHT -> "HIGHLIGHT"
@@ -316,7 +322,7 @@ internal fun EpubReaderSessionEffects(
                 .findFragmentByTag(NAVIGATOR_TAG) as? EpubNavigatorFragment
                 ?: error(context.getString(R.string.epub_navigator_create_failed))
             epubNavigator.addInputListener(
-                DirectionalNavigationAdapter(epubNavigator, animatedTransition = true),
+                DirectionalNavigationAdapter(epubNavigator, animatedTransition = false),
             )
             epubNavigator.addInputListener(object : InputListener {
                 override fun onTap(event: TapEvent): Boolean {
