@@ -269,4 +269,25 @@ class ShareCardViewModelTest {
         assertEquals(QuoteCardFormat.SQUARE, viewModel.state.value.card.format)
         assertEquals(ShareCardStatus.Idle, viewModel.state.value.status)
     }
+
+    @Test
+    fun failedDownloadCanBeRetriedToTheSameDestination() = runTest(dispatcher) {
+        var attempts = 0
+        val viewModel = ShareCardViewModel(
+            initialCard = QuoteCard("Una frase", "Libro", "Autora"),
+            generator = ShareCardGenerator { _, _, _ -> byteArrayOf(1) },
+            sharer = ShareCardSharer { },
+            workerDispatcher = dispatcher,
+            downloader = ShareCardDownloader { _, _ ->
+                if (++attempts == 1) throw SecurityException("revoked")
+            },
+        )
+        val raster = QuoteCardRaster(1, 1, intArrayOf(0))
+        val destination = "content://test/quote.png"
+
+        viewModel.downloadRasterForTest(raster, destination)
+        assertEquals(ShareCardStatus.Error(R.string.share_card_download_error), viewModel.state.value.status)
+        viewModel.downloadRasterForTest(raster, destination)
+        assertEquals(ShareCardStatus.Downloaded, viewModel.state.value.status)
+    }
 }
