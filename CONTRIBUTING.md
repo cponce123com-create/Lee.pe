@@ -20,6 +20,36 @@ Los tests JVM del dominio requieren la tarea explícita `:core:domain:test`.
 Los tests de migración viven en `feature/library/src/androidTest` y usan
 los esquemas exportados de `core/database/schemas`.
 
+## Entorno de Scripts y Automatización
+
+Ejecuta los comandos desde la raíz con Python 3.10 o superior, Bash, JDK 21
+y el SDK Android configurado. Los scripts Python actuales usan la biblioteca
+estándar. Si en el futuro se incorpora un `requirements.txt`, instala sus
+dependencias en un entorno virtual local.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+if [ -f requirements.txt ]; then python -m pip install -r requirements.txt; fi
+
+python -m unittest discover -s scripts -p 'test_*.py'
+python scripts/verify_exception_resources.py
+python scripts/verify_sharecard_locale_parity.py
+python scripts/coverage_summary.py --root .
+
+# Tras compilar y con ANDROID_HOME configurado:
+python scripts/verify_debug_apk.py app/build/outputs/apk/debug/app-debug.apk --variant debug
+
+# Con un emulador o dispositivo de pruebas conectado:
+adb devices
+bash scripts/run_instrumentation.sh
+```
+
+El informe de cobertura lee los XML de Kover ya generados. Para comprobar la
+firma release, configura la huella esperada y sigue [Firma de APK](docs/FIRMA_APK.md).
+El script de instrumentación usa `adb`, limpia el logcat del dispositivo de prueba
+y genera diagnósticos en `build/device-diagnostics/`.
+
 ## Pull requests
 
 Crea una rama desde main, conserva el alcance del cambio y usa la plantilla

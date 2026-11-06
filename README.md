@@ -93,7 +93,16 @@ El repositorio aún no contiene capturas completas de las pantallas tomadas en l
   </tr>
 </table>
 
-> **Screenshots completos pendientes:** cuando se capturen desde un dispositivo real, añadirlos en docs/screenshots/ (por ejemplo: biblioteca, lector EPUB, lector PDF y editor de tarjetas). Si una función depende de la versión de Android, indicar también la API usada.
+### Capturas de la app
+
+| Vista | Captura prevista |
+|---|---|
+| Biblioteca en tema oscuro | `docs/screenshots/library-dark.png` |
+| Lector EPUB | `docs/screenshots/epub-reader.png` |
+| Lector PDF | `docs/screenshots/pdf-reader.png` |
+| Editor de tarjetas | `docs/screenshots/quote-card-editor.png` |
+
+Los nombres son marcadores hasta incorporar capturas reales. Consulta las [instrucciones de la galería](docs/screenshots/README.md) y la [matriz de QA manual](docs/QA-MANUAL-TESTING.md).
 
 ## Flujos
 
