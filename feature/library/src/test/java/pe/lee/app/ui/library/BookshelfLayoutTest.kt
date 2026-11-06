@@ -228,4 +228,21 @@ class BookshelfLayoutTest {
         assertEquals(objects.map { it.stableKey }, rows.flatMap { it.groups }.flatMap { it.objects }.map { it.stableKey })
         org.junit.Assert.assertTrue(rows.all { row -> row.groups.sumOf { it.units.toDouble() } <= 2.0 })
     }
+
+    @Test
+    fun stackedBooksRemainIndividualAndOrderedAcrossPackedRowsAndReload() {
+        val ids = listOf("a", "b", "c", "d", "e")
+        val initial = BookshelfLayout().reconcile(ids)
+        val stacked = ids.fold(initial) { layout, id -> layout.toggleOrientation(id) }
+        val moved = stacked.moveObject("book:e", 0, 0)
+        val restored = requireNotNull(BookshelfLayout.decode(BookshelfLayout.encode(moved)))
+        val rows = packMixedShelves(listOf(ShelfDisplay(0, restored.objectsOnShelf(0))), 3f)
+
+        assertEquals(listOf(3, 2), rows.map { it.groups.single().objects.size })
+        assertEquals(
+            listOf("book:e", "book:a", "book:b", "book:c", "book:d"),
+            rows.flatMap { it.groups }.flatMap { it.objects }.map { it.stableKey },
+        )
+        assertEquals(moved.objectsOnShelf(0), restored.objectsOnShelf(0))
+    }
 }

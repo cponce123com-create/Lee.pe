@@ -19,6 +19,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import pe.lee.feature.library.R
 
+internal const val MIXED_CABINET_ASPECT = 1199f / 1312f
+
 private const val CABINET_HEIGHT_TO_WIDTH = 1.5f
 private const val DRAWER_CONTROL_LEFT = .355f
 private const val DRAWER_CONTROL_TOP = .846f
@@ -31,19 +33,25 @@ internal val cabinetRowBottoms = listOf(.361f, .575f, .780f)
 
 /** Fit, never crop or stretch: content and furniture share the same coordinate space. */
 @Composable
-internal fun Cabinet3d(height: Dp, footer: @Composable () -> Unit, content: @Composable BoxWithConstraintsScope.() -> Unit) {
+internal fun Cabinet3d(
+    height: Dp,
+    footer: @Composable () -> Unit,
+    mixed: Boolean = false,
+    content: @Composable BoxWithConstraintsScope.() -> Unit,
+) {
+    val aspect = if (mixed) MIXED_CABINET_ASPECT else 1f / CABINET_HEIGHT_TO_WIDTH
     BoxWithConstraints(Modifier.fillMaxWidth().height(height), contentAlignment = Alignment.Center) {
-        val cabinetWidth = minOf(maxWidth, maxHeight / CABINET_HEIGHT_TO_WIDTH)
-        BoxWithConstraints(Modifier.width(cabinetWidth).aspectRatio(2f / 3f)) {
+        val cabinetWidth = minOf(maxWidth, maxHeight * aspect)
+        BoxWithConstraints(Modifier.width(cabinetWidth).aspectRatio(aspect)) {
             Image(
-                painterResource(R.drawable.library_cabinet_3d),
+                painterResource(if (mixed) R.drawable.library_mixed_cabinet else R.drawable.library_cabinet_3d),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.FillBounds,
             )
             content()
             Box(
-                Modifier.offset(maxWidth * DRAWER_CONTROL_LEFT, maxHeight * DRAWER_CONTROL_TOP).size(
+                Modifier.offset(maxWidth * DRAWER_CONTROL_LEFT, maxHeight * (if (mixed) .91f else DRAWER_CONTROL_TOP)).size(
                     maxWidth * DRAWER_CONTROL_WIDTH,
                     maxHeight * DRAWER_CONTROL_HEIGHT,
                 ),
