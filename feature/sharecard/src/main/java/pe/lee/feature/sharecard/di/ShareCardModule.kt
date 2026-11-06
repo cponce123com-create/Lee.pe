@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import pe.lee.feature.sharecard.data.ComposeShareCardGenerator
+import pe.lee.feature.sharecard.data.ShareCardDownloader
 import pe.lee.feature.sharecard.data.ShareCardSharer
 import pe.lee.feature.sharecard.domain.model.QuoteCard
 import pe.lee.feature.sharecard.ui.ShareCardViewModel
@@ -23,6 +24,7 @@ object ShareCardModule {
                     initialCard = card,
                     generator = ComposeShareCardGenerator(),
                     sharer = ShareCardSharer(appContext),
+                    downloader = ShareCardDownloader(appContext),
                 ) as T
             }
         }

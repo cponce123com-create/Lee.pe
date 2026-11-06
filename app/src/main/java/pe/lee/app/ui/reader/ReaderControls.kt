@@ -16,8 +16,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Lens
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
@@ -46,6 +50,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -62,6 +67,49 @@ import org.readium.r2.navigator.preferences.Theme as ReadiumTheme
 import org.readium.r2.shared.ExperimentalReadiumApi
 import pe.lee.app.R
 import pe.lee.app.ui.formatPlaybackSpeed
+
+/** Compact one-tap cycle for the three most-used reading palettes. */
+@Composable
+internal fun ReaderQuickThemeButton(
+    preferences: EpubPreferences,
+    onPreferencesChange: (EpubPreferences) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val selectedTheme = selectedReaderTheme(preferences)
+    val labelRes = when (selectedTheme) {
+        ReaderThemeChoice.LIGHT -> R.string.reader_theme_light
+        ReaderThemeChoice.SEPIA -> R.string.reader_theme_sepia
+        ReaderThemeChoice.DARK, ReaderThemeChoice.OLED -> R.string.reader_theme_dark
+    }
+    val label = stringResource(labelRes)
+    val description = stringResource(R.string.reader_quick_theme_description, label)
+    val icon = when (selectedTheme) {
+        ReaderThemeChoice.LIGHT -> Icons.Default.LightMode
+        ReaderThemeChoice.SEPIA -> Icons.Default.Lens
+        ReaderThemeChoice.DARK, ReaderThemeChoice.OLED -> Icons.Default.DarkMode
+    }
+
+    Surface(
+        modifier = modifier,
+        color = Color(0xE60A1423),
+        shape = CircleShape,
+        shadowElevation = 5.dp,
+    ) {
+        IconButton(
+            onClick = {
+                val nextTheme = when (selectedTheme) {
+                    ReaderThemeChoice.LIGHT -> ReaderThemeChoice.SEPIA
+                    ReaderThemeChoice.SEPIA -> ReaderThemeChoice.DARK
+                    ReaderThemeChoice.DARK, ReaderThemeChoice.OLED -> ReaderThemeChoice.LIGHT
+                }
+                onPreferencesChange(preferences.withReaderTheme(nextTheme))
+            },
+            modifier = Modifier.semantics { contentDescription = description },
+        ) {
+            Icon(icon, contentDescription = null, tint = Color.White)
+        }
+    }
+}
 
 @OptIn(ExperimentalReadiumApi::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
@@ -468,4 +516,27 @@ private fun selectedReaderTheme(preferences: EpubPreferences): ReaderThemeChoice
     preferences.theme == ReadiumTheme.SEPIA -> ReaderThemeChoice.SEPIA
     preferences.theme == ReadiumTheme.DARK -> ReaderThemeChoice.DARK
     else -> ReaderThemeChoice.LIGHT
+}
+
+private fun EpubPreferences.withReaderTheme(choice: ReaderThemeChoice): EpubPreferences = when (choice) {
+    ReaderThemeChoice.SEPIA -> copy(
+        theme = ReadiumTheme.SEPIA,
+        backgroundColor = null,
+        textColor = null,
+    )
+    ReaderThemeChoice.DARK -> copy(
+        theme = ReadiumTheme.DARK,
+        backgroundColor = null,
+        textColor = null,
+    )
+    ReaderThemeChoice.OLED -> copy(
+        theme = ReadiumTheme.DARK,
+        backgroundColor = ReadiumColor(0xFF000000.toInt()),
+        textColor = ReadiumColor(0xFFFFFFFF.toInt()),
+    )
+    ReaderThemeChoice.LIGHT -> copy(
+        theme = ReadiumTheme.LIGHT,
+        backgroundColor = null,
+        textColor = null,
+    )
 }

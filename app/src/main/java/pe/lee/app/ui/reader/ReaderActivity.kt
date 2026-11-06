@@ -51,6 +51,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.readium.navigator.media.tts.android.AndroidTtsPreferences
+import org.readium.r2.navigator.epub.EpubPreferences
 import org.readium.r2.navigator.epub.EpubPreferencesSerializer
 import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.publication.Locator
@@ -141,6 +142,18 @@ internal fun EpubReaderScreen(
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         },
     )
+    val applyReaderPreferences: (EpubPreferences) -> Unit = { updated ->
+        epubPreferences = updated
+        navigator?.submitPreferences(updated)
+        val serialized = runCatching {
+            EpubPreferencesSerializer().serialize(updated)
+        }.getOrNull()
+        if (serialized != null) {
+            settings.apply(SettingsRepository.Store.LIBRARY) {
+                putString(ReaderActivity.preferencesPreferenceKey(uri), serialized)
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -254,18 +267,7 @@ internal fun EpubReaderScreen(
                             putFloat(ReaderActivity.brightnessPreferenceKey(uri), brightness)
                         }
                     },
-                    onPreferencesChange = { updated ->
-                        epubPreferences = updated
-                        navigator?.submitPreferences(updated)
-                        val serialized = runCatching {
-                            EpubPreferencesSerializer().serialize(updated)
-                        }.getOrNull()
-                        if (serialized != null) {
-                            settings.apply(SettingsRepository.Store.LIBRARY) {
-                                putString(ReaderActivity.preferencesPreferenceKey(uri), serialized)
-                            }
-                        }
-                    },
+                    onPreferencesChange = applyReaderPreferences,
                     onToggleChrome = { chromeVisible = false },
                     onBack = onBack,
                     onPrevious = {
@@ -300,6 +302,15 @@ internal fun EpubReaderScreen(
                     onProgressChange = { progress = it },
                 )
             }
+
+            ReaderQuickThemeButton(
+                preferences = epubPreferences,
+                onPreferencesChange = applyReaderPreferences,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(top = 70.dp, end = 16.dp),
+            )
 
             if (ttsNavigator != null && chromeVisible) {
                 TtsControls(

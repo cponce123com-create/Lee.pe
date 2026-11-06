@@ -50,6 +50,7 @@ class ShareCardScreenTest {
             composeRule.onNodeWithTag("quote-theme-gallery").performScrollTo().performScrollToNode(hasText(text(resourceId)))
             composeRule.onNodeWithText(text(resourceId)).assertExists()
         }
+        composeRule.onNodeWithText(text(R.string.share_card_download)).assertExists()
         composeRule.onNodeWithText(text(R.string.share_card_share)).assertExists()
     }
 
