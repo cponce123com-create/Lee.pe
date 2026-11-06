@@ -9,6 +9,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import pe.lee.app.data.local.BookEntity
 import pe.lee.app.data.local.LeeDatabase
+import pe.lee.app.data.repository.SettingsRepository
+import pe.lee.app.ui.reader.PAGE_TURN_STYLE_KEY
+import pe.lee.app.ui.reader.PageTurnStyle
 
 /** Test-only seed endpoint: this class and its exported activity are absent from debug/release APKs. */
 class BenchmarkFixtureActivity : Activity() {
@@ -29,6 +32,12 @@ class BenchmarkFixtureActivity : Activity() {
                     format = "EPUB",
                     importedAt = index.toLong(),
                 )
+            }
+            intent.getStringExtra("pageTurnStyle")?.let { requested ->
+                val style = PageTurnStyle.valueOf(requested)
+                check(SettingsRepository(this@BenchmarkFixtureActivity).update(SettingsRepository.Store.LIBRARY) {
+                    putString(PAGE_TURN_STYLE_KEY, style.name)
+                })
             }
             LeeDatabase.get(this@BenchmarkFixtureActivity).bookDao().insertAll(books)
         }

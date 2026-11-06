@@ -41,7 +41,7 @@ Lee.pe es un lector nativo para Android desarrollado con Kotlin y Jetpack Compos
 | Escáner de carpetas | Búsqueda recursiva de EPUB, PDF y audio dentro de una carpeta autorizada por SAF | Implementado; requiere seleccionar la carpeta |
 | Estantería | Portadas 3×3, nueve libros por página, y vista mixta de libros verticales y horizontales | Implementado |
 | Personalización | Arrastrar libros y adornos, cambiar orientación y guardar el diseño; hasta 10 adornos colocados | Implementado |
-| EPUB | Readium, índice, salto a porcentaje, paginación o desplazamiento, temas, tipografía, márgenes, marcadores, notas y resaltados | Implementado |
+| EPUB | Readium, índice, salto a porcentaje, paginación o desplazamiento, **efecto de paso de página 3D (con fallback accesible)**, temas, tipografía, márgenes, marcadores, notas y resaltados | Implementado |
 | PDF | Lector offline, zoom, rotación, salto/restauración de página, marcadores, notas y resaltados | Implementado; algunas herramientas requieren API 35 |
 | Audio | Archivos locales, Media3 en segundo plano, controles del sistema y progreso guardado | Implementado en código; falta validación física |
 | Narración EPUB | Readium y voces Android instaladas, resaltado del fragmento, velocidad y temporizador | Implementado en código; falta validación física |

@@ -4,4 +4,5 @@
     <string name="reader_turn_curl">3D page curl</string>
     <string name="reader_turn_slide">Slide</string>
     <string name="reader_turn_none">No animation</string>
+    <string name="reader_turn_animations">Page animations</string>
 </resources>
