@@ -72,6 +72,8 @@ import pe.lee.app.ui.reader.EpubReaderViewModel
 import pe.lee.app.ui.theme.LeePeTheme
 import pe.lee.core.domain.ReaderAnnotation
 
+private const val PAGE_TURN_SKIP_TIMEOUT_MS = 2_000L
+
 @OptIn(ExperimentalReadiumApi::class)
 @Composable
 internal fun EpubReaderScreen(
@@ -524,7 +526,6 @@ class ReaderActivity : FragmentActivity() {
     }
 
     companion object {
-        private const val PAGE_TURN_SKIP_TIMEOUT_MS = 2_000L
         const val EXTRA_TITLE = "pe.lee.app.reader.TITLE"
 
         fun locatorPreferenceKey(uri: Uri): String = "locator:$uri"
