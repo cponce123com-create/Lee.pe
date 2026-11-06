@@ -97,6 +97,8 @@ internal fun EpubReaderScreen(
         val saved = settings.getString(SettingsRepository.Store.LIBRARY, PAGE_TURN_STYLE_KEY)
         mutableStateOf(PageTurnStyle.entries.firstOrNull { it.name == saved } ?: PageTurnStyle.CURL)
     }
+    val pageAnimationsAllowed = rememberPageAnimationsAllowed(context.contentResolver)
+    val effectivePageTurnStyle = if (pageAnimationsAllowed) pageTurnStyle else PageTurnStyle.NONE
     val pageTurnController = remember { EpubPageTurnController() }
     val coroutineScope = rememberCoroutineScope()
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -149,7 +151,7 @@ internal fun EpubReaderScreen(
         autoFollowingNarration = session.followNarration.value && ttsIsPlaying,
         skipNextTurn = skipNextPageTurn,
         controller = pageTurnController,
-        style = pageTurnStyle,
+        style = effectivePageTurnStyle,
         rightToLeft = rightToLeft,
     )
     // Large books used to re-flatten the whole table of contents on every
@@ -322,7 +324,8 @@ internal fun EpubReaderScreen(
                         }
                     },
                     onPreferencesChange = applyReaderPreferences,
-                    pageTurnStyle = pageTurnStyle,
+                    pageTurnStyle = effectivePageTurnStyle,
+                    pageAnimationsAllowed = pageAnimationsAllowed,
                     onPageTurnStyleChange = { style ->
                         pageTurnStyle = style
                         settings.apply(SettingsRepository.Store.LIBRARY) { putString(PAGE_TURN_STYLE_KEY, style.name) }

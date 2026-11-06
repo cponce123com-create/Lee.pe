@@ -5,7 +5,6 @@ package pe.lee.app.ui.reader
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.provider.Settings
 import android.view.View
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -43,10 +42,7 @@ internal fun rememberEpubPageTurnFrame(
 ): EpubPageTurnFrame? {
     val frame = remember { mutableStateOf<EpubPageTurnFrame?>(null) }
     val scope = rememberCoroutineScope()
-    val animationAllowed = pageView?.let {
-        Settings.Global.getFloat(it.context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f
-    } == true
-    val active = style != PageTurnStyle.NONE && enabled && !autoFollowingNarration && animationAllowed
+    val active = style != PageTurnStyle.NONE && enabled && !autoFollowingNarration
     val paper = when (preferences.theme) {
         Theme.DARK -> 0xFF242323.toInt()
         Theme.SEPIA -> 0xFFF0E1C5.toInt()

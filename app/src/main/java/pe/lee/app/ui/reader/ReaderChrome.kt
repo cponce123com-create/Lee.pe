@@ -85,6 +85,7 @@ internal fun ReaderChrome(
     onBrightnessChange: (Float) -> Unit,
     onPreferencesChange: (EpubPreferences) -> Unit,
     pageTurnStyle: PageTurnStyle,
+    pageAnimationsAllowed: Boolean,
     onPageTurnStyleChange: (PageTurnStyle) -> Unit,
     onToggleChrome: () -> Unit,
     contents: List<TocEntry>,
@@ -154,6 +155,7 @@ internal fun ReaderChrome(
         ModalBottomSheet(onDismissRequest = { showAppearance = false }) {
             EpubAppearanceSheet(
                 pageTurnStyle = pageTurnStyle,
+                pageAnimationsAllowed = pageAnimationsAllowed,
                 onPageTurnStyleChange = onPageTurnStyleChange,
                 preferences = preferences,
                 brightness = brightness,
