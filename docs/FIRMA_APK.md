@@ -1,10 +1,9 @@
 # Firma persistente de actualizaciones
 
-El workflow `Release bundle` exige una clave persistente y comprueba el certificado
-del APK antes de subir artefactos. Falla si falta configuración, si el APK no está
-firmado o si la huella no coincide. El workflow Android de pruebas sigue generando
-APK debug con la clave efímera del runner: esos APK no constituyen una cadena de
-actualizaciones con firma estable.
+El workflow `Release bundle` usa una clave persistente cuando la configuración
+de firma está completa y verifica el certificado del APK. Si no hay ninguna
+configuración de firma, genera un APK sin firmar. Una configuración parcial
+detiene el flujo. Un APK sin firmar requiere firma para instalarlo.
 
 ## Configuración del repositorio
 
@@ -31,12 +30,15 @@ cambio de instalación; no hace falta desinstalar para comprobar una huella.
 
 ## Publicación y comprobación
 
-Ejecutar `Release bundle` manualmente desde una revisión revisada, o crear una
-etiqueta `v*` cuando se decida publicar. El flujo ejecuta pruebas y lint de release,
-genera APK/AAB firmados, verifica el APK con `apksigner`, compara la huella fijada y
-publica `lee-pe-signed-apk` con `signing.json` (commit, SHA-256 del APK y certificado).
-Solo las etiquetas crean/actualizan una release de GitHub. El almacén temporal se
-elimina incluso si falla el build; las contraseñas no se escriben en `GITHUB_ENV`.
+Ejecuta `Release bundle` manualmente para validar y descargar artefactos. Para
+publicar, actualiza `version.properties` y empuja una etiqueta `vMAJOR.MINOR.PATCH`
+que coincida con `versionName`. El flujo publica el APK, `version.properties`
+y `SHA256SUMS`. Con firma también incluye el AAB y `signing.json`. Sin firma,
+publica una versión preliminar con el APK identificado como no instalable.
+
+Después de descargar los assets, ejecuta `sha256sum --check SHA256SUMS` en su
+directorio. La verificación de firma comprueba la huella del certificado fijada
+en el repositorio. El keystore temporal se elimina aunque falle el build.
 
 Para acreditar la firma estable, comparar `certificate_sha256` de dos ejecuciones
 sucesivas y probar una actualización conservando progreso y anotaciones. Las
