@@ -50,36 +50,32 @@ private val mixedBookPalette = listOf(
 )
 
 private const val MIXED_ROWS_PER_PAGE = 2
-private const val MIXED_ROW_WIDTH = .80f
-private val mixedRowTops = listOf(.138f, .504f)
-private val mixedRowBottoms = listOf(.463f, .824f)
+private const val MIXED_ROW_WIDTH = .85f
+private val mixedRowTops = listOf(.138f, .504f).map(::mixedCabinetY)
+private val mixedRowBottoms = listOf(.463f, .824f).map(::mixedCabinetY)
+
+private fun ShelfObject.isHorizontalBook(): Boolean =
+    this is ShelfObject.Book && placement.orientation == BookOrientation.STACKED
 
 /** Capacity is measured before layout so every visual line gets its own supporting plank. */
 internal fun packMixedShelves(shelves: List<ShelfDisplay>, capacity: Float, gapUnits: Float = 0f): List<MixedShelfLine> = buildList {
     shelves.forEach { shelf ->
         val groups = mutableListOf<MixedShelfGroup>()
         shelf.objects.forEach { item ->
-            val stacked = item is ShelfObject.Book && item.placement.orientation == BookOrientation.STACKED
             val previous = groups.lastOrNull()
-            if (stacked &&
-                previous != null &&
-                previous.objects.size < 3 &&
-                previous.objects.all {
-                    it is ShelfObject.Book && it.placement.orientation == BookOrientation.STACKED
-                }
-            ) {
-                groups[groups.lastIndex] = previous.copy(objects = previous.objects + item)
+            val stacked = item.isHorizontalBook()
+            val previousStackSize = previous?.objects?.count { it.isHorizontalBook() } ?: 0
+            val canExtend = previous != null && stacked && previousStackSize < 3 &&
+                (previousStackSize > 0 || previous.objects.singleOrNull() is ShelfObject.Decor)
+            if (canExtend && previous != null) {
+                groups[groups.lastIndex] = MixedShelfGroup(previous.objects + item, 2.85f)
             } else {
-                groups += MixedShelfGroup(
-                    listOf(item),
-                    if (stacked) {
-                        2.85f
-                    } else if (item is ShelfObject.Decor) {
-                        1.45f
-                    } else {
-                        .82f
-                    },
-                )
+                val units = when {
+                    stacked -> 2.85f
+                    item is ShelfObject.Decor -> 1.65f
+                    else -> .82f
+                }
+                groups += MixedShelfGroup(listOf(item), units)
             }
         }
         var line = mutableListOf<MixedShelfGroup>()
@@ -158,7 +154,18 @@ internal fun InteractiveMixedShelf(
                 }
                 if (destination != null) {
                     val objects = grouped[destination].orEmpty()
-                    val index = if (target.startsWith("zone:")) objects.size else objects.indexOfFirst { it.stableKey == target }
+                    val stack = lines.asSequence().flatMap { it.groups.asSequence() }.firstOrNull { group ->
+                        group.objects.any { it.stableKey == target && it.isHorizontalBook() }
+                    }
+                    val movingDecor = moving.startsWith("decor:")
+                    val anchor = if (movingDecor) stack?.objects?.firstOrNull { it.isHorizontalBook() }?.stableKey else null
+                    val index = if (target.startsWith("zone:")) {
+                        objects.size
+                    } else {
+                        val targetIndex = objects.indexOfFirst { it.stableKey == (anchor ?: target) }
+                        val sourceIndex = objects.indexOfFirst { it.stableKey == moving }
+                        if (anchor != null && sourceIndex in 0 until targetIndex) targetIndex - 1 else targetIndex
+                    }
                     draft = draft.moveObject(moving, destination, index, grouped)
                 }
             },
@@ -205,18 +212,20 @@ internal fun InteractiveMixedShelf(
                             val rowHeight = cabinetHeight * (mixedRowBottoms[row] - mixedRowTops[row])
                             if (line != null) {
                                 Row(
-                                    Modifier.offset(cabinetWidth * .10f, cabinetHeight * mixedRowTops[row])
+                                    Modifier.offset(cabinetWidth * ((1f - MIXED_ROW_WIDTH) / 2f), cabinetHeight * mixedRowTops[row])
                                         .size(cabinetWidth * MIXED_ROW_WIDTH, rowHeight)
                                         .then(drag.targetModifier("zone:${line.logicalShelf}:$lineIndex")),
-                                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                    horizontalArrangement = if (line.groups.size > 1) Arrangement.SpaceBetween else Arrangement.Center,
                                     verticalAlignment = Alignment.Bottom,
                                 ) {
                                     val unit = (
                                         (cabinetWidth.value * MIXED_ROW_WIDTH - (line.groups.size - 1).coerceAtLeast(0) * 3f).coerceAtLeast(0f) /
                                             line.groups.sumOf { it.units.toDouble() }.toFloat().coerceAtLeast(1f)
-                                        ).coerceAtMost(45f)
+                                        ).coerceAtMost(53f)
                                     line.groups.forEach { group ->
                                         Column(Modifier.width((group.units * unit).dp), verticalArrangement = Arrangement.Bottom) {
+                                            val hasOrnament = group.objects.size > 1 && group.objects.first() is ShelfObject.Decor
+                                            val stackSize = group.objects.count { it.isHorizontalBook() }.coerceAtLeast(1)
                                             group.objects.asReversed().forEachIndexed { index, item ->
                                                 key(item.stableKey) {
                                                     val book = item as? ShelfObject.Book
@@ -224,10 +233,10 @@ internal fun InteractiveMixedShelf(
                                                     val objectHeight = when (book?.placement?.orientation) {
                                                         BookOrientation.STACKED -> minOf(
                                                             (32 + variation).dp,
-                                                            rowHeight / group.objects.size,
+                                                            rowHeight * (if (hasOrnament) .53f else 1f) / stackSize,
                                                         )
                                                         BookOrientation.UPRIGHT -> rowHeight * (.92f + variation * .012f)
-                                                        null -> rowHeight * .75f
+                                                        null -> rowHeight * (if (hasOrnament) .47f else .94f)
                                                     }
                                                     MixedShelfObject(
                                                         item,
