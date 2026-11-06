@@ -16,9 +16,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -32,9 +32,18 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.EpubPreferences
 import org.readium.r2.shared.publication.Locator
+
+internal class EpubPageTurnController {
+    var onStart: ((Boolean) -> Unit)? = null
+
+    fun start(isForward: Boolean) {
+        onStart?.invoke(isForward)
+    }
+}
 
 /** Keeps one page snapshot and flips it away whenever a paginated locator changes. */
 @Composable
@@ -45,8 +54,36 @@ internal fun rememberEpubPageTurnFrame(
     preferences: EpubPreferences,
     autoFollowingNarration: Boolean,
     skipNextTurn: MutableState<Boolean>,
+    controller: EpubPageTurnController,
 ): EpubPageTurnFrame? {
     val frame = remember { mutableStateOf<EpubPageTurnFrame?>(null) }
+    val manualTurnInProgress = remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    DisposableEffect(controller, pageView, enabled, autoFollowingNarration) {
+        val view = pageView
+        controller.onStart = if (view != null && enabled && !autoFollowingNarration) {
+            { isForward ->
+                val snapshot = capturePage(view)
+                if (snapshot != null) {
+                    frame.value?.bitmap.recycleIfNeeded()
+                    val activeFrame = EpubPageTurnFrame(snapshot, isForward, frame.value?.id?.plus(1) ?: 0)
+                    manualTurnInProgress.value = true
+                    frame.value = activeFrame
+                    scope.launch {
+                        delay(PAGE_TURN_ANIMATION_MS + PAGE_TURN_RECAPTURE_DELAY_MS)
+                        if (frame.value?.id == activeFrame.id) frame.value = null
+                        manualTurnInProgress.value = false
+                    }
+                }
+            }
+        } else {
+            null
+        }
+        onDispose {
+            if (controller.onStart != null) controller.onStart = null
+        }
+    }
 
     LaunchedEffect(navigator, pageView, enabled, preferences, autoFollowingNarration) {
         val reader = navigator ?: return@LaunchedEffect
@@ -63,6 +100,15 @@ internal fun rememberEpubPageTurnFrame(
                 val prior = previousLocator
                 previousLocator = locator
                 if (prior == locator) return@collectLatest
+
+                if (manualTurnInProgress.value) {
+                    manualTurnInProgress.value = false
+                    cachedPage?.recycleIfNeeded()
+                    cachedPage = null
+                    delay(PAGE_TURN_RECAPTURE_DELAY_MS)
+                    cachedPage = capturePage(view)
+                    return@collectLatest
+                }
 
                 val outgoingPage = cachedPage
                 cachedPage = null

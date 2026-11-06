@@ -91,6 +91,7 @@ internal fun EpubReaderScreen(
     val containerId = remember { View.generateViewId() }
     var readerContainer by remember { mutableStateOf<FrameLayout?>(null) }
     val skipNextPageTurn = remember { mutableStateOf(false) }
+    val pageTurnController = remember { EpubPageTurnController() }
     val coroutineScope = rememberCoroutineScope()
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -136,6 +137,7 @@ internal fun EpubReaderScreen(
         preferences = epubPreferences,
         autoFollowingNarration = session.followNarration.value && ttsIsPlaying,
         skipNextTurn = skipNextPageTurn,
+        controller = pageTurnController,
     )
     // Large books used to re-flatten the whole table of contents on every
     // recomposition (each page turn and each narrated sentence) (A-30).
@@ -300,10 +302,12 @@ internal fun EpubReaderScreen(
                     onBack = onBack,
                     onPrevious = {
                         sessionActions.pauseTtsForNavigation()
+                        pageTurnController.start(isForward = false)
                         navigator?.goBackward(animated = false)
                     },
                     onNext = {
                         sessionActions.pauseTtsForNavigation()
+                        pageTurnController.start(isForward = true)
                         navigator?.goForward(animated = false)
                     },
                     contents = tableOfContents,
@@ -336,14 +340,16 @@ internal fun EpubReaderScreen(
                 )
             }
 
-            ReaderQuickThemeButton(
-                preferences = epubPreferences,
-                onPreferencesChange = applyReaderPreferences,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .statusBarsPadding()
-                    .padding(top = 70.dp, end = 16.dp),
-            )
+            if (!chromeVisible) {
+                ReaderQuickThemeButton(
+                    preferences = epubPreferences,
+                    onPreferencesChange = applyReaderPreferences,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .statusBarsPadding()
+                        .padding(top = 8.dp, end = 8.dp),
+                )
+            }
 
             if (ttsNavigator != null && chromeVisible) {
                 TtsControls(
