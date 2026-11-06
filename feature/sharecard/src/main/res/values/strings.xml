@@ -7,6 +7,11 @@
     <string name="share_card_theme_accent">Vela y memoria</string>
     <string name="share_card_format_story">Historia</string>
     <string name="share_card_format_square">Cuadrada</string>
+    <string name="share_card_download">Descargar</string>
+    <string name="share_card_download_filename">LeePe-frase.png</string>
+    <string name="share_card_downloading">Guardando la imagen…</string>
+    <string name="share_card_downloaded">Imagen guardada correctamente</string>
+    <string name="share_card_download_error">No se pudo guardar la imagen. Elige otra ubicación e inténtalo de nuevo.</string>
     <string name="share_card_share">Compartir</string>
     <string name="share_card_generating">Preparando imagen…</string>
     <string name="share_card_shared">Tarjeta lista para compartir</string>

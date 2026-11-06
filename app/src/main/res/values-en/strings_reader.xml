@@ -66,6 +66,7 @@
     <string name="reader_theme_light">Light</string>
     <string name="reader_theme_sepia">Sepia</string>
     <string name="reader_theme_dark">Dark</string>
+    <string name="reader_quick_theme_description">Change reading mode; current: %1$s</string>
     <string name="reader_theme_oled">OLED</string>
     <string name="reader_font_size">Font size · %1$d%%</string>
     <string name="reader_text_style_title">Text style</string>

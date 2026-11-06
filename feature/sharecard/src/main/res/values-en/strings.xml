@@ -7,6 +7,11 @@
     <string name="share_card_theme_accent">Candle and memory</string>
     <string name="share_card_format_story">Story</string>
     <string name="share_card_format_square">Square</string>
+    <string name="share_card_download">Download</string>
+    <string name="share_card_download_filename">LeePe-quote.png</string>
+    <string name="share_card_downloading">Saving image…</string>
+    <string name="share_card_downloaded">Image saved successfully</string>
+    <string name="share_card_download_error">Could not save the image. Choose another location and try again.</string>
     <string name="share_card_share">Share</string>
     <string name="share_card_generating">Preparing image…</string>
     <string name="share_card_shared">Quote card is ready to share</string>

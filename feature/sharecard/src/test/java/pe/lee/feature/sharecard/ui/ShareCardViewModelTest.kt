@@ -15,6 +15,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import pe.lee.feature.sharecard.R
+import pe.lee.feature.sharecard.domain.ShareCardDownloader
 import pe.lee.feature.sharecard.domain.ShareCardGenerator
 import pe.lee.feature.sharecard.domain.ShareCardSharer
 import pe.lee.feature.sharecard.domain.model.QuoteCard
@@ -55,6 +56,31 @@ class ShareCardViewModelTest {
         advanceUntilIdle()
         assertEquals(ShareCardStatus.Ready, viewModel.state.value.status)
         assertTrue(sharedBytes!!.contentEquals(byteArrayOf(1, 2, 3)))
+    }
+
+    @Test
+    fun downloadSavesGeneratedPngToSelectedDestination() = runTest(dispatcher) {
+        var savedBytes: ByteArray? = null
+        var savedDestination: String? = null
+        val viewModel = ShareCardViewModel(
+            initialCard = QuoteCard("Una frase", "Libro", "Autora"),
+            generator = ShareCardGenerator { _, _, _ -> byteArrayOf(4, 5, 6) },
+            sharer = ShareCardSharer { },
+            workerDispatcher = dispatcher,
+            downloader = ShareCardDownloader { bytes, destination ->
+                savedBytes = bytes
+                savedDestination = destination
+            },
+        )
+
+        viewModel.downloadRasterForTest(
+            QuoteCardRaster(1, 1, intArrayOf(0xFFFFFFFF.toInt())),
+            "content://test/quote.png",
+        )
+
+        assertEquals("content://test/quote.png", savedDestination)
+        assertTrue(savedBytes!!.contentEquals(byteArrayOf(4, 5, 6)))
+        assertEquals(ShareCardStatus.Downloaded, viewModel.state.value.status)
     }
 
     @Test
