@@ -14,7 +14,12 @@ class ContinueReadingCatalogTest {
         val pdf = book("PDF", 0.25f, 20L)
         val books = listOf(epub, pdf, book("Audio", 0.4f, 30L), book("EPUB", 1f, 40L))
         val catalog = computeCatalog(
-            books, "", LibraryFilter.PDF, null, LibrarySortMode.LAST_READ, naturalOrder(),
+            books,
+            "",
+            LibraryFilter.PDF,
+            null,
+            LibrarySortMode.LAST_READ,
+            naturalOrder(),
         )
 
         assertEquals(listOf(pdf), catalog.visible)
