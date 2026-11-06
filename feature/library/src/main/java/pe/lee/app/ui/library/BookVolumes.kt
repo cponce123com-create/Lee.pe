@@ -55,8 +55,7 @@ private val Foil = Color(0xFFE7CB91)
 
 private enum class BindingMaterial { LEATHER, CLOTH, SMOOTH, VINTAGE }
 
-private fun bindingMaterial(id: String): BindingMaterial =
-    BindingMaterial.entries[(id.hashCode() ushr 2) % BindingMaterial.entries.size]
+private fun bindingMaterial(id: String): BindingMaterial = BindingMaterial.entries[(id.hashCode() ushr 2) % BindingMaterial.entries.size]
 
 private const val MIN_TRIM_BAND_EDGES = 6
 private const val BEVEL_HIGHLIGHT = .23f

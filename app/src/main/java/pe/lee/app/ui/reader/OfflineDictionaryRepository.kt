@@ -11,10 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /** An exact-match result from the bundled Spanish-English dictionary. */
-data class OfflineDictionaryEntry(
-    val headword: String,
-    val definitions: List<String>,
-)
+data class OfflineDictionaryEntry(val headword: String, val definitions: List<String>)
 
 /**
  * Local exact-match lookup. The bundled asset is expanded once into app-private storage;
@@ -114,7 +111,9 @@ internal fun normalizeDictionaryTerm(term: String): String = buildString(term.le
         if (type != Character.NON_SPACING_MARK.toInt() &&
             type != Character.COMBINING_SPACING_MARK.toInt() &&
             type != Character.ENCLOSING_MARK.toInt()
-        ) append(String(Character.toChars(codePoint)).lowercase(Locale.ROOT))
+        ) {
+            append(String(Character.toChars(codePoint)).lowercase(Locale.ROOT))
+        }
     }
 }
 

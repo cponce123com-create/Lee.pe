@@ -54,8 +54,7 @@ private const val MIXED_ROW_WIDTH = .85f
 private val mixedRowTops = listOf(.138f, .504f).map(::mixedCabinetY)
 private val mixedRowBottoms = listOf(.463f, .824f).map(::mixedCabinetY)
 
-private fun ShelfObject.isHorizontalBook(): Boolean =
-    this is ShelfObject.Book && placement.orientation == BookOrientation.STACKED
+private fun ShelfObject.isHorizontalBook(): Boolean = this is ShelfObject.Book && placement.orientation == BookOrientation.STACKED
 
 private const val HORIZONTAL_BOOK_UNITS = 2.85f
 
@@ -67,7 +66,9 @@ internal fun packMixedShelves(shelves: List<ShelfDisplay>, capacity: Float, gapU
             val previous = groups.lastOrNull()
             val stacked = item.isHorizontalBook()
             val previousStackSize = previous?.objects?.count { it.isHorizontalBook() } ?: 0
-            val canExtend = previous != null && stacked && previousStackSize < 3 &&
+            val canExtend = previous != null &&
+                stacked &&
+                previousStackSize < 3 &&
                 (previousStackSize > 0 || previous.objects.singleOrNull() is ShelfObject.Decor)
             if (canExtend && previous != null) {
                 groups[groups.lastIndex] = MixedShelfGroup(previous.objects + item, HORIZONTAL_BOOK_UNITS)
@@ -221,7 +222,11 @@ internal fun InteractiveMixedShelf(
                                     verticalAlignment = Alignment.Bottom,
                                 ) {
                                     val unit = (
-                                        (cabinetWidth.value * MIXED_ROW_WIDTH - (line.groups.size - 1).coerceAtLeast(0) * 3f).coerceAtLeast(0f) /
+                                        (
+                                            cabinetWidth.value * MIXED_ROW_WIDTH - (line.groups.size - 1).coerceAtLeast(
+                                                0,
+                                            ) * 3f
+                                            ).coerceAtLeast(0f) /
                                             line.groups.sumOf { it.units.toDouble() }.toFloat().coerceAtLeast(1f)
                                         ).coerceAtMost(53f)
                                     line.groups.forEach { group ->

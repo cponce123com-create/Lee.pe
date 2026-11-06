@@ -213,7 +213,8 @@ internal data class BookshelfLayout(
 
     fun addDecoration(type: ShelfDecorationType, shelf: Int, order: Int): BookshelfLayout {
         if (decorations.size >= MAX_SHELF_DECORATIONS) return this
-        val decoration = ShelfDecoration(UUID.randomUUID().toString(), type, shelf.coerceIn(0, MAX_PERSISTED_SHELF_INDEX), order.coerceAtLeast(0))
+        val decoration =
+            ShelfDecoration(UUID.randomUUID().toString(), type, shelf.coerceIn(0, MAX_PERSISTED_SHELF_INDEX), order.coerceAtLeast(0))
         return copy(decorations = decorations + decoration).normalizedObjectOrders()
     }
 
@@ -334,7 +335,12 @@ internal data class BookshelfLayout(
                 val decorations = root.optJSONArray("decorations").toObjectList().mapNotNull { obj ->
                     val id = obj.optString("id").takeIf(String::isNotBlank) ?: return@mapNotNull null
                     val type = runCatching { ShelfDecorationType.valueOf(obj.optString("type")) }.getOrNull() ?: return@mapNotNull null
-                    ShelfDecoration(id, type, obj.optLong("shelf", 0).coerceIn(0, MAX_PERSISTED_SHELF_INDEX.toLong()).toInt(), obj.optInt("order", 0).coerceAtLeast(0))
+                    ShelfDecoration(
+                        id,
+                        type,
+                        obj.optLong("shelf", 0).coerceIn(0, MAX_PERSISTED_SHELF_INDEX.toLong()).toInt(),
+                        obj.optInt("order", 0).coerceAtLeast(0),
+                    )
                 }
                 val hidden = root.optJSONArray("hidden").toObjectList().mapNotNull { it.optString("id").takeIf(String::isNotBlank) }.toSet()
                 BookshelfLayout(placements, decorations, hidden)

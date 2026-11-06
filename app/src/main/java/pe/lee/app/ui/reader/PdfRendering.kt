@@ -58,11 +58,7 @@ internal data class PdfSelectedText(val text: String, val rects: List<PdfNormali
 
 internal data class PdfSearchResult(val pageIndex: Int, val text: String, val rects: List<PdfNormalizedRect>)
 
-internal data class PdfHighlightOverlay(
-    val rect: PdfNormalizedRect,
-    val colorArgb: Int,
-    val underline: Boolean = false,
-)
+internal data class PdfHighlightOverlay(val rect: PdfNormalizedRect, val colorArgb: Int, val underline: Boolean = false)
 
 internal fun pdfTextLocator(pageIndex: Int, rects: List<PdfNormalizedRect>): String = JSONObject().apply {
     put("format", "pdf-text")

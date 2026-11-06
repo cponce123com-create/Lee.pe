@@ -59,14 +59,18 @@ internal fun Cabinet3d(
                     if (mixed) {
                         scaleX = 1f / MIXED_CROP_WIDTH
                         scaleY = 1f / MIXED_CROP_HEIGHT
-                        translationY = size.height * (CABINET_CENTER - MIXED_CROP_TOP - MIXED_CROP_HEIGHT * CABINET_CENTER) / MIXED_CROP_HEIGHT
+                        translationY =
+                            size.height * (CABINET_CENTER - MIXED_CROP_TOP - MIXED_CROP_HEIGHT * CABINET_CENTER) / MIXED_CROP_HEIGHT
                     }
                 },
                 contentScale = ContentScale.FillBounds,
             )
             content()
             Box(
-                Modifier.offset(maxWidth * DRAWER_CONTROL_LEFT, maxHeight * (if (mixed) MIXED_DRAWER_CONTROL_TOP else DRAWER_CONTROL_TOP)).size(
+                Modifier.offset(
+                    maxWidth * DRAWER_CONTROL_LEFT,
+                    maxHeight * (if (mixed) MIXED_DRAWER_CONTROL_TOP else DRAWER_CONTROL_TOP),
+                ).size(
                     maxWidth * DRAWER_CONTROL_WIDTH,
                     maxHeight * DRAWER_CONTROL_HEIGHT,
                 ),
