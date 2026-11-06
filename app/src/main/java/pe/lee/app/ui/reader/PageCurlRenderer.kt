@@ -60,23 +60,29 @@ internal fun EpubPageTurnOverlay(frame: EpubPageTurnFrame, modifier: Modifier = 
                     native.drawRect(0f, 0f, 1f, size.height, shadowPaint)
                     native.restore()
                     native.drawBitmapMesh(frame.bitmap, PAGE_CURL_COLUMNS, PAGE_CURL_ROWS, vertices, 0, null, 0, bitmapPaint)
-                    reverse.rewind()
-                    for (row in 0 until PAGE_CURL_ROWS) {
-                        for (column in 0 until PAGE_CURL_COLUMNS) {
-                            val i = row * (PAGE_CURL_COLUMNS + 1) + column
-                            val j = i + PAGE_CURL_COLUMNS + 1
-                            if (back[i] && back[i + 1] && back[j] && back[j + 1]) {
-                                reverse.moveTo(vertices[i * 2], vertices[i * 2 + 1])
-                                reverse.lineTo(vertices[(i + 1) * 2], vertices[(i + 1) * 2 + 1])
-                                reverse.lineTo(vertices[(j + 1) * 2], vertices[(j + 1) * 2 + 1])
-                                reverse.lineTo(vertices[j * 2], vertices[j * 2 + 1])
-                                reverse.close()
-                            }
-                        }
-                    }
+                    buildReversePath(reverse, vertices, back)
                     native.drawPath(reverse, paperPaint)
                 }
             }
         },
     )
+}
+
+private fun buildReversePath(path: Path, vertices: FloatArray, back: BooleanArray) {
+    path.rewind()
+    for (row in 0 until PAGE_CURL_ROWS) {
+        for (column in 0 until PAGE_CURL_COLUMNS) {
+            val i = row * (PAGE_CURL_COLUMNS + 1) + column
+            val j = i + PAGE_CURL_COLUMNS + 1
+            if (back[i] && back[i + 1]) {
+                if (back[j] && back[j + 1]) {
+                    path.moveTo(vertices[i * 2], vertices[i * 2 + 1])
+                    path.lineTo(vertices[(i + 1) * 2], vertices[(i + 1) * 2 + 1])
+                    path.lineTo(vertices[(j + 1) * 2], vertices[(j + 1) * 2 + 1])
+                    path.lineTo(vertices[j * 2], vertices[j * 2 + 1])
+                    path.close()
+                }
+            }
+        }
+    }
 }

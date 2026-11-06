@@ -10,14 +10,7 @@ internal const val PAGE_CURL_COLUMNS = 28
 internal const val PAGE_CURL_ROWS = 4
 
 /** Maps the page onto a flat surface, a cylindrical bend and the returning tail. */
-internal fun fillPageCurlMesh(
-    vertices: FloatArray,
-    back: BooleanArray,
-    width: Float,
-    height: Float,
-    progress: Float,
-    forward: Boolean,
-) {
+internal fun fillPageCurlMesh(vertices: FloatArray, back: BooleanArray, width: Float, height: Float, progress: Float, forward: Boolean) {
     val p = progress.coerceIn(0f, 1f)
     val radius = width * (.07f + .05f * sin(PI.toFloat() * p))
     val retreat = width * ((p - .75f).coerceAtLeast(0f) * 2f)

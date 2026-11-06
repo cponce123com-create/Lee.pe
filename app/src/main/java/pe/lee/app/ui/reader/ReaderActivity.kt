@@ -138,12 +138,12 @@ internal fun EpubReaderScreen(
         }
     }
     val rightToLeft = navigator?.settings?.value?.readingProgression == ReadingProgression.RTL
+    val publicationLayout = publication?.metadata?.layout
+    val reflowable = publicationLayout != Layout.FIXED && publicationLayout != Layout.SCROLLED
     val pageTurnFrame = rememberEpubPageTurnFrame(
         navigator = navigator,
         pageView = readerContainer,
-        enabled = !loading && errorMessage == null && epubPreferences.scroll != true &&
-            !session.selectingText.value && publication?.metadata?.layout != Layout.FIXED &&
-            publication?.metadata?.layout != Layout.SCROLLED,
+        enabled = reflowable && !loading && errorMessage == null && epubPreferences.scroll != true && !session.selectingText.value,
         preferences = epubPreferences,
         autoFollowingNarration = session.followNarration.value && ttsIsPlaying,
         skipNextTurn = skipNextPageTurn,
@@ -206,7 +206,12 @@ internal fun EpubReaderScreen(
                 readerContainer = viewport
                 viewport.onNavigate = { forward ->
                     sessionActions.pauseTtsForNavigation()
-                    (if (forward != rightToLeft) navigator?.goForward(animated = false) else navigator?.goBackward(animated = false)) == true
+                    val accepted = if (forward != rightToLeft) {
+                        navigator?.goForward(animated = false)
+                    } else {
+                        navigator?.goBackward(animated = false)
+                    }
+                    accepted == true
                 }
             },
             modifier = Modifier.fillMaxSize(),

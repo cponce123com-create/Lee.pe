@@ -28,34 +28,7 @@ import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.EpubPreferences
 import org.readium.r2.navigator.preferences.Theme
 
-internal class EpubPageTurnController {
-    var onStart: ((Boolean, () -> Boolean) -> Unit)? = null
-    var onBeginDrag: ((Boolean) -> Boolean)? = null
-    var onUpdateDrag: ((Float) -> Unit)? = null
-    var onEndDrag: ((Boolean, ((Boolean) -> Boolean)?) -> Unit)? = null
-    var onCancel: (() -> Unit)? = null
-    var isBusy: (() -> Boolean)? = null
-
-    fun turn(isForward: Boolean, navigate: () -> Boolean) {
-        val start = onStart
-        if (start == null) navigate() else start(isForward, navigate)
-    }
-
-    fun beginDrag(forward: Boolean): Boolean = onBeginDrag?.invoke(forward) == true
-
-    fun updateDrag(progress: Float) {
-        onUpdateDrag?.invoke(progress)
-    }
-
-    fun endDrag(commit: Boolean, navigate: ((Boolean) -> Boolean)?) {
-        onEndDrag?.invoke(commit, navigate)
-    }
-
-    fun cancel() {
-        onCancel?.invoke()
-    }
-}
-
+@Suppress("CyclomaticComplexMethod")
 @Composable
 internal fun rememberEpubPageTurnFrame(
     navigator: EpubNavigatorFragment?,
@@ -70,11 +43,9 @@ internal fun rememberEpubPageTurnFrame(
 ): EpubPageTurnFrame? {
     val frame = remember { mutableStateOf<EpubPageTurnFrame?>(null) }
     val scope = rememberCoroutineScope()
-    val animationAllowed = pageView != null && Settings.Global.getFloat(
-        pageView.context.contentResolver,
-        Settings.Global.ANIMATOR_DURATION_SCALE,
-        1f,
-    ) > 0f
+    val animationAllowed = pageView?.let {
+        Settings.Global.getFloat(it.context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f
+    } == true
     val active = style != PageTurnStyle.NONE && enabled && !autoFollowingNarration && animationAllowed
     val paper = when (preferences.theme) {
         Theme.DARK -> 0xFF242323.toInt()
@@ -95,11 +66,15 @@ internal fun rememberEpubPageTurnFrame(
                     val prior = navigator?.currentLocator?.value
                     if (navigate != null) turn.phase.value = PageTurnPhase.NAVIGATING
                     val accepted = navigate?.invoke() == true
-                    val confirmed = accepted && navigator != null && withTimeoutOrNull(900L) {
-                        navigator.currentLocator.first { it != prior }
-                        repeat(2) { withFrameNanos { } }
-                        true
-                    } == true
+                    val confirmed = if (accepted && navigator != null) {
+                        withTimeoutOrNull(900L) {
+                            navigator.currentLocator.first { it != prior }
+                            repeat(2) { withFrameNanos { } }
+                            true
+                        } == true
+                    } else {
+                        false
+                    }
                     if (accepted && !confirmed) return@launch
                     turn.phase.value = if (accepted) PageTurnPhase.COMPLETING else PageTurnPhase.CANCELLING
                     animatePageCurl(turn, if (accepted) 1f else 0f, if (confirmed) 440 else 220)

@@ -23,42 +23,56 @@ internal class PageCurlViewport(context: Context, private val controller: EpubPa
     private var velocity: VelocityTracker? = null
 
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
-        when (event.actionMasked) {
+        val intercept = when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 startX = event.x
                 startY = event.y
                 forward = startX >= width * .88f
                 candidate = forward || startX <= width * .12f
                 blocking = candidate && controller.isBusy?.invoke() == true
-                if (blocking) return true
+                blocking
             }
-            MotionEvent.ACTION_MOVE -> if (candidate && event.pointerCount == 1) {
-                val inward = inwardDistance(event.x)
-                val vertical = abs(event.y - startY)
-                if (vertical > slop && vertical >= inward) candidate = false
-                if (candidate && inward > slop && inward > vertical * 1.35f) {
-                    candidate = false
-                    if (onNavigate != null && controller.beginDrag(forward)) {
-                        dragging = true
-                        progress = (inward / width.coerceAtLeast(1)).coerceIn(0f, 1f)
-                        controller.updateDrag(progress)
-                        velocity = VelocityTracker.obtain()
-                        parent?.requestDisallowInterceptTouchEvent(true)
-                        return true
-                    }
-                }
+            MotionEvent.ACTION_MOVE -> candidate && event.pointerCount == 1 && startDragIfHorizontal(event)
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                candidate = false
+                false
             }
-            MotionEvent.ACTION_POINTER_DOWN -> candidate = false
+            else -> false
         }
-        return super.onInterceptTouchEvent(event)
+        return intercept || super.onInterceptTouchEvent(event)
     }
 
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (blocking) {
-            if (event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL) blocking = false
-            return true
+    private fun startDragIfHorizontal(event: MotionEvent): Boolean {
+        val inward = inwardDistance(event.x)
+        val vertical = abs(event.y - startY)
+        if (vertical > slop && vertical >= inward) candidate = false
+        if (!candidate || inward <= slop || inward <= vertical * 1.35f) return false
+
+        candidate = false
+        val started = onNavigate != null && controller.beginDrag(forward)
+        if (started) {
+            dragging = true
+            progress = (inward / width.coerceAtLeast(1)).coerceIn(0f, 1f)
+            controller.updateDrag(progress)
+            velocity = VelocityTracker.obtain().apply { addMovement(event) }
+            parent?.requestDisallowInterceptTouchEvent(true)
         }
-        if (!dragging) return super.onTouchEvent(event)
+        return started
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean = when {
+        blocking -> {
+            if (event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL) blocking = false
+            true
+        }
+        dragging -> {
+            handleDrag(event)
+            true
+        }
+        else -> super.onTouchEvent(event)
+    }
+
+    private fun handleDrag(event: MotionEvent) {
         velocity?.addMovement(event)
         when (event.actionMasked) {
             MotionEvent.ACTION_MOVE -> {
@@ -72,7 +86,6 @@ internal class PageCurlViewport(context: Context, private val controller: EpubPa
             }
             MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_POINTER_DOWN -> finish(false)
         }
-        return true
     }
 
     override fun onWindowVisibilityChanged(visibility: Int) {
