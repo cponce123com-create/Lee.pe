@@ -21,6 +21,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import pe.lee.feature.library.R
 
+private const val CABINET_CENTER = .5f
+private const val MIXED_DRAWER_CONTROL_TOP = .942f
 private const val MIXED_CROP_WIDTH = .94f
 private const val MIXED_CROP_TOP = .072f
 private const val MIXED_CROP_HEIGHT = .842f
@@ -57,14 +59,14 @@ internal fun Cabinet3d(
                     if (mixed) {
                         scaleX = 1f / MIXED_CROP_WIDTH
                         scaleY = 1f / MIXED_CROP_HEIGHT
-                        translationY = size.height * (.5f - MIXED_CROP_TOP - MIXED_CROP_HEIGHT / 2f) / MIXED_CROP_HEIGHT
+                        translationY = size.height * (CABINET_CENTER - MIXED_CROP_TOP - MIXED_CROP_HEIGHT * CABINET_CENTER) / MIXED_CROP_HEIGHT
                     }
                 },
                 contentScale = ContentScale.FillBounds,
             )
             content()
             Box(
-                Modifier.offset(maxWidth * DRAWER_CONTROL_LEFT, maxHeight * (if (mixed) .942f else DRAWER_CONTROL_TOP)).size(
+                Modifier.offset(maxWidth * DRAWER_CONTROL_LEFT, maxHeight * (if (mixed) MIXED_DRAWER_CONTROL_TOP else DRAWER_CONTROL_TOP)).size(
                     maxWidth * DRAWER_CONTROL_WIDTH,
                     maxHeight * DRAWER_CONTROL_HEIGHT,
                 ),

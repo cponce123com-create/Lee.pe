@@ -57,6 +57,8 @@ private val mixedRowBottoms = listOf(.463f, .824f).map(::mixedCabinetY)
 private fun ShelfObject.isHorizontalBook(): Boolean =
     this is ShelfObject.Book && placement.orientation == BookOrientation.STACKED
 
+private const val HORIZONTAL_BOOK_UNITS = 2.85f
+
 /** Capacity is measured before layout so every visual line gets its own supporting plank. */
 internal fun packMixedShelves(shelves: List<ShelfDisplay>, capacity: Float, gapUnits: Float = 0f): List<MixedShelfLine> = buildList {
     shelves.forEach { shelf ->
@@ -68,10 +70,10 @@ internal fun packMixedShelves(shelves: List<ShelfDisplay>, capacity: Float, gapU
             val canExtend = previous != null && stacked && previousStackSize < 3 &&
                 (previousStackSize > 0 || previous.objects.singleOrNull() is ShelfObject.Decor)
             if (canExtend && previous != null) {
-                groups[groups.lastIndex] = MixedShelfGroup(previous.objects + item, 2.85f)
+                groups[groups.lastIndex] = MixedShelfGroup(previous.objects + item, HORIZONTAL_BOOK_UNITS)
             } else {
                 val units = when {
-                    stacked -> 2.85f
+                    stacked -> HORIZONTAL_BOOK_UNITS
                     item is ShelfObject.Decor -> 1.65f
                     else -> .82f
                 }
