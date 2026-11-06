@@ -9,7 +9,7 @@ import android.view.ViewConfiguration
 import android.widget.FrameLayout
 import kotlin.math.abs
 
-/** Leave taps and vertical movement with Readium; intercept only an inward edge swipe. */
+/** Leave taps and vertical movement with Readium; intercept a deliberate horizontal swipe anywhere on the page. */
 internal class PageCurlViewport(context: Context, private val controller: EpubPageTurnController) : FrameLayout(context) {
     var onNavigate: ((Boolean) -> Boolean)? = null
     private val slop = ViewConfiguration.get(context).scaledTouchSlop
@@ -27,8 +27,7 @@ internal class PageCurlViewport(context: Context, private val controller: EpubPa
             MotionEvent.ACTION_DOWN -> {
                 startX = event.x
                 startY = event.y
-                forward = startX >= width * .88f
-                candidate = forward || startX <= width * .12f
+                candidate = onNavigate != null && controller.onBeginDrag != null
                 blocking = candidate && controller.isBusy?.invoke() == true
                 blocking
             }
@@ -43,21 +42,30 @@ internal class PageCurlViewport(context: Context, private val controller: EpubPa
     }
 
     private fun startDragIfHorizontal(event: MotionEvent): Boolean {
-        val inward = inwardDistance(event.x)
+        val horizontal = event.x - startX
+        val distance = abs(horizontal)
         val vertical = abs(event.y - startY)
-        if (vertical > slop && vertical >= inward) candidate = false
-        if (!candidate || inward <= slop || inward <= vertical * 1.35f) return false
+        if (vertical > slop && vertical >= distance) candidate = false
+        if (event.eventTime - event.downTime >= ViewConfiguration.getLongPressTimeout()) candidate = false
+        if (!candidate || distance <= slop || distance <= vertical * 1.35f) return false
 
         candidate = false
+        forward = horizontal < 0f
         val started = onNavigate != null && controller.beginDrag(forward)
         if (started) {
             dragging = true
-            progress = (inward / width.coerceAtLeast(1)).coerceIn(0f, 1f)
+            progress = (distance / width.coerceAtLeast(1)).coerceIn(0f, 1f)
             controller.updateDrag(progress)
             velocity = VelocityTracker.obtain().apply { addMovement(event) }
             parent?.requestDisallowInterceptTouchEvent(true)
         }
         return started
+    }
+
+    override fun requestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {
+        // The WebView can claim touches on text before their direction is known.
+        // Keep arbitration in this container until horizontal intent or a native gesture wins.
+        if (!disallowIntercept || !candidate) super.requestDisallowInterceptTouchEvent(disallowIntercept)
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean = when {

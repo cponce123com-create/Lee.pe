@@ -2,6 +2,7 @@ package pe.lee.app.ui.reader
 
 import android.os.SystemClock
 import android.view.MotionEvent
+import android.view.View
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -32,6 +33,32 @@ class PageCurlViewportTest {
         }
 
         assertEquals(listOf(false, true), completions)
+    }
+
+    @Test
+    fun swipeOverTextCancelsChildBeforeItCanScroll() = withViewport { viewport, controller ->
+        val received = mutableListOf<Int>()
+        val child = View(viewport.context).apply {
+            setOnTouchListener { view, event ->
+                received += event.actionMasked
+                view.parent.requestDisallowInterceptTouchEvent(true)
+                true
+            }
+        }
+        viewport.addView(child)
+        child.layout(0, 0, 400, 800)
+        var forward: Boolean? = null
+        controller.onBeginDrag = {
+            forward = it
+            true
+        }
+        val start = SystemClock.uptimeMillis()
+        send(start, 0, MotionEvent.ACTION_DOWN, 200f, 100f, viewport::dispatchTouchEvent)
+        send(start, 60, MotionEvent.ACTION_MOVE, 285f, 100f, viewport::dispatchTouchEvent)
+        send(start, 90, MotionEvent.ACTION_CANCEL, 285f, 100f, viewport::dispatchTouchEvent)
+
+        assertEquals(false, forward)
+        assertEquals(listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_CANCEL), received)
     }
 
     private fun withViewport(block: (PageCurlViewport, EpubPageTurnController) -> Unit) {
