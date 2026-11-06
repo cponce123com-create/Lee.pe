@@ -137,7 +137,8 @@ internal fun EpubReaderScreen(
             skipNextPageTurn.value = false
         }
     }
-    val rightToLeft = navigator?.settings?.value?.readingProgression == ReadingProgression.RTL
+    val navigationSettings = navigator?.settings?.collectAsStateWithLifecycle()?.value
+    val rightToLeft = navigationSettings?.readingProgression == ReadingProgression.RTL
     val publicationLayout = publication?.metadata?.layout
     val reflowable = publicationLayout != Layout.FIXED && publicationLayout != Layout.SCROLLED
     val pageTurnFrame = rememberEpubPageTurnFrame(
