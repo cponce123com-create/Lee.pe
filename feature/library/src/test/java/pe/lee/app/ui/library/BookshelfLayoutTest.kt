@@ -245,4 +245,16 @@ class BookshelfLayoutTest {
         )
         assertEquals(moved.objectsOnShelf(0), restored.objectsOnShelf(0))
     }
+
+    @Test
+    fun ornamentBeforeHorizontalBookSharesItsStackAfterReload() {
+        val initial = BookshelfLayout().addToShelf("book").toggleOrientation("book")
+            .addDecoration(ShelfDecorationType.PLANT, shelf = 0, order = 1)
+        val ornament = "decor:${initial.decorations.single().id}"
+        val moved = initial.moveObject(ornament, 0, 0)
+        val restored = requireNotNull(BookshelfLayout.decode(BookshelfLayout.encode(moved)))
+
+        val rows = packMixedShelves(listOf(ShelfDisplay(0, restored.objectsOnShelf(0))), 4f)
+        assertEquals(listOf("book:book", ornament), rows.single().groups.single().objects.asReversed().map { it.stableKey })
+    }
 }

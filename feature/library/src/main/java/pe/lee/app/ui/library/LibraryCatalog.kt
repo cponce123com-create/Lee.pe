@@ -180,6 +180,7 @@ internal fun LibraryCatalog(
     val naturalCabinetHeight = (configuration.screenWidthDp - 12).coerceAtMost(600).dp * 1.5f
     val availableCabinetHeight = (configuration.screenHeightDp - 220).coerceAtLeast(260).dp
     val shelfHeight = minOf(naturalCabinetHeight, availableCabinetHeight)
+    val mixedShelfHeight = minOf(naturalCabinetHeight / 1.5f / MIXED_CABINET_ASPECT, availableCabinetHeight)
     var searchExpanded by rememberSaveable { mutableStateOf(false) }
     val customOrder = sortMode.value == LibrarySortMode.CUSTOM
     val shelfBooks = remember(orderedBooks, bookshelfLayout.hiddenBookIds, customOrder) {
@@ -395,7 +396,7 @@ internal fun LibraryCatalog(
                     layout = bookshelfLayout,
                     shelves = shelves,
                     booksById = booksById,
-                    height = shelfHeight,
+                    height = mixedShelfHeight,
                     onOpen = { handleBookAction(it, LibraryBookAction.OPEN) },
                     onCommit = {
                         onBookshelfLayoutChange(it)

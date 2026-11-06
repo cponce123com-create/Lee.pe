@@ -11,7 +11,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,6 +29,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -172,19 +174,10 @@ internal fun UprightBookVolume(book: LocalBook, base: Color, modifier: Modifier 
 @Composable
 private fun RotatedSpineTitle(title: String, modifier: Modifier, material: BindingMaterial) {
     BoxWithConstraints(modifier) {
-        val font = if (maxWidth < 23.dp) 10.sp else 12.sp
         Layout(
             modifier = Modifier.fillMaxSize(),
             content = {
-                Text(
-                    title,
-                    modifier = Modifier.graphicsLayer { rotationZ = 270f }.clearAndSetSemantics {},
-                    color = Color(0xFFFFF5DF), fontSize = font, lineHeight = font * 1.12f,
-                    fontFamily = if (material == BindingMaterial.SMOOTH) FontFamily.SansSerif else FontFamily.Serif,
-                    fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center,
-                    maxLines = 2, overflow = TextOverflow.Ellipsis,
-                    style = androidx.compose.ui.text.TextStyle(shadow = Shadow(Color(0x66000000), Offset(0f, 1f), 1f)),
-                )
+                SpineLabel(title, material, Modifier.graphicsLayer { rotationZ = 270f }, maxLines = 3)
             },
         ) { measurables, constraints ->
             val width = constraints.maxWidth
@@ -220,30 +213,32 @@ internal fun StackedBookVolume(book: LocalBook, base: Color, flatTop: Boolean, m
                 .bindingFace(base, material, upright = false),
             contentAlignment = Alignment.Center,
         ) {
-            BoxWithConstraints(
-                Modifier.fillMaxWidth().padding(horizontal = 13.dp, vertical = 1.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                val font = when {
-                    maxWidth < 70.dp -> 10.sp
-                    maxHeight < 23.dp -> 10.sp
-                    else -> 12.sp
-                }
-                val titleLines = if (maxHeight >= 24.dp && maxWidth >= 70.dp) 2 else 1
-                Text(
-                    bookSpineTitle(book.title),
-                    modifier = Modifier.fillMaxWidth().clearAndSetSemantics {},
-                    color = Color(0xFFFFF5DF), fontSize = font, lineHeight = font * 1.12f,
-                    fontFamily = if (material == BindingMaterial.SMOOTH) FontFamily.SansSerif else FontFamily.Serif,
-                    fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
-                    maxLines = titleLines, overflow = TextOverflow.Ellipsis,
-                    style = androidx.compose.ui.text.TextStyle(
-                        shadow = Shadow(Color(0xCC000000), Offset(0f, 1f), 1.5f),
-                    ),
-                )
-            }
+            SpineLabel(
+                bookSpineTitle(book.title),
+                material,
+                Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 1.dp),
+                maxLines = 2,
+            )
         }
     }
+}
+
+@Composable
+private fun SpineLabel(title: String, material: BindingMaterial, modifier: Modifier, maxLines: Int) {
+    BasicText(
+        text = title,
+        modifier = modifier.clearAndSetSemantics {},
+        style = TextStyle(
+            color = Color(0xFFFFF5DF),
+            fontFamily = if (material == BindingMaterial.SMOOTH) FontFamily.SansSerif else FontFamily.Serif,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center,
+            shadow = Shadow(Color(0x99000000), Offset(0f, 1f), 1f),
+        ),
+        maxLines = maxLines,
+        overflow = TextOverflow.Ellipsis,
+        autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 14.sp, stepSize = .5.sp),
+    )
 }
 
 /** Visible binding, paper fore-edge and lower cover; the supplied cover remains intact. */
