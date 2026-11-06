@@ -7,7 +7,6 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -148,12 +147,12 @@ internal fun TtsControls(
                 fontSize = 13.sp,
             )
             error?.let { Text(it, color = Color(0xFFFFB4AB), fontSize = 12.sp) }
-            // Five controls in a plain Row overflowed on 360 dp screens with large
-            // fonts; FlowRow wraps them into a second line instead (A-19).
-            FlowRow(
+            // Keep playback actions together. The previous FlowRow could wrap only
+            // Stop onto a lonely third line on narrow screens (A-19).
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onTogglePlayback) {
                     Icon(
@@ -166,6 +165,19 @@ internal fun TtsControls(
                         tint = Color.White,
                     )
                 }
+                IconButton(onClick = onStop) {
+                    Icon(
+                        Icons.Default.Stop,
+                        contentDescription = stringResource(R.string.reader_tts_stop),
+                        tint = Color.White,
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 TextButton(onClick = {
                     val index = speeds.indexOf(speed).coerceAtLeast(0)
                     onSpeedChange(speeds[(index + 1) % speeds.size])
@@ -232,13 +244,6 @@ internal fun TtsControls(
                         } else {
                             stringResource(R.string.reader_timer_minutes, timerMinutes)
                         },
-                    )
-                }
-                IconButton(onClick = onStop) {
-                    Icon(
-                        Icons.Default.Stop,
-                        contentDescription = stringResource(R.string.reader_tts_stop),
-                        tint = Color.White,
                     )
                 }
             }
