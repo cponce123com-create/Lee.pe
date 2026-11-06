@@ -156,6 +156,9 @@ internal fun PdfReaderScreen(
             loading = false
         } catch (cancelled: CancellationException) {
             throw cancelled
+        } catch (_: SecurityException) {
+            errorMessage = context.getString(R.string.epub_permission_lost)
+            loading = false
         } catch (_: Exception) {
             errorMessage = pdfOpenFailedMessage
             loading = false

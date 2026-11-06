@@ -12,7 +12,19 @@ updates:
       gradle-security:
         applies-to: security-updates
         patterns: ["*"]
-      gradle-minor-patch:
+      kotlin-ksp:
+        applies-to: version-updates
+        patterns: ["org.jetbrains.kotlin*", "com.google.devtools.ksp*"]
+        update-types: [minor, patch]
+      android-build:
+        applies-to: version-updates
+        patterns: ["com.android.tools.build:gradle", "com.android.application*", "com.android.library*", "com.android.test*"]
+        update-types: [minor, patch]
+      compose-bom:
+        applies-to: version-updates
+        patterns: ["androidx.compose:compose-bom"]
+        update-types: [minor, patch]
+      minor-and-patch:
         applies-to: version-updates
         patterns: ["*"]
         update-types: [minor, patch]

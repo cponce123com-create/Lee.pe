@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - "v*.*.*"
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -24,8 +23,9 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - run: chmod +x gradlew
+
       - name: Check tag and version
-        if: github.ref_type == 'tag'
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
@@ -56,7 +56,7 @@ jobs:
           LEE_PE_SIGNING_CERT_SHA256: ${{ vars.LEE_PE_SIGNING_CERT_SHA256 }}
         run: |
           signed=false
-          tasks=(testDebugUnitTest :core:domain:test lintRelease assembleRelease)
+          tasks=(testDebugUnitTest :core:domain:test lintRelease)
           if [[ -n "$LEE_PE_KEYSTORE_BASE64$LEE_PE_KEYSTORE_PASSWORD$LEE_PE_KEY_ALIAS$LEE_PE_KEY_PASSWORD$LEE_PE_SIGNING_CERT_SHA256" ]]; then
             if [[ -z "$LEE_PE_KEYSTORE_BASE64" || -z "$LEE_PE_KEYSTORE_PASSWORD" || -z "$LEE_PE_KEY_ALIAS" ||
                   -z "$LEE_PE_KEY_PASSWORD" || -z "$LEE_PE_SIGNING_CERT_SHA256" ]]; then
@@ -67,7 +67,9 @@ jobs:
             export LEE_PE_KEYSTORE="$RUNNER_TEMP/lee-pe-release.jks"
             printf '%s' "$LEE_PE_KEYSTORE_BASE64" | base64 -d > "$LEE_PE_KEYSTORE"
             signed=true
-            tasks+=(bundleRelease)
+            tasks+=(assembleRelease bundleRelease)
+          else
+            tasks+=(assembleDebug -PdistributionArmOnly=true)
           fi
           unset LEE_PE_KEYSTORE_BASE64
           ./gradlew --no-daemon --stacktrace --max-workers=2 -Dorg.gradle.parallel=false "${tasks[@]}"
@@ -85,21 +87,22 @@ jobs:
           SIGNED: ${{ steps.build.outputs.signed }}
         run: |
           shopt -s nullglob
-          apks=(app/build/outputs/apk/release/*.apk)
-          [[ ${#apks[@]} -eq 1 ]] || { echo "::error::Expected exactly one release APK."; exit 1; }
+          variant=debug
+          if [[ "$SIGNED" == true ]]; then variant=release; fi
+          apks=(app/build/outputs/apk/"$variant"/*.apk)
+          [[ ${#apks[@]} -eq 1 ]] || { echo "::error::Expected exactly one APK."; exit 1; }
           mkdir -p dist
           if [[ "$SIGNED" == true ]]; then
             cp "${apks[0]}" dist/
             cp app/build/outputs/apk/release/signing.json dist/
             cp app/build/outputs/bundle/release/*.aab dist/
           else
-            cp "${apks[0]}" dist/lee-pe-release-unsigned.apk
+            cp "${apks[0]}" dist/lee-pe-debug-preview.apk
           fi
           cp version.properties dist/
           (cd dist && files=(*) && sha256sum -- "${files[@]}" > SHA256SUMS)
 
       - name: Prepare release notes
-        if: github.ref_type == 'tag'
         env:
           RELEASE_TAG: ${{ github.ref_name }}
           SIGNED: ${{ steps.build.outputs.signed }}
@@ -130,7 +133,7 @@ jobs:
                   text=True,
               ).strip()
           if os.environ["SIGNED"] != "true":
-              notes = "> APK sin firma. Requiere firma antes de instalarlo.\n\n" + notes
+              notes = "> APK de prueba con firma debug. No actualiza instalaciones firmadas con otro certificado.\n\n" + notes
           Path("release-notes.md").write_text(notes + "\n", encoding="utf-8")
           PYTHON
 
@@ -141,7 +144,6 @@ jobs:
           if-no-files-found: error
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        if: github.ref_type == 'tag'
         with:
           name: release-notes
           path: release-notes.md
@@ -152,7 +154,6 @@ jobs:
 
   publish:
     name: Publish GitHub Release
-    if: github.event_name == 'push' && github.ref_type == 'tag'
     needs: build
     runs-on: ubuntu-latest
     permissions:

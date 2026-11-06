@@ -17,6 +17,7 @@ Estados: **P** pendiente, **OK** aprobado, **F** fallo, **N/A** fuera del alcanc
 | SAF-01 | Importar desde Documentos y almacenamiento extraíble cuando exista. Cerrar y reiniciar el dispositivo. El URI autorizado sigue abriendo el libro. | P | P | P | P | P |
 | SAF-02 | Cancelar el selector y retirar el acceso al archivo de prueba, renombrándolo o desmontando el volumen. La app informa el problema y permite volver a seleccionar. | P | P | P | P | P |
 | SAF-03 | Exportar respaldo a una ubicación elegida y restaurarlo con el selector. Comprobar contenido y manejo de cancelación. | P | P | P | P | P |
+| SAF-04 | Revocar el permiso de un EPUB y un PDF con progreso guardado y abrirlos desde Continuar leyendo. Verificar el aviso de acceso y volver a vincular el archivo original. Comprobar que se recupera la posición guardada. | P | P | P | P | P |
 
 Para Xiaomi y Samsung, ejecuta primero con los ajustes de batería predeterminados y repite con ahorro activado. Usa un perfil sin restricciones únicamente para aislar un fallo y registra el cambio. Distingue quitar de Recientes de forzar detención.
 
