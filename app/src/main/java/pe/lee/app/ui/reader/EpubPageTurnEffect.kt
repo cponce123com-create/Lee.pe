@@ -9,6 +9,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -18,19 +19,16 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
-import kotlin.math.abs
+import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -125,7 +123,7 @@ private suspend fun processPageTurn(
     return capturePage(view) to nextFrameId + 1
 }
 
-/** Draws the outgoing page with perspective and a moving crease shadow. */
+/** Draws the outgoing page as a physical sheet turning around the book spine. */
 @Composable
 internal fun EpubPageTurnOverlay(frame: EpubPageTurnFrame, modifier: Modifier = Modifier) {
     val rotation = remember(frame.id) { Animatable(0f) }
@@ -134,7 +132,7 @@ internal fun EpubPageTurnOverlay(frame: EpubPageTurnFrame, modifier: Modifier = 
 
     LaunchedEffect(frame.id) {
         rotation.animateTo(
-            targetValue = if (frame.isForward) -PAGE_TURN_ANGLE else PAGE_TURN_ANGLE,
+            targetValue = if (frame.isForward) -PAGE_TURN_FULL_TURN else PAGE_TURN_FULL_TURN,
             animationSpec = tween(
                 durationMillis = PAGE_TURN_ANIMATION_MS.toInt(),
                 easing = FastOutSlowInEasing,
@@ -145,7 +143,27 @@ internal fun EpubPageTurnOverlay(frame: EpubPageTurnFrame, modifier: Modifier = 
         onDispose { frame.bitmap.recycleIfNeeded() }
     }
 
+    val turn = rotation.value
+    val absoluteTurn = kotlin.math.abs(turn)
+    val edgeLight = sin(Math.toRadians(absoluteTurn.toDouble())).toFloat().coerceIn(0f, 1f)
+    val shadowAlpha = edgeLight * PAGE_TURN_MAX_SHADOW_ALPHA
+    val hinge = if (frame.isForward) 0f else 1f
+
     Box(modifier.fillMaxSize().clipToBounds()) {
+        // A soft cast shadow anchors the sheet to the page underneath it.
+        Box(
+            Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    translationX = if (frame.isForward) -PAGE_TURN_SHADOW_OFFSET * density else PAGE_TURN_SHADOW_OFFSET * density
+                    scaleX = 1f - edgeLight * PAGE_TURN_SHADOW_SCALE
+                    transformOrigin = TransformOrigin(hinge, PAGE_TURN_VERTICAL_CENTER)
+                },
+        ) {
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = shadowAlpha)))
+        }
+
+        // Front of the sheet: it becomes edge-on at 90 degrees.
         Image(
             bitmap = image,
             contentDescription = null,
@@ -153,25 +171,43 @@ internal fun EpubPageTurnOverlay(frame: EpubPageTurnFrame, modifier: Modifier = 
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer {
-                    rotationY = if (frame.isForward) -rotation.value else rotation.value
-                    transformOrigin = TransformOrigin(
-                        if (frame.isForward) 0f else 1f,
-                        PAGE_TURN_VERTICAL_CENTER,
-                    )
+                    rotationY = turn
+                    alpha = (1f - absoluteTurn / 90f).coerceIn(0f, 1f)
+                    transformOrigin = TransformOrigin(hinge, PAGE_TURN_VERTICAL_CENTER)
                     cameraDistance = PAGE_TURN_CAMERA_DISTANCE_MULTIPLIER * density
-                }
-                .drawWithContent {
-                    drawContent()
-                    val shadow = (abs(rotation.value) / PAGE_TURN_ANGLE).coerceIn(0f, 1f) *
-                        PAGE_TURN_MAX_SHADOW_ALPHA
-                    val colors = if (frame.isForward) {
-                        listOf(Color.Black.copy(alpha = shadow), Color.Transparent)
-                    } else {
-                        listOf(Color.Transparent, Color.Black.copy(alpha = shadow))
-                    }
-                    drawRect(Brush.horizontalGradient(colors), size = size)
                 },
         )
+
+        // Reverse of the paper. The reverse is deliberately warm and subtle;
+        // the faint mirrored ink prevents the black/empty-card look at 90-180°.
+        Box(
+            Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    rotationY = turn + if (frame.isForward) PAGE_TURN_FULL_TURN else -PAGE_TURN_FULL_TURN
+                    transformOrigin = TransformOrigin(hinge, PAGE_TURN_VERTICAL_CENTER)
+                    cameraDistance = PAGE_TURN_CAMERA_DISTANCE_MULTIPLIER * density
+                    alpha = (absoluteTurn / PAGE_TURN_FULL_TURN).coerceIn(0f, 1f)
+                },
+        ) {
+            Box(Modifier.fillMaxSize().background(PAGE_TURN_PAPER_COLOR))
+            Image(
+                bitmap = image,
+                contentDescription = null,
+                contentScale = ContentScale.FillBounds,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        scaleX = -1f
+                        alpha = PAGE_TURN_BACK_CONTENT_ALPHA
+                    },
+            )
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(Color.White.copy(alpha = edgeLight * PAGE_TURN_EDGE_HIGHLIGHT_ALPHA)),
+            )
+        }
     }
 }
 
@@ -206,10 +242,15 @@ private fun Bitmap?.recycleIfNeeded() {
 }
 
 private const val MAX_SNAPSHOT_PIXELS = 1_500_000L
-private const val PAGE_TURN_ANIMATION_MS = 420L
+private const val PAGE_TURN_ANIMATION_MS = 560L
 private const val PAGE_TURN_RECAPTURE_DELAY_MS = 60L
-private const val PAGE_TURN_ANGLE = 86f
+private const val PAGE_TURN_FULL_TURN = 180f
 private const val PAGE_TURN_SNAPSHOT_STABILIZATION_FRAMES = 3
 private const val PAGE_TURN_VERTICAL_CENTER = 0.5f
-private const val PAGE_TURN_CAMERA_DISTANCE_MULTIPLIER = 16f
-private const val PAGE_TURN_MAX_SHADOW_ALPHA = 0.28f
+private const val PAGE_TURN_CAMERA_DISTANCE_MULTIPLIER = 24f
+private const val PAGE_TURN_MAX_SHADOW_ALPHA = 0.22f
+private const val PAGE_TURN_SHADOW_OFFSET = 12f
+private const val PAGE_TURN_SHADOW_SCALE = 0.06f
+private const val PAGE_TURN_BACK_CONTENT_ALPHA = 0.12f
+private const val PAGE_TURN_EDGE_HIGHLIGHT_ALPHA = 0.16f
+private val PAGE_TURN_PAPER_COLOR = Color(0xFFF6F0E4)
