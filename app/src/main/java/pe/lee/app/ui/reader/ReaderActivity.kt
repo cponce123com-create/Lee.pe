@@ -123,7 +123,7 @@ internal fun EpubReaderScreen(
         skipNextPageTurn.value = true
         skipPageTurnResetJob?.cancel()
         skipPageTurnResetJob = coroutineScope.launch {
-            kotlinx.coroutines.delay(2_000)
+            kotlinx.coroutines.delay(PAGE_TURN_SKIP_TIMEOUT_MS)
             skipNextPageTurn.value = false
         }
     }
@@ -524,6 +524,7 @@ class ReaderActivity : FragmentActivity() {
     }
 
     companion object {
+        private const val PAGE_TURN_SKIP_TIMEOUT_MS = 2_000L
         const val EXTRA_TITLE = "pe.lee.app.reader.TITLE"
 
         fun locatorPreferenceKey(uri: Uri): String = "locator:$uri"
