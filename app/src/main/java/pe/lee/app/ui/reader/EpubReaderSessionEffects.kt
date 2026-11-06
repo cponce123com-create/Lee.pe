@@ -346,9 +346,7 @@ internal fun EpubReaderSessionEffects(
                     if (existing != null && existing.bookUri == uri.toString()) {
                         session.ttsServiceBinding.value = binding
                         session.ttsNavigator.value = existing.navigator
-                        session.ttsVoices.value = existing.navigator.voices
-                            .filter { it.isLocalSpanishVoice() }
-                            .sortedWith(compareBy({ it.language.toString() }, { it.id.value }))
+                        session.ttsVoices.value = sortedLocalSpanishVoices(existing.navigator.voices)
                         session.ttsIsPlaying.value =
                             existing.navigator.playback.value.playWhenReady
                     } else {
@@ -412,8 +410,7 @@ internal fun EpubReaderSessionEffects(
         binder.session.collect { activeSession ->
             if (activeSession?.bookUri == uri.toString()) {
                 session.ttsNavigator.value = activeSession.navigator
-                session.ttsVoices.value = activeSession.navigator.voices.filter { it.isLocalSpanishVoice() }
-                    .sortedWith(compareBy({ it.language.toString() }, { it.id.value }))
+                session.ttsVoices.value = sortedLocalSpanishVoices(activeSession.navigator.voices)
                 session.ttsIsPlaying.value = activeSession.navigator.playback.value.playWhenReady
             } else {
                 session.ttsNavigator.value = null

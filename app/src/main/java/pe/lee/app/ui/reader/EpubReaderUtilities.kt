@@ -25,6 +25,18 @@ internal fun AndroidTtsEngine.Voice.isLocalSpanishVoice(): Boolean {
     return languageCode.equals("es", ignoreCase = true)
 }
 
+internal fun sortedLocalSpanishVoices(voices: List<AndroidTtsEngine.Voice>): List<AndroidTtsEngine.Voice> =
+    voices
+        .filter { it.isLocalSpanishVoice() }
+        .sortedWith(compareBy({ it.language.toString() }, { it.id.value }))
+
+/** Prefer the third installed es-US voice, falling back safely on this device's catalog. */
+internal fun defaultSpanishUsVoice(voices: List<AndroidTtsEngine.Voice>): AndroidTtsEngine.Voice? {
+    val localVoices = sortedLocalSpanishVoices(voices)
+    val usVoices = localVoices.filter { spanishVoiceRegion(it.language.toString()) == "US" }
+    return usVoices.getOrNull(2) ?: usVoices.firstOrNull() ?: localVoices.firstOrNull()
+}
+
 internal fun spanishVoiceLabel(context: Context, voice: AndroidTtsEngine.Voice): String {
     val region = spanishVoiceRegion(voice.language.toString())
     val label = when (region) {

@@ -10,6 +10,7 @@ import android.view.accessibility.AccessibilityManager
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.readium.navigator.media.tts.AndroidTtsNavigatorFactory
 import org.readium.navigator.media.tts.TtsNavigator
@@ -60,7 +61,11 @@ private fun createEpubReaderSessionActions(
     session: EpubReaderSessionState,
     onRequestNotificationPermission: () -> Unit,
 ): EpubReaderSessionActions {
+    var prepareJob: Job? = null
+
     fun stopTts() {
+        prepareJob?.cancel()
+        prepareJob = null
         val binding = session.ttsServiceBinding.value
         if (binding != null) {
             binding.binder.stop()
@@ -103,7 +108,8 @@ private fun createEpubReaderSessionActions(
         if (shouldHideReaderChromeAfterTtsStart(isFirstPlay = true, touchExplorationEnabled = touchExplorationEnabled)) {
             session.chromeVisible.value = false
         }
-        coroutineScope.launch {
+        if (prepareJob?.isActive == true) return
+        prepareJob = coroutineScope.launch {
             val app = context.applicationContext as Application
             val binding = session.ttsServiceBinding.value ?: try {
                 TtsPlaybackService.bind(app).also { session.ttsServiceBinding.value = it }
@@ -117,8 +123,23 @@ private fun createEpubReaderSessionActions(
             val existing = binder.currentSession
             if (existing?.bookUri == uri.toString()) {
                 session.ttsNavigator.value = existing.navigator
-                session.ttsVoices.value = existing.navigator.voices.filter { it.isLocalSpanishVoice() }
-                    .sortedWith(compareBy({ it.language.toString() }, { it.id.value }))
+                val localVoices = sortedLocalSpanishVoices(existing.navigator.voices)
+                session.ttsVoices.value = localVoices
+                val selectedVoice = session.ttsSelectedVoiceId.value?.let { id ->
+                    localVoices.firstOrNull { it.id.value == id }
+                } ?: defaultSpanishUsVoice(localVoices)
+                if (selectedVoice != null) {
+                    session.ttsSelectedVoiceId.value = selectedVoice.id.value
+                    existing.navigator.submitPreferences(
+                        AndroidTtsPreferences(
+                            speed = session.ttsSpeed.value.toDouble(),
+                            voices = mapOf(selectedVoice.language to selectedVoice.id),
+                        ),
+                    )
+                    settings.apply(SettingsRepository.Store.LIBRARY) {
+                        putString(ttsVoicePreferenceKey(uri), selectedVoice.id.value)
+                    }
+                }
                 if (!existing.navigator.playback.value.playWhenReady) existing.navigator.play()
                 return@launch
             }
@@ -152,24 +173,23 @@ private fun createEpubReaderSessionActions(
                 session.ttsError.value = context.getString(R.string.tts_prepare_failed)
                 return@launch
             }
-            val localVoices = speech.voices
-                .filter { it.isLocalSpanishVoice() }
-                .sortedWith(compareBy({ it.language.toString() }, { it.id.value }))
+            val localVoices = sortedLocalSpanishVoices(speech.voices)
             session.ttsVoices.value = localVoices
             val savedVoice = session.ttsSelectedVoiceId.value?.let { id ->
                 localVoices.firstOrNull { it.id.value == id }
             }
-            if (session.ttsSelectedVoiceId.value != null && savedVoice == null) {
-                session.ttsSelectedVoiceId.value = null
-                settings.apply(SettingsRepository.Store.LIBRARY) { remove(ttsVoicePreferenceKey(uri)) }
-            }
-            if (savedVoice != null) {
+            val selectedVoice = savedVoice ?: defaultSpanishUsVoice(localVoices)
+            if (selectedVoice != null) {
+                session.ttsSelectedVoiceId.value = selectedVoice.id.value
                 speech.submitPreferences(
                     AndroidTtsPreferences(
                         speed = session.ttsSpeed.value.toDouble(),
-                        voices = mapOf(savedVoice.language to savedVoice.id),
+                        voices = mapOf(selectedVoice.language to selectedVoice.id),
                     ),
                 )
+                settings.apply(SettingsRepository.Store.LIBRARY) {
+                    putString(ttsVoicePreferenceKey(uri), selectedVoice.id.value)
+                }
             }
             val publication = session.publication.value ?: run {
                 speech.close()
