@@ -41,6 +41,10 @@ import kotlinx.coroutines.launch
 internal data class MixedShelfGroup(val objects: List<ShelfObject>, val units: Float)
 internal data class MixedShelfLine(val logicalShelf: Int, val groups: List<MixedShelfGroup>)
 
+private const val MIXED_ROWS_PER_PAGE = 2
+private val mixedRowTops = listOf(.175f, .485f)
+private val mixedRowBottoms = listOf(.435f, .790f)
+
 /** Capacity is measured before layout so every visual line gets its own supporting plank. */
 internal fun packMixedShelves(shelves: List<ShelfDisplay>, capacity: Float, gapUnits: Float = 0f): List<MixedShelfLine> = buildList {
     shelves.forEach { shelf ->
@@ -120,7 +124,7 @@ internal fun InteractiveMixedShelf(
                 packed
             }
         }
-        val pages = ((lines.size + 2) / 3).coerceAtLeast(1)
+        val pages = ((lines.size + MIXED_ROWS_PER_PAGE - 1) / MIXED_ROWS_PER_PAGE).coerceAtLeast(1)
         val pager = rememberPagerState(pageCount = { pages })
         val scope = rememberCoroutineScope()
         LaunchedEffect(drag.activeKey, edgeDirection, pages) {
@@ -185,13 +189,13 @@ internal fun InteractiveMixedShelf(
                 val cabinetHeight = maxHeight
                 HorizontalPager(state = pager, userScrollEnabled = drag.activeKey == null, modifier = Modifier.fillMaxSize()) { page ->
                     Box(Modifier.fillMaxSize()) {
-                        repeat(3) { row ->
-                            val lineIndex = page * 3 + row
+                        repeat(MIXED_ROWS_PER_PAGE) { row ->
+                            val lineIndex = page * MIXED_ROWS_PER_PAGE + row
                             val line = lines.getOrNull(lineIndex)
-                            val rowHeight = cabinetHeight * (cabinetRowBottoms[row] - cabinetRowTops[row])
+                            val rowHeight = cabinetHeight * (mixedRowBottoms[row] - mixedRowTops[row])
                             if (line != null) {
                                 Row(
-                                    Modifier.offset(cabinetWidth * .085f, cabinetHeight * cabinetRowTops[row])
+                                    Modifier.offset(cabinetWidth * .085f, cabinetHeight * mixedRowTops[row])
                                         .size(cabinetWidth * .83f, rowHeight)
                                         .then(drag.targetModifier("zone:${line.logicalShelf}:$lineIndex")),
                                     horizontalArrangement = Arrangement.spacedBy(3.dp),
