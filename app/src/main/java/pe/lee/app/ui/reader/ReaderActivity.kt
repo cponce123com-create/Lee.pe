@@ -53,7 +53,9 @@ import org.json.JSONObject
 import org.readium.navigator.media.tts.android.AndroidTtsPreferences
 import org.readium.r2.navigator.epub.EpubPreferences
 import org.readium.r2.navigator.epub.EpubPreferencesSerializer
+import org.readium.r2.navigator.preferences.ReadingProgression
 import org.readium.r2.shared.ExperimentalReadiumApi
+import org.readium.r2.shared.publication.Layout
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.services.locateProgression
@@ -91,6 +93,10 @@ internal fun EpubReaderScreen(
     val containerId = remember { View.generateViewId() }
     var readerContainer by remember { mutableStateOf<FrameLayout?>(null) }
     val skipNextPageTurn = remember { mutableStateOf(false) }
+    var pageTurnStyle by remember(settings) {
+        val saved = settings.getString(SettingsRepository.Store.LIBRARY, PAGE_TURN_STYLE_KEY)
+        mutableStateOf(PageTurnStyle.entries.firstOrNull { it.name == saved } ?: PageTurnStyle.CURL)
+    }
     val pageTurnController = remember { EpubPageTurnController() }
     val coroutineScope = rememberCoroutineScope()
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -123,6 +129,7 @@ internal fun EpubReaderScreen(
     var seekJob by remember { mutableStateOf<Job?>(null) }
     var skipPageTurnResetJob by remember { mutableStateOf<Job?>(null) }
     fun suppressPageTurnForJump() {
+        pageTurnController.cancel()
         skipNextPageTurn.value = true
         skipPageTurnResetJob?.cancel()
         skipPageTurnResetJob = coroutineScope.launch {
@@ -130,14 +137,20 @@ internal fun EpubReaderScreen(
             skipNextPageTurn.value = false
         }
     }
+    val navigationSettings = navigator?.settings?.collectAsStateWithLifecycle()?.value
+    val rightToLeft = navigationSettings?.readingProgression == ReadingProgression.RTL
+    val publicationLayout = publication?.metadata?.layout
+    val reflowable = publicationLayout != Layout.FIXED && publicationLayout != Layout.SCROLLED
     val pageTurnFrame = rememberEpubPageTurnFrame(
         navigator = navigator,
         pageView = readerContainer,
-        enabled = !loading && errorMessage == null && epubPreferences.scroll != true,
+        enabled = reflowable && !loading && errorMessage == null && epubPreferences.scroll != true && !session.selectingText.value,
         preferences = epubPreferences,
         autoFollowingNarration = session.followNarration.value && ttsIsPlaying,
         skipNextTurn = skipNextPageTurn,
         controller = pageTurnController,
+        style = pageTurnStyle,
+        rightToLeft = rightToLeft,
     )
     // Large books used to re-flatten the whole table of contents on every
     // recomposition (each page turn and each narrated sentence) (A-30).
@@ -185,12 +198,23 @@ internal fun EpubReaderScreen(
     ) {
         AndroidView(
             factory = {
-                FrameLayout(it).apply {
+                PageCurlViewport(it, pageTurnController).apply {
                     id = containerId
                     readerContainer = this
                 }
             },
-            update = { readerContainer = it },
+            update = { viewport ->
+                readerContainer = viewport
+                viewport.onNavigate = { forward ->
+                    sessionActions.pauseTtsForNavigation()
+                    val accepted = if (forward != rightToLeft) {
+                        navigator?.goForward(animated = false)
+                    } else {
+                        navigator?.goBackward(animated = false)
+                    }
+                    accepted == true
+                }
+            },
             modifier = Modifier.fillMaxSize(),
         )
         pageTurnFrame?.let { frame -> EpubPageTurnOverlay(frame) }
@@ -298,17 +322,20 @@ internal fun EpubReaderScreen(
                         }
                     },
                     onPreferencesChange = applyReaderPreferences,
+                    pageTurnStyle = pageTurnStyle,
+                    onPageTurnStyleChange = { style ->
+                        pageTurnStyle = style
+                        settings.apply(SettingsRepository.Store.LIBRARY) { putString(PAGE_TURN_STYLE_KEY, style.name) }
+                    },
                     onToggleChrome = { chromeVisible = false },
                     onBack = onBack,
                     onPrevious = {
                         sessionActions.pauseTtsForNavigation()
-                        pageTurnController.start(isForward = false)
-                        navigator?.goBackward(animated = false)
+                        pageTurnController.turn(isForward = rightToLeft) { navigator?.goBackward(animated = false) == true }
                     },
                     onNext = {
                         sessionActions.pauseTtsForNavigation()
-                        pageTurnController.start(isForward = true)
-                        navigator?.goForward(animated = false)
+                        pageTurnController.turn(isForward = !rightToLeft) { navigator?.goForward(animated = false) == true }
                     },
                     contents = tableOfContents,
                     searchPublication = publication,

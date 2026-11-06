@@ -173,7 +173,7 @@ internal fun UprightBookVolume(book: LocalBook, base: Color, modifier: Modifier 
 /** Measure the label along the actual book height, then rotate it inside its spine. */
 @Composable
 private fun RotatedSpineTitle(title: String, modifier: Modifier, material: BindingMaterial) {
-    BoxWithConstraints(modifier) {
+    Box(modifier) {
         Layout(
             modifier = Modifier.fillMaxSize(),
             content = {

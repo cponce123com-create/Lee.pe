@@ -169,6 +169,7 @@ internal fun EpubReaderSessionEffects(
                 private var actionJob: kotlinx.coroutines.Job? = null
 
                 override fun onCreateActionMode(mode: ActionMode, menu: Menu): Boolean {
+                    session.selectingText.value = true
                     // Reserve a visible slot for the primary quote-card action.
                     menu.add(Menu.NONE, MENU_SHARE_SELECTION, 0, context.getString(ShareCardR.string.share_card_create_action))
                         .setIcon(android.R.drawable.ic_menu_gallery)
@@ -184,6 +185,11 @@ internal fun EpubReaderSessionEffects(
                     menu.add(Menu.NONE, MENU_DICTIONARY, 5, context.getString(R.string.epub_selection_dictionary))
                         .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
                     return true
+                }
+
+                override fun onDestroyActionMode(mode: ActionMode) {
+                    session.selectingText.value = false
+                    super.onDestroyActionMode(mode)
                 }
 
                 override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {

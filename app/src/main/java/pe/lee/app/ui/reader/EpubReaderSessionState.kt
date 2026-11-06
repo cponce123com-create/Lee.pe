@@ -35,6 +35,7 @@ internal class EpubReaderSessionState(uri: Uri, settings: SettingsRepository) {
         mutableFloatStateOf(settings.getFloat(SettingsRepository.Store.LIBRARY, ReaderActivity.brightnessPreferenceKey(uri), -1f))
     val keepScreenOn =
         mutableStateOf(settings.getBoolean(SettingsRepository.Store.LIBRARY, ReaderActivity.keepScreenOnPreferenceKey(uri), false))
+    val selectingText = mutableStateOf(false)
     val chromeVisible = mutableStateOf(false)
     val loading = mutableStateOf(true)
     val errorMessage = mutableStateOf<String?>(null)
