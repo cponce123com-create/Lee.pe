@@ -140,4 +140,15 @@ class OfflineCopyWriterTest {
         val file = OfflineCopyWriter.write(target(), -1, { input }, { Long.MAX_VALUE }, {})
         assertArrayEquals(byteArrayOf(1, 2, 3), file.readBytes())
     }
+
+    @Test
+    fun deniedPublicationLeavesNoPartialPdf() {
+        val pdf = File(folder.root, "book.pdf")
+        val error = assertThrows(StorageException::class.java) {
+            OfflineCopyWriter.write(pdf, 1L, { ByteArrayInputStream(byteArrayOf(1)) }, { Long.MAX_VALUE }, {}, { _, _ -> false })
+        }
+        assertEquals(StorageException.Reason.FINALIZATION_FAILED, error.reason)
+        assertFalse(pdf.exists())
+        assertNothingPublished()
+    }
 }

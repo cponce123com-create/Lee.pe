@@ -464,29 +464,7 @@ internal fun EpubAppearanceSheet(
             }
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.reader_turn_title), fontWeight = FontWeight.SemiBold)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                val label = stringResource(R.string.reader_turn_animations)
-                Text(label, modifier = Modifier.weight(1f))
-                Switch(
-                    checked = pageTurnStyle != PageTurnStyle.NONE,
-                    onCheckedChange = { enabled ->
-                        onPageTurnStyleChange(if (enabled) PageTurnStyle.CURL else PageTurnStyle.NONE)
-                    },
-                    enabled = pageAnimationsAllowed,
-                    modifier = Modifier.semantics { contentDescription = label },
-                )
-            }
-            PageTurnStyle.entries.filter { it != PageTurnStyle.NONE }.forEach { style ->
-                FilterChip(
-                    selected = pageTurnStyle == style,
-                    enabled = pageAnimationsAllowed && pageTurnStyle != PageTurnStyle.NONE,
-                    onClick = { onPageTurnStyleChange(style) },
-                    label = { Text(stringResource(style.label)) },
-                )
-            }
-        }
+        PageTurnControls(pageTurnStyle, pageAnimationsAllowed, onPageTurnStyleChange)
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.reader_while_reading_title), fontWeight = FontWeight.SemiBold)
@@ -573,4 +551,35 @@ private fun EpubPreferences.withReaderTheme(choice: ReaderThemeChoice): EpubPref
         backgroundColor = null,
         textColor = null,
     )
+}
+
+@Composable
+private fun PageTurnControls(
+    pageTurnStyle: PageTurnStyle,
+    pageAnimationsAllowed: Boolean,
+    onPageTurnStyleChange: (PageTurnStyle) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(stringResource(R.string.reader_turn_title), fontWeight = FontWeight.SemiBold)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            val label = stringResource(R.string.reader_turn_animations)
+            Text(label, modifier = Modifier.weight(1f))
+            Switch(
+                checked = pageTurnStyle != PageTurnStyle.NONE,
+                onCheckedChange = { enabled ->
+                    onPageTurnStyleChange(if (enabled) PageTurnStyle.CURL else PageTurnStyle.NONE)
+                },
+                enabled = pageAnimationsAllowed,
+                modifier = Modifier.semantics { contentDescription = label },
+            )
+        }
+        PageTurnStyle.entries.filter { it != PageTurnStyle.NONE }.forEach { style ->
+            FilterChip(
+                selected = pageTurnStyle == style,
+                enabled = pageAnimationsAllowed && pageTurnStyle != PageTurnStyle.NONE,
+                onClick = { onPageTurnStyleChange(style) },
+                label = { Text(stringResource(style.label)) },
+            )
+        }
+    }
 }
