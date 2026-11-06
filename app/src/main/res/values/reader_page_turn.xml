@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="reader_turn_title">Efecto de paso de página</string>
+    <string name="reader_turn_curl">Volteo 3D</string>
+    <string name="reader_turn_slide">Deslizamiento</string>
+    <string name="reader_turn_none">Sin animación</string>
+</resources>

@@ -285,6 +285,8 @@ internal fun TtsMiniControls(isPlaying: Boolean, onTogglePlayback: () -> Unit, o
 
 @Composable
 internal fun EpubAppearanceSheet(
+    pageTurnStyle: PageTurnStyle,
+    onPageTurnStyleChange: (PageTurnStyle) -> Unit,
     preferences: EpubPreferences,
     brightness: Float,
     keepScreenOn: Boolean,
@@ -457,6 +459,17 @@ internal fun EpubAppearanceSheet(
                     selected = preferences.scroll == true,
                     onClick = { onPreferencesChange(preferences.copy(scroll = true)) },
                     label = { Text(stringResource(R.string.reader_navigation_scroll)) },
+                )
+            }
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(R.string.reader_turn_title), fontWeight = FontWeight.SemiBold)
+            PageTurnStyle.entries.forEach { style ->
+                FilterChip(
+                    selected = pageTurnStyle == style,
+                    onClick = { onPageTurnStyleChange(style) },
+                    label = { Text(stringResource(style.label)) },
                 )
             }
         }

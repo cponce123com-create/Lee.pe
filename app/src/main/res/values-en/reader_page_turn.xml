@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="reader_turn_title">Page turn effect</string>
+    <string name="reader_turn_curl">3D page curl</string>
+    <string name="reader_turn_slide">Slide</string>
+    <string name="reader_turn_none">No animation</string>
+</resources>
