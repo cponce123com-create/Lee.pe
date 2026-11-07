@@ -28,4 +28,21 @@ class OfflineDictionaryRepositoryTest {
         assertEquals("cafe", normalizeDictionaryTerm("  CAFÉ  "))
         assertEquals("i", normalizeDictionaryTerm("I"))
     }
+
+    @Test
+    fun normalizationRemovesCombiningMarksButKeepsPunctuation() {
+        assertEquals("a!", normalizeDictionaryTerm(" A\u0301! "))
+        assertEquals("n", normalizeDictionaryTerm("N\u20DD"))
+    }
+
+    @Test
+    fun blankAndMarksOnlyTermsCannotMatch() {
+        assertNull(findDictionaryRow(rows, " \t "))
+        assertNull(findDictionaryRow(rows, "\u0301"))
+    }
+
+    @Test
+    fun lookupUsesExactKeyRatherThanPrefix() {
+        assertNull(findDictionaryRow(rows, "cafeteria"))
+    }
 }
