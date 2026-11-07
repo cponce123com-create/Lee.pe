@@ -106,10 +106,9 @@ jobs:
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: |
-          if [ -z "${NVD_API_KEY:-}" ]; then
-            echo "::error title=Missing NVD API key::Configure the repository Actions secret NVD_API_KEY before running the dependency audit."
-            exit 1
-          fi
+          # Dependency-Check 12.x supports unauthenticated NVD requests.
+          # Remove the empty Actions env var so it is not mistaken for a supplied key.
+          if [ -z "${NVD_API_KEY:-}" ]; then unset NVD_API_KEY; fi
           ./gradlew --no-daemon --stacktrace --no-parallel dependencyCheckAggregate
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
