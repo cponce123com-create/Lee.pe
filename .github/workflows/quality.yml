@@ -105,7 +105,12 @@ jobs:
       - name: Audit resolved dependencies (CVSS >= 7 fails)
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
-        run: ./gradlew --no-daemon --stacktrace --no-parallel dependencyCheckAggregate
+        run: |
+          if [ -z "${NVD_API_KEY:-}" ]; then
+            echo "::error title=Missing NVD API key::Configure the repository Actions secret NVD_API_KEY to run the full dependency audit reliably."
+            exit 1
+          fi
+          ./gradlew --no-daemon --stacktrace --no-parallel dependencyCheckAggregate
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

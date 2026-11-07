@@ -296,7 +296,10 @@ class ShareCardViewModelTest {
         var generated = 0
         val viewModel = ShareCardViewModel(
             QuoteCard("Una frase", "Libro", "Autora"),
-            ShareCardGenerator { _, _, _ -> generated++; byteArrayOf(1) },
+            ShareCardGenerator { _, _, _ ->
+                generated++
+                byteArrayOf(1)
+            },
             ShareCardSharer { },
             dispatcher,
             ShareCardDownloader { _, _ -> error("Must not download") },

@@ -33,8 +33,10 @@ de las pruebas instrumentadas.
 ## Seguridad y notificaciones
 
 El job de dependencias corre en main o manualmente y falla con CVSS >= 7.
-`NVD_API_KEY` es opcional pero reduce los límites de descarga de la base NVD.
-Un error de descarga no equivale a ausencia de vulnerabilidades. Los informes
+Para que CI complete el audit, configura `NVD_API_KEY` como secreto de Actions del
+repositorio; sin él, las solicitudes anónimas a NVD no son fiables para actualizar
+la base completa. En local puede omitirse, aunque la descarga será más lenta. Un
+error de descarga no equivale a ausencia de vulnerabilidades. Los informes
 HTML/JSON/SARIF quedan como artefactos. `SLACK_WEBHOOK` habilita avisos de fallos
 del workflow Android en pushes a main; sin ese secreto se informa que no está configurado.
 

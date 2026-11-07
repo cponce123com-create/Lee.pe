@@ -22,7 +22,7 @@ kover = "0.9.11"
 detekt = "2.0.0-alpha.6"
 ktlintPlugin = "14.2.0"
 dokka = "2.2.0"
-dependencyCheck = "13.0.0"
+dependencyCheck = "12.2.2"
 
 benchmark = "1.4.1"
 uiautomator = "2.3.0"
