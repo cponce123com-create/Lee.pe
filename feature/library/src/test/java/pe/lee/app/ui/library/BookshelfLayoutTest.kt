@@ -2,7 +2,9 @@ package pe.lee.app.ui.library
 
 import kotlin.random.Random
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BookshelfLayoutTest {
@@ -269,10 +271,17 @@ class BookshelfLayoutTest {
 
     @Test
     fun ornamentCategoriesHaveExplicitMembershipIncludingLegacyTypes() {
-        val expected = expectedOrnamentCategories()
-        expected.forEach { (category, types) ->
+        assertOrnamentCategoryMembership()
+        assertLegacyOrnamentCategoryMembership()
+    }
+
+    private fun assertOrnamentCategoryMembership() {
+        expectedOrnamentCategories().forEach { (category, types) ->
             assertEquals(types, ShelfDecorationType.entries.filter { it.belongsTo(category) }.toSet())
         }
+    }
+
+    private fun assertLegacyOrnamentCategoryMembership() {
         assertTrue(ShelfDecorationType.VASE.belongsTo(ShelfDecorationCategory.ALL))
         assertFalse(ShelfDecorationType.VASE.belongsTo(ShelfDecorationCategory.NATURE))
     }

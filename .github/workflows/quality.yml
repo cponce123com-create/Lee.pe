@@ -105,7 +105,11 @@ jobs:
       - name: Audit resolved dependencies (CVSS >= 7 fails)
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
-        run: ./gradlew --no-daemon --stacktrace --no-parallel dependencyCheckAggregate
+        run: |
+          # An unset GitHub secret expands to an empty environment variable;
+          # Dependency-Check treats that as an invalid API key instead of no key.
+          if [ -z "${NVD_API_KEY:-}" ]; then unset NVD_API_KEY; fi
+          ./gradlew --no-daemon --stacktrace --no-parallel dependencyCheckAggregate
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
