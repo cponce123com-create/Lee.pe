@@ -16,9 +16,10 @@ portadas. El paginador es interactivo y se sitúa entre los cajones.
 - Portadas: tres columnas y tres filas, nueve libros por página; la última página
   conserva sus huecos. Deslizamiento horizontal, botones anterior/siguiente y
   arrastre para ordenar, también al borde para pasar de página.
-- Mixta: tres repisas por página; los grupos apilados y adornos se apoyan en los
-  suelos del mismo mueble. Se preserva el límite de diez adornos, la ordenación
-  persistida y el doble toque para cambiar la orientación.
+- Mixta: dos repisas por página; los grupos apilados y adornos se apoyan en los
+  suelos del mismo mueble. La bandeja inferior permite añadir adornos del catálogo
+  directamente. Se preserva el límite de diez adornos, la ordenación persistida
+  y el doble toque para cambiar la orientación.
 - Tema marrón/dorado exclusivo de biblioteca, con verde para el selector. El
   lector conserva sus ajustes independientes. Buscar se despliega desde la lupa;
   importar permanece accesible y las estadísticas pasan al menú.
