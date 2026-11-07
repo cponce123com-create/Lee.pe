@@ -43,8 +43,10 @@ class CatalogPipelineTest {
         favorite: Boolean = false,
         offline: Boolean = false,
         collections: List<String> = emptyList(),
-    ) = LocalBook(id, Uri.EMPTY, title, format, favorite, imported, lastOpened, progress, null,
-        if (offline) Uri.EMPTY else null, collections)
+    ) = LocalBook(
+        id, Uri.EMPTY, title, format, favorite, imported, lastOpened, progress, null,
+        if (offline) Uri.EMPTY else null, collections,
+    )
 
     @Test
     fun toReadExcludesAudiobooksAndStartedBooks() {
@@ -132,8 +134,14 @@ class CatalogPipelineTest {
             (0..8).map { book("r$it", progress = .2f, lastOpened = it.toLong()) } +
             listOf(book("unread", lastOpened = 2000), book("done", progress = 1f, lastOpened = 3000))
 
-        val result = computeCatalog(books, "r", LibraryFilter.EPUB, "no-matching-collection", LibrarySortMode.CUSTOM,
-            libraryTitleComparator(Locale.ROOT))
+        val result = computeCatalog(
+            books,
+            "r",
+            LibraryFilter.EPUB,
+            "no-matching-collection",
+            LibrarySortMode.CUSTOM,
+            libraryTitleComparator(Locale.ROOT),
+        )
 
         assertTrue(result.visible.isEmpty())
         assertEquals(listOf("r8", "r7", "r6", "r5", "r4", "r3", "r2", "r1"), result.continueReading.map { it.id })

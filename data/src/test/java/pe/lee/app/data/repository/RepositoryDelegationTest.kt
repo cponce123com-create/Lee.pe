@@ -120,9 +120,10 @@ class RepositoryDelegationTest {
         assertSame(snapshot, state.merged)
     }
 
-    private class BookDaoFake(state: BookDaoState = BookDaoState()) : BookDao by proxy({ name, args ->
-        state.dispatch(name, args)
-    }) {
+    private class BookDaoFake(state: BookDaoState = BookDaoState()) :
+        BookDao by proxy({ name, args ->
+            state.dispatch(name, args)
+        }) {
         private val backing = state
         var books: List<BookEntity>
             get() = backing.books
@@ -175,9 +176,11 @@ class RepositoryDelegationTest {
         fun dispatch(name: String, args: Array<out Any?>): Any? = when (name) {
             "observeAll", "observeCollections", "observeBookCollectionNames",
             "findByUri", "findById", "collectionNamesForBook", "getCollections",
-            "pendingBookCleanupUris" -> dispatchRead(name, args)
+            "pendingBookCleanupUris",
+            -> dispatchRead(name, args)
             "insertAll", "markOpened", "saveEpubProgress", "savePdfProgress",
-            "updateFavorite", "updateTitle", "updateCollection" -> dispatchBookWrite(name, args)
+            "updateFavorite", "updateTitle", "updateCollection",
+            -> dispatchBookWrite(name, args)
             "moveCollection", "renameCollection", "deleteCollection" -> dispatchCollectionWrite(name, args)
             "rebindUri", "deleteByUri", "completeBookCleanup" -> dispatchCleanup(name, args)
             else -> error("Unexpected BookDao call: $name")
@@ -263,9 +266,10 @@ class RepositoryDelegationTest {
         }
     }
 
-    private class StatsDaoFake(state: StatsDaoState = StatsDaoState()) : ReadingSessionDao by proxy({ name, args ->
-        state.dispatch(name, args)
-    }) {
+    private class StatsDaoFake(state: StatsDaoState = StatsDaoState()) :
+        ReadingSessionDao by proxy({ name, args ->
+            state.dispatch(name, args)
+        }) {
         private val backing = state
         val saved get() = backing.saved
         val dayFlow get() = backing.dayFlow
@@ -301,9 +305,10 @@ class RepositoryDelegationTest {
         }
     }
 
-    private class BackupDaoFake(state: BackupDaoState) : LocalBackupDao by proxy({ name, args ->
-        state.dispatch(name, args)
-    })
+    private class BackupDaoFake(state: BackupDaoState) :
+        LocalBackupDao by proxy({ name, args ->
+            state.dispatch(name, args)
+        })
 
     private class BackupDaoState(
         private val snapshot: LocalBackupSnapshot,
