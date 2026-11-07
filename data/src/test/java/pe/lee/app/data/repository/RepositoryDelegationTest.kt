@@ -173,11 +173,29 @@ class RepositoryDelegationTest {
         val completed = mutableListOf<String>()
 
         fun dispatch(name: String, args: Array<out Any?>): Any? = when (name) {
+            "observeAll", "observeCollections", "observeBookCollectionNames",
+            "findByUri", "findById", "collectionNamesForBook", "getCollections",
+            "pendingBookCleanupUris" -> dispatchRead(name, args)
+            "insertAll", "markOpened", "saveEpubProgress", "savePdfProgress",
+            "updateFavorite", "updateTitle", "updateCollection" -> dispatchBookWrite(name, args)
+            "moveCollection", "renameCollection", "deleteCollection" -> dispatchCollectionWrite(name, args)
+            "rebindUri", "deleteByUri", "completeBookCleanup" -> dispatchCleanup(name, args)
+            else -> error("Unexpected BookDao call: $name")
+        }
+
+        private fun dispatchRead(name: String, args: Array<out Any?>): Any? = when (name) {
             "observeAll" -> observeAll
             "observeCollections" -> observeCollections
             "observeBookCollectionNames" -> observeAssignments
             "findByUri" -> books.firstOrNull { it.uri == args[0] }
             "findById" -> books.firstOrNull { it.id == args[0] }
+            "collectionNamesForBook" -> listOf("Shelf")
+            "getCollections" -> collectionsList
+            "pendingBookCleanupUris" -> listOf("content://pending")
+            else -> error("Unexpected BookDao read: $name")
+        }
+
+        private fun dispatchBookWrite(name: String, args: Array<out Any?>): Any? = when (name) {
             "insertAll" -> {
                 inserted = args[0] as List<BookEntity>
                 Unit
@@ -208,8 +226,10 @@ class RepositoryDelegationTest {
                 collections += args[1] as String
                 Unit
             }
-            "collectionNamesForBook" -> listOf("Shelf")
-            "getCollections" -> collectionsList
+            else -> error("Unexpected BookDao write: $name")
+        }
+
+        private fun dispatchCollectionWrite(name: String, args: Array<out Any?>): Any? = when (name) {
             "moveCollection" -> {
                 moves += (args[0] as Long) to (args[1] as Int)
                 Unit
@@ -222,6 +242,10 @@ class RepositoryDelegationTest {
                 deletedCollections += args[0] as Long
                 Unit
             }
+            else -> error("Unexpected BookDao collection write: $name")
+        }
+
+        private fun dispatchCleanup(name: String, args: Array<out Any?>): Any? = when (name) {
             "rebindUri" -> {
                 rebound += (args[0] as String) to (args[1] as String)
                 true
@@ -235,7 +259,7 @@ class RepositoryDelegationTest {
                 completed += args[0] as String
                 Unit
             }
-            else -> error("Unexpected BookDao call: $name")
+            else -> error("Unexpected BookDao cleanup: $name")
         }
     }
 

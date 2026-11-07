@@ -1,16 +1,19 @@
 package pe.lee.app.ui.library
 
 import android.net.Uri
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
 
 /**
  * The catalog filter used to live inline in a composable, where it could not be
  * tested. It is now a pure function (P-06).
  */
+@RunWith(AndroidJUnit4::class)
 class CatalogPipelineTest {
     private fun matches(
         format: String = "EPUB",
