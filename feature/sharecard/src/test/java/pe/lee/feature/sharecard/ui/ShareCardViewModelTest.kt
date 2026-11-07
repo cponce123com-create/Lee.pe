@@ -290,4 +290,46 @@ class ShareCardViewModelTest {
         viewModel.downloadRasterForTest(raster, destination)
         assertEquals(ShareCardStatus.Downloaded, viewModel.state.value.status)
     }
+
+    @Test
+    fun blankDownloadDestinationDoesNotGenerateOrChangeIdleState() = runTest(dispatcher) {
+        var generated = 0
+        val viewModel = ShareCardViewModel(
+            QuoteCard("Una frase", "Libro", "Autora"),
+            ShareCardGenerator { _, _, _ -> generated++; byteArrayOf(1) },
+            ShareCardSharer { },
+            dispatcher,
+            ShareCardDownloader { _, _ -> error("Must not download") },
+        )
+
+        viewModel.downloadRasterForTest(QuoteCardRaster(1, 1, intArrayOf(0)), " \t ")
+
+        assertEquals(0, generated)
+        assertEquals(ShareCardStatus.Idle, viewModel.state.value.status)
+    }
+
+    @Test
+    fun downloadGenerationFailureReportsDownloadErrorAndCanBeRetried() = runTest(dispatcher) {
+        var attempts = 0
+        var downloads = 0
+        val viewModel = ShareCardViewModel(
+            QuoteCard("Una frase", "Libro", "Autora"),
+            ShareCardGenerator { _, _, _ ->
+                if (++attempts == 1) throw IllegalStateException("encoder failed")
+                byteArrayOf(7)
+            },
+            ShareCardSharer { },
+            dispatcher,
+            ShareCardDownloader { _, _ -> downloads++ },
+        )
+        val raster = QuoteCardRaster(1, 1, intArrayOf(0))
+
+        viewModel.downloadRasterForTest(raster, "content://test/quote.png")
+        assertEquals(ShareCardStatus.Error(R.string.share_card_download_error), viewModel.state.value.status)
+        assertEquals(0, downloads)
+
+        viewModel.downloadRasterForTest(raster, "content://test/quote.png")
+        assertEquals(ShareCardStatus.Downloaded, viewModel.state.value.status)
+        assertEquals(1, downloads)
+    }
 }

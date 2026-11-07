@@ -149,7 +149,10 @@ class BookshelfLayoutTest {
         val movedUp = movedLeft.moveDecoration(decoration.id, shelfDelta = 1)
         assertEquals(1, movedUp.decorations.single().shelf)
         assertEquals(listOf(decoration.id), movedUp.objectsOnShelf(1).map { (it as ShelfObject.Decor).decoration.id })
-        assertEquals(listOf("book-1", "book-2"), movedUp.objectsOnShelf(0).map { (it as ShelfObject.Book).placement.bookId })
+        assertEquals(
+            listOf("book-1", "book-2"),
+            movedUp.objectsOnShelf(0).map { (it as ShelfObject.Book).placement.bookId },
+        )
     }
 
     @Test
@@ -225,7 +228,10 @@ class BookshelfLayoutTest {
         val objects = layout.objectsOnShelf(0)
         val rows = packMixedShelves(listOf(ShelfDisplay(0, objects)), 2f)
         assertEquals(3, rows.size)
-        assertEquals(objects.map { it.stableKey }, rows.flatMap { it.groups }.flatMap { it.objects }.map { it.stableKey })
+        assertEquals(
+            objects.map { it.stableKey },
+            rows.flatMap { it.groups }.flatMap { it.objects }.map { it.stableKey },
+        )
         org.junit.Assert.assertTrue(rows.all { row -> row.groups.sumOf { it.units.toDouble() } <= 2.0 })
     }
 
@@ -255,6 +261,102 @@ class BookshelfLayoutTest {
         val restored = requireNotNull(BookshelfLayout.decode(BookshelfLayout.encode(moved)))
 
         val rows = packMixedShelves(listOf(ShelfDisplay(0, restored.objectsOnShelf(0))), 4f)
-        assertEquals(listOf("book:book", ornament), rows.single().groups.single().objects.asReversed().map { it.stableKey })
+        assertEquals(
+            listOf("book:book", ornament),
+            rows.single().groups.single().objects.asReversed().map { it.stableKey },
+        )
+    }
+
+    @Test
+    fun ornamentCategoriesHaveExplicitMembershipIncludingLegacyTypes() {
+        val expected = mapOf(
+            ShelfDecorationCategory.ALL to ShelfDecorationType.entries.toSet(),
+            ShelfDecorationCategory.NATURE to setOf(
+                ShelfDecorationType.PLANT,
+                ShelfDecorationType.LAVENDER,
+                ShelfDecorationType.BONSAI,
+                ShelfDecorationType.IVY,
+            ),
+            ShelfDecorationCategory.MASCOTS to setOf(
+                ShelfDecorationType.CAT,
+                ShelfDecorationType.DOG,
+                ShelfDecorationType.FOREST_SPIRIT,
+                ShelfDecorationType.FOX,
+                ShelfDecorationType.SOOT_CREATURE,
+            ),
+            ShelfDecorationCategory.READING to setOf(
+                ShelfDecorationType.MUG,
+                ShelfDecorationType.GLOBE,
+                ShelfDecorationType.TYPEWRITER,
+                ShelfDecorationType.HEADPHONES,
+                ShelfDecorationType.GLOWING_BOOK,
+                ShelfDecorationType.QUILL,
+            ),
+            ShelfDecorationCategory.FANTASY to setOf(
+                ShelfDecorationType.ORB,
+                ShelfDecorationType.FOREST_SPIRIT,
+                ShelfDecorationType.FAIRY,
+                ShelfDecorationType.DRAGON,
+                ShelfDecorationType.MOON_STARS,
+                ShelfDecorationType.SNOW_GLOBE,
+                ShelfDecorationType.CASTLE,
+                ShelfDecorationType.SOOT_CREATURE,
+            ),
+            ShelfDecorationCategory.ADVENTURE to setOf(
+                ShelfDecorationType.ASTRONAUT,
+                ShelfDecorationType.LIGHTHOUSE,
+                ShelfDecorationType.ARCH,
+                ShelfDecorationType.AIRSHIP,
+                ShelfDecorationType.GLOBE,
+            ),
+            ShelfDecorationCategory.HOME to setOf(
+                ShelfDecorationType.LAMP,
+                ShelfDecorationType.CANDLE,
+                ShelfDecorationType.HOURGLASS,
+                ShelfDecorationType.LANTERN,
+                ShelfDecorationType.CAT_BOX,
+            ),
+            ShelfDecorationCategory.COFFEE to setOf(
+                ShelfDecorationType.MUG,
+                ShelfDecorationType.COFFEE_SETUP,
+                ShelfDecorationType.CANDLE,
+            ),
+            ShelfDecorationCategory.SEPARATORS to setOf(
+                ShelfDecorationType.BOOKEND,
+                ShelfDecorationType.DIVIDER,
+                ShelfDecorationType.ARCH,
+            ),
+        )
+        expected.forEach { (category, types) ->
+            assertEquals(types, ShelfDecorationType.entries.filter { it.belongsTo(category) }.toSet())
+        }
+        assertTrue(ShelfDecorationType.VASE.belongsTo(ShelfDecorationCategory.ALL))
+        assertFalse(ShelfDecorationType.VASE.belongsTo(ShelfDecorationCategory.NATURE))
+    }
+
+    @Test
+    fun decoderSkipsMalformedRecordsAndFallsBackForInvalidBookOrientation() {
+        val raw = """
+            {
+              "books": [
+                {"id":"  ","shelf":2},
+                {"id":"ok","shelf":2,"order":-4,"orientation":"SIDEWAYS"},
+                "not-an-object"
+              ],
+              "decorations": [
+                {"id":"unknown-type","type":"ALIEN","shelf":0},
+                {"id":"","type":"PLANT","shelf":0},
+                {"id":"kept","type":"PLANT","shelf":1,"order":-7},
+                null
+              ],
+              "hidden": [{"id":"hidden"},{"id":"  "},false]
+            }
+        """.trimIndent()
+
+        val layout = requireNotNull(BookshelfLayout.decode(raw))
+
+        assertEquals(listOf(BookshelfBookPlacement("ok", 2, 0, BookOrientation.UPRIGHT)), layout.books)
+        assertEquals(listOf(ShelfDecoration("kept", ShelfDecorationType.PLANT, 1, 0)), layout.decorations)
+        assertEquals(setOf("hidden"), layout.hiddenBookIds)
     }
 }
