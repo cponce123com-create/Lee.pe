@@ -345,15 +345,6 @@ internal fun LibraryCatalog(
                         }
                     }
                 }
-                if (viewMode.value == LibraryViewMode.MIXED_BOOKSHELF) {
-                    TextButton(onClick = { showBookshelfCustomizer = true }, contentPadding = PaddingValues(horizontal = 5.dp)) {
-                        Text(
-                            stringResource(R.string.shelf_decoration_count, bookshelfLayout.decorations.size),
-                            color = colors.primary,
-                            fontSize = 12.sp,
-                        )
-                    }
-                }
             }
         }
         if (visibleBooks.isEmpty()) {
@@ -405,6 +396,24 @@ internal fun LibraryCatalog(
                     onDecorationClick = {
                         replacementDecorationId.value = it
                         showBookshelfCustomizer = true
+                    },
+                )
+            }
+        }
+        if (viewMode.value == LibraryViewMode.MIXED_BOOKSHELF) {
+            item(key = "available-shelf-decorations") {
+                ShelfDecorationRail(
+                    decorationCount = bookshelfLayout.decorations.size,
+                    onOpenCustomizer = { showBookshelfCustomizer = true },
+                    onAddDecoration = { type ->
+                        if (bookshelfLayout.decorations.size >= MAX_SHELF_DECORATIONS) {
+                            Toast.makeText(context, R.string.shelf_decoration_limit, Toast.LENGTH_SHORT).show()
+                        } else {
+                            val shelf = 0
+                            val nextOrder = (bookshelfLayout.objectsOnShelf(shelf).maxOfOrNull(ShelfObject::order) ?: -1) + 1
+                            onBookshelfLayoutChange(bookshelfLayout.addDecoration(type, shelf, nextOrder))
+                            onCustomLayoutSelected()
+                        }
                     },
                 )
             }

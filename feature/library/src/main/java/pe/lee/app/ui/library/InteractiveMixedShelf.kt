@@ -76,7 +76,7 @@ internal fun packMixedShelves(shelves: List<ShelfDisplay>, capacity: Float, gapU
                 val units = when {
                     stacked -> HORIZONTAL_BOOK_UNITS
                     item is ShelfObject.Decor -> 1.65f
-                    else -> .82f
+                    else -> .98f
                 }
                 groups += MixedShelfGroup(listOf(item), units)
             }
