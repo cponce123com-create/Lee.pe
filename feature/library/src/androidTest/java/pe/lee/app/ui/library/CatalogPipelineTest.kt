@@ -1,16 +1,19 @@
 package pe.lee.app.ui.library
 
 import android.net.Uri
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
 
 /**
  * The catalog filter used to live inline in a composable, where it could not be
  * tested. It is now a pure function (P-06).
  */
+@RunWith(AndroidJUnit4::class)
 class CatalogPipelineTest {
     private fun matches(
         format: String = "EPUB",
@@ -40,8 +43,10 @@ class CatalogPipelineTest {
         favorite: Boolean = false,
         offline: Boolean = false,
         collections: List<String> = emptyList(),
-    ) = LocalBook(id, Uri.EMPTY, title, format, favorite, imported, lastOpened, progress, null,
-        if (offline) Uri.EMPTY else null, collections)
+    ) = LocalBook(
+        id, Uri.EMPTY, title, format, favorite, imported, lastOpened, progress, null,
+        if (offline) Uri.EMPTY else null, collections,
+    )
 
     @Test
     fun toReadExcludesAudiobooksAndStartedBooks() {
@@ -129,8 +134,14 @@ class CatalogPipelineTest {
             (0..8).map { book("r$it", progress = .2f, lastOpened = it.toLong()) } +
             listOf(book("unread", lastOpened = 2000), book("done", progress = 1f, lastOpened = 3000))
 
-        val result = computeCatalog(books, "r", LibraryFilter.EPUB, "no-matching-collection", LibrarySortMode.CUSTOM,
-            libraryTitleComparator(Locale.ROOT))
+        val result = computeCatalog(
+            books,
+            "r",
+            LibraryFilter.EPUB,
+            "no-matching-collection",
+            LibrarySortMode.CUSTOM,
+            libraryTitleComparator(Locale.ROOT),
+        )
 
         assertTrue(result.visible.isEmpty())
         assertEquals(listOf("r8", "r7", "r6", "r5", "r4", "r3", "r2", "r1"), result.continueReading.map { it.id })

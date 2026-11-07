@@ -2,7 +2,9 @@ package pe.lee.app.ui.library
 
 import kotlin.random.Random
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BookshelfLayoutTest {
@@ -269,10 +271,17 @@ class BookshelfLayoutTest {
 
     @Test
     fun ornamentCategoriesHaveExplicitMembershipIncludingLegacyTypes() {
-        val expected = expectedOrnamentCategories()
-        expected.forEach { (category, types) ->
+        assertOrnamentCategoryMembership()
+        assertLegacyOrnamentCategoryMembership()
+    }
+
+    private fun assertOrnamentCategoryMembership() {
+        expectedOrnamentCategories().forEach { (category, types) ->
             assertEquals(types, ShelfDecorationType.entries.filter { it.belongsTo(category) }.toSet())
         }
+    }
+
+    private fun assertLegacyOrnamentCategoryMembership() {
         assertTrue(ShelfDecorationType.VASE.belongsTo(ShelfDecorationCategory.ALL))
         assertFalse(ShelfDecorationType.VASE.belongsTo(ShelfDecorationCategory.NATURE))
     }
@@ -306,35 +315,59 @@ class BookshelfLayoutTest {
     private fun expectedOrnamentCategories() = mapOf(
         ShelfDecorationCategory.ALL to ShelfDecorationType.entries.toSet(),
         ShelfDecorationCategory.NATURE to setOf(
-            ShelfDecorationType.PLANT, ShelfDecorationType.LAVENDER,
-            ShelfDecorationType.BONSAI, ShelfDecorationType.IVY,
+            ShelfDecorationType.PLANT,
+            ShelfDecorationType.LAVENDER,
+            ShelfDecorationType.BONSAI,
+            ShelfDecorationType.IVY,
         ),
         ShelfDecorationCategory.MASCOTS to setOf(
-            ShelfDecorationType.CAT, ShelfDecorationType.DOG, ShelfDecorationType.FOREST_SPIRIT,
-            ShelfDecorationType.FOX, ShelfDecorationType.SOOT_CREATURE,
+            ShelfDecorationType.CAT,
+            ShelfDecorationType.DOG,
+            ShelfDecorationType.FOREST_SPIRIT,
+            ShelfDecorationType.FOX,
+            ShelfDecorationType.SOOT_CREATURE,
         ),
         ShelfDecorationCategory.READING to setOf(
-            ShelfDecorationType.MUG, ShelfDecorationType.GLOBE, ShelfDecorationType.TYPEWRITER,
-            ShelfDecorationType.HEADPHONES, ShelfDecorationType.GLOWING_BOOK, ShelfDecorationType.QUILL,
+            ShelfDecorationType.MUG,
+            ShelfDecorationType.GLOBE,
+            ShelfDecorationType.TYPEWRITER,
+            ShelfDecorationType.HEADPHONES,
+            ShelfDecorationType.GLOWING_BOOK,
+            ShelfDecorationType.QUILL,
         ),
         ShelfDecorationCategory.FANTASY to setOf(
-            ShelfDecorationType.ORB, ShelfDecorationType.FOREST_SPIRIT, ShelfDecorationType.FAIRY,
-            ShelfDecorationType.DRAGON, ShelfDecorationType.MOON_STARS, ShelfDecorationType.SNOW_GLOBE,
-            ShelfDecorationType.CASTLE, ShelfDecorationType.SOOT_CREATURE,
+            ShelfDecorationType.ORB,
+            ShelfDecorationType.FOREST_SPIRIT,
+            ShelfDecorationType.FAIRY,
+            ShelfDecorationType.DRAGON,
+            ShelfDecorationType.MOON_STARS,
+            ShelfDecorationType.SNOW_GLOBE,
+            ShelfDecorationType.CASTLE,
+            ShelfDecorationType.SOOT_CREATURE,
         ),
         ShelfDecorationCategory.ADVENTURE to setOf(
-            ShelfDecorationType.ASTRONAUT, ShelfDecorationType.LIGHTHOUSE, ShelfDecorationType.ARCH,
-            ShelfDecorationType.AIRSHIP, ShelfDecorationType.GLOBE,
+            ShelfDecorationType.ASTRONAUT,
+            ShelfDecorationType.LIGHTHOUSE,
+            ShelfDecorationType.ARCH,
+            ShelfDecorationType.AIRSHIP,
+            ShelfDecorationType.GLOBE,
         ),
         ShelfDecorationCategory.HOME to setOf(
-            ShelfDecorationType.LAMP, ShelfDecorationType.CANDLE, ShelfDecorationType.HOURGLASS,
-            ShelfDecorationType.LANTERN, ShelfDecorationType.CAT_BOX,
+            ShelfDecorationType.LAMP,
+            ShelfDecorationType.CANDLE,
+            ShelfDecorationType.HOURGLASS,
+            ShelfDecorationType.LANTERN,
+            ShelfDecorationType.CAT_BOX,
         ),
         ShelfDecorationCategory.COFFEE to setOf(
-            ShelfDecorationType.MUG, ShelfDecorationType.COFFEE_SETUP, ShelfDecorationType.CANDLE,
+            ShelfDecorationType.MUG,
+            ShelfDecorationType.COFFEE_SETUP,
+            ShelfDecorationType.CANDLE,
         ),
         ShelfDecorationCategory.SEPARATORS to setOf(
-            ShelfDecorationType.BOOKEND, ShelfDecorationType.DIVIDER, ShelfDecorationType.ARCH,
+            ShelfDecorationType.BOOKEND,
+            ShelfDecorationType.DIVIDER,
+            ShelfDecorationType.ARCH,
         ),
     )
 }
