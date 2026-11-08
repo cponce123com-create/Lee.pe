@@ -365,4 +365,10 @@
     <string name="storage_folder_permission_revoked">El permiso de la carpeta fue revocado. Vuelve a seleccionarla.</string>
     <string name="cabinet_previous_page">Página anterior</string>
     <string name="cabinet_next_page">Página siguiente</string>
+    <string name="library_duplicates_menu">Buscar posibles duplicados</string>
+    <string name="library_duplicates_title">Posibles libros duplicados</string>
+    <string name="library_duplicates_none">No se encontraron títulos repetidos del mismo formato.</string>
+    <string name="library_duplicates_entry">%1$s (%2$s): %3$d ejemplares</string>
+    <string name="library_duplicates_close">Cerrar</string>
+    <string name="library_duplicates_disclaimer">Coincidir en título y formato no significa que los archivos sean idénticos.</string>
 </resources>
