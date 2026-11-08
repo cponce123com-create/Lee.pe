@@ -55,6 +55,7 @@ internal fun LibraryDashboardHeader(
     onScan: () -> Unit,
     onStats: () -> Unit,
     onBackup: () -> Unit,
+    onDuplicates: () -> Unit,
     onSearch: () -> Unit = {},
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
@@ -115,6 +116,13 @@ internal fun LibraryDashboardHeader(
                     onClick = {
                         menuExpanded = false
                         onScan()
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text("Buscar posibles duplicados") },
+                    onClick = {
+                        menuExpanded = false
+                        onDuplicates()
                     },
                 )
                 DropdownMenuItem(
