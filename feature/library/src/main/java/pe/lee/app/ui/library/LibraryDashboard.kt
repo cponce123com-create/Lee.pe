@@ -119,7 +119,7 @@ internal fun LibraryDashboardHeader(
                     },
                 )
                 DropdownMenuItem(
-                    text = { Text("Buscar posibles duplicados") },
+                    text = { Text(stringResource(R.string.library_duplicates_menu)) },
                     onClick = {
                         menuExpanded = false
                         onDuplicates()
