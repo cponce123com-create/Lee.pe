@@ -365,4 +365,10 @@
     <string name="cabinet_previous_page">Previous page</string>
     <string name="cabinet_next_page">Next page</string>
     <string name="backup_restore_preferences_failed">Library data was restored, but some settings could not be saved. Import the backup again to retry.</string>
+    <string name="library_duplicates_menu">Find possible duplicates</string>
+    <string name="library_duplicates_title">Possible duplicate books</string>
+    <string name="library_duplicates_none">No repeated titles of the same format were found.</string>
+    <string name="library_duplicates_entry">%1$s (%2$s): %3$d copies</string>
+    <string name="library_duplicates_close">Close</string>
+    <string name="library_duplicates_disclaimer">Matching titles and formats do not prove the files are identical.</string>
 </resources>
