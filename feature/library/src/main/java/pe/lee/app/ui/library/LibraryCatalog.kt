@@ -186,7 +186,7 @@ internal fun LibraryCatalog(
                     if (duplicateGroups.isEmpty()) "No se encontraron títulos repetidos del mismo formato."
                     else duplicateGroups.take(20).joinToString("\n") { group ->
                         "${group.first().title} (${group.first().format}): ${group.size} ejemplares"
-                    } + if (duplicateGroups.size > 20) "\\n…" else "",
+                    } + if (duplicateGroups.size > 20) "\n…" else "",
                 )
             },
             confirmButton = {
