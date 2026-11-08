@@ -107,6 +107,8 @@ internal fun LibraryCatalog(
     val pendingOfflineCopyRemoval = remember { mutableStateOf<LocalBook?>(null) }
     var showBookshelfCustomizer by rememberSaveable { mutableStateOf(false) }
     var showHiddenBooks by rememberSaveable { mutableStateOf(false) }
+    var showDuplicates by rememberSaveable { mutableStateOf(false) }
+    val duplicateGroups = remember(books) { findPossibleDuplicateBooks(books) }
     val replacementDecorationId = rememberSaveable { mutableStateOf<String?>(null) }
     val screenWidth = LocalConfiguration.current.screenWidthDp
     val colors = MaterialTheme.colorScheme
@@ -175,6 +177,24 @@ internal fun LibraryCatalog(
         }
     }
 
+    if (showDuplicates) {
+        AlertDialog(
+            onDismissRequest = { showDuplicates = false },
+            title = { Text("Posibles libros duplicados") },
+            text = {
+                Text(
+                    if (duplicateGroups.isEmpty()) "No se encontraron títulos repetidos del mismo formato."
+                    else duplicateGroups.take(20).joinToString("\n") { group ->
+                        "${group.first().title} (${group.first().format}): ${group.size} ejemplares"
+                    } + if (duplicateGroups.size > 20) "\\n…" else "",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showDuplicates = false }) { Text("Cerrar") }
+            },
+        )
+    }
+
     val coverRows = remember(orderedBooks) { orderedBooks.chunked(3) }
     val configuration = LocalConfiguration.current
     val naturalCabinetHeight = (configuration.screenWidthDp - 12).coerceAtMost(600).dp * 1.5f
@@ -206,6 +226,7 @@ internal fun LibraryCatalog(
                 onScan = onScan,
                 onStats = onStats,
                 onBackup = onBackup,
+                onDuplicates = { showDuplicates = true },
                 onSearch = { searchExpanded = !searchExpanded },
             )
         }
